@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>运营管理端 - Lucky Draw AI</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body data-page="admin">
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="logo" href="./index.html">Lucky Draw AI</a>
+    <nav>
+      <a href="#activity">活动配置</a>
+      <a href="#awards">奖品配置</a>
+      <a href="#assistant">AI 配置</a>
+      <a href="./index.html">返回用户端</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>运营管理端</h1>
+        <p>配置活动展示、奖品文案、AI 开关，并联动现有抽奖服务数据。</p>
+      </div>
+      <button id="adminLoginBtn" class="outline-button" type="button">登录</button>
+    </header>
+
+    <section id="activity" class="admin-panel">
+      <div class="panel-title">
+        <h2>活动配置</h2>
+        <button id="loadActivityBtn" class="solid-button" type="button">读取线上活动</button>
+      </div>
+      <div class="form-grid">
+        <label>活动 ID<input id="activityIdInput" value="100301" /></label>
+        <label>活动标题<input id="activityTitleInput" value="幸运轮盘活动" /></label>
+        <label>活动状态<input id="activityStateInput" value="online" /></label>
+        <label>展示文案<input id="activityCopyInput" value="登录参与抽奖，AI 帮你解读活动权益。" /></label>
+      </div>
+      <div class="button-row">
+        <button id="saveActivityConfigBtn" class="solid-button" type="button">保存活动展示配置</button>
+        <button id="armoryBtn" class="soft-button" type="button">预热活动</button>
+      </div>
+      <div id="skuTable" class="data-table"></div>
+    </section>
+
+    <section id="awards" class="admin-panel">
+      <div class="panel-title">
+        <h2>奖品配置</h2>
+        <button id="loadAwardsBtn" class="solid-button" type="button">同步奖品列表</button>
+      </div>
+      <div id="awardTable" class="data-table"></div>
+      <div class="form-grid compact">
+        <label>奖品配置备注<input id="awardNoteInput" value="轮盘奖品来自策略奖品接口，可在此维护展示备注。" /></label>
+      </div>
+      <button id="saveAwardConfigBtn" class="solid-button" type="button">保存奖品展示配置</button>
+    </section>
+
+    <section id="assistant" class="admin-panel">
+      <div class="panel-title">
+        <h2>AI 配置</h2>
+        <button id="loadConfigsBtn" class="solid-button" type="button">刷新配置</button>
+      </div>
+      <div class="switch-line">
+        <span>AI 对话入口</span>
+        <div id="chatbotSwitch" class="segmented">
+          <button type="button" data-value="true">开启</button>
+          <button type="button" data-value="false">关闭</button>
+        </div>
+      </div>
+      <div id="configList" class="config-list"></div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="./admin.js"></script>
+</body>
+</html>

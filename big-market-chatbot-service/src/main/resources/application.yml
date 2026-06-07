@@ -1,0 +1,28 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+app:
+  config:
+    api-version: ${API_VERSION:v1}
+    cross-origin: ${CROSS_ORIGIN:'*'}
+
+chatbot:
+  provider: ${CHATBOT_PROVIDER:local}
+  deepseek:
+    api-key: ${DEEPSEEK_API_KEY:}
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    model: ${DEEPSEEK_MODEL:deepseek-v4-flash}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: info
+    com.dyx.market: info

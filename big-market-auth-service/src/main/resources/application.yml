@@ -1,0 +1,23 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+app:
+  config:
+    api-version: ${API_VERSION:v1}
+    cross-origin: ${CROSS_ORIGIN:'*'}
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-dev-only}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: info
+    com.dyx.market: info

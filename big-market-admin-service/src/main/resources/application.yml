@@ -1,0 +1,26 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+app:
+  config:
+    api-version: ${API_VERSION:v1}
+    cross-origin: ${CROSS_ORIGIN:'*'}
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-dev-only}
+  admin:
+    token: ${ADMIN_TOKEN:admin-dev-token}
+    user-ids: ${ADMIN_USER_IDS:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: info
+    com.dyx.market: info

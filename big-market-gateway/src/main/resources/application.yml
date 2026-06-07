@@ -1,0 +1,70 @@
+spring:
+  config:
+    name: big-market-gateway
+  profiles:
+    active: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/*/auth/**
+        - id: admin-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/*/admin/**
+        - id: chatbot-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/*/chatbot/**
+        - id: market-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/**
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://${AUTH_SERVICE_HOST:big-market-auth-service}:${AUTH_SERVICE_PORT:8081}
+          predicates:
+            - Path=/api/*/auth/**
+        - id: admin-service
+          uri: http://${ADMIN_SERVICE_HOST:big-market-admin-service}:${ADMIN_SERVICE_PORT:8082}
+          predicates:
+            - Path=/api/*/admin/**
+        - id: chatbot-service
+          uri: http://${CHATBOT_SERVICE_HOST:big-market-chatbot-service}:${CHATBOT_SERVICE_PORT:8084}
+          predicates:
+            - Path=/api/*/chatbot/**
+        - id: market-service
+          uri: http://${MARKET_SERVICE_HOST:big-market-market-service}:${MARKET_SERVICE_PORT:8083}
+          predicates:
+            - Path=/api/**
+
+server:
+  port: ${SERVER_PORT:8080}

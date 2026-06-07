@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 - Lucky Draw AI</title>
+  <link rel="stylesheet" href="./styles.css?v=20260607b" />
+</head>
+<body>
+<div class="login-page">
+  <div class="login-container">
+    <div class="logo-row">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#4f46e5" stroke-width="2"/><path d="M12 2a2 2 0 0 1 2 2v16a2 2 0 0 1-4 0V4a2 2 0 0 1 2-2z" fill="#4f46e5"/></svg>
+      <span>Lucky Draw AI</span>
+    </div>
+    <h1>登录你的账户</h1>
+
+    <div class="field">
+      <label for="userIdInput">用户 ID</label>
+      <input id="userIdInput" value="xiaofuge" autocomplete="username" placeholder="输入用户ID" />
+    </div>
+
+    <div class="field">
+      <label for="passwordInput">密码</label>
+      <input id="passwordInput" type="password" value="demo" autocomplete="current-password" placeholder="输入密码" />
+    </div>
+
+    <button id="loginBtn" class="submit-btn" type="button">登 录</button>
+
+    <p class="hint">演示账号：xiaofuge / demo</p>
+    <a class="back-link" href="./index.html">← 返回首页</a>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="./login.js"></script>
+</body>
+</html>
