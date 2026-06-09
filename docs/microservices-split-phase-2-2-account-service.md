@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B4 award credit path audit complete. UserCreditRandomAward call chain documented; remote adapter wiring intentionally deferred due to transaction-boundary risk. AwardRepository refactored for clarity (no behaviour change). Phase 2.2-B3 HTTP credit exchange write adapter wiring complete. Remote-read is script-validated. MQ write consumers and creditPayExchangeSku now route through adapters with local fallback. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
+**Status: Phase 2.2-B5 award credit outbox strategy designed and scaffolded. Proposed `credit_award_task` outbox table DDL added under `docs/sql/` (proposed only — not wired to production code). `scripts/validate-award-credit-outbox-readiness.sh` added (8 static checks). Runtime behaviour unchanged. Phase 2.2-B4 award credit path audit complete. UserCreditRandomAward call chain documented; remote adapter wiring intentionally deferred due to transaction-boundary risk. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -179,7 +179,7 @@ with a saga / transactional outbox before any remote wiring can proceed.
 Option A — **Outbox within award transaction:**
 - Add a `credit_award_task` outbox row inside the same transaction as `user_award_record` update.
 - A separate poller/consumer reads `credit_award_task` and calls `IAccountCreditWriteAdapter`.
-- Idempotency: `credit_award_task.order_id` unique constraint prevents double-credit.
+- Idempotency: `credit_award_task.award_order_id` unique constraint prevents double-credit.
 
 Option B — **Saga with compensating action:**
 - Step 1: mark `user_award_record = processing` (local).
@@ -195,6 +195,116 @@ Run `./scripts/validate-award-credit-path.sh` to statically verify:
 1. `AwardRepository.java` still contains `userCreditAccountDao` (direct write, not removed).
 2. `UserCreditRandomAward.java` does NOT import or reference `ICreditAdjustService`.
 3. Both `userCreditAccountDao` and `userAwardRecordDao` writes are inside `saveGiveOutPrizesAggregate`.
+
+---
+
+## Phase 2.2-B5 — Award Credit Outbox Strategy (Design and Scaffold Only)
+
+**Completed (2026-06-09). Runtime behaviour unchanged.**
+
+This batch designs the transactional-outbox migration path for the award credit write. No production code is wired to the outbox table. The goal is to make the design concrete and machine-verifiable before any implementation batch begins.
+
+### Current transaction boundary (unchanged)
+
+```
+AwardRepository.saveGiveOutPrizesAggregate()
+  Redis lock (ACTIVITY_ACCOUNT_LOCK + userId)
+  dbRouter.doRouter(userId)
+  transactionTemplate.execute() {
+    updateOrCreateCreditAccount()         -- writes user_credit_account
+    updateAwardRecordCompletedState()     -- writes user_award_record
+  }
+```
+
+Both writes share one local `transactionTemplate` block. Either both succeed or both roll back. This is safe but prevents remote credit write.
+
+### Why direct `IAccountCreditWriteAdapter` wiring is still unsafe
+
+Replacing the in-transaction `updateOrCreateCreditAccount` call with a remote Dubbo call creates two unacceptable failure modes:
+
+| Failure scenario | Outcome |
+|-----------------|---------|
+| Network error after adapter call succeeds but before award-record commit | Award record never marked complete; MQ re-delivers; adapter called again → **double credit** |
+| Award record committed; adapter call fails (timeout, provider down) | Award record is permanently `complete`; next MQ delivery hits `INDEX_DUP` guard → **credit silently lost**, no retry |
+
+A transactional outbox eliminates both modes by keeping the dispatch intent inside the same transaction as the award-record update.
+
+### Proposed outbox strategy: dedicated `credit_award_task` table
+
+**Why not reuse the existing `task` table:**
+The existing `task` table is an MQ-dispatch outbox — its poller (`SendMessageTaskJob`) publishes to a RabbitMQ topic and expects an MQ consumer on the other end. Award credit dispatch needs to call `IAccountCreditWriteAdapter.createOrder()` directly (a Dubbo RPC), not publish to MQ. Mixing dispatch semantics in one table complicates both the poller and the retry model. A dedicated table with a dedicated poller is cleaner and independently tune-able.
+
+**Proposed outbox row fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `id` | BIGINT AUTO_INCREMENT | Row id |
+| `user_id` | VARCHAR(32) | Shard key — same as `user_award_record.user_id` |
+| `activity_id` | BIGINT | Audit trail |
+| `strategy_id` | BIGINT | Audit trail |
+| `award_order_id` | VARCHAR(64) | **Idempotency key** — `UserAwardRecordEntity.getOrderId()`; UNIQUE per `(user_id, award_order_id)` |
+| `credit_amount` | DECIMAL(10,2) | Amount to credit; captured at award time |
+| `state` | VARCHAR(16) | `pending` → `dispatched` (success) or `failed` (max retries exceeded) |
+| `retry_count` | TINYINT | Incremented on each failed dispatch attempt |
+| `create_time` | DATETIME | Row creation |
+| `update_time` | DATETIME | Last update (auto-updated) |
+
+Full DDL: `docs/sql/proposed-credit-award-task-outbox.sql` (proposed only — do not run in production).
+
+### Idempotency key
+
+`award_order_id` = `UserAwardRecordEntity.getOrderId()`. This value is:
+- Generated once per award dispatch in `UserCreditRandomAward.giveOutPrizes()`
+- Already used as the unique key on `user_award_record`
+- Stable across MQ retries (same message body, same orderId)
+
+The `UNIQUE KEY uq_award_order_id (user_id, award_order_id)` on `credit_award_task` ensures at-most-one outbox row per award event. A duplicate INSERT inside the transaction is caught by `DuplicateKeyException`, which the caller already handles by rolling back and swallowing — identical to the existing `user_award_record` duplicate guard.
+
+`IAccountCreditWriteAdapter.createOrder()` must itself be idempotent on `outBusinessNo` (= `award_order_id`). `CreditAdjustService.createOrder()` already enforces this via `UNIQUE KEY` on `user_credit_order.out_business_no`.
+
+### Retry model
+
+A new XXL-Job handler (or a `@Scheduled` fallback) scans `credit_award_task` for rows with `state = 'pending'` and `retry_count < MAX_RETRY` (suggested: 5). For each row:
+1. Call `IAccountCreditWriteAdapter.createOrder(userId, creditAmount, awardOrderId)`.
+2. On success: `UPDATE state = 'dispatched'`.
+3. On `DuplicateKeyException` from the adapter (credit already issued): treat as success → `UPDATE state = 'dispatched'`.
+4. On any other failure: `UPDATE retry_count = retry_count + 1`; if `retry_count >= MAX_RETRY`, `UPDATE state = 'failed'` and raise an alert.
+
+The poller uses the same `dbRouter.setDBKey` / `dbRouter.setTBKey` pattern as `SendMessageTaskJob` to iterate over all shards.
+
+### Rollback and compensation
+
+- **Transaction rollback before commit:** `credit_award_task` row is never inserted → no orphaned outbox row; credit never issued; MQ re-delivers; clean retry.
+- **Adapter failure after outbox row committed:** outbox row stays `pending`; poller retries; `DuplicateKeyException` on re-delivery is handled as success; credit eventually issued exactly once.
+- **Adapter success but state update fails:** row stays `pending`; poller retries; adapter's own `DuplicateKeyException` guard prevents double credit; state update is retried and succeeds.
+
+No compensating transaction (credit reversal) is needed in any of these paths because the outbox row either exists (credit will be issued) or doesn't (credit was never authorized).
+
+### Required changes to `AwardRepository.saveGiveOutPrizesAggregate` (future batch)
+
+```
+transactionTemplate.execute() {
+  // Remove: updateOrCreateCreditAccount(userCreditAccountReq)  ← moves to poller
+  // Add:    creditAwardTaskDao.insert(creditAwardTaskRow)       ← new outbox row
+  updateAwardRecordCompletedState(userAwardRecordReq)
+}
+// No post-transaction publish needed — poller drives delivery
+```
+
+This change must NOT be made until:
+1. `credit_award_task` table is deployed and the poller job is running.
+2. The poller has been validated in staging against replay scenarios.
+3. `IAccountCreditWriteAdapter.createOrder` idempotency is confirmed end-to-end.
+
+### Validation
+
+Run `./scripts/validate-award-credit-outbox-readiness.sh` to statically verify:
+1. `AwardRepository` does NOT reference `IAccountCreditWriteAdapter` (wiring still deferred).
+2. Both credit-account and award-record writes remain inside `transactionTemplate.execute()` in `saveGiveOutPrizesAggregate`.
+3. `docs/microservices-split-phase-2-2-account-service.md` contains the B5 outbox strategy section.
+4. The doc explicitly forbids direct remote adapter wiring before outbox/saga.
+5. `docs/sql/proposed-credit-award-task-outbox.sql` exists with `UNIQUE` constraint on `award_order_id`.
+6. No production Java source references `credit_award_task` table (wiring deferred).
 
 ---
 
