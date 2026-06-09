@@ -642,6 +642,155 @@ STAGING_IDEMPOTENCY_WRITE=true ./scripts/validate-award-credit-outbox-staging-id
 
 ---
 
+## Phase 2.2-B9 — Award Credit Outbox E2E Rehearsal + Production Promotion Gate
+
+**Status: Completed (2026-06-09). This is a controlled rehearsal gate — NOT production enablement.**
+
+This batch provides the end-to-end outbox rehearsal and defines the production promotion checklist. It closes the verification gap between the idempotency scaffold (B8) and actual production cutover. No Java code is changed. All flags remain `false` by default.
+
+### Goal
+
+1. Verify the complete outbox dispatch flow in a controlled local/staging environment: insert → job trigger → pending → dispatched → account ledger row.
+2. Verify end-to-end idempotency: a second dispatch of the same `award_order_id` produces no additional credit row.
+3. Define a machine-enforced production promotion gate that combines B4..B9 automated checks with documented manual XXL-Job staging steps.
+
+### New file
+
+| File | Purpose |
+|------|---------|
+| `scripts/validate-award-credit-outbox-e2e-rehearsal.sh` | B9 E2E rehearsal + promotion gate script |
+
+### Script modes
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| Default (dry-run) | `./scripts/validate-award-credit-outbox-e2e-rehearsal.sh` | 11 static checks + Docker read-only checks. No writes, no flag changes. |
+| Full E2E rehearsal | `B9_E2E_REHEARSAL=true ./scripts/validate-award-credit-outbox-e2e-rehearsal.sh` | Enables `flag=true`, inserts test outbox row, tries XXL-Job auto-trigger via admin API, verifies pending→dispatched, verifies exactly 1 account ledger row, re-triggers for idempotency, restores `flag=false` via EXIT trap. |
+| Skip PAUSE | `B9_E2E_REHEARSAL=true B9_MANUAL_TRIGGERED=true ./scripts/...` | Same as E2E rehearsal but skips interactive `read` pauses — assumes manual trigger already done. |
+| Post-check only | `B9_POST_CHECK=true ./scripts/validate-award-credit-outbox-e2e-rehearsal.sh` | Verifies outbox row state and account ledger count after a manual XXL-Job trigger; no flag change. |
+| Cleanup only | `B9_CLEANUP=true ./scripts/validate-award-credit-outbox-e2e-rehearsal.sh` | Removes B9 test rows; localhost only. |
+
+### E2E rehearsal flow
+
+```
+1. DDL pre-check — all credit_award_task_000..003 exist in both shard DBs
+2. Enable flag=true (recreate big-market-message-job-service)
+   EXIT trap registered: always restores flag=false
+3. Confirm ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true in container
+4. Insert test outbox row: B9_TEST_DB.B9_TEST_TABLE state=pending
+   (default: big_market_01.credit_award_task_000 — shard scanned by DispatchCreditAwardTaskJob_DB1)
+5. Try XXL-Job auto-trigger via admin API (POST /xxl-job-admin/jobinfo/triggerJob)
+   If job not found or admin unreachable → PAUSE/MANUAL step with clear instructions
+   B9_MANUAL_TRIGGERED=true skips the interactive pause
+6. Poll up to B9_DISPATCH_WAIT_SECS (default 60s) for state='dispatched'
+7. Verify exactly 1 user_credit_order row for out_business_no=award_order_id
+8. Idempotency re-trigger:
+   a. Reset row state back to 'pending'
+   b. Trigger again (auto or PAUSE/MANUAL)
+   c. Poll for dispatched
+   d. Verify count still 1 — no double-credit
+9. EXIT trap: restore flag=false, clean up test row
+```
+
+### Routing note
+
+The test outbox row is inserted explicitly into `B9_TEST_DB.B9_TEST_TABLE` (defaults: `big_market_01.credit_award_task_000`). `DispatchCreditAwardTaskJob_DB1` scans **all 4 table shards** in `big_market_01` (tbIdx 0..3), so the row will be found regardless of which shard it occupies as long as it is in `big_market_01`. Override `B9_TEST_DB` / `B9_TEST_TABLE` if your `dbRouter` hashes the test `user_id` to a different shard.
+
+### B9 static check summary
+
+| # | What is checked |
+|---|-----------------|
+| 1 | `account.award-credit-outbox.enabled` defaults to false |
+| 2 | `DispatchCreditAwardTaskJob` guarded by `@ConditionalOnProperty` |
+| 3 | `outBusinessNo = task.getAwardOrderId()` (idempotency key forwarding) |
+| 4 | Success path calls `updateDispatched` |
+| 5 | Failure path calls `updateRetryFailed` |
+| 6 | `queryPendingTasks` filters `state='pending' AND retry_count < 5` |
+| 7 | `updateRetryFailed` transitions to `state='failed'` at `retry_count >= 5` |
+| 8 | `@XxlJob("DispatchCreditAwardTaskJob_DB1")` and `_DB2` handler names present |
+| 9 | `tbIdx < 4` scan loop covers all 4 table shards per DB |
+| 10 | `CreditRepository` catches `DuplicateKeyException` |
+| 11 | `user_credit_order_000` has `UNIQUE KEY` on `out_business_no` |
+
+### What B9 auto-verifies vs what requires manual XXL-Job admin action
+
+| Item | How verified |
+|------|-------------|
+| Flag default, ConditionalOnProperty guard | Static check (B9 #1, #2) |
+| Idempotency key forwarding | Static check (B9 #3) |
+| State machine transitions, retry boundary | Static checks (B9 #4-#7) |
+| Handler name declarations, shard coverage | Static checks (B9 #8, #9) |
+| DuplicateKeyException handler, UNIQUE KEY substrate | Static checks (B9 #10, #11) |
+| Service health, table presence | Docker read-only (checks 12-26) |
+| flag=true startup + container env | E2E check 28-29 |
+| Outbox row insert, state=pending | E2E check 30-31 |
+| XXL-Job trigger (auto via admin API) | E2E check 32 (best-effort; falls back to PAUSE) |
+| pending→dispatched state transition | E2E check 33 |
+| Exactly 1 account ledger row | E2E check 34 |
+| Idempotency: second dispatch no double-credit | E2E check 35 |
+| flag=false restored after rehearsal | E2E check 36 (EXIT trap) |
+| XXL-Job handler registration in admin | **Manual** — cannot be automated without pre-known job IDs |
+| Staging production DDL applied | **Manual** — DBA action required |
+
+### Production promotion gate criteria
+
+All of the following must pass before enabling `account.award-credit-outbox.enabled=true` in production:
+
+- [ ] B4/B5/B6/B7/B8 static scripts: 0 FAIL (automated)
+- [ ] B7 `APPLY_LOCAL_OUTBOX_DDL=true`: outbox DDL applied locally, 3-digit suffix verified
+- [ ] B7 `RUN_FLAG_TRUE_VALIDATION=true`: `message-job-service` starts cleanly with `flag=true`
+- [ ] B8 `STAGING_IDEMPOTENCY_WRITE=true`: 4 write-mode checks: 0 FAIL
+- [ ] B9 static checks (11): 0 FAIL
+- [ ] B9 `B9_E2E_REHEARSAL=true`: full E2E rehearsal: 0 FAIL
+- [ ] Staging: DDL applied to staging `big_market_01` and `big_market_02`
+- [ ] Staging: `DispatchCreditAwardTaskJob_DB1/_DB2` registered in XXL-Job admin
+- [ ] Staging: `credit_award_task` row transitions `pending → dispatched`
+- [ ] Staging: exactly 1 `user_credit_order` row per `award_order_id`
+- [ ] Staging: second dispatch produces 0 new `user_credit_order` rows
+- [ ] `message-job-service` healthy after flag restored to `false`
+
+### Rollback steps
+
+1. Restore `flag=false` immediately (EXIT trap does this automatically in E2E mode):
+   ```bash
+   ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=false \
+     docker compose up -d --no-deps --force-recreate big-market-message-job-service
+   ```
+2. Check service logs: `docker compose logs big-market-message-job-service | tail -100`
+3. If state transition failed: verify XXL-Job executor registration and account-service health.
+4. If double-credit detected (`user_credit_order` count > 1 for same `out_business_no`):
+   - Escalate immediately — DO NOT promote to production.
+   - Verify `UNIQUE KEY uq_out_business_no` is present in deployed `user_credit_order` tables.
+   - Verify `CreditRepository` catches `DuplicateKeyException` (B9 static check 10).
+5. Re-run full `B9_E2E_REHEARSAL=true` after each fix.
+
+### Remaining risks
+
+| Risk | Status |
+|------|--------|
+| XXL-Job handler registration | Pending manual — must register `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin before any staging E2E run |
+| Production DDL deployment | Pending — apply `docs/sql/proposed-credit-award-task-outbox.sql` to all physical shard DBs |
+| Staging E2E (full state-machine round-trip) | Pending — requires XXL-Job admin access |
+| `RaffleActivityPartakeService` quota decrement | Deferred — high risk; needs purpose-built decrement RPC |
+| MQ idempotency end-to-end | Deferred — required before enabling remote write flags |
+
+### Validation
+
+```bash
+./scripts/validate-award-credit-path.sh                                            # B4
+./scripts/validate-award-credit-outbox-readiness.sh                                # B5
+./scripts/validate-award-credit-outbox-b6.sh                                       # B6
+./scripts/validate-award-credit-outbox-integration.sh                              # B7 static
+APPLY_LOCAL_OUTBOX_DDL=true ./scripts/validate-award-credit-outbox-integration.sh  # B7 DDL
+RUN_FLAG_TRUE_VALIDATION=true ./scripts/validate-award-credit-outbox-integration.sh # B7 flag=true
+./scripts/validate-award-credit-outbox-staging-idempotency.sh                      # B8 static
+STAGING_IDEMPOTENCY_WRITE=true ./scripts/validate-award-credit-outbox-staging-idempotency.sh  # B8 write-mode
+./scripts/validate-award-credit-outbox-e2e-rehearsal.sh                            # B9 static (dry-run)
+B9_E2E_REHEARSAL=true ./scripts/validate-award-credit-outbox-e2e-rehearsal.sh      # B9 full E2E
+```
+
+---
+
 **How to validate remote reads:**
 ```bash
 ./scripts/validate-account-remote-read.sh

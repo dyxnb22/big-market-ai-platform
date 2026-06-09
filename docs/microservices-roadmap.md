@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B8 award credit outbox staging idempotency validation added)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B9 award credit outbox E2E rehearsal gate added)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), and Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), and Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -151,6 +151,20 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - **B8 is a validation scaffold only — no production cutover; all flags remain false by default**
 - **No Java code changes** — B8 adds script and updates docs only
 
+**Phase 2.2-B9 award credit outbox E2E rehearsal gate completed (2026-06-09):**
+- `scripts/validate-award-credit-outbox-e2e-rehearsal.sh` added — controlled local/staging E2E rehearsal + production promotion gate
+- Default mode: 11 static checks + Docker read-only checks (dry-run; no writes, no flag changes)
+- Static checks: promotion-gate invariants covering flag default, `@ConditionalOnProperty` guard, `outBusinessNo = task.getAwardOrderId()` forwarding, success/failure state-machine paths, `queryPendingTasks` filter alignment, retry exhaustion boundary, handler name declarations, shard coverage, `DuplicateKeyException` handler, and `user_credit_order.out_business_no` UNIQUE KEY
+- Docker read-only checks: service health for `big-market-message-job-service` and `big-market-account-service`, MySQL reachability, outbox table presence in both shard DBs, account ledger table presence
+- `B9_E2E_REHEARSAL=true` mode (localhost only): DDL pre-check → enable `flag=true` → confirm container env → insert test outbox row → try XXL-Job auto-trigger via admin API → poll for `pending→dispatched` → verify exactly 1 `user_credit_order` row → reset to `pending` → re-trigger → verify count still 1 (no double-credit) → restore `flag=false` via EXIT trap + cleanup test row
+- XXL-Job auto-trigger: best-effort via `POST /xxl-job-admin/login` + `pageList` (find job ID by handler name) + `triggerJob`; falls back gracefully to PAUSE/MANUAL step with clear instructions when admin unreachable or job not yet registered
+- `B9_MANUAL_TRIGGERED=true` skips interactive pauses for CI/scripted runs
+- `B9_POST_CHECK=true`: read-only post-manual-trigger check (outbox state, ledger count, idempotency confirmation)
+- `B9_CLEANUP=true`: explicit cleanup mode removes only B9 test rows; localhost only
+- Production promotion gate checklist documented: B4..B9 automated gates + staging manual steps + blocked items + rollback steps
+- **B9 is the final automated gate before production enablement — all flags remain false by default**
+- **No Java code changes** — B9 adds script and docs only
+
 **Known residual issues:**
 - Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
 - Remote-read script depends on local test data for `userId=xiaofuge` and `activityId=100301`; override with `ACCOUNT_REMOTE_READ_USER_ID` / `ACCOUNT_REMOTE_READ_ACTIVITY_ID` if needed
@@ -162,7 +176,7 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - Replay idempotency (Steps C-E in B7 script) must pass in staging before production promotion
 - `RaffleActivityPartakeService` quota decrement: deferred, high risk — needs purpose-built decrement RPC before any cutover attempt
 - MQ idempotency end-to-end verification and business-flow validation still required before enabling write flags
-- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B8 section for staging execution order, rollback steps, and remaining risks
+- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B9 section for E2E rehearsal flow, promotion gate criteria, rollback steps, and remaining risks
 
 ---
 
