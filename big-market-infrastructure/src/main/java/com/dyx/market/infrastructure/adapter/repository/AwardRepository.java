@@ -140,34 +140,22 @@ public class AwardRepository implements IAwardRepository {
         UserCreditAwardEntity userCreditAwardEntity = giveOutPrizesAggregate.getUserCreditAwardEntity();
         UserAwardRecordEntity userAwardRecordEntity = giveOutPrizesAggregate.getUserAwardRecordEntity();
 
-        // 更新发奖记录
         UserAwardRecord userAwardRecordReq = new UserAwardRecord();
         userAwardRecordReq.setUserId(userId);
         userAwardRecordReq.setOrderId(userAwardRecordEntity.getOrderId());
         userAwardRecordReq.setAwardState(userAwardRecordEntity.getAwardState().getCode());
 
-        // 更新用户积分 「首次则插入数据」
-        UserCreditAccount userCreditAccountReq = new UserCreditAccount();
-        userCreditAccountReq.setUserId(userCreditAwardEntity.getUserId());
-        userCreditAccountReq.setTotalAmount(userCreditAwardEntity.getCreditAmount());
-        userCreditAccountReq.setAvailableAmount(userCreditAwardEntity.getCreditAmount());
-        userCreditAccountReq.setAccountStatus(AccountStatusVO.open.getCode());
+        UserCreditAccount userCreditAccountReq = buildCreditAccountReq(userCreditAwardEntity);
 
+        // Both credit-account and award-record writes share one transaction — do not split until
+        // a distributed transaction strategy (saga/outbox) is in place. See Phase 2.2-B4 design note.
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + userId);
         try {
             lock.lock(3, TimeUnit.SECONDS);
             dbRouter.doRouter(giveOutPrizesAggregate.getUserId());
             transactionTemplate.execute(status -> {
                 try {
-                    // 更新积分 || 创建积分账户
-                    UserCreditAccount userCreditAccountRes = userCreditAccountDao.queryUserCreditAccount(userCreditAccountReq);
-                    if (null == userCreditAccountRes) {
-                        userCreditAccountDao.insert(userCreditAccountReq);
-                    } else {
-                        userCreditAccountDao.updateAddAmount(userCreditAccountReq);
-                    }
-
-                    // 更新奖品记录
+                    updateOrCreateCreditAccount(userCreditAccountReq);
                     int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
                     if (0 == updateAwardCount) {
                         log.warn("更新中奖记录，重复更新拦截 userId:{} giveOutPrizesAggregate:{}", userId, JSON.toJSONString(giveOutPrizesAggregate));
@@ -185,6 +173,26 @@ public class AwardRepository implements IAwardRepository {
             if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
+        }
+    }
+
+    private UserCreditAccount buildCreditAccountReq(UserCreditAwardEntity userCreditAwardEntity) {
+        UserCreditAccount req = new UserCreditAccount();
+        req.setUserId(userCreditAwardEntity.getUserId());
+        req.setTotalAmount(userCreditAwardEntity.getCreditAmount());
+        req.setAvailableAmount(userCreditAwardEntity.getCreditAmount());
+        req.setAccountStatus(AccountStatusVO.open.getCode());
+        return req;
+    }
+
+    // Direct write to user_credit_account — intentionally kept local while award-record write
+    // shares the same transaction. Pending Phase 2.2-B4 saga/outbox design before remote wiring.
+    private void updateOrCreateCreditAccount(UserCreditAccount userCreditAccountReq) {
+        UserCreditAccount existing = userCreditAccountDao.queryUserCreditAccount(userCreditAccountReq);
+        if (null == existing) {
+            userCreditAccountDao.insert(userCreditAccountReq);
+        } else {
+            userCreditAccountDao.updateAddAmount(userCreditAccountReq);
         }
     }
 

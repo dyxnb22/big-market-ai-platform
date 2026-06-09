@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B3 HTTP credit exchange adapter wiring applied)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B4 award credit path audit applied)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), and Phase 2.2-B3 (HTTP credit exchange write adapter). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), and Phase 2.2-B4 (award credit path audit). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -103,14 +103,25 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - Local behavior unchanged when both flags are false (adapters delegate to same domain services)
 - Both write adapters are already present in market-service config (`AccountRemoteQuotaWriteAdapter`, `AccountRemoteCreditWriteAdapter`) from Phase 2.2-B validation; no new market-service adapter code needed
 
+**Phase 2.2-B4 award credit path audit completed (2026-06-09):**
+- `UserCreditRandomAward` call chain fully mapped: does NOT call `ICreditAdjustService`; calls `IAwardRepository.saveGiveOutPrizesAggregate` which directly writes `user_credit_account` via `IUserCreditAccountDao`
+- `AwardRepository.saveGiveOutPrizesAggregate` refactored: `buildCreditAccountReq()` and `updateOrCreateCreditAccount()` private methods extracted; no behaviour change
+- Remote adapter wiring intentionally deferred: `user_credit_account` write and `user_award_record` write share one `transactionTemplate.execute()` block — splitting creates partial-success risk without saga/outbox
+- Section 4.1 corrected: `UserCreditRandomAward` removed from `ICreditAdjustService` caller list; full analysis added in Phase 2.2-B4 section
+- `scripts/validate-award-credit-path.sh` added: 8 static checks asserting call-chain invariants
+- Code behaviour unchanged; write flags remain false
+
 **Known residual issues:**
 - Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
 - Remote-read script depends on local test data for `userId=xiaofuge` and `activityId=100301`; override with `ACCOUNT_REMOTE_READ_USER_ID` / `ACCOUNT_REMOTE_READ_ACTIVITY_ID` if needed
 - Static gateway routing (no service-discovery integration; account-service has no gateway route — Dubbo/internal only)
 - All market-service tables share one MySQL instance with no per-service schema isolation
 - MQ DLQ behavior is not covered by the smoke test (requires real RabbitMQ integration test)
-- `RaffleActivityController.creditPayExchangeSku` is now wired (Phase 2.2-B3). Still pending: `UserCreditRandomAward` (needs call-chain audit), `RaffleActivityPartakeService` quota decrement (deferred, high risk)
-- See `docs/microservices-split-phase-2-2-account-service.md` for gate checks and validation steps
+- `RaffleActivityController.creditPayExchangeSku` is now wired (Phase 2.2-B3). `UserCreditRandomAward` call chain audited (Phase 2.2-B4) — remote adapter wiring intentionally deferred due to transaction-boundary risk; requires saga or outbox strategy first
+- `RaffleActivityPartakeService` quota decrement: deferred, high risk — needs purpose-built decrement RPC before any cutover attempt
+- MQ idempotency end-to-end verification and business-flow validation still required before enabling write flags
+- `scripts/validate-award-credit-path.sh` added — run to statically assert award credit path invariants
+- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B4 section for full call chain, transaction-boundary analysis, and safe future options
 
 ---
 
@@ -352,7 +363,7 @@ The `raffle_activity_account*` tables are currently accessed by `domain/activity
 ### Port: 8087
 
 ### Dependencies
-`AwardService` calls `ICreditAdjustService` to issue credit awards (`UserCreditRandomAward` adjusts credit). This creates a dependency: `fulfillment-service` → `account-service`. Both must be up for award fulfillment to work. Add Dubbo circuit breaker or fallback here.
+Phase 2.2-B4 audit found that `UserCreditRandomAward` does **not** call `ICreditAdjustService`; it builds a `GiveOutPrizesAggregate`, and `AwardRepository.saveGiveOutPrizesAggregate` directly updates `user_credit_account` and `user_award_record` inside one local transaction. Extracting fulfillment-service therefore requires a saga or transactional outbox before credit-award writes can move to account-service safely.
 
 ---
 
@@ -556,7 +567,7 @@ Both services connect to `nacos:8848` in Docker via `NACOS_HOST` env var.
 
 Design doc: [docs/microservices-split-phase-2-2-account-service.md](microservices-split-phase-2-2-account-service.md)
 
-Proposed: `big-market-account-service` on port 8086, owning `domain.credit` + `domain.activity.service.quota` + five account tables. All callers (`CreditAdjustSuccessConsumer`, `UserCreditRandomAward`, `RaffleActivityPartakeService`) must be wired via Dubbo before the cut-over.
+Proposed: `big-market-account-service` on port 8086, owning `domain.credit` + `domain.activity.service.quota` + five account tables. Adapter wiring is already in place for MQ consumer writes and `creditPayExchangeSku`; `UserCreditRandomAward` requires saga/outbox design before remote credit writes, and `RaffleActivityPartakeService` still needs a purpose-built quota decrement RPC before cut-over.
 
 ---
 

@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B3 HTTP credit exchange write adapter wiring complete. Remote-read is script-validated. MQ write consumers and creditPayExchangeSku now route through adapters with local fallback. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
+**Status: Phase 2.2-B4 award credit path audit complete. UserCreditRandomAward call chain documented; remote adapter wiring intentionally deferred due to transaction-boundary risk. AwardRepository refactored for clarity (no behaviour change). Phase 2.2-B3 HTTP credit exchange write adapter wiring complete. Remote-read is script-validated. MQ write consumers and creditPayExchangeSku now route through adapters with local fallback. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -79,8 +79,8 @@ The following work was completed in Phase 2.2-B1:
 
 **What is still NOT done (full production cutover):**
 - MQ idempotency end-to-end verification (duplicate message replay safety per `outBusinessNo`)
-- Business-flow validation: sign-in rebate, raffle win → credit award with `remote-write.enabled=true`
-- `UserCreditRandomAward` (credit award path) — needs call-chain audit before wiring
+- Business-flow validation: sign-in rebate, credit exchange, and raffle-win credit award with remote-write flags enabled in staging
+- `UserCreditRandomAward` (credit award path) — call chain audited in Phase 2.2-B4; remote adapter wiring deferred until saga/outbox strategy exists
 - `RaffleActivityPartakeService` quota decrement — deferred (high risk, needs dedicated decrement RPC)
 - No domain packages removed from market-service scan
 - No database schema changes
@@ -113,6 +113,88 @@ The following work was completed in Phase 2.2-B1:
 **Remaining write callers still NOT wired:**
 - `UserCreditRandomAward` — issues credit on award dispatch; needs full call-chain audit (domain layer, not just trigger layer)
 - `RaffleActivityPartakeService` quota decrement — deferred; high-risk synchronous path; needs purpose-built decrement RPC before any cutover attempt
+
+---
+
+## Phase 2.2-B4 — Award Credit Path Audit
+
+**Completed (2026-06-09).**
+
+### Real call chain
+
+```
+SendAwardConsumer.listener()                         [big-market-trigger/listener/]
+  └─ IAwardService.distributeAward(distributeAwardEntity)
+       └─ AwardService.distributeAward()             [big-market-domain/award/service/]
+            resolves awardKey → IDistributeAward bean (bean name: "user_credit_random")
+            └─ UserCreditRandomAward.giveOutPrizes() [big-market-domain/award/service/distribute/impl/]
+                 builds GiveOutPrizesAggregate {
+                   UserAwardRecordEntity  (awardId, orderId, state=complete)
+                   UserCreditAwardEntity  (userId, creditAmount — random in configured range)
+                 }
+                 └─ IAwardRepository.saveGiveOutPrizesAggregate(aggregate)
+                      └─ AwardRepository.saveGiveOutPrizesAggregate()  [big-market-infrastructure/]
+                           acquires Redis lock (ACTIVITY_ACCOUNT_LOCK + userId)
+                           dbRouter.doRouter(userId)
+                           transactionTemplate.execute() {
+                             IUserCreditAccountDao.query/insert/updateAddAmount  → user_credit_account
+                             IUserAwardRecordDao.updateAwardRecordCompletedState → user_award_record
+                           }
+```
+
+**Key finding:** `UserCreditRandomAward` does NOT call `ICreditAdjustService`. The credit write is a
+direct `IUserCreditAccountDao` call inside `AwardRepository`, in the same transaction as the
+award-record update. This is a cross-domain DB write hidden inside the award domain's repository.
+
+### Why remote adapter wiring is not safe yet
+
+`AwardRepository.saveGiveOutPrizesAggregate` updates two tables atomically:
+
+| Write | Table | Owner domain |
+|-------|-------|-------------|
+| credit account upsert | `user_credit_account` | credit / account-service |
+| award record completion | `user_award_record` | award / fulfillment-service |
+
+If the credit write is moved to a remote Dubbo call:
+
+- **Partial success — credit granted, award not marked complete:** on MQ retry, the
+  `updateAwardRecordCompletedState` idempotency guard returns 0 and rolls back, but the remote
+  credit write already succeeded → credit issued twice.
+- **Partial success — award marked complete, credit write fails:** the award record is permanently
+  in `complete` state; the MQ consumer swallows `INDEX_DUP` on the next delivery → credit silently
+  lost, no retry possible.
+
+Neither failure mode is acceptable. The transaction boundary must either remain local or be replaced
+with a saga / transactional outbox before any remote wiring can proceed.
+
+### Code change in this batch
+
+`AwardRepository.saveGiveOutPrizesAggregate` refactored for clarity only (no behaviour change):
+- `buildCreditAccountReq()` private method extracts the PO construction
+- `updateOrCreateCreditAccount()` private method names the direct credit-account write explicitly
+- Comment added on the transaction block explaining the pending design constraint
+
+### What a safe future approach looks like
+
+Option A — **Outbox within award transaction:**
+- Add a `credit_award_task` outbox row inside the same transaction as `user_award_record` update.
+- A separate poller/consumer reads `credit_award_task` and calls `IAccountCreditWriteAdapter`.
+- Idempotency: `credit_award_task.order_id` unique constraint prevents double-credit.
+
+Option B — **Saga with compensating action:**
+- Step 1: mark `user_award_record = processing` (local).
+- Step 2: call account-service to issue credit; on failure, compensate by resetting award record.
+- Requires a purpose-built `IAccountCreditService.issueAward(orderId, userId, amount)` RPC
+  that is idempotent on `orderId`.
+
+Neither option is implemented in this batch. Code behaviour is unchanged.
+
+### Validation
+
+Run `./scripts/validate-award-credit-path.sh` to statically verify:
+1. `AwardRepository.java` still contains `userCreditAccountDao` (direct write, not removed).
+2. `UserCreditRandomAward.java` does NOT import or reference `ICreditAdjustService`.
+3. Both `userCreditAccountDao` and `userAwardRecordDao` writes are inside `saveGiveOutPrizesAggregate`.
 
 ---
 
@@ -205,8 +287,9 @@ Before extraction, map every callsite that touches account-service domain logic.
 | Caller | Location | Notes |
 |--------|----------|-------|
 | `CreditAdjustSuccessConsumer` | `big-market-trigger/listener/` | Runs in message-job-service. Will need to call account-service via Dubbo after extraction. |
-| `UserCreditRandomAward` (award strategy) | `big-market-domain/award/` | Issues credit as a prize. Calls `ICreditAdjustService` directly. Must go through Dubbo after extraction. |
 | `SignInRebateStrategy` (rebate) | `big-market-domain/rebate/` | Calls `ICreditAdjustService` via `BehaviorRebateService`. Must go through Dubbo after extraction. |
+
+**Correction (Phase 2.2-B4 audit):** `UserCreditRandomAward` does NOT call `ICreditAdjustService`. It builds a `GiveOutPrizesAggregate` and delegates to `IAwardRepository.saveGiveOutPrizesAggregate`, which directly writes `user_credit_account` via `IUserCreditAccountDao`. See the Phase 2.2-B4 section for the full call chain and transaction-boundary analysis.
 
 ### 4.2 Callers of `IActivityAccountQuotaService`
 
@@ -280,7 +363,7 @@ partake decrement path still needs a purpose-built RPC before cutover.
 |----------|------|--------------------------|------------------|-----------------|-----------------|------|
 | `RebateMessageConsumer` | Write | `IRaffleActivityAccountQuotaService.createOrder` | `IAccountQuotaWriteAdapter.createOrder` | `BehaviorRebateOrderEntity.orderId` / `outBusinessNo` | `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=false` | Low |
 | `CreditAdjustSuccessConsumer` | Write | `IRaffleActivityAccountQuotaService.updateOrder` | `IAccountQuotaWriteAdapter.updateOrder` | `CreditAdjustSuccessMessage.outBusinessNo` | `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=false` | Low |
-| `SendAwardConsumer` / `UserCreditRandomAward` | Write | `ICreditAdjustService.createOrder` inside award distribution | `IAccountCreditWriteAdapter.createOrder` | Award `orderId` / credit `outBusinessNo` | `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=false` | Medium |
+| `SendAwardConsumer` → `UserCreditRandomAward` | Write | `IUserCreditAccountDao` directly inside `AwardRepository.saveGiveOutPrizesAggregate` (NOT `ICreditAdjustService`) | Cannot safely use `IAccountCreditWriteAdapter` yet — credit write and award-record write share one transaction; splitting creates partial-success risk | Award `orderId` (idempotency via `updateAwardRecordCompletedState` returning 0) | deferred; requires saga/outbox strategy | High |
 | `RaffleActivityController.creditPayExchangeSku` | Write | `IRaffleActivityAccountQuotaService.createOrder` then `ICreditAdjustService.createOrder` | quota adapter then credit adapter | Generated quota `outBusinessNo` | both write flags false | Medium |
 | `RaffleActivityPartakeService` quota decrement path | Write | `IRaffleActivityPartakeService` / quota account tables through activity domain | Purpose-built quota decrement RPC, not current scaffold | Raffle order / participation business id | new dedicated flag, plus keep local service scanned | High |
 | Read endpoints already wired through `IAccountReadAdapter` | Read-only | `ICreditAdjustService` / `IRaffleActivityAccountQuotaService` fallback | `IAccountReadAdapter` | N/A | `ACCOUNT_SERVICE_REMOTE_READ_ENABLED=false` | Low |
@@ -299,7 +382,7 @@ partake decrement path still needs a purpose-built RPC before cutover.
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | `RaffleActivityPartakeService` calls quota service synchronously during raffle — adding a Dubbo hop increases latency | High | Add Dubbo timeout + local fallback/cache; load-test before cut-over |
-| `UserCreditRandomAward` is on the award dispatch critical path — Dubbo failure during award means credit not issued | High | Implement Dubbo retries + idempotency via `orderId`; DLQ the message-job-service consumer |
+| `UserCreditRandomAward` / `AwardRepository` couples credit-account and award-record writes in one local transaction | High | Use transactional outbox or saga before moving credit-award writes to account-service; do not wire `IAccountCreditWriteAdapter` directly yet |
 | Two JVMs writing to `raffle_activity_account` during cut-over window | High | Use a feature flag in `NacosConfigSyncService` to switch routing atomically; verify with integration test before enabling |
 | Quota check and raffle participation are not in the same transaction after extraction | Medium | Accept eventual consistency; use optimistic locking (`version` column) on account tables |
 | account-service has no HTTP endpoints today — no smoke test coverage | Medium | Add a `/actuator/health` check to smoke test and add one Dubbo health probe |
@@ -358,12 +441,13 @@ big-market-account-service:
     start_period: 90s
 ```
 
-### Step 4 — Wire callers via Dubbo (in message-job-service and domain)
+### Step 4 — Wire callers through adapters / ports
 
-1. In `CreditAdjustSuccessConsumer` (message-job-service): inject `@DubboReference IAccountCreditService` and replace direct `ICreditAdjustService` call
-2. In `UserCreditRandomAward` (domain/award): inject `@DubboReference IAccountCreditService`
-3. In `RaffleActivityPartakeService` (domain/activity): inject `@DubboReference IActivityAccountService`
-4. Remove `domain.credit` and `domain.activity.service.quota` from market-service scan in `MarketServiceApplication`
+1. In `CreditAdjustSuccessConsumer` / `RebateMessageConsumer` (message-job-service): route through trigger-level write adapters; remote adapters own the `@DubboReference` fields.
+2. In `RaffleActivityController.creditPayExchangeSku` (market-service): route through trigger-level write adapters; remote adapters own the `@DubboReference` fields.
+3. In `UserCreditRandomAward` / `AwardRepository`: do **not** inject Dubbo directly. Phase 2.2-B4 found the credit-account write shares a local transaction with `user_award_record`; add saga/outbox first.
+4. In `RaffleActivityPartakeService` (domain/activity): introduce a purpose-built quota decrement RPC/port before wiring.
+5. Remove `domain.credit` and `domain.activity.service.quota` from market-service scan in `MarketServiceApplication`
 
 ### Step 5 — Build and test locally
 
@@ -405,11 +489,10 @@ For each existing caller of `ICreditAdjustService`:
    - Replace `creditAdjustService.createOrder(trade)` with `accountCreditService.createOrder(dto)`
    - Map `TradeEntity` → `CreditTradeRequestDTO` before calling
 
-2. **`UserCreditRandomAward`** (domain award strategy):
-   - This is in the shared domain JAR. The cleanest approach is to introduce an
-     `ICreditAwardPort` interface in the domain, implement it in each service launcher
-     (market-service: in-process; account-service: Dubbo call), and inject via Spring.
-   - Do NOT add `@DubboReference` directly into the domain layer.
+2. **`UserCreditRandomAward` / `AwardRepository`** (award credit path):
+   - Phase 2.2-B4 corrected the call chain: this path does not call `ICreditAdjustService`.
+   - `AwardRepository.saveGiveOutPrizesAggregate` writes `user_credit_account` and `user_award_record` in one local transaction.
+   - Do NOT add `@DubboReference` or `IAccountCreditWriteAdapter` directly here until saga/outbox is implemented.
 
 3. **`SignInRebateStrategy`** (domain rebate): Same port approach as above.
 
