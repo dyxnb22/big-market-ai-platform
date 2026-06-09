@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B6 award credit outbox producer/consumer scaffold added (flag=false default, runtime behaviour unchanged). `AwardRepository` now carries a disabled-by-default outbox branch; `DispatchCreditAwardTaskJob` consumer added behind `@ConditionalOnProperty`. SQL is still proposed-only. B5: outbox strategy designed and DDL scaffolded. B4: award credit path audited. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
+**Status: Phase 2.2-B8 award credit outbox staging idempotency validation scaffold added. B8 script verifies state machine mapper correctness, outBusinessNo idempotency key forwarding, UNIQUE KEY constraints on both outbox and account ledger tables, and DuplicateKeyException handling — with optional localhost write-mode that exercises the real MySQL UNIQUE KEY. B7: integration validation scaffold (DDL apply + flag=true startup + restore). B6: outbox producer/consumer scaffold behind flag=false. B5: DDL and outbox design. B4: award credit path audited. Write flags still default false — full production cutover pending MQ idempotency verification, XXL-Job handler registration in staging, and end-to-end state-transition confirmation.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -496,6 +496,148 @@ XXL-Job cannot be triggered automatically by the validation script. Always trigg
 ./scripts/validate-award-credit-outbox-readiness.sh        # B5: 8 static checks
 ./scripts/validate-award-credit-outbox-b6.sh               # B6: 17 static checks
 ./scripts/validate-award-credit-outbox-integration.sh      # B7: static preflight (9+)
+```
+
+---
+
+## Phase 2.2-B8 — Award Credit Outbox Staging Validation + Idempotency Verification Scaffold
+
+**Completed (2026-06-09). This is a validation scaffold only — NOT production enablement.**
+
+This batch adds machine-verifiable staging checkpoints for the outbox state machine and idempotency path. No Java code is changed. No feature flags are enabled. All flags remain `false` by default.
+
+### Goal
+
+Verify that the end-to-end idempotency chain is structurally sound before any staging or production cutover:
+
+1. State machine correctness: mapper operations (`updateDispatched`, `updateRetryFailed`, `queryPendingTasks`) implement the correct pending → dispatched / failed state machine with the correct retry boundary (5).
+2. Idempotency key forwarding: `DispatchCreditAwardTaskJob.dispatchTask` passes `task.getAwardOrderId()` as `outBusinessNo` to account-service.
+3. Account-side dedup: `user_credit_order` carries `UNIQUE KEY uq_out_business_no (out_business_no)`; `CreditRepository.saveUserCreditTradeOrder` catches `DuplicateKeyException` to prevent double-credit on retry.
+4. Outbox-table idempotency: `credit_award_task` carries `UNIQUE KEY uq_award_order_id (user_id, award_order_id)`; tested locally with a real INSERT + duplicate-INSERT + count check.
+5. Account ledger substrate: `user_credit_order_000..003` are present in both shard DBs.
+
+### New file
+
+| File | Purpose |
+|------|---------|
+| `scripts/validate-award-credit-outbox-staging-idempotency.sh` | B8 staging + idempotency validation scaffold |
+
+### Script modes
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| Default (dry-run) | `./scripts/validate-award-credit-outbox-staging-idempotency.sh` | 13 static checks + Docker read-only checks. No data modified. |
+| Write-mode (localhost only) | `STAGING_IDEMPOTENCY_WRITE=true ./scripts/validate-award-credit-outbox-staging-idempotency.sh` | Inserts test outbox row, verifies state=pending, confirms duplicate INSERT is blocked by UNIQUE KEY, checks no user_credit_order row for the test award_order_id, then cleans up. |
+| Custom test identifiers | `STAGING_IDEMPOTENCY_WRITE=true B8_TEST_USER_ID=myuser B8_TEST_AWARD_ORDER_ID=my-order-001 ./scripts/validate-award-credit-outbox-staging-idempotency.sh` | Same as write-mode with custom identifiers. |
+
+### B8 check summary
+
+**Static checks (13):**
+
+| # | What is checked |
+|---|-----------------|
+| 1 | `updateDispatched` sets `state='dispatched'` |
+| 2 | `updateRetryFailed` increments `retry_count` |
+| 3 | `updateRetryFailed` transitions to `state='failed'` at `retry_count >= 5` |
+| 4 | `queryPendingTasks` polls `state='pending' AND retry_count < 5` (aligned with max-retry) |
+| 5 | `dispatchTask` sets `outBusinessNo = task.getAwardOrderId()` |
+| 6 | `dispatchTask` calls `updateDispatched` on success |
+| 7 | `dispatchTask` calls `updateRetryFailed` on failure |
+| 8 | `@XxlJob("DispatchCreditAwardTaskJob_DB1")` and `_DB2` handler names present |
+| 9 | `tbIdx < 4` shard scan covers all 4 table shards per DB |
+| 10 | DDL `UNIQUE KEY uq_award_order_id (user_id, award_order_id)` present |
+| 11 | `user_credit_order_000` has `UNIQUE KEY uq_out_business_no (out_business_no)` |
+| 12 | `CreditRepository.saveUserCreditTradeOrder` catches `DuplicateKeyException` |
+| 13 | `TradeNameVO.AWARD_CREDIT` enum value exists |
+
+**Docker read-only checks (up to 13, if MySQL running):**
+
+| # | What is checked |
+|---|-----------------|
+| 14 | MySQL container reachable |
+| 15–18 | `user_credit_order_000..003` exist in `big_market_01` |
+| 19–22 | `credit_award_task_000..003` exist in `big_market_01` |
+| 23–26 | `credit_award_task_000..003` exist in `big_market_02` |
+
+**Write-mode checks (4, if `STAGING_IDEMPOTENCY_WRITE=true`, localhost only):**
+
+| # | What is checked |
+|---|-----------------|
+| 27 | Test outbox row inserted with `state=pending` |
+| 28 | Row readable with `state='pending'` |
+| 29 | Duplicate INSERT blocked by UNIQUE KEY (row count stays at 1) |
+| 30 | No `user_credit_order` row for test `out_business_no` (credit not yet dispatched) |
+
+### Staging execution order
+
+```bash
+# Step 0: Confirm all prior batch scripts still pass
+./scripts/validate-award-credit-path.sh                        # B4: 8 checks
+./scripts/validate-award-credit-outbox-readiness.sh            # B5: 8 checks
+./scripts/validate-award-credit-outbox-b6.sh                   # B6: 17 checks
+./scripts/validate-award-credit-outbox-integration.sh          # B7: static + DDL + flag checks
+
+# Step 1: Run B8 dry-run (static + Docker read-only)
+./scripts/validate-award-credit-outbox-staging-idempotency.sh
+
+# Step 2: Run B8 write-mode (localhost only — inserts and cleans up test row)
+STAGING_IDEMPOTENCY_WRITE=true ./scripts/validate-award-credit-outbox-staging-idempotency.sh
+
+# Step 3: Apply DDL to local Docker MySQL (if not done in B7)
+APPLY_LOCAL_OUTBOX_DDL=true ./scripts/validate-award-credit-outbox-integration.sh
+
+# Step 4: Enable flag=true and register XXL-Job handlers
+# (see manual steps in B7 section and B8 script Section 4)
+
+# Step 5: Insert test outbox row, trigger XXL-Job, verify pending→dispatched
+# Step 6: Re-trigger XXL-Job, verify no double user_credit_order row
+# Step 7: Restore flag=false
+# (full checklist is printed by the script in Section 4)
+```
+
+### Rollback steps
+
+1. If any B8 static check fails: identify the broken invariant (mapper, consumer code, or schema DDL) and fix before proceeding.
+2. If write-mode check 29 fails (duplicate INSERT not blocked): `UNIQUE KEY uq_award_order_id` is missing from the deployed table — re-apply DDL.
+3. If staging Step 6 fails (double `user_credit_order` row): `UNIQUE KEY uq_out_business_no` is missing from `user_credit_order` — escalate immediately; do NOT promote to production.
+4. In all failure cases: restore `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=false` immediately.
+
+```bash
+# Restore flag (always safe):
+ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=false \
+  docker compose up -d --no-deps --force-recreate big-market-message-job-service
+```
+
+### Acceptance criteria
+
+All of the following must pass before production promotion:
+
+- [ ] B4/B5/B6/B7/B8 static scripts: 0 FAIL
+- [ ] B8 write-mode (`STAGING_IDEMPOTENCY_WRITE=true`): 0 FAIL
+- [ ] Staging Step 4: `credit_award_task` row transitions `pending → dispatched`
+- [ ] Staging Step 5: exactly one `user_credit_order` row per `award_order_id`
+- [ ] Staging Step 6: re-trigger produces NO additional `user_credit_order` row (idempotency confirmed)
+- [ ] Staging Step 7: service healthy with flag restored to `false`
+
+### Remaining risks
+
+| Risk | Status |
+|------|--------|
+| Tables not yet applied to production | Pending — apply `docs/sql/proposed-credit-award-task-outbox.sql` to production DBs before any `flag=true` run |
+| XXL-Job handler registration | Pending — must register `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin after enabling flag |
+| Staging Steps 4–6 (full state-machine round-trip) | Pending — requires XXL-Job admin access; not auto-executed |
+| `RaffleActivityPartakeService` quota decrement | Deferred — high risk; needs purpose-built decrement RPC |
+| MQ idempotency end-to-end | Deferred — required before enabling remote write flags |
+
+### Validation
+
+```bash
+./scripts/validate-award-credit-path.sh                                           # B4: 8 static checks
+./scripts/validate-award-credit-outbox-readiness.sh                               # B5: 8 static checks
+./scripts/validate-award-credit-outbox-b6.sh                                      # B6: 17 static checks
+./scripts/validate-award-credit-outbox-integration.sh                             # B7: static + Docker checks
+./scripts/validate-award-credit-outbox-staging-idempotency.sh                     # B8: 13 static + Docker (dry-run)
+STAGING_IDEMPOTENCY_WRITE=true ./scripts/validate-award-credit-outbox-staging-idempotency.sh  # B8: full (write-mode)
 ```
 
 ---

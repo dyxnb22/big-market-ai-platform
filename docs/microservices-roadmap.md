@@ -1,6 +1,6 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B7 award credit outbox integration validation scaffold added)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B8 award credit outbox staging idempotency validation added)
 
 The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), and Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
@@ -140,6 +140,17 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - **B7 is a validation scaffold only — no production cutover; all flags remain false by default**
 - **No Java code changes** — B7 adds scripts/docs and exposes the outbox env var in Docker Compose; B6 scaffold is unchanged
 
+**Phase 2.2-B8 award credit outbox staging idempotency validation completed (2026-06-09):**
+- `scripts/validate-award-credit-outbox-staging-idempotency.sh` added — machine-verifiable staging + idempotency checkpoint script
+- Static checks (13): state machine mapper correctness (`updateDispatched`/`updateRetryFailed`/`queryPendingTasks`), `outBusinessNo = task.getAwardOrderId()` forwarding, `user_credit_order.out_business_no` UNIQUE KEY, `DuplicateKeyException` handler in `CreditRepository`, `TradeNameVO.AWARD_CREDIT` enum, handler names, shard coverage
+- Docker read-only checks (up to 13 if MySQL running): `user_credit_order_000..003` and `credit_award_task_000..003` table presence in both shard DBs
+- Write-mode (`STAGING_IDEMPOTENCY_WRITE=true`, localhost only, 4 checks): inserts test outbox row, verifies `state=pending`, confirms duplicate INSERT is blocked by `UNIQUE KEY uq_award_order_id`, verifies no `user_credit_order` row exists for the test `award_order_id`; cleans up test row via EXIT trap
+- Bugs found and fixed: check 4 initial grep used literal `< 5` but XML mappers use `&lt; 5`; check 29 initial approach captured stderr via `2>&1` but `mysql_exec` suppresses stderr — both fixed before commit
+- Manual staging checklist printed (Steps 1–7): DDL → flag=true → XXL-Job registration → insert test row → trigger handler → verify pending→dispatched → re-trigger idempotency → restore flag=false
+- Rollback guidance: restore `flag=false`, re-apply DDL if UNIQUE KEY missing, escalate if double `user_credit_order` row observed
+- **B8 is a validation scaffold only — no production cutover; all flags remain false by default**
+- **No Java code changes** — B8 adds script and updates docs only
+
 **Known residual issues:**
 - Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
 - Remote-read script depends on local test data for `userId=xiaofuge` and `activityId=100301`; override with `ACCOUNT_REMOTE_READ_USER_ID` / `ACCOUNT_REMOTE_READ_ACTIVITY_ID` if needed
@@ -151,7 +162,7 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - Replay idempotency (Steps C-E in B7 script) must pass in staging before production promotion
 - `RaffleActivityPartakeService` quota decrement: deferred, high risk — needs purpose-built decrement RPC before any cutover attempt
 - MQ idempotency end-to-end verification and business-flow validation still required before enabling write flags
-- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B7 section for full execution order and remaining risks
+- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B8 section for staging execution order, rollback steps, and remaining risks
 
 ---
 
