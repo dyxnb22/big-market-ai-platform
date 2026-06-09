@@ -224,32 +224,70 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request) {
-        // Phase 2.2-B11 stub: not yet implemented. Returns UN_ERROR until the
-        // account-service idempotency ledger (B12 DDL) is applied and validated.
-        // RaffleActivityPartakeService is NOT wired to call this method yet.
-        log.warn("[AccountQuotaServiceRPC] decrementQuota not yet implemented (B11 stub) — userId:{} activityId:{} outBusinessNo:{}",
-                request == null ? "null" : request.getUserId(),
-                request == null ? "null" : request.getActivityId(),
-                request == null ? "null" : request.getOutBusinessNo());
-        return Response.<Boolean>builder()
-                .code(ResponseCode.UN_ERROR.getCode())
-                .info("decrementQuota not yet implemented (Phase 2.2-B11 stub — pending idempotency ledger DDL)")
-                .data(false)
-                .build();
+        // Phase 2.2-B12: real idempotent implementation.
+        // Ledger table (raffle_quota_decrement_ledger) must be applied to the shard DBs
+        // before this path is reachable in production. RaffleActivityPartakeService is
+        // NOT wired to call this via remote yet (remote-quota-decrement.enabled=false).
+        if (request == null
+                || StringUtils.isBlank(request.getUserId())
+                || request.getActivityId() == null
+                || StringUtils.isBlank(request.getOutBusinessNo())) {
+            log.warn("[AccountQuotaServiceRPC] decrementQuota illegal parameter request:{}", request);
+            return Response.<Boolean>builder()
+                    .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                    .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                    .data(false)
+                    .build();
+        }
+        log.info("[AccountQuotaServiceRPC] decrementQuota userId:{} activityId:{} outBusinessNo:{}",
+                request.getUserId(), request.getActivityId(), request.getOutBusinessNo());
+        try {
+            boolean decremented = raffleActivityAccountQuotaService.decrementQuota(
+                    request.getUserId(), request.getActivityId(), request.getOutBusinessNo());
+            if (decremented) {
+                return Response.<Boolean>builder()
+                        .code(ResponseCode.SUCCESS.getCode())
+                        .info(ResponseCode.SUCCESS.getInfo())
+                        .data(true)
+                        .build();
+            } else {
+                return Response.<Boolean>builder()
+                        .code(ResponseCode.ACCOUNT_QUOTA_ERROR.getCode())
+                        .info(ResponseCode.ACCOUNT_QUOTA_ERROR.getInfo())
+                        .data(false)
+                        .build();
+            }
+        } catch (AppException e) {
+            log.error("[AccountQuotaServiceRPC] decrementQuota appException userId:{} code:{}", request.getUserId(), e.getCode(), e);
+            return Response.<Boolean>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .data(false)
+                    .build();
+        } catch (Exception e) {
+            log.error("[AccountQuotaServiceRPC] decrementQuota failed userId:{}", request.getUserId(), e);
+            return Response.<Boolean>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .data(false)
+                    .build();
+        }
     }
 
     @Override
     public Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request) {
-        // Phase 2.2-B11 stub: not yet implemented. Returns UN_ERROR until the
-        // account-service idempotency ledger (B12 DDL) is applied and validated.
+        // Phase 2.2-B12: rollback deferred to B13.
+        // The idempotency ledger (raffle_quota_decrement_ledger) DDL is now designed.
+        // Ledger status update (applied → rolled_back) and quota restore will be wired
+        // once the ledger is deployed to staging and end-to-end validation passes (B13).
         // No callers are wired to this method at this stage.
-        log.warn("[AccountQuotaServiceRPC] rollbackQuota not yet implemented (B11 stub) — userId:{} activityId:{} outBusinessNo:{}",
+        log.warn("[AccountQuotaServiceRPC] rollbackQuota not yet implemented (B12 — pending staging DDL deployment) — userId:{} activityId:{} outBusinessNo:{}",
                 request == null ? "null" : request.getUserId(),
                 request == null ? "null" : request.getActivityId(),
                 request == null ? "null" : request.getOutBusinessNo());
         return Response.<Boolean>builder()
                 .code(ResponseCode.UN_ERROR.getCode())
-                .info("rollbackQuota not yet implemented (Phase 2.2-B11 stub — pending idempotency ledger DDL)")
+                .info("rollbackQuota not yet implemented (Phase 2.2-B12 — pending ledger deployment and B13 validation)")
                 .data(false)
                 .build();
     }

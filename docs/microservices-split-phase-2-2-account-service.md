@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B11 quota-decrement domain port contract added. B11 defines `IActivityAccountPort` (domain port), `LocalActivityAccountPort` (local no-op), `AccountRemoteActivityAccountPort` (remote stub, flag=false), `rollbackQuota` RPC method added to `IAccountQuotaService` + `AccountQuotaServiceRPC`, and `validate-quota-decrement-contract.sh` (18/18 PASS). RaffleActivityPartakeService NOT wired to port (deferred to B12). B10 validated 12/12 DDL + MQ idempotency; remaining blockers: XXL-Job staging registration, production DDL on staging shard DBs, B12 idempotency ledger.**
+**Status: Phase 2.2-B12 quota-decrement idempotency foundation complete. B12 adds `raffle_quota_decrement_ledger` proposed DDL (4 shards, UNIQUE KEY), DAO + mapper, `IRaffleActivityAccountQuotaService.decrementQuota`, `IActivityRepository.decrementQuotaWithLedger` (atomic ledger + total/month/day in one transaction), and `AccountQuotaServiceRPC.decrementQuota` promoted from UN_ERROR stub to real ledger-guarded impl (22/22 PASS). RaffleActivityPartakeService NOT wired to remote port (deferred to B13). Remaining blockers: XXL-Job staging registration, production DDL on staging shard DBs + ledger DDL, rollbackQuota real impl (B13), end-to-end integration validation (B13).**
 
 ## Phase 2.2-A — What Is Done
 
@@ -1248,10 +1248,112 @@ Define a safe, synchronous, idempotent `decrementQuota` domain port that `Raffle
 
 ### Remaining blockers before B12
 
-1. **Account-service idempotency ledger** — new table `raffle_quota_decrement_ledger` with idempotency UNIQUE KEY on `(user_id, activity_id, out_business_no)` needs DDL design + staging deployment.
-2. **`AccountQuotaServiceRPC.decrementQuota` real implementation** — currently returns `UN_ERROR`. Needs to decrement `raffle_activity_account` (total/month/day) in a local transaction, using the idempotency ledger to guard duplicate calls.
-3. **Wire `RaffleActivityPartakeService`** — replace the `activityRepository.saveCreatePartakeOrderAggregate` call with the new `IActivityAccountPort.decrementQuota` seam, keeping the local no-op as default.
-4. **End-to-end staging validation** — validate decrement + rollback + idempotency before enabling remote flag.
+1. ~~**Account-service idempotency ledger** — new table `raffle_quota_decrement_ledger` with idempotency UNIQUE KEY on `(user_id, activity_id, out_business_no)` needs DDL design + staging deployment.~~ ✅ **Done in B12** (proposed DDL + DAO + mapper + server logic).
+2. ~~**`AccountQuotaServiceRPC.decrementQuota` real implementation** — currently returns `UN_ERROR`.~~ ✅ **Done in B12** (ledger-guarded, atomic total/month/day decrement).
+3. **Wire `RaffleActivityPartakeService`** — replace the `activityRepository.saveCreatePartakeOrderAggregate` call with the new `IActivityAccountPort.decrementQuota` seam, keeping the local no-op as default. Deferred to B13+.
+4. **End-to-end staging validation** — validate decrement + rollback + idempotency before enabling remote flag. Deferred to B13.
+
+---
+
+## Phase 2.2-B12 — Quota Decrement Idempotency Foundation
+
+**Status: Completed (2026-06-09). Implements server-side idempotency ledger DDL, DAO, mapper, and real `AccountQuotaServiceRPC.decrementQuota` implementation. `RaffleActivityPartakeService` is NOT wired to remote decrement. `remote-quota-decrement.enabled=false`.**
+
+### Goal
+
+Implement the safe first real quota-decrement server-side foundation, without enabling live remote raffle participation by default. The `decrementQuota` RPC method transitions from a UN_ERROR stub (B11) to a ledger-guarded, atomic, idempotent implementation.
+
+### Idempotency design
+
+```
+RPC call arrives → validate → raffleActivityAccountQuotaService.decrementQuota()
+                                 ↓
+                          ActivityRepository.decrementQuotaWithLedger()
+                                 ↓
+                          dbRouter.doRouter(userId)
+                                 ↓
+                          transactionTemplate.execute():
+                            1. INSERT raffle_quota_decrement_ledger
+                               → DuplicateKeyException: return true (already applied)
+                            2. UPDATE raffle_activity_account total_count_surplus - 1
+                               → 0 rows: rollback + return false (exhausted)
+                            3. UPDATE or INSERT raffle_activity_account_month
+                            4. UPDATE or INSERT raffle_activity_account_day
+                            5. commit → return true
+```
+
+All four tables (ledger + total + month + day) share the same shard and the same transaction — no partial decrement is possible. The ledger INSERT prevents any double-decrement on RPC retry.
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `docs/sql/proposed-quota-decrement-ledger.sql` | Proposed DDL: `raffle_quota_decrement_ledger_{000..003}` with UNIQUE KEY `(user_id, activity_id, out_business_no)` |
+| `big-market-infrastructure/.../dao/po/RaffleQuotaDecrementLedger.java` | PO for ledger table |
+| `big-market-infrastructure/.../dao/IRaffleQuotaDecrementLedgerDao.java` | DAO: `insert`, `queryByKey`, `updateStatusToRolledBack` |
+| `big-market-account-service/.../mapper/mysql/raffle_quota_decrement_ledger_mapper.xml` | MyBatis mapper for shard tables |
+| `scripts/validate-quota-decrement-b12.sh` | 22-check static validation script |
+
+### Modified files
+
+| File | Change |
+|------|--------|
+| `big-market-domain/.../adapter/repository/IActivityRepository.java` | Added `decrementQuotaWithLedger(userId, activityId, outBusinessNo)` |
+| `big-market-domain/.../service/IRaffleActivityAccountQuotaService.java` | Added `decrementQuota(userId, activityId, outBusinessNo)` |
+| `big-market-domain/.../service/quota/RaffleActivityAccountQuotaService.java` | Delegates to `activityRepository.decrementQuotaWithLedger` |
+| `big-market-infrastructure/.../repository/ActivityRepository.java` | Implements `decrementQuotaWithLedger` with ledger + atomic multi-table decrement |
+| `big-market-account-service/.../AccountQuotaServiceRPC.java` | `decrementQuota` promoted from UN_ERROR stub to real ledger-guarded impl |
+| `scripts/validate-production-ddl.sh` | S11/S12 updated to match B12 promotion |
+| `scripts/validate-mq-idempotency.sh` | S11/S12 updated to match B12 promotion |
+
+### `validate-quota-decrement-b12.sh` — B12 static checks
+
+**22 checks, all PASS:**
+
+| # | What is checked |
+|---|----------------|
+| D1–D3 | Proposed DDL file exists, has UNIQUE KEY, defines all four shard tables |
+| D4 | `RaffleQuotaDecrementLedger` PO exists |
+| D5–D6 | `IRaffleQuotaDecrementLedgerDao` exists with `insert`, `queryByKey`, `updateStatusToRolledBack` |
+| D7–D8 | Mapper XML exists in account-service with correct namespace |
+| D9 | `IActivityRepository` declares `decrementQuotaWithLedger` |
+| D10 | `IRaffleActivityAccountQuotaService` declares `decrementQuota` |
+| D11 | `RaffleActivityAccountQuotaService` implements `decrementQuota` |
+| D12–D14 | `ActivityRepository` implements ledger-guarded `decrementQuotaWithLedger` |
+| D15–D16 | `AccountQuotaServiceRPC.decrementQuota` calls real service; B11 stub text removed |
+| D17 | `rollbackQuota` remains safe (stubbed, not wired) |
+| D18 | **Safety gate** — `RaffleActivityPartakeService` NOT wired to `IActivityAccountPort` |
+| D19 | No config enables `remote-quota-decrement` |
+| D20 | Proposed DDL not referenced from any migration tool |
+
+### Validation commands
+
+```bash
+# B12 foundation checks
+./scripts/validate-quota-decrement-b12.sh   # 22/22 PASS
+
+# Existing baselines (must remain green)
+./scripts/validate-quota-decrement-contract.sh  # B11: 18/18 PASS
+./scripts/validate-production-ddl.sh            # B10: 12/12 PASS
+./scripts/validate-mq-idempotency.sh            # B10: 12/12 PASS
+mvn compile                                     # BUILD SUCCESS
+```
+
+### Remaining blockers before B13
+
+1. **Apply proposed DDL to staging** — `raffle_quota_decrement_ledger_{000..003}` must exist in `big_market_01` and `big_market_02` before the RPC is reachable.
+2. **`rollbackQuota` real implementation** — currently deferred (safe/stubbed). Needs ledger status update (`applied` → `rolled_back`) + quota restore in same transaction. B13+.
+3. **Wire `RaffleActivityPartakeService`** — replace local `saveCreatePartakeOrderAggregate` with `IActivityAccountPort.decrementQuota` seam. Deferred to B13+.
+4. **End-to-end staging validation** — fire real Dubbo RPC, confirm ledger row inserted, quota decremented, idempotent on retry. B13.
+
+### Risks
+
+| Risk | Mitigation |
+|------|-----------|
+| Ledger table not applied in staging | `decrementQuota` RPC will throw `TableNotFoundException` — caller gets UN_ERROR, no quota leak |
+| Month/day account race on concurrent first-draw | `insertActivityAccountMonth/Day` has UNIQUE KEY in main schema — DuplicateKeyException causes rollback, retry wins |
+| `rollbackQuota` not yet implemented | No callers wired to rollback; B13 will implement before any wiring occurs |
+| `remote-quota-decrement.enabled=false` by default | Runtime behavior unchanged; all quota operations still go through local `saveCreatePartakeOrderAggregate` |
 
 ---
 

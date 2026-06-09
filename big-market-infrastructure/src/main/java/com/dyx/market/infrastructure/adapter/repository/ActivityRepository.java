@@ -65,6 +65,8 @@ public class ActivityRepository implements IActivityRepository {
     @Resource
     private IRaffleActivityStageDao raffleActivityStageDao;
     @Resource
+    private IRaffleQuotaDecrementLedgerDao raffleQuotaDecrementLedgerDao;
+    @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
     private ActivitySkuStockZeroMessageEvent activitySkuStockZeroMessageEvent;
@@ -852,6 +854,122 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public Long queryStageActivity2ActiveById(Long id) {
         return raffleActivityStageDao.queryStageActivity2ActiveById(id);
+    }
+
+    /**
+     * Phase 2.2-B12: idempotent quota decrement with ledger guard.
+     *
+     * Transaction boundary (single shard, all tables in same DB):
+     *   1. INSERT raffle_quota_decrement_ledger — DuplicateKeyException → already done, return true.
+     *   2. UPDATE raffle_activity_account total_count_surplus - 1 WHERE surplus > 0 → 0 rows → exhausted, return false.
+     *   3. UPDATE or INSERT raffle_activity_account_month for the current calendar month.
+     *   4. UPDATE or INSERT raffle_activity_account_day for the current calendar day.
+     *   5. Commit → return true.
+     *
+     * On any failure in steps 2-4 the ledger INSERT is also rolled back, so a retry
+     * will attempt the full operation again (and correctly fail again on exhausted quota).
+     */
+    @Override
+    public boolean decrementQuotaWithLedger(String userId, Long activityId, String outBusinessNo) {
+        String month = RaffleActivityAccountMonth.currentMonth();
+        String day = RaffleActivityAccountDay.currentDay();
+        try {
+            dbRouter.doRouter(userId);
+            Boolean result = transactionTemplate.execute(status -> {
+                // 1. Idempotency ledger — catches duplicate RPC calls before any mutation.
+                try {
+                    raffleQuotaDecrementLedgerDao.insert(
+                            RaffleQuotaDecrementLedger.builder()
+                                    .userId(userId)
+                                    .activityId(activityId)
+                                    .outBusinessNo(outBusinessNo)
+                                    .build());
+                } catch (DuplicateKeyException e) {
+                    log.info("[decrementQuotaWithLedger] duplicate — already applied userId:{} activityId:{} outBusinessNo:{}",
+                            userId, activityId, outBusinessNo);
+                    return true;
+                }
+
+                // 2. Decrement total quota (optimistic: WHERE surplus > 0 prevents over-decrement).
+                int totalUpdated = raffleActivityAccountDao.updateActivityAccountSubtractionQuota(
+                        RaffleActivityAccount.builder()
+                                .userId(userId)
+                                .activityId(activityId)
+                                .build());
+                if (totalUpdated != 1) {
+                    status.setRollbackOnly();
+                    log.warn("[decrementQuotaWithLedger] total quota exhausted userId:{} activityId:{}", userId, activityId);
+                    return false;
+                }
+
+                // Fetch total account for month/day counts (needed when creating new sub-accounts).
+                RaffleActivityAccount totalAccount = raffleActivityAccountDao.queryActivityAccountByUserId(
+                        RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
+
+                // 3. Month account — update if exists, insert if first draw this month.
+                RaffleActivityAccountMonth monthAccount = raffleActivityAccountMonthDao.queryActivityAccountMonthByUserId(
+                        RaffleActivityAccountMonth.builder()
+                                .userId(userId).activityId(activityId).month(month).build());
+                if (monthAccount != null) {
+                    int monthUpdated = raffleActivityAccountMonthDao.updateActivityAccountMonthSubtractionQuota(
+                            RaffleActivityAccountMonth.builder()
+                                    .userId(userId).activityId(activityId).month(month).build());
+                    if (monthUpdated != 1) {
+                        status.setRollbackOnly();
+                        log.warn("[decrementQuotaWithLedger] month quota exhausted userId:{} activityId:{} month:{}", userId, activityId, month);
+                        return false;
+                    }
+                    raffleActivityAccountDao.updateActivityAccountMonthSubtractionQuota(
+                            RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
+                } else {
+                    raffleActivityAccountMonthDao.insertActivityAccountMonth(
+                            RaffleActivityAccountMonth.builder()
+                                    .userId(userId).activityId(activityId).month(month)
+                                    .monthCount(totalAccount.getMonthCount())
+                                    .monthCountSurplus(totalAccount.getMonthCount() - 1)
+                                    .build());
+                    raffleActivityAccountDao.updateActivityAccountMonthSurplusImageQuota(
+                            RaffleActivityAccount.builder()
+                                    .userId(userId).activityId(activityId)
+                                    .monthCountSurplus(totalAccount.getMonthCount())
+                                    .build());
+                }
+
+                // 4. Day account — update if exists, insert if first draw today.
+                RaffleActivityAccountDay dayAccount = raffleActivityAccountDayDao.queryActivityAccountDayByUserId(
+                        RaffleActivityAccountDay.builder()
+                                .userId(userId).activityId(activityId).day(day).build());
+                if (dayAccount != null) {
+                    int dayUpdated = raffleActivityAccountDayDao.updateActivityAccountDaySubtractionQuota(
+                            RaffleActivityAccountDay.builder()
+                                    .userId(userId).activityId(activityId).day(day).build());
+                    if (dayUpdated != 1) {
+                        status.setRollbackOnly();
+                        log.warn("[decrementQuotaWithLedger] day quota exhausted userId:{} activityId:{} day:{}", userId, activityId, day);
+                        return false;
+                    }
+                    raffleActivityAccountDao.updateActivityAccountDaySubtractionQuota(
+                            RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
+                } else {
+                    raffleActivityAccountDayDao.insertActivityAccountDay(
+                            RaffleActivityAccountDay.builder()
+                                    .userId(userId).activityId(activityId).day(day)
+                                    .dayCount(totalAccount.getDayCount())
+                                    .dayCountSurplus(totalAccount.getDayCount() - 1)
+                                    .build());
+                    raffleActivityAccountDao.updateActivityAccountDaySurplusImageQuota(
+                            RaffleActivityAccount.builder()
+                                    .userId(userId).activityId(activityId)
+                                    .dayCountSurplus(totalAccount.getDayCount())
+                                    .build());
+                }
+
+                return true;
+            });
+            return Boolean.TRUE.equals(result);
+        } finally {
+            dbRouter.clear();
+        }
     }
 
 }

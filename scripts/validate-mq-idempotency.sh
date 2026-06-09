@@ -137,23 +137,23 @@ else
     ok "S10: saveCreatePartakeOrderAggregate NOT wired to remote accountQuotaWriteAdapter (deferred)"
 fi
 
-# S11: RaffleActivityPartakeService does not call decrementQuota
-if grep -rq "decrementQuota" \
+# S11: RaffleActivityPartakeService (partake path) does not call decrementQuota directly
+# (B12: ActivityRepository implements decrementQuotaWithLedger — allowed; partake domain must NOT wire it)
+if grep -rq "decrementQuota\|IActivityAccountPort\|activityAccountPort" \
     big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/ \
-    big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityRepository.java \
     2>/dev/null; then
-    fail "S11: decrementQuota unexpectedly wired in partake domain"
+    fail "S11: decrementQuota unexpectedly wired in partake domain service"
 else
-    ok "S11: decrementQuota not wired in partake domain (deferred as designed)"
+    ok "S11: Safety gate — decrementQuota not wired in partake domain (deferred as designed)"
 fi
 
-# S12: AccountQuotaServiceRPC.decrementQuota stub is still UN_ERROR (not live)
-if grep -q "decrementQuota not yet implemented" \
+# S12: AccountQuotaServiceRPC.decrementQuota is ledger-guarded real implementation (B12 promoted stub)
+if grep -q "raffleActivityAccountQuotaService.decrementQuota" \
     big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java \
     2>/dev/null; then
-    ok "S12: AccountQuotaServiceRPC.decrementQuota still stub (UN_ERROR)"
+    ok "S12: AccountQuotaServiceRPC.decrementQuota is ledger-guarded real implementation (B12)"
 else
-    fail "S12: AccountQuotaServiceRPC.decrementQuota stub guard missing or changed"
+    fail "S12: AccountQuotaServiceRPC.decrementQuota real implementation missing"
 fi
 
 # ---------------------------------------------------------------------------

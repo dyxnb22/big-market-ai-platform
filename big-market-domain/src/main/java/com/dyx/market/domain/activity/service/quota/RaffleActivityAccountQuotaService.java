@@ -110,4 +110,9 @@ public class RaffleActivityAccountQuotaService extends AbstractRaffleActivityAcc
         return activityRepository.queryActivityAccountEntity(activityId, userId);
     }
 
+    @Override
+    public boolean decrementQuota(String userId, Long activityId, String outBusinessNo) {
+        return activityRepository.decrementQuotaWithLedger(userId, activityId, outBusinessNo);
+    }
+
 }

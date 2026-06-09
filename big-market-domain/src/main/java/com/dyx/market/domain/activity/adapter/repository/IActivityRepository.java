@@ -82,4 +82,19 @@ public interface IActivityRepository {
 
     Long queryStageActivity2ActiveById(Long id);
 
+    /**
+     * Atomically decrement total/month/day quota for a confirmed raffle participation,
+     * guarded by an idempotency ledger row (raffle_quota_decrement_ledger).
+     *
+     * Phase 2.2-B12 foundation for AccountQuotaServiceRPC.decrementQuota.
+     *
+     * Idempotency: a duplicate call with the same outBusinessNo returns true immediately
+     * without re-decrementing (DuplicateKeyException on ledger INSERT is caught and
+     * treated as "already applied").
+     *
+     * @return true  — quota was decremented (or already decremented for this outBusinessNo)
+     *         false — quota exhausted; raffle must be rejected
+     */
+    boolean decrementQuotaWithLedger(String userId, Long activityId, String outBusinessNo);
+
 }

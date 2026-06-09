@@ -53,4 +53,17 @@ public interface IRaffleActivityAccountQuotaService {
      */
     ActivityAccountEntity queryActivityAccountEntity(Long activityId, String userId);
 
+    /**
+     * Synchronously decrement total/month/day quota, guarded by idempotency ledger.
+     *
+     * Phase 2.2-B12: called by AccountQuotaServiceRPC.decrementQuota on the
+     * account-service side. The ledger table prevents double-decrement on RPC retry.
+     *
+     * @param userId        user identifier (shard key)
+     * @param activityId    activity identifier
+     * @param outBusinessNo idempotency key — raffle order's outBusinessNo
+     * @return true if quota decremented (or already decremented); false if exhausted
+     */
+    boolean decrementQuota(String userId, Long activityId, String outBusinessNo);
+
 }

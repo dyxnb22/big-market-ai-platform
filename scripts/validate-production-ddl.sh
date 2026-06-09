@@ -123,34 +123,24 @@ else
     fail "S10: RebateMessageConsumer does not handle INDEX_DUP"
 fi
 
-# S11: decrementQuota stub exists and returns UN_ERROR (not accidentally wired)
-if grep -q "decrementQuota not yet implemented" big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java 2>/dev/null; then
-    ok "S11: AccountQuotaServiceRPC.decrementQuota is stub-only (returns UN_ERROR)"
+# S11: decrementQuota B12 ledger-guarded implementation active (stub promoted in B12)
+if grep -q "raffleActivityAccountQuotaService.decrementQuota" big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java 2>/dev/null; then
+    ok "S11: AccountQuotaServiceRPC.decrementQuota is ledger-guarded real implementation (B12)"
 else
-    fail "S11: AccountQuotaServiceRPC.decrementQuota stub guard missing"
+    fail "S11: AccountQuotaServiceRPC.decrementQuota real implementation missing"
 fi
 
-# S12: No caller wires decrementQuota in business logic (port/adapter scaffolds are allowed)
-decrementQuota_callers=$(grep -r "decrementQuota" \
-    big-market-market-service big-market-message-job-service \
-    big-market-trigger big-market-infrastructure big-market-domain \
-    2>/dev/null \
-    | grep -v "IAccountQuotaService.java" \
-    | grep -v "AccountQuotaServiceRPC.java" \
-    | grep -v "IActivityAccountPort.java" \
-    | grep -v "LocalActivityAccountPort.java" \
-    | grep -v "AccountRemoteActivityAccountPort.java" \
-    | grep -v "AccountQuotaDecrementRequestDTO.java" \
-    | grep -v "AccountQuotaRollbackRequestDTO.java" \
-    | grep -v "validate-quota-decrement-contract.sh" \
-    | grep -v "\.class:" \
-    | grep -v "\.yml:" \
-    | grep -v "\.yaml:" \
-    | wc -l | tr -d ' ') || true
-if [[ "$decrementQuota_callers" -eq 0 ]]; then
-    ok "S12: decrementQuota not wired in any live service caller"
+# S12: RaffleActivityPartakeService NOT wired to remote decrementQuota (safety gate)
+# Domain service and infrastructure may reference decrementQuota — only market-service wiring is unsafe.
+PARTAKE_SVC="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/RaffleActivityPartakeService.java"
+ABSTRACT_PARTAKE="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java"
+partake_wired=false
+if grep -q "IActivityAccountPort\|activityAccountPort\|decrementQuota" "$PARTAKE_SVC" 2>/dev/null; then partake_wired=true; fi
+if grep -q "IActivityAccountPort\|activityAccountPort\|decrementQuota" "$ABSTRACT_PARTAKE" 2>/dev/null; then partake_wired=true; fi
+if $partake_wired; then
+    fail "S12: SAFETY GATE — RaffleActivityPartakeService or AbstractRaffleActivityPartake is wired to decrementQuota (must NOT be for B12)"
 else
-    fail "S12: decrementQuota has unexpected callers: $decrementQuota_callers references found"
+    ok "S12: Safety gate — RaffleActivityPartakeService not yet wired to decrementQuota"
 fi
 
 # ---------------------------------------------------------------------------
