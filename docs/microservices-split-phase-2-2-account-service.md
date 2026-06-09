@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B validation scaffold complete. Remote-read is script-validated, defaults off. Write-path adapters/flags are prepared, defaults off, and no write callers are cut over.**
+**Status: Phase 2.2-B3 HTTP credit exchange write adapter wiring complete. Remote-read is script-validated. MQ write consumers and creditPayExchangeSku now route through adapters with local fallback. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -61,17 +61,58 @@ The following work was completed in Phase 2.2-B1:
 - `IAccountQuotaService` now includes write-scaffold RPCs for `createOrder` and `updateOrder`; account-service implements them
 - No controllers, consumers, or domain services are routed through these write adapters in this batch
 
-**What is still NOT done (Phase 2.2-B2 and beyond):**
-- Write paths: credit createOrder, quota decrement, rebate, award still use local domain services in-process
+## Phase 2.2-B2 — MQ Write Consumer Adapter Wiring
+
+**Completed (2026-06-09):**
+- `CreditAdjustSuccessConsumer`: removed direct `IRaffleActivityAccountQuotaService` injection; now injects `IAccountQuotaWriteAdapter` and calls `updateOrder` through it
+- `RebateMessageConsumer`: removed direct `IRaffleActivityAccountQuotaService` and `ICreditAdjustService` injections; now injects `IAccountQuotaWriteAdapter` (sku rebate) and `IAccountCreditWriteAdapter` (integral rebate)
+- `AccountRemoteCreditWriteAdapter` and `AccountRemoteQuotaWriteAdapter` created under `big-market-message-job-service/config/` — active only when `account.service.remote-credit-write.enabled=true` / `remote-quota-write.enabled=true` (`@ConditionalOnProperty`)
+- Local adapters (`LocalAccountCreditWriteAdapter`, `LocalAccountQuotaWriteAdapter`) registered via `WriteAdapterLocalConfig` (`@Bean @ConditionalOnMissingBean`) in message-job-service config — NOT via `com.dyx.market.trigger.adapter` package scan (avoided due to `@Component`/`@ConditionalOnMissingBean` evaluation-order issues in component scan)
+- `@EnableDubbo` added to `MessageJobServiceApplication`; Dubbo configured with registry `check=false` so startup does not fail if nacos is unavailable when write flags are false
+- `DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848` wired into message-job-service docker-compose entry
+- `scripts/validate-account-remote-write-scaffold.sh` added — confirms default flags false, health UP, and optionally recreates with flags=true to verify remote adapters load; does NOT publish real MQ messages
+
+**Write flags remain false by default:**
+- `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=false` (env default)
+- `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=false` (env default)
+- No transactional write traffic flows to account-service
+
+**What is still NOT done (full production cutover):**
+- MQ idempotency end-to-end verification (duplicate message replay safety per `outBusinessNo`)
+- Business-flow validation: sign-in rebate, raffle win → credit award with `remote-write.enabled=true`
+- `UserCreditRandomAward` (credit award path) — needs call-chain audit before wiring
+- `RaffleActivityPartakeService` quota decrement — deferred (high risk, needs dedicated decrement RPC)
 - No domain packages removed from market-service scan
 - No database schema changes
 - No domain code relocated
-- No write traffic is flowing to account-service (write feature flags default false)
 
-**Gate check for Phase 2.2-B2 (write-path cutover):**
+**Gate check before enabling write flags in production:**
 1. Docker 17/17 PASS: `./scripts/smoke-test-phase-1.sh` with full Docker stack
 2. Remote-read validation: `./scripts/validate-account-remote-read.sh`
-3. Only then proceed to write-path cutover
+3. Write scaffold validation: `./scripts/validate-account-remote-write-scaffold.sh`
+4. Manual business-flow verification with `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=true` and `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=true`
+
+---
+
+## Phase 2.2-B3 — HTTP Credit Exchange Write Adapter Wiring
+
+**Completed (2026-06-09):**
+- `RaffleActivityController.creditPayExchangeSku` routes both write steps through adapters:
+  - Step 1 (quota order): was `raffleActivityAccountQuotaService.createOrder` → now `accountQuotaWriteAdapter.createOrder`
+  - Step 2 (credit debit): was `creditAdjustService.createOrder` → now `accountCreditWriteAdapter.createOrder`
+- Unused `IRaffleActivityAccountQuotaService` and `ICreditAdjustService` fields removed from the controller
+- outBusinessNo flow preserved: quota adapter returns `UnpaidActivityOrderEntity.outBusinessNo`; credit adapter reuses that same `outBusinessNo` for idempotency
+- `IAccountQuotaWriteAdapter` and `IAccountCreditWriteAdapter` injected; local adapters are active by default (flags false)
+- No new adapter implementations needed — `AccountRemoteQuotaWriteAdapter` and `AccountRemoteCreditWriteAdapter` in market-service config already implement both interfaces from Phase 2.2-B validation
+- Adapter interface Javadoc updated to reflect wired callers and pending callers
+
+**Behavior when flags are false (default):**
+- `LocalAccountQuotaWriteAdapter` delegates to `IRaffleActivityAccountQuotaService.createOrder` — identical to pre-B3 behavior
+- `LocalAccountCreditWriteAdapter` delegates to `ICreditAdjustService.createOrder` — identical to pre-B3 behavior
+
+**Remaining write callers still NOT wired:**
+- `UserCreditRandomAward` — issues credit on award dispatch; needs full call-chain audit (domain layer, not just trigger layer)
+- `RaffleActivityPartakeService` quota decrement — deferred; high-risk synchronous path; needs purpose-built decrement RPC before any cutover attempt
 
 ---
 

@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B remote-read validation scaffold applied)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B3 HTTP credit exchange adapter wiring applied)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), and Phase 2.2-B validation/write-scaffold work. Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), and Phase 2.2-B3 (HTTP credit exchange write adapter). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -14,7 +14,7 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 | `big-market-market-service` | 8083 | HTTP APIs + Dubbo RPC (raffle / activity / strategy / rebate / credit / ERP) |
 | `big-market-chatbot-service` | 8084 | AI chatbot (DeepSeek or local rule engine) |
 | `big-market-message-job-service` | 8085 | MQ consumers + XXL-Job handlers |
-| `big-market-account-service` | 8086 | **Dark launch** — Dubbo provider for credit + quota. Remote-read can be validated by script; write traffic is not cut over. |
+| `big-market-account-service` | 8086 | **Dark launch** — Dubbo provider for credit + quota. Remote-read validated. MQ write consumers now route through adapters; write flags still default false. |
 
 **Phase 1.2 changes completed (2026-06-09):**
 - `spring.rabbitmq.listener.simple.default-requeue-rejected=false` in market-service (now message-job-service)
@@ -79,9 +79,29 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - Write-path feature flags added with defaults false:
   - `account.service.remote-credit-write.enabled=false`
   - `account.service.remote-quota-write.enabled=false`
-- Trigger-level write adapter interfaces/local defaults and market-service remote-capable adapters were added, but no caller is routed through them yet
+- Trigger-level write adapter interfaces/local defaults and market-service remote-capable adapters were added, but no caller was routed through them yet
 - `IAccountQuotaService` now has quota write RPC scaffold methods (`createOrder`, `updateOrder`) with provider implementations in account-service
 - **No write traffic is cut over by default**
+
+**Phase 2.2-B2 write-path adapter scaffold completed (2026-06-09):**
+- `CreditAdjustSuccessConsumer` now injects `IAccountQuotaWriteAdapter` (was `IRaffleActivityAccountQuotaService`) and calls `updateOrder` through the adapter
+- `RebateMessageConsumer` now injects `IAccountQuotaWriteAdapter` and `IAccountCreditWriteAdapter` (was `IRaffleActivityAccountQuotaService` + `ICreditAdjustService`) and calls `createOrder` through adapters
+- `AccountRemoteCreditWriteAdapter` and `AccountRemoteQuotaWriteAdapter` created in `big-market-message-job-service` config — active only when `remote-credit-write.enabled=true` / `remote-quota-write.enabled=true`
+- Local adapter fallbacks (`LocalAccountCreditWriteAdapter`, `LocalAccountQuotaWriteAdapter`) registered in message-job-service via `WriteAdapterLocalConfig` (`@Bean @ConditionalOnMissingBean`) — NOT via package scan, to avoid `@Component`/`@ConditionalOnMissingBean` ordering issues
+- Dubbo enabled in message-job-service (was `dubbo.enabled: false`); registry `check=false` prevents startup failure when nacos is unavailable and write flags are false
+- `docker-compose.yml` now wires `DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848` into message-job-service
+- `scripts/validate-account-remote-write-scaffold.sh` added — checks default flags, health, and optional recreation with flags=true; does NOT publish real MQ messages
+- **Write flags still default false** — all consumer writes still use local domain services in-process
+- **Full production write traffic cutover still requires:** MQ idempotency verification, business-flow validation end-to-end, and deliberate flag enable per service instance
+
+**Phase 2.2-B3 HTTP credit exchange adapter wiring completed (2026-06-09):**
+- `RaffleActivityController.creditPayExchangeSku` now routes through adapters:
+  - Step 1 (quota order): `raffleActivityAccountQuotaService.createOrder` → `accountQuotaWriteAdapter.createOrder`
+  - Step 2 (credit payment): `creditAdjustService.createOrder` → `accountCreditWriteAdapter.createOrder`
+- Unused direct `IRaffleActivityAccountQuotaService` and `ICreditAdjustService` fields removed from the controller
+- outBusinessNo flow unchanged: quota adapter returns `unpaidActivityOrder.outBusinessNo`, which credit adapter reuses
+- Local behavior unchanged when both flags are false (adapters delegate to same domain services)
+- Both write adapters are already present in market-service config (`AccountRemoteQuotaWriteAdapter`, `AccountRemoteCreditWriteAdapter`) from Phase 2.2-B validation; no new market-service adapter code needed
 
 **Known residual issues:**
 - Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
@@ -89,7 +109,7 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - Static gateway routing (no service-discovery integration; account-service has no gateway route — Dubbo/internal only)
 - All market-service tables share one MySQL instance with no per-service schema isolation
 - MQ DLQ behavior is not covered by the smoke test (requires real RabbitMQ integration test)
-- Write-path cutover to account-service is Phase 2.2-B2 — only after Docker 17/17 + `./scripts/validate-account-remote-read.sh`
+- `RaffleActivityController.creditPayExchangeSku` is now wired (Phase 2.2-B3). Still pending: `UserCreditRandomAward` (needs call-chain audit), `RaffleActivityPartakeService` quota decrement (deferred, high risk)
 - See `docs/microservices-split-phase-2-2-account-service.md` for gate checks and validation steps
 
 ---

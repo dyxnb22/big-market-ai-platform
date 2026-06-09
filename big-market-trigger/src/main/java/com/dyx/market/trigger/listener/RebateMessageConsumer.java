@@ -2,12 +2,12 @@ package com.dyx.market.trigger.listener;
 
 import com.dyx.market.domain.activity.model.entity.SkuRechargeEntity;
 import com.dyx.market.domain.activity.model.valobj.OrderTradeTypeVO;
-import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
-import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import com.dyx.market.domain.rebate.event.SendRebateMessageEvent;
+import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
+import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.event.BaseEvent;
 import com.dyx.market.types.exception.AppException;
@@ -35,9 +35,9 @@ public class RebateMessageConsumer {
     @Value("${spring.rabbitmq.topic.send_rebate}")
     private String topic;
     @Resource
-    private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
+    private IAccountQuotaWriteAdapter accountQuotaWriteAdapter;
     @Resource
-    private ICreditAdjustService creditAdjustService;
+    private IAccountCreditWriteAdapter accountCreditWriteAdapter;
 
     @RabbitListener(queuesToDeclare = @Queue(
             value = "${spring.rabbitmq.topic.send_rebate}",
@@ -59,7 +59,7 @@ public class RebateMessageConsumer {
                     skuRechargeEntity.setSku(Long.valueOf(rebateMessage.getRebateConfig()));
                     skuRechargeEntity.setOutBusinessNo(rebateMessage.getBizId());
                     skuRechargeEntity.setOrderTradeType(OrderTradeTypeVO.rebate_no_pay_trade);
-                    raffleActivityAccountQuotaService.createOrder(skuRechargeEntity);
+                    accountQuotaWriteAdapter.createOrder(skuRechargeEntity);
                     break;
                 case "integral":
                     TradeEntity tradeEntity = new TradeEntity();
@@ -68,7 +68,7 @@ public class RebateMessageConsumer {
                     tradeEntity.setTradeType(TradeTypeVO.FORWARD);
                     tradeEntity.setAmount(new BigDecimal(rebateMessage.getRebateConfig()));
                     tradeEntity.setOutBusinessNo(rebateMessage.getBizId());
-                    creditAdjustService.createOrder(tradeEntity);
+                    accountCreditWriteAdapter.createOrder(tradeEntity);
                     break;
             }
         } catch (AppException e) {

@@ -18,7 +18,7 @@
 
 ---
 
-## Phase 2.2-B1 Microservices (Current Active Architecture)
+## Phase 2.2-B3 Microservices (Current Active Architecture)
 
 The monolith has been progressively split into 7 independently deployable services behind an API gateway. The original `big-market-app` is preserved untouched as a legacy fallback.
 
@@ -32,7 +32,7 @@ The monolith has been progressively split into 7 independently deployable servic
 | big-market-market-service | 8083 | Core marketing / raffle / activity APIs + Dubbo RPC |
 | big-market-chatbot-service | 8084 | Chatbot APIs |
 | big-market-message-job-service | 8085 | MQ consumers + XXL-Job scheduled handlers |
-| big-market-account-service | 8086 | Internal Dubbo provider — credit + quota operations. Dark-launched Phase 2.2-A; read adapter wired Phase 2.2-B1 (flag defaults off). Phase 2.2-B scaffolds write adapters/flags, but no write-path cutover is enabled. |
+| big-market-account-service | 8086 | Internal Dubbo provider — credit + quota operations. Remote-read validated (Phase 2.2-B). MQ write consumers and HTTP credit exchange route through adapters (Phase 2.2-B2/B3); write flags still default false. |
 
 Shared library modules (`big-market-domain`, `big-market-infrastructure`, `big-market-api`, `big-market-types`, `big-market-queries`, starter modules) are reused as JAR dependencies — no code was moved or duplicated.
 
@@ -87,19 +87,24 @@ docker compose ps
 # Validate account-service remote-read routing and fallback (temporarily recreates market-service only)
 ./scripts/validate-account-remote-read.sh
 
+# Validate Phase 2.2-B2/B3 write-path adapter scaffold (no real MQ messages published)
+./scripts/validate-account-remote-write-scaffold.sh
+
 # Or run the full orchestrated validation (build → infra → app → smoke test):
 ./scripts/validate-microservices-stack.sh
 ```
 
-> **Runtime validation note (Phase 2.2-B):** account-service Dubbo providers are registered.
-> A read-only adapter (`IAccountReadAdapter`) is wired into `RaffleActivityController` and
-> `RaffleStrategyController`. The adapter is gated behind `account.service.remote-read.enabled`
-> (env: `ACCOUNT_SERVICE_REMOTE_READ_ENABLED`, defaults `false`). Validate it with
-> `./scripts/validate-account-remote-read.sh`; the script flips only market-service,
-> checks read endpoints, confirms fallback while account-service is stopped, and restores
-> the default. Write-path adapters and flags now exist, but callers are not cut over and
-> `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=false` /
-> `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=false` remain the defaults.
+> **Runtime validation note (Phase 2.2-B3):** Remote-read has been script-validated.
+> MQ write consumers (`CreditAdjustSuccessConsumer`, `RebateMessageConsumer`) now route through
+> `IAccountQuotaWriteAdapter` / `IAccountCreditWriteAdapter` with local fallback adapters as default.
+> `RaffleActivityController.creditPayExchangeSku` also routes quota-order creation and credit debit through
+> the same write adapters.
+> Remote write adapters in message-job-service are `@ConditionalOnProperty` — inactive when flags are false.
+> Dubbo is enabled in message-job-service with `registry.check=false` so startup is safe even if nacos is
+> temporarily unavailable. Both write flags remain `false` by default:
+> `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=false` / `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=false`.
+> **Full production write traffic cutover still requires** MQ idempotency verification and
+> business-flow end-to-end validation before enabling either flag.
 
 ### Stop
 
@@ -127,7 +132,7 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml logs nacos
 2. Pre-existing RabbitMQ test messages for `userId: xiaofuge` produce noisy consumer error logs due to a DB sharding mismatch. This does not affect service health or smoke test results.
 3. Gateway circuit breakers (Resilience4J) are active on all four downstream routes. If a service is down, the gateway returns `{"code":"0007","info":"网关接口调用失败","data":null}` instead of hanging.
 4. All services propagate `X-Trace-Id` — gateway generates one if absent; downstream services put it in MDC as `traceId`.
-5. `account-service` write cutover has not been done yet. Phase 2.2-B2 is the next planned batch after remote-read validation passes.
+5. `account-service` MQ write consumers and `RaffleActivityController.creditPayExchangeSku` are now routed through adapters (Phase 2.2-B2/B3), but write flags default false. Remaining write-path work: `UserCreditRandomAward` needs a call-chain audit, and `RaffleActivityPartakeService` quota decrement remains deferred/high risk.
 
 ### Documentation
 
@@ -136,6 +141,7 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml logs nacos
 - [docs/microservices-split-phase-2-2-account-service.md](docs/microservices-split-phase-2-2-account-service.md) — account-service extraction readiness and cutover plan
 - [scripts/smoke-test-phase-1.sh](scripts/smoke-test-phase-1.sh) — 17-check smoke test for the current 7-service stack
 - [scripts/validate-account-remote-read.sh](scripts/validate-account-remote-read.sh) — Phase 2.2-B remote-read and fallback validation
+- [scripts/validate-account-remote-write-scaffold.sh](scripts/validate-account-remote-write-scaffold.sh) — Phase 2.2-B2/B3 write-adapter scaffold validation (no real MQ messages)
 - [scripts/validate-microservices-stack.sh](scripts/validate-microservices-stack.sh) — orchestrated build + docker + smoke test runner
 
 ---

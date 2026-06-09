@@ -5,7 +5,6 @@ import com.dyx.market.domain.activity.application.ActivityDrawResponseEntity;
 import com.dyx.market.domain.activity.application.RaffleApplicationService;
 import com.dyx.market.domain.activity.model.entity.*;
 import com.dyx.market.domain.activity.model.valobj.OrderTradeTypeVO;
-import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
 import com.dyx.market.domain.activity.service.IRaffleActivityPartakeService;
 import com.dyx.market.domain.activity.service.IRaffleActivitySkuProductService;
 import com.dyx.market.domain.activity.service.IRaffleActivityStageService;
@@ -17,8 +16,9 @@ import com.dyx.market.domain.award.service.IAwardService;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
-import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import com.dyx.market.domain.rebate.model.entity.BehaviorEntity;
+import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
+import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
 import com.dyx.market.domain.rebate.model.valobj.BehaviorTypeVO;
@@ -69,8 +69,6 @@ public class RaffleActivityController implements IRaffleActivityService {
     @Resource
     private IRaffleActivityPartakeService raffleActivityPartakeService;
     @Resource
-    private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
-    @Resource
     private IRaffleActivitySkuProductService raffleActivitySkuProductService;
     @Resource
     private IRaffleStrategy raffleStrategy;
@@ -85,8 +83,6 @@ public class RaffleActivityController implements IRaffleActivityService {
     @Resource
     private IBehaviorRebateService behaviorRebateService;
     @Resource
-    private ICreditAdjustService creditAdjustService;
-    @Resource
     private IAuthService authService;
     @Resource
     private IRaffleActivityStageService raffleActivityStageService;
@@ -95,6 +91,11 @@ public class RaffleActivityController implements IRaffleActivityService {
     // Phase 2.2-B1: routes read-only account queries; flag defaults to local service.
     @Resource
     private IAccountReadAdapter accountRemoteReadAdapter;
+    // Phase 2.2-B3: routes credit exchange writes; flags default to local service.
+    @Resource
+    private IAccountQuotaWriteAdapter accountQuotaWriteAdapter;
+    @Resource
+    private IAccountCreditWriteAdapter accountCreditWriteAdapter;
 
     // dcc 统一配置中心动态配置降级开关
     @DCCValue("degradeSwitch:close")
@@ -593,7 +594,8 @@ public class RaffleActivityController implements IRaffleActivityService {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
             // 1. 创建兑换商品sku订单，outBusinessNo 每次创建出一个单号。
-            UnpaidActivityOrderEntity unpaidActivityOrder = raffleActivityAccountQuotaService.createOrder(SkuRechargeEntity.builder()
+            // Phase 2.2-B3: routed through IAccountQuotaWriteAdapter (local by default, remote when flag=true).
+            UnpaidActivityOrderEntity unpaidActivityOrder = accountQuotaWriteAdapter.createOrder(SkuRechargeEntity.builder()
                     .userId(request.getUserId())
                     .sku(request.getSku())
                     .outBusinessNo(RandomStringUtils.randomNumeric(12))
@@ -602,7 +604,8 @@ public class RaffleActivityController implements IRaffleActivityService {
             log.info("积分兑换商品，创建订单完成 userId:{} sku:{} outBusinessNo:{}", request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
 
             // 2.支付兑换商品
-            String orderId = creditAdjustService.createOrder(TradeEntity.builder()
+            // Phase 2.2-B3: routed through IAccountCreditWriteAdapter (local by default, remote when flag=true).
+            String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
                     .userId(unpaidActivityOrder.getUserId())
                     .tradeName(TradeNameVO.CONVERT_SKU)
                     .tradeType(TradeTypeVO.REVERSE)

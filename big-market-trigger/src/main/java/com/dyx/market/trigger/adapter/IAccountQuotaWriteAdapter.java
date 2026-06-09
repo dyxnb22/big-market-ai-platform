@@ -5,11 +5,18 @@ import com.dyx.market.domain.activity.model.entity.SkuRechargeEntity;
 import com.dyx.market.domain.activity.model.entity.UnpaidActivityOrderEntity;
 
 /**
- * Phase 2.2-B2 scaffold for quota write routing.
+ * Quota write routing adapter — Phase 2.2-B2/B3.
  *
- * Callers are not wired to this adapter yet; local domain services remain the
- * default write path until account.service.remote-quota-write.enabled is
- * deliberately enabled in a later cutover batch.
+ * Wired callers (Phase 2.2-B2/B3):
+ *   - CreditAdjustSuccessConsumer.updateOrder   (message-job-service)
+ *   - RebateMessageConsumer.createOrder for sku  (message-job-service)
+ *   - RaffleActivityController.creditPayExchangeSku createOrder (market-service, Phase 2.2-B3)
+ *
+ * Still pending wiring:
+ *   - RaffleActivityPartakeService quota decrement — deferred (high risk, needs dedicated RPC)
+ *
+ * Default behavior: local domain service (flag=false). Remote Dubbo call active only when
+ * account.service.remote-quota-write.enabled=true.
  */
 public interface IAccountQuotaWriteAdapter {
 

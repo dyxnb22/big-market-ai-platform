@@ -25,10 +25,20 @@ spring:
     zookeeper:
       enabled: false
 
-# Disable Dubbo — this service has no Dubbo providers or consumers.
-# (dubbo-spring-boot-starter is on the classpath transitively via big-market-trigger)
+# Phase 2.2-B2: Dubbo enabled for remote write adapters (conditional on write flags).
+# When write flags are false (default), no @DubboReference beans are created and Dubbo
+# is idle. check=false on registry prevents startup failure if nacos is temporarily unavailable.
 dubbo:
-  enabled: false
+  application:
+    name: big-market-message-job
+    version: 1.0
+  registry:
+    id: nacos-registry
+    address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
+    check: false
+  protocol:
+    name: dubbo
+    port: -1
 
 thread:
   pool:

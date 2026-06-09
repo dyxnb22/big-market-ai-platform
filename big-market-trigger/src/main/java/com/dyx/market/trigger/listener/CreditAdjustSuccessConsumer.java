@@ -1,9 +1,8 @@
 package com.dyx.market.trigger.listener;
 
 import com.dyx.market.domain.activity.model.entity.DeliveryOrderEntity;
-import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
 import com.dyx.market.domain.credit.event.CreditAdjustSuccessMessageEvent;
-import com.dyx.market.domain.rebate.event.SendRebateMessageEvent;
+import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.event.BaseEvent;
 import com.dyx.market.types.exception.AppException;
@@ -30,7 +29,7 @@ public class CreditAdjustSuccessConsumer {
     @Value("${spring.rabbitmq.topic.credit_adjust_success}")
     private String topic;
     @Resource
-    private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
+    private IAccountQuotaWriteAdapter accountQuotaWriteAdapter;
 
     @RabbitListener(queuesToDeclare = @Queue(
             value = "${spring.rabbitmq.topic.credit_adjust_success}",
@@ -47,7 +46,7 @@ public class CreditAdjustSuccessConsumer {
             DeliveryOrderEntity deliveryOrderEntity = new DeliveryOrderEntity();
             deliveryOrderEntity.setUserId(creditAdjustSuccessMessage.getUserId());
             deliveryOrderEntity.setOutBusinessNo(creditAdjustSuccessMessage.getOutBusinessNo());
-            raffleActivityAccountQuotaService.updateOrder(deliveryOrderEntity);
+            accountQuotaWriteAdapter.updateOrder(deliveryOrderEntity);
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
                 log.warn("监听积分账户调整成功消息，进行交易商品发货，消费重复 topic: {} message: {}", topic, message, e);

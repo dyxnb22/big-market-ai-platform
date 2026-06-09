@@ -65,6 +65,12 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- Nacos client — required by Dubbo registry when remote write adapters are enabled (Phase 2.2-B2) -->
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+        </dependency>
+
         <!-- Project modules -->
         <dependency>
             <groupId>com.dyx.market</groupId>

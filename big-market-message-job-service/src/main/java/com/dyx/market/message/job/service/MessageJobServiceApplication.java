@@ -1,5 +1,6 @@
 package com.dyx.market.message.job.service;
 
+import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -27,6 +28,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "com.dyx.market.domain",
         "com.dyx.market.infrastructure"
 })
+@EnableDubbo
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class MessageJobServiceApplication {
