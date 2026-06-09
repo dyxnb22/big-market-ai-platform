@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Phase 2.2-B6 outbox scaffold — credit_award_task mapper.
+  Tables credit_award_task_000..003 are PROPOSED ONLY.
+  Apply docs/sql/proposed-credit-award-task-outbox.sql before enabling
+  account.award-credit-outbox.enabled=true in any environment.
+-->
+<mapper namespace="com.dyx.market.infrastructure.dao.ICreditAwardTaskDao">
+
+    <resultMap id="dataMap" type="com.dyx.market.infrastructure.dao.po.CreditAwardTask">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="award_order_id" property="awardOrderId"/>
+        <result column="credit_amount" property="creditAmount"/>
+        <result column="state" property="state"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.CreditAwardTask">
+        insert into credit_award_task(
+            user_id, award_order_id, credit_amount, state, retry_count, create_time, update_time
+        ) values (
+            #{userId}, #{awardOrderId}, #{creditAmount}, 'pending', 0, now(), now()
+        )
+    </insert>
+
+    <select id="queryPendingTasks" resultMap="dataMap">
+        select user_id, award_order_id, credit_amount, state, retry_count
+        from credit_award_task
+        where state = 'pending' and retry_count &lt; 5
+        order by create_time asc
+        limit 10
+    </select>
+
+    <update id="updateDispatched" parameterType="com.dyx.market.infrastructure.dao.po.CreditAwardTask">
+        update credit_award_task
+        set state = 'dispatched', update_time = now()
+        where user_id = #{userId} and award_order_id = #{awardOrderId}
+    </update>
+
+    <update id="updateRetryFailed" parameterType="com.dyx.market.infrastructure.dao.po.CreditAwardTask">
+        update credit_award_task
+        set retry_count = retry_count + 1,
+            state = case when retry_count + 1 >= 5 then 'failed' else 'pending' end,
+            update_time = now()
+        where user_id = #{userId} and award_order_id = #{awardOrderId}
+    </update>
+
+</mapper>

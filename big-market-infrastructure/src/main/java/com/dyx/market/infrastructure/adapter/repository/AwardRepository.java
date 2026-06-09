@@ -9,6 +9,7 @@ import com.dyx.market.domain.award.model.valobj.AccountStatusVO;
 import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.infrastructure.dao.*;
 import com.dyx.market.infrastructure.event.EventPublisher;
+import com.dyx.market.infrastructure.dao.po.CreditAwardTask;
 import com.dyx.market.infrastructure.dao.po.Task;
 import com.dyx.market.infrastructure.dao.po.UserAwardRecord;
 import com.dyx.market.infrastructure.dao.po.UserCreditAccount;
@@ -21,6 +22,7 @@ import com.dyx.market.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -47,6 +49,11 @@ public class AwardRepository implements IAwardRepository {
     private IUserRaffleOrderDao userRaffleOrderDao;
     @Resource
     private IUserCreditAccountDao userCreditAccountDao;
+    // Phase 2.2-B6: outbox DAO — only accessed when account.award-credit-outbox.enabled=true.
+    // credit_award_task_000..003 tables must be applied (docs/sql/proposed-credit-award-task-outbox.sql)
+    // before enabling the flag. No SQL is executed via this DAO when flag=false.
+    @Resource
+    private ICreditAwardTaskDao creditAwardTaskDao;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -55,6 +62,17 @@ public class AwardRepository implements IAwardRepository {
     private EventPublisher eventPublisher;
     @Resource
     private IRedisService redisService;
+
+    /**
+     * Phase 2.2-B6 feature flag (default false).
+     * When false: saveGiveOutPrizesAggregate behaves exactly as before B6 — direct local
+     *             user_credit_account write inside the same transaction as user_award_record.
+     * When true:  inserts a credit_award_task outbox row instead of calling updateOrCreateCreditAccount.
+     *             The outbox poller (DispatchCreditAwardTaskJob) dispatches the credit asynchronously.
+     *             Requires credit_award_task tables to be present in the database.
+     */
+    @Value("${account.award-credit-outbox.enabled:false}")
+    private boolean awardCreditOutboxEnabled;
 
     @Override
     public void saveUserAwardRecord(UserAwardRecordAggregate userAwardRecordAggregate) {
@@ -145,35 +163,73 @@ public class AwardRepository implements IAwardRepository {
         userAwardRecordReq.setOrderId(userAwardRecordEntity.getOrderId());
         userAwardRecordReq.setAwardState(userAwardRecordEntity.getAwardState().getCode());
 
-        UserCreditAccount userCreditAccountReq = buildCreditAccountReq(userCreditAwardEntity);
-
         // Both credit-account and award-record writes share one transaction — do not split until
         // a distributed transaction strategy (saga/outbox) is in place. See Phase 2.2-B4 design note.
+        // Phase 2.2-B6: when outbox flag=true the credit_award_task row replaces the direct write.
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + userId);
         try {
             lock.lock(3, TimeUnit.SECONDS);
             dbRouter.doRouter(giveOutPrizesAggregate.getUserId());
-            transactionTemplate.execute(status -> {
-                try {
-                    updateOrCreateCreditAccount(userCreditAccountReq);
-                    int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
-                    if (0 == updateAwardCount) {
-                        log.warn("更新中奖记录，重复更新拦截 userId:{} giveOutPrizesAggregate:{}", userId, JSON.toJSONString(giveOutPrizesAggregate));
+            if (awardCreditOutboxEnabled) {
+                // Outbox path (flag=true): insert outbox row inside the same transaction as
+                // updateAwardRecordCompletedState. credit_award_task tables MUST exist before
+                // enabling this flag (apply docs/sql/proposed-credit-award-task-outbox.sql).
+                // The DispatchCreditAwardTaskJob poller will dispatch the credit asynchronously.
+                CreditAwardTask outboxTask = buildCreditAwardTask(giveOutPrizesAggregate);
+                transactionTemplate.execute(status -> {
+                    try {
+                        int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
+                        if (0 == updateAwardCount) {
+                            log.warn("更新中奖记录，重复更新拦截(outbox) userId:{}", userId);
+                            status.setRollbackOnly();
+                            return 1;
+                        }
+                        creditAwardTaskDao.insert(outboxTask);
+                        return 1;
+                    } catch (DuplicateKeyException e) {
+                        // DuplicateKeyException on credit_award_task means the outbox row already
+                        // exists (retry scenario). Treat as already-processed — roll back and let
+                        // the caller handle idempotently.
                         status.setRollbackOnly();
+                        log.error("更新中奖记录，outbox唯一索引冲突(已处理) userId:{}", userId, e);
+                        throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
                     }
-                    return 1;
-                } catch (DuplicateKeyException e) {
-                    status.setRollbackOnly();
-                    log.error("更新中奖记录，唯一索引冲突 userId: {} ", userId, e);
-                    throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
-                }
-            });
+                });
+            } else {
+                // Default path (flag=false): direct local credit-account write unchanged.
+                // Redis lock, dbRouter, and transactionTemplate all behave identically to pre-B6.
+                UserCreditAccount userCreditAccountReq = buildCreditAccountReq(userCreditAwardEntity);
+                transactionTemplate.execute(status -> {
+                    try {
+                        updateOrCreateCreditAccount(userCreditAccountReq);
+                        int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
+                        if (0 == updateAwardCount) {
+                            log.warn("更新中奖记录，重复更新拦截 userId:{} giveOutPrizesAggregate:{}", userId, JSON.toJSONString(giveOutPrizesAggregate));
+                            status.setRollbackOnly();
+                        }
+                        return 1;
+                    } catch (DuplicateKeyException e) {
+                        status.setRollbackOnly();
+                        log.error("更新中奖记录，唯一索引冲突 userId: {} ", userId, e);
+                        throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
+                    }
+                });
+            }
         } finally {
             dbRouter.clear();
             if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
         }
+    }
+
+    // Phase 2.2-B6: build outbox row from aggregate; only called when flag=true.
+    private CreditAwardTask buildCreditAwardTask(GiveOutPrizesAggregate aggregate) {
+        CreditAwardTask task = new CreditAwardTask();
+        task.setUserId(aggregate.getUserId());
+        task.setAwardOrderId(aggregate.getUserAwardRecordEntity().getOrderId());
+        task.setCreditAmount(aggregate.getUserCreditAwardEntity().getCreditAmount());
+        return task;
     }
 
     private UserCreditAccount buildCreditAccountReq(UserCreditAwardEntity userCreditAwardEntity) {

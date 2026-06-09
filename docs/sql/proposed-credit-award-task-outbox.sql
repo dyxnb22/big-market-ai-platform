@@ -5,7 +5,7 @@
 -- and validated in a dedicated batch (Phase 2.2-B6 or later).
 --
 -- Sharding note: this table follows the same 2-DB / 4-table router pattern used by
--- big_market_01..02. credit_award_task_00..03 maps to the same user shard as
+-- big_market_01..02. credit_award_task_000..003 maps to the same user shard as
 -- user_award_record so they always land in the same physical DB and can share one
 -- transactionTemplate.execute() block.
 --
@@ -20,11 +20,13 @@
 --     On success: UPDATE state = 'dispatched'
 --     On failure: retry_count++; keep pending until max retries, then mark failed
 
-CREATE TABLE IF NOT EXISTS `credit_award_task_00` (
+-- Phase 2.2-B6 note: activity_id and strategy_id were removed from the PO and mapper
+-- because DistributeAwardEntity / buildDistributeUserAwardRecordEntity does not carry
+-- them through to GiveOutPrizesAggregate. The unique key on (user_id, award_order_id)
+-- is sufficient for dispatch correctness. Audit trail is available via user_award_record JOIN.
+CREATE TABLE IF NOT EXISTS `credit_award_task_000` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT                       COMMENT 'Auto-increment row id',
     `user_id`         VARCHAR(32)  NOT NULL                                      COMMENT 'User id (shard key)',
-    `activity_id`     BIGINT       NOT NULL                                      COMMENT 'Activity id for audit trail',
-    `strategy_id`     BIGINT       NOT NULL                                      COMMENT 'Strategy id for audit trail',
     `award_order_id`  VARCHAR(64)  NOT NULL                                      COMMENT 'Idempotency key — orderId from UserAwardRecordEntity; unique per award dispatch',
     `credit_amount`   DECIMAL(10,2) NOT NULL                                     COMMENT 'Credit amount to issue to user',
     `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending'                    COMMENT 'pending | dispatched | failed',
@@ -38,9 +40,9 @@ CREATE TABLE IF NOT EXISTS `credit_award_task_00` (
     -- which the caller treats as an already-processed event and rolls back cleanly.
     UNIQUE KEY `uq_award_order_id` (`user_id`, `award_order_id`),
     KEY `idx_state_retry` (`state`, `retry_count`, `create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award credit outbox — proposed Phase 2.2-B5';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award credit outbox — proposed Phase 2.2-B6';
 
--- Repeat for shards _01, _02, _03 (router creates 4 tables per DB).
-CREATE TABLE IF NOT EXISTS `credit_award_task_01` LIKE `credit_award_task_00`;
-CREATE TABLE IF NOT EXISTS `credit_award_task_02` LIKE `credit_award_task_00`;
-CREATE TABLE IF NOT EXISTS `credit_award_task_03` LIKE `credit_award_task_00`;
+-- Repeat for shards _001, _002, _003 (router creates 4 tables per DB).
+CREATE TABLE IF NOT EXISTS `credit_award_task_001` LIKE `credit_award_task_000`;
+CREATE TABLE IF NOT EXISTS `credit_award_task_002` LIKE `credit_award_task_000`;
+CREATE TABLE IF NOT EXISTS `credit_award_task_003` LIKE `credit_award_task_000`;

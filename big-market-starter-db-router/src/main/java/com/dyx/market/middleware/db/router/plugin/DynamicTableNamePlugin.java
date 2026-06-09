@@ -26,6 +26,7 @@ public class DynamicTableNamePlugin implements Interceptor {
             "raffle_activity_order",
             "user_award_record",
             "user_behavior_rebate_order",
+            "credit_award_task",
             "user_credit_order",
             "user_raffle_order"
     };

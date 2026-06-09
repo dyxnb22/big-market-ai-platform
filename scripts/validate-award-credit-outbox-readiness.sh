@@ -82,17 +82,22 @@ else
     check_fail "DDL does NOT contain UNIQUE constraint on award_order_id — idempotency key is missing; double-credit risk on retry"
 fi
 
-# --- Check 7: No production Java source references credit_award_task ---
-PROD_REFS="$(grep -r "credit_award_task" \
+# --- Check 7: credit_award_task references are confined to outbox scaffold classes only ---
+# Phase 2.2-B6 added ICreditAwardTaskDao, CreditAwardTask PO, AwardRepository (flag-guarded),
+# and DispatchCreditAwardTaskJob (ConditionalOnProperty-guarded). These are expected.
+# Any other reference is unexpected.
+UNEXPECTED_REFS="$(grep -r "credit_award_task" \
     --include="*.java" \
     "$REPO_ROOT" \
-    --include="*.java" \
-    -l 2>/dev/null | grep "/src/main/java/" || true)"
+    -l 2>/dev/null \
+    | grep "/src/main/java/" \
+    | grep -v "ICreditAwardTaskDao\|CreditAwardTask\.java\|AwardRepository\|DispatchCreditAwardTaskJob\|DynamicTableNamePlugin" \
+    || true)"
 
-if [[ -z "$PROD_REFS" ]]; then
-    check_pass "No production Java source references credit_award_task (proposed table is not yet wired to any runtime code)"
+if [[ -z "$UNEXPECTED_REFS" ]]; then
+    check_pass "credit_award_task is only referenced inside expected outbox scaffold classes (B6 or later); no unexpected callers present"
 else
-    check_fail "Production Java source references credit_award_task — outbox table was wired before the implementation batch; review: $PROD_REFS"
+    check_fail "Unexpected production Java source references credit_award_task outside outbox scaffold — review: $UNEXPECTED_REFS"
 fi
 
 # --- Check 8: AwardRepository still uses userCreditAccountDao (direct write path present) ---

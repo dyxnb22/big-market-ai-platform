@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B5 award credit outbox strategy designed and scaffolded. Proposed `credit_award_task` outbox table DDL added under `docs/sql/` (proposed only — not wired to production code). `scripts/validate-award-credit-outbox-readiness.sh` added (8 static checks). Runtime behaviour unchanged. Phase 2.2-B4 award credit path audit complete. UserCreditRandomAward call chain documented; remote adapter wiring intentionally deferred due to transaction-boundary risk. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
+**Status: Phase 2.2-B6 award credit outbox producer/consumer scaffold added (flag=false default, runtime behaviour unchanged). `AwardRepository` now carries a disabled-by-default outbox branch; `DispatchCreditAwardTaskJob` consumer added behind `@ConditionalOnProperty`. SQL is still proposed-only. B5: outbox strategy designed and DDL scaffolded. B4: award credit path audited. Write flags still default false — full production cutover pending MQ idempotency verification and remaining path audits.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -299,12 +299,107 @@ This change must NOT be made until:
 ### Validation
 
 Run `./scripts/validate-award-credit-outbox-readiness.sh` to statically verify:
-1. `AwardRepository` does NOT reference `IAccountCreditWriteAdapter` (wiring still deferred).
+1. `AwardRepository` does NOT reference `IAccountCreditWriteAdapter` (wiring still deferred to consumer).
 2. Both credit-account and award-record writes remain inside `transactionTemplate.execute()` in `saveGiveOutPrizesAggregate`.
 3. `docs/microservices-split-phase-2-2-account-service.md` contains the B5 outbox strategy section.
 4. The doc explicitly forbids direct remote adapter wiring before outbox/saga.
 5. `docs/sql/proposed-credit-award-task-outbox.sql` exists with `UNIQUE` constraint on `award_order_id`.
-6. No production Java source references `credit_award_task` table (wiring deferred).
+6. `credit_award_task` references are confined to scaffold classes only (no unexpected callers).
+
+---
+
+## Phase 2.2-B6 — Award Credit Outbox Producer/Consumer Scaffold
+
+**Completed (2026-06-09). Runtime behaviour unchanged (flag defaults to false).**
+
+This batch adds the producer/consumer implementation behind a disabled-by-default feature flag. No SQL tables are required for startup. The default behaviour of `AwardRepository.saveGiveOutPrizesAggregate` is identical to pre-B6.
+
+### Feature flag
+
+```yaml
+# All services that use AwardRepository (big-market-app dev, message-job-service)
+account:
+  award-credit-outbox:
+    enabled: ${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:false}
+```
+
+**SQL must be applied before setting this flag to true** (see `docs/sql/proposed-credit-award-task-outbox.sql`).
+
+### Files added
+
+| File | Purpose |
+|------|---------|
+| `big-market-infrastructure/.../dao/po/CreditAwardTask.java` | PO for `credit_award_task` outbox row |
+| `big-market-infrastructure/.../dao/ICreditAwardTaskDao.java` | Mapper interface: `insert`, `queryPendingTasks`, `updateDispatched`, `updateRetryFailed` |
+| `big-market-app/.../mybatis/mapper/mysql/credit_award_task_mapper.xml` | MyBatis mapper SQL (copied to all three services) |
+| `big-market-message-job-service/.../config/DispatchCreditAwardTaskJob.java` | XXL-Job poller: reads pending rows, calls `IAccountCreditWriteAdapter.createOrder` |
+| `scripts/validate-award-credit-outbox-b6.sh` | 16 static checks for B6 invariants |
+
+### Files modified
+
+| File | Change |
+|------|--------|
+| `big-market-infrastructure/.../repository/AwardRepository.java` | Added `awardCreditOutboxEnabled` flag; outbox branch in `saveGiveOutPrizesAggregate` |
+| `big-market-domain/.../valobj/TradeNameVO.java` | Added `AWARD_CREDIT` enum value for consumer |
+| `big-market-message-job-service/.../application.yml` | Added `account.award-credit-outbox.enabled: false` |
+| `big-market-app/.../application-dev.yml` | Added `account.award-credit-outbox.enabled: false` |
+| `scripts/validate-award-credit-outbox-readiness.sh` | Updated check 7 to allow expected scaffold class references |
+
+### `saveGiveOutPrizesAggregate` branching behaviour
+
+```
+flag = false (DEFAULT — identical to pre-B6):
+  Redis lock → dbRouter.doRouter(userId) → transactionTemplate {
+    updateOrCreateCreditAccount()           ← local DB write, unchanged
+    updateAwardRecordCompletedState()       ← unchanged
+  }
+
+flag = true (DISABLED until SQL deployed):
+  Redis lock → dbRouter.doRouter(userId) → transactionTemplate {
+    updateAwardRecordCompletedState()       ← unchanged
+    creditAwardTaskDao.insert(outboxRow)   ← NEW: outbox row instead of direct write
+  }
+  → DispatchCreditAwardTaskJob poller calls IAccountCreditWriteAdapter.createOrder(awardOrderId)
+```
+
+When `flag=false`:
+- `ICreditAwardTaskDao` bean is registered (Spring `@Mapper` is unconditional) but never called.
+- `DispatchCreditAwardTaskJob` bean is NOT instantiated (`@ConditionalOnProperty=false`).
+- No SQL is executed against `credit_award_task` tables.
+- No startup failure occurs even when the tables don't exist.
+
+### `DispatchCreditAwardTaskJob` consumer
+
+- Declared in `com.dyx.market.message.job.config` (scanned by `MessageJobServiceApplication`).
+- Annotated `@ConditionalOnProperty(name = "account.award-credit-outbox.enabled", havingValue = "true")` — bean is never created when flag=false.
+- Two `@XxlJob` handlers: `DispatchCreditAwardTaskJob_DB1` and `DispatchCreditAwardTaskJob_DB2` (one per shard DB, following `SendMessageTaskJob` pattern).
+- On success: `updateDispatched(task)` via `@DBRouter` on `userId`.
+- On failure: `updateRetryFailed(task)` increments `retry_count`; after 5 attempts, state becomes `failed`.
+- Uses `award_order_id` as `outBusinessNo` — `CreditAdjustService.createOrder()` is already idempotent on this key.
+
+### DDL change note
+
+`activity_id` and `strategy_id` columns were removed from the PO and mapper (and the DDL simplified) because `DistributeAwardEntity` / `buildDistributeUserAwardRecordEntity` does not carry these fields to `GiveOutPrizesAggregate`. Audit trail is available via `user_award_record` JOIN on `award_order_id`. The unique key on `(user_id, award_order_id)` is sufficient for dispatch correctness.
+
+### Validation
+
+```bash
+./scripts/validate-award-credit-path.sh         # B4: 8 checks
+./scripts/validate-award-credit-outbox-readiness.sh  # B5: 8 checks (check 7 updated)
+./scripts/validate-award-credit-outbox-b6.sh    # B6: 16 checks
+```
+
+### Before enabling in staging
+
+1. Apply `docs/sql/proposed-credit-award-task-outbox.sql` to `big_market_01` and `big_market_02`.
+2. Verify `credit_award_task_000..003` tables exist in both DBs.
+3. Set `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true` in staging environment.
+4. Register `DispatchCreditAwardTaskJob_DB1` and `DispatchCreditAwardTaskJob_DB2` in XXL-Job admin.
+5. Run an award flow and confirm `credit_award_task` row transitions `pending → dispatched`.
+6. Run a replay (re-dispatch same `awardOrderId`) and confirm no double-credit.
+7. Promote to production only after step 6 passes.
+
+**Explicitly forbidden until above steps complete:** setting `account.award-credit-outbox.enabled=true` in any environment before the SQL has been applied. The flag is `false` by default for exactly this reason.
 
 ---
 

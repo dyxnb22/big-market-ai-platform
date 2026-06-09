@@ -14,6 +14,8 @@ public enum TradeNameVO {
 
     REBATE("行为返利"),
     CONVERT_SKU("兑换抽奖"),
+    /** Phase 2.2-B6: credit issued via award-credit outbox poller */
+    AWARD_CREDIT("奖品积分发放"),
 
     ;
 

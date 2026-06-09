@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B5 award credit outbox scaffold applied)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B6 award credit outbox scaffold applied)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), and Phase 2.2-B5 (award credit outbox scaffold — design and DDL only, no runtime wiring). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), and Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -113,10 +113,23 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 
 **Phase 2.2-B5 award credit outbox scaffold completed (2026-06-09):**
 - Outbox strategy designed: dedicated `credit_award_task` table (not reusing generic `task` table — different dispatch semantics; needs Dubbo RPC poller, not MQ publish poller)
-- Proposed DDL added: `docs/sql/proposed-credit-award-task-outbox.sql` — sharded 4 tables (_00.._03), `UNIQUE KEY uq_award_order_id (user_id, award_order_id)` as idempotency key; **not wired to any production code**
+- Proposed DDL added: `docs/sql/proposed-credit-award-task-outbox.sql` — sharded 4 tables (`_000.._003`), `UNIQUE KEY uq_award_order_id (user_id, award_order_id)` as idempotency key; **not wired to any production code**
 - B5 design note added to `docs/microservices-split-phase-2-2-account-service.md`: transaction boundary, outbox fields, idempotency key, retry model, rollback/compensation, and explicit prohibition on direct adapter wiring before outbox/saga
-- `scripts/validate-award-credit-outbox-readiness.sh` added: 8 static checks covering adapter-not-wired, transaction boundary, doc content, unique constraint presence, and no production Java references to the proposed table
+- `scripts/validate-award-credit-outbox-readiness.sh` added: 8 static checks; updated in B6 to allow expected scaffold class references
 - **Runtime behaviour unchanged** — no Java source modified; `AwardRepository` still uses direct `userCreditAccountDao` write
+
+**Phase 2.2-B6 award credit outbox producer/consumer scaffold completed (2026-06-09):**
+- `CreditAwardTask` PO and `ICreditAwardTaskDao` added to `big-market-infrastructure`
+- `credit_award_task_mapper.xml` added to big-market-app, message-job-service, and account-service mapper directories
+- `AwardRepository.saveGiveOutPrizesAggregate` now carries a flag-guarded outbox branch:
+  - `flag=false` (default): Redis lock → dbRouter → transactionTemplate → `updateOrCreateCreditAccount` + `updateAwardRecordCompletedState` (**unchanged**)
+  - `flag=true` (disabled): inserts `credit_award_task` outbox row inside same transaction; `updateOrCreateCreditAccount` NOT called
+- `DispatchCreditAwardTaskJob` consumer added to message-job-service: `@ConditionalOnProperty(account.award-credit-outbox.enabled)` — NOT instantiated when flag=false; polls pending outbox rows and calls `IAccountCreditWriteAdapter.createOrder(awardOrderId)`
+- `TradeNameVO.AWARD_CREDIT` enum value added for consumer dispatch
+- Feature flag `account.award-credit-outbox.enabled=false` added to message-job-service and big-market-app configs
+- `scripts/validate-award-credit-outbox-b6.sh` added: 16 static checks for B6 scaffold invariants
+- **Runtime behaviour unchanged** — all flags default to false; no `credit_award_task` table access at startup or runtime
+- DDL is still proposed-only; `activity_id` and `strategy_id` removed from schema (not carried by `GiveOutPrizesAggregate`)
 
 **Known residual issues:**
 - Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
@@ -124,11 +137,11 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - Static gateway routing (no service-discovery integration; account-service has no gateway route — Dubbo/internal only)
 - All market-service tables share one MySQL instance with no per-service schema isolation
 - MQ DLQ behavior is not covered by the smoke test (requires real RabbitMQ integration test)
-- `RaffleActivityController.creditPayExchangeSku` is now wired (Phase 2.2-B3). `UserCreditRandomAward` call chain audited (Phase 2.2-B4); outbox strategy designed (Phase 2.2-B5) — **direct remote adapter wiring explicitly forbidden until outbox producer/consumer is implemented and validated**
+- `RaffleActivityController.creditPayExchangeSku` is now wired (Phase 2.2-B3). `UserCreditRandomAward` call chain audited (Phase 2.2-B4); outbox strategy designed (Phase 2.2-B5); outbox scaffold implemented (Phase 2.2-B6) — **`account.award-credit-outbox.enabled` must stay false until SQL is applied and staging integration is validated**
 - `RaffleActivityPartakeService` quota decrement: deferred, high risk — needs purpose-built decrement RPC before any cutover attempt
 - MQ idempotency end-to-end verification and business-flow validation still required before enabling write flags
-- Outbox producer/consumer implementation (the actual `credit_award_task` insert inside `AwardRepository` transaction, plus the XXL-Job poller that calls `IAccountCreditWriteAdapter`) is a **future batch (Phase 2.2-B6 or later)** — requires staging validation before any production run
-- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B5 section for full outbox design, field definitions, retry model, and rollback analysis
+- Before enabling outbox flag: apply `docs/sql/proposed-credit-award-task-outbox.sql` to staging, register XXL-Job handlers, validate award-flow end-to-end and replay idempotency
+- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B6 section for full pre-staging checklist
 
 ---
 
