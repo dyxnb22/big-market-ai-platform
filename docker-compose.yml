@@ -58,6 +58,8 @@ services:
       - ADMIN_USER_IDS=${ADMIN_USER_IDS:-}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
     volumes:
       - ./data/admin-config:/data/admin-config
     networks:
@@ -88,6 +90,8 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
     volumes:
       - ./data/chatbot-config:/data/chatbot-config
     networks:
@@ -130,6 +134,9 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
+      - ACCOUNT_SERVICE_REMOTE_READ_ENABLED=${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:-false}
+      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-false}
+      - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
       - XXL_JOB_HOST=xxl-job-admin
@@ -140,6 +147,86 @@ services:
       - dev-ops_my-network
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  # ──────────── Message-job service (MQ consumers + XXL-Job handlers) ─────────
+
+  big-market-message-job-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        MODULE_NAME: big-market-message-job-service
+    image: big-market-message-job-service:latest
+    container_name: big-market-message-job-service
+    restart: always
+    ports:
+      - "8085:8085"
+    environment:
+      - SERVER_PORT=8085
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
+      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-false}
+      - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - XXL_JOB_HOST=xxl-job-admin
+      - XXL_JOB_PORT=9090
+      - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
+      - GATEWAY_API_HOST=127.0.0.1
+    networks:
+      - dev-ops_my-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8085/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  # ─── Account service (dark launch — Dubbo/internal only, no traffic cutover) ──
+
+  big-market-account-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        MODULE_NAME: big-market-account-service
+    image: big-market-account-service:latest
+    container_name: big-market-account-service
+    restart: always
+    ports:
+      - "8086:8086"
+    environment:
+      - SERVER_PORT=8086
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
+      - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - GATEWAY_API_HOST=127.0.0.1
+    networks:
+      - dev-ops_my-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8086/actuator/health || exit 1"]
       interval: 20s
       timeout: 10s
       retries: 10

@@ -21,3 +21,4 @@ logging:
   level:
     root: info
     com.dyx.market: info
+  config: classpath:logback-spring.xml

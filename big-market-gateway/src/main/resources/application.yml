@@ -4,6 +4,9 @@ spring:
   profiles:
     active: dev
 
+logging:
+  config: classpath:logback-spring.xml
+
 ---
 spring:
   config:
@@ -16,18 +19,38 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/*/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-cb
+                fallbackUri: forward:/fallback/auth-service
         - id: admin-service
           uri: http://localhost:8082
           predicates:
             - Path=/api/*/admin/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: admin-cb
+                fallbackUri: forward:/fallback/admin-service
         - id: chatbot-service
           uri: http://localhost:8084
           predicates:
             - Path=/api/*/chatbot/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: chatbot-cb
+                fallbackUri: forward:/fallback/chatbot-service
         - id: market-service
           uri: http://localhost:8083
           predicates:
             - Path=/api/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: market-cb
+                fallbackUri: forward:/fallback/market-service
 
 server:
   port: 8080
@@ -36,10 +59,29 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,circuitbreakers
   endpoint:
     health:
       show-details: always
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: true
+    instances:
+      auth-cb:
+        base-config: default
+      admin-cb:
+        base-config: default
+      chatbot-cb:
+        base-config: default
+      market-cb:
+        base-config: default
 
 ---
 spring:
@@ -53,18 +95,66 @@ spring:
           uri: http://${AUTH_SERVICE_HOST:big-market-auth-service}:${AUTH_SERVICE_PORT:8081}
           predicates:
             - Path=/api/*/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-cb
+                fallbackUri: forward:/fallback/auth-service
         - id: admin-service
           uri: http://${ADMIN_SERVICE_HOST:big-market-admin-service}:${ADMIN_SERVICE_PORT:8082}
           predicates:
             - Path=/api/*/admin/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: admin-cb
+                fallbackUri: forward:/fallback/admin-service
         - id: chatbot-service
           uri: http://${CHATBOT_SERVICE_HOST:big-market-chatbot-service}:${CHATBOT_SERVICE_PORT:8084}
           predicates:
             - Path=/api/*/chatbot/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: chatbot-cb
+                fallbackUri: forward:/fallback/chatbot-service
         - id: market-service
           uri: http://${MARKET_SERVICE_HOST:big-market-market-service}:${MARKET_SERVICE_PORT:8083}
           predicates:
             - Path=/api/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: market-cb
+                fallbackUri: forward:/fallback/market-service
 
 server:
   port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: true
+    instances:
+      auth-cb:
+        base-config: default
+      admin-cb:
+        base-config: default
+      chatbot-cb:
+        base-config: default
+      market-cb:
+        base-config: default

@@ -2,6 +2,7 @@ package com.dyx.market.trigger.http;
 
 import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
 import com.dyx.market.domain.auth.service.IAuthService;
+import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
 import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
@@ -53,6 +54,9 @@ public class RaffleStrategyController implements IRaffleStrategyService {
     private IAuthService authService;
     @Resource
     private HttpServletRequest httpServletRequest;
+    // Phase 2.2-B1: routes read-only account count queries; flag defaults to local service.
+    @Resource
+    private IAccountReadAdapter accountRemoteReadAdapter;
 
     /**
      * 策略装配，将策略信息装配到缓存中
@@ -134,8 +138,8 @@ public class RaffleStrategyController implements IRaffleStrategyService {
                     .toArray(String[]::new);
             // 4. 查询规则配置 - 获取奖品的解锁限制，抽奖N次后解锁
             Map<String, Integer> ruleLockCountMap = raffleRule.queryAwardRuleLockCount(treeIds);
-            // 5. 查询抽奖次数 - 用户已经参与的抽奖次数
-            Integer dayPartakeCount = raffleActivityAccountQuotaService.queryRaffleActivityAccountDayPartakeCount(request.getActivityId(), request.getUserId());
+            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
+            Integer dayPartakeCount = accountRemoteReadAdapter.queryRaffleActivityAccountDayPartakeCount(request.getActivityId(), request.getUserId());
             // 6. 遍历填充数据
             List<RaffleAwardListResponseDTO> raffleAwardListResponseDTOS = new ArrayList<>(strategyAwardEntities.size());
             for (StrategyAwardEntity strategyAward : strategyAwardEntities) {
@@ -187,8 +191,8 @@ public class RaffleStrategyController implements IRaffleStrategyService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // 2. 查询用户抽奖总次数
-            Integer userActivityAccountTotalUseCount = raffleActivityAccountQuotaService.queryRaffleActivityAccountPartakeCount(request.getActivityId(), request.getUserId());
+            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
+            Integer userActivityAccountTotalUseCount = accountRemoteReadAdapter.queryRaffleActivityAccountPartakeCount(request.getActivityId(), request.getUserId());
             // 3. 查询规则
             List<RaffleStrategyRuleWeightResponseDTO> raffleStrategyRuleWeightList = new ArrayList<>();
             List<RuleWeightVO> ruleWeightVOList = raffleRule.queryAwardRuleWeightByActivityId(request.getActivityId());

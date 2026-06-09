@@ -48,6 +48,11 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+        </dependency>
+
         <!-- Project modules -->
         <dependency>
             <groupId>com.dyx.market</groupId>

@@ -3,10 +3,13 @@ package com.dyx.market.trigger.listener;
 import com.dyx.market.domain.award.adapter.event.SendAwardMessageEvent;
 import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
 import com.dyx.market.domain.award.service.IAwardService;
+import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.event.BaseEvent;
+import com.dyx.market.types.exception.AppException;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.Argument;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,8 +32,11 @@ public class SendAwardConsumer {
     @Resource
     private IAwardService awardService;
 
-    @RabbitListener(queuesToDeclare = @Queue(value = "${spring.rabbitmq.topic.send_award}"))
-    public void listener(String message) {
+    @RabbitListener(queuesToDeclare = @Queue(
+            value = "${spring.rabbitmq.topic.send_award}",
+            arguments = @Argument(name = "x-dead-letter-exchange", value = "dlx")
+    ))
+    public void listener(String message) throws Exception {
         try {
             log.info("监听用户奖品发送消息，发奖开始 topic: {} message: {}", topic, message);
             BaseEvent.EventMessage<SendAwardMessageEvent.SendAwardMessage> eventMessage = JSON.parseObject(message, new TypeReference<BaseEvent.EventMessage<SendAwardMessageEvent.SendAwardMessage>>() {
@@ -46,9 +52,15 @@ public class SendAwardConsumer {
             awardService.distributeAward(distributeAwardEntity);
 
             log.info("监听用户奖品发送消息，发奖完成 topic: {} message: {}", topic, message);
+        } catch (AppException e) {
+            if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                log.warn("监听用户奖品发送消息，消费重复 topic: {} message: {}", topic, message, e);
+                return;
+            }
+            throw e;
         } catch (Exception e) {
-            log.error("监听用户奖品发送消息，消费失败 topic: {} message: {}", topic, message);
-//            throw e;
+            log.error("监听用户奖品发送消息，消费失败 topic: {} message: {}", topic, message, e);
+            throw e;
         }
     }
 

@@ -14,6 +14,7 @@ import com.dyx.market.types.exception.AppException;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.Argument;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +39,10 @@ public class RebateMessageConsumer {
     @Resource
     private ICreditAdjustService creditAdjustService;
 
-    @RabbitListener(queuesToDeclare = @Queue(value = "${spring.rabbitmq.topic.send_rebate}"))
+    @RabbitListener(queuesToDeclare = @Queue(
+            value = "${spring.rabbitmq.topic.send_rebate}",
+            arguments = @Argument(name = "x-dead-letter-exchange", value = "dlx")
+    ))
     public void listener(String message) {
         try {
             log.info("监听用户行为返利消息 topic: {} message: {}", topic, message);

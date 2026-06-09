@@ -22,7 +22,18 @@ management:
     health:
       show-details: always
 
+nacos:
+  config:
+    sync:
+      enabled: true
+      serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+      dataId: big-market-platform-config
+      group: DEFAULT_GROUP
+      namespace: ""
+
 logging:
   level:
     root: info
     com.dyx.market: info
+    com.alibaba.nacos: warn
+  config: classpath:logback-spring.xml

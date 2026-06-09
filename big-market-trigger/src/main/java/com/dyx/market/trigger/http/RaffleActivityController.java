@@ -14,12 +14,12 @@ import com.dyx.market.domain.auth.service.IAuthService;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.valobj.AwardStateVO;
 import com.dyx.market.domain.award.service.IAwardService;
-import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import com.dyx.market.domain.rebate.model.entity.BehaviorEntity;
+import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
 import com.dyx.market.domain.rebate.model.valobj.BehaviorTypeVO;
 import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
@@ -92,6 +92,9 @@ public class RaffleActivityController implements IRaffleActivityService {
     private IRaffleActivityStageService raffleActivityStageService;
     @Resource
     private HttpServletRequest httpServletRequest;
+    // Phase 2.2-B1: routes read-only account queries; flag defaults to local service.
+    @Resource
+    private IAccountReadAdapter accountRemoteReadAdapter;
 
     // dcc 统一配置中心动态配置降级开关
     @DCCValue("degradeSwitch:close")
@@ -437,7 +440,8 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            ActivityAccountEntity activityAccountEntity = raffleActivityAccountQuotaService.queryActivityAccountEntity(request.getActivityId(), request.getUserId());
+            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
+            ActivityAccountEntity activityAccountEntity = accountRemoteReadAdapter.queryActivityAccountEntity(request.getActivityId(), request.getUserId());
             UserActivityAccountResponseDTO userActivityAccountResponseDTO = UserActivityAccountResponseDTO.builder()
                     .totalCount(activityAccountEntity.getTotalCount())
                     .totalCountSurplus(activityAccountEntity.getTotalCountSurplus())
@@ -537,12 +541,13 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(userId)) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            CreditAccountEntity creditAccountEntity = creditAdjustService.queryUserCreditAccount(userId);
-            log.info("查询用户积分值完成 userId:{} adjustAmount:{}", userId, creditAccountEntity.getAdjustAmount());
+            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
+            BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+            log.info("查询用户积分值完成 userId:{} adjustAmount:{}", userId, balance);
             return Response.<BigDecimal>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(creditAccountEntity.getAdjustAmount())
+                    .data(balance)
                     .build();
         } catch (Exception e) {
             log.error("查询用户积分值失败 userId:{}", userId, e);

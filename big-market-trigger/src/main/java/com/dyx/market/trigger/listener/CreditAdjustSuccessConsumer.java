@@ -10,6 +10,7 @@ import com.dyx.market.types.exception.AppException;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.Argument;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +32,10 @@ public class CreditAdjustSuccessConsumer {
     @Resource
     private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
 
-    @RabbitListener(queuesToDeclare = @Queue(value = "${spring.rabbitmq.topic.credit_adjust_success}"))
+    @RabbitListener(queuesToDeclare = @Queue(
+            value = "${spring.rabbitmq.topic.credit_adjust_success}",
+            arguments = @Argument(name = "x-dead-letter-exchange", value = "dlx")
+    ))
     public void listener(String message) {
         try {
             log.info("监听积分账户调整成功消息，进行交易商品发货 topic: {} message: {}", topic, message);

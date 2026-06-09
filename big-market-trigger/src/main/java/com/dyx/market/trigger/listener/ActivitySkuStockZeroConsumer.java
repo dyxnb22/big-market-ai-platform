@@ -5,6 +5,7 @@ import com.dyx.market.types.event.BaseEvent;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.Argument;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +28,10 @@ public class ActivitySkuStockZeroConsumer {
     @Resource
     private IRaffleActivitySkuStockService skuStock;
 
-    @RabbitListener(queuesToDeclare = @Queue(value = "${spring.rabbitmq.topic.activity_sku_stock_zero}"))
+    @RabbitListener(queuesToDeclare = @Queue(
+            value = "${spring.rabbitmq.topic.activity_sku_stock_zero}",
+            arguments = @Argument(name = "x-dead-letter-exchange", value = "dlx")
+    ))
     public void listener(String message) {
         try {
             log.info("监听活动sku库存消耗为0消息 topic: {} message: {}", topic, message);

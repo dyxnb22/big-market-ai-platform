@@ -28,6 +28,8 @@
         <module>big-market-admin-service</module>
         <module>big-market-chatbot-service</module>
         <module>big-market-market-service</module>
+        <module>big-market-message-job-service</module>
+        <module>big-market-account-service</module>
     </modules>
 
     <properties>

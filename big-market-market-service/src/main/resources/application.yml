@@ -28,6 +28,7 @@ spring:
     listener:
       simple:
         prefetch: 1
+        default-requeue-rejected: false
     topic:
       activity_sku_stock_zero: activity_sku_stock_zero
       send_award: send_award
@@ -164,6 +165,20 @@ gateway:
     apiHost: http://${GATEWAY_API_HOST:127.0.0.1}:8091
     big-market-appId: ${GATEWAY_APP_ID:big-market}
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
+
+account:
+  service:
+    remote-read:
+      # Phase 2.2-B1: feature flag for routing read-only account queries to account-service via Dubbo.
+      # Default false — existing local domain service path is used.
+      # Set to true only after Docker 17/17 validation and manual read verification.
+      enabled: ${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:false}
+    remote-credit-write:
+      # Phase 2.2-B2 scaffold only. Default false keeps all credit writes local.
+      enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
+    remote-quota-write:
+      # Phase 2.2-B2 scaffold only. Default false keeps all quota writes local.
+      enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
 
 management:
   endpoints:

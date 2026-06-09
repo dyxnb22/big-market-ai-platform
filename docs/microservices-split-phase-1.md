@@ -86,11 +86,18 @@ External Traffic
 
 ### `big-market-market-service` (port 8083)
 - All raffle/activity/strategy/rebate/credit/ERP/DCC endpoints
-- MQ listeners: activity SKU stock zero, send award, rebate, credit adjust
-- XXL-Job scheduled tasks: send message task, update activity SKU stock, update award stock
 - Dubbo RPC service for external rebate calls (`RebateServiceRPC`)
-- Full infrastructure: MySQL (sharded 2 DBs × 4 tables), Redis, RabbitMQ, Elasticsearch, Nacos, Zookeeper (DCC, disabled by default)
-- Scans: `com.dyx.market` (broad — all project packages from classpath)
+- Full infrastructure: MySQL (sharded 2 DBs × 4 tables), Redis, Elasticsearch, Nacos
+- **No longer owns MQ consumers or XXL-Job handlers** — moved to `big-market-message-job-service`
+- Scans: `com.dyx.market.market`, `com.dyx.market.trigger.http`, `com.dyx.market.trigger.rpc`, `com.dyx.market.domain`, `com.dyx.market.infrastructure`
+
+### `big-market-message-job-service` (port 8085) — Phase 2.1
+- MQ listeners: activity SKU stock zero, send award, rebate (send_rebate), credit adjust
+- XXL-Job handlers: send message task, update activity SKU stock, update award stock
+- DLQ configuration: DLX exchange + 4 `*.dlq` queues (dead-letter routing for all consumers)
+- `default-requeue-rejected: false` — failed messages dead-lettered, not requeued
+- Full infrastructure: MySQL (sharded), Redis, RabbitMQ, Elasticsearch (for ESUserRaffleOrderRepository), Nacos-configured XXL-Job executor (`big-market-message-job`, port 9998)
+- Scans: `com.dyx.market.message.job`, `com.dyx.market.trigger.job`, `com.dyx.market.trigger.listener`, `com.dyx.market.domain`, `com.dyx.market.infrastructure`
 
 ### `big-market-chatbot-service` (port 8084)
 - Endpoint: `POST /api/v1/chatbot/ask`
@@ -108,6 +115,7 @@ External Traffic
 | big-market-admin-service | 8082 | `8082` — admin config API |
 | big-market-market-service | 8083 | `8083` — core market APIs |
 | big-market-chatbot-service | 8084 | `8084` — chatbot API |
+| big-market-message-job-service | 8085 | `8085` — actuator health only (no public API) |
 | mysql | 3306 | `13306` (host) |
 | redis | 6379 | `16379` (host) |
 | rabbitmq | 5672/15672 | `5672/15672` |
@@ -189,15 +197,76 @@ curl -X POST http://localhost:8080/api/v1/chatbot/ask \
 curl "http://localhost:8080/api/v1/raffle/activity/query_stage_activity_id?channel=default&source=web"
 ```
 
-## 8. Known Limitations
+## 8. Phase 1.3 — Stability Batch (2026-06-09)
+
+This batch hardens Phase 1 before any new service is extracted. No new service modules were added.
+
+### 8.1 SendAwardConsumer DLQ fix
+
+**Problem:** `SendAwardConsumer.listener()` caught all exceptions and swallowed them (commented-out `throw e`). Failed award messages were silently dropped — DLQ was never triggered.
+
+**Fix:** Uncommented exception propagation. Pattern now matches `CreditAdjustSuccessConsumer`:
+- `AppException` with `INDEX_DUP` code → `log.warn` + `return` (idempotent duplicate, not an error)
+- Other `AppException` → rethrow → Spring AMQP dead-letters to `send_award.dlq`
+- Generic `Exception` → `log.error` + rethrow → Spring AMQP dead-letters to `send_award.dlq`
+- `listener` method now declares `throws Exception` (valid for Spring AMQP `@RabbitListener`)
+
+**File:** `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
+
+### 8.2 Gateway circuit breakers
+
+**Problem:** Gateway had no failure isolation. A single downed service caused all in-flight requests to hang until timeout.
+
+**Fix:** Added Spring Cloud CircuitBreaker (Resilience4J reactive) to all four downstream routes:
+- `auth-cb` → fallback `/fallback/auth-service`
+- `admin-cb` → fallback `/fallback/admin-service`
+- `chatbot-cb` → fallback `/fallback/chatbot-service`
+- `market-cb` → fallback `/fallback/market-service`
+
+Fallback returns `{"code":"0007","info":"网关接口调用失败","data":null}` — stable JSON, matches `ResponseCode.GATEWAY_ERROR`. Circuit breaker settings: 10-request sliding window, 50% failure threshold, 10s open-state wait.
+
+**New files:**
+- `big-market-gateway/src/main/java/com/dyx/market/gateway/fallback/FallbackController.java`
+- `big-market-gateway/pom.xml` — added `spring-cloud-starter-circuitbreaker-reactor-resilience4j:2.1.7`
+
+### 8.3 Trace ID propagation
+
+**Problem:** No correlation ID across service hops, making cross-service request tracing impossible.
+
+**Fix:**
+- Gateway reads `X-Trace-Id` from incoming request; generates a random UUID if absent. Forwards it to downstream services and echoes it in the response header.
+- All four servlet-based services (auth, admin, market, chatbot) install a `TraceIdFilter` (`OncePerRequestFilter`) that reads `X-Trace-Id`, places it in MDC under key `traceId`, and echoes it on the response.
+- Trace ID is lightweight (UUID, no collector required). Add `%X{traceId}` to logback patterns to surface it in logs.
+
+**New files:**
+- `big-market-gateway/src/main/java/com/dyx/market/gateway/filter/TraceIdGlobalFilter.java`
+- `big-market-{auth,admin,chatbot}-service/.../config/TraceIdFilter.java`
+- `big-market-market-service/.../config/TraceIdFilter.java`
+
+### 8.4 Smoke test updated
+
+Smoke test extended from 15 to 16 checks. The new check calls `GET /fallback/auth-service` on the gateway and expects `"0007"` in the response, verifying the fallback controller is wired correctly.
+
+**MQ/DLQ behavior is NOT validated by the smoke test.** The DLQ fix (8.1) requires a running RabbitMQ with the DLX policy active to verify end-to-end.
+
+### 8.5 What is still NOT done (account-service extraction is next)
+
+- Account-service has **not** been extracted. That is the next planned phase.
+- Database schemas are **not** split. All services still share the same MySQL instance.
+- Domain packages have **not** been moved. All domain code is still in `big-market-domain`.
+- Service mesh, Zipkin, and OpenTelemetry are **not** in scope.
+
+---
+
+## 9. Known Limitations
 
 ### Phase 1 Limitations
 1. **Shared database**: all services that need MySQL still share the same schemas. No per-service DB isolation yet.
 2. **Shared Redis**: market-service and any other service that might need caching all share one Redis instance.
-3. **`PlatformConfigService` is not shared**: admin-service and chatbot-service each have their own independent file-backed config store. Config changes in admin-service are not reflected in chatbot-service in real time. Phase 2 should replace this with a shared config center (Nacos config, or a dedicated config service).
-4. **No circuit breaker between gateway and services**: gateway has no retry or fallback configured. Add Spring Cloud CircuitBreaker in Phase 2.
+3. **`PlatformConfigService` now syncs via Nacos**: admin-service publishes config changes to Nacos dataId `big-market-platform-config`; chatbot-service subscribes and refreshes in real time. Requires `nacos.config.sync.enabled=true` and `NACOS_HOST=nacos` (both set in docker-compose). Falls back to local defaults if Nacos is unavailable at startup.
+4. **Circuit breakers now active at gateway**: all four downstream routes have Resilience4J circuit breakers and stable fallback responses (added in Phase 1.3).
 5. **No service discovery at gateway**: gateway routes are statically configured. In Phase 2, integrate Spring Cloud LoadBalancer with Nacos discovery.
-6. **big-market-app preserved**: the original monolith launcher still exists. It will conflict on ports if started simultaneously with the new services. It is kept as a fallback and reference only.
+6. **big-market-app preserved**: the original monolith launcher still exists. It uses port 8098, so it does not directly collide with the Phase 1 service ports (8080-8084). Do not run it simultaneously with the Phase 1 stack against the same infrastructure unless you intentionally want duplicate consumers, duplicate scheduled jobs, shared DB/Redis writes, and duplicate Dubbo/XXL-Job registration behavior. It is kept as a fallback and reference only.
 
 ### Runtime Prerequisites
 - Nacos requires MySQL to be fully initialized (including `nacos_config` schema from `nacos.sql`)

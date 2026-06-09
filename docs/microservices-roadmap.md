@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-07)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B remote-read validation scaffold applied)
 
-The project has completed Phase 1: a modular monolith split into 5 independently deployable Spring Boot services behind an API gateway. All 5 services run healthy; the 14-check smoke test passes end-to-end.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), and Phase 2.2-B validation/write-scaffold work. Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -11,16 +11,86 @@ The project has completed Phase 1: a modular monolith split into 5 independently
 | `big-market-gateway` | 8080 | Spring Cloud Gateway — routes all external traffic |
 | `big-market-auth-service` | 8081 | Stateless JWT login + token verify |
 | `big-market-admin-service` | 8082 | Platform runtime config (file-backed) |
-| `big-market-market-service` | 8083 | Core raffle / activity / credit / rebate / award / MQ / jobs / Dubbo RPC |
+| `big-market-market-service` | 8083 | HTTP APIs + Dubbo RPC (raffle / activity / strategy / rebate / credit / ERP) |
 | `big-market-chatbot-service` | 8084 | AI chatbot (DeepSeek or local rule engine) |
+| `big-market-message-job-service` | 8085 | MQ consumers + XXL-Job handlers |
+| `big-market-account-service` | 8086 | **Dark launch** — Dubbo provider for credit + quota. Remote-read can be validated by script; write traffic is not cut over. |
 
-**Known Phase 1 residual issues:**
-- `PlatformConfigService` is isolated per-process (admin-service and chatbot-service each hold independent state)
-- No dead-letter queue: MQ consumer failures requeue immediately → potential infinite retry loops
-- No circuit breaker between gateway and downstream services
-- Static gateway routing (no service-discovery integration)
-- All market logic (HTTP controllers, MQ listeners, XXL-Job handlers, Dubbo RPC) is packed into one `market-service` JVM
+**Phase 1.2 changes completed (2026-06-09):**
+- `spring.rabbitmq.listener.simple.default-requeue-rejected=false` in market-service (now message-job-service)
+- DLX exchange + DLQ queues + bindings declared via `RabbitMQDlqConfig`
+- All 4 MQ consumer queues now declare `x-dead-letter-exchange=dlx`
+
+**Phase 2.1 changes completed (2026-06-09):**
+- `big-market-message-job-service` created as new Spring Boot launcher (port 8085)
+- MQ consumers (`ActivitySkuStockZeroConsumer`, `CreditAdjustSuccessConsumer`, `RebateMessageConsumer`, `SendAwardConsumer`) now run only in message-job-service
+- XXL-Job handlers (`SendMessageTaskJob`, `UpdateActivitySkuStockJob`, `UpdateAwardStockJob`) now run only in message-job-service
+- market-service scan narrowed to exclude `trigger.job` and `trigger.listener`
+- `XxlJobAutoConfig` and `RabbitMQDlqConfig` removed from market-service
+- XXL-Job executor appname: `big-market-message-job` (port 9998)
+
+**Phase 1.2 Task 2 completed (2026-06-09):**
+- `NacosConfigSyncService` in `big-market-management` (conditional on `nacos.config.sync.enabled=true`)
+- Admin-service publishes full platform config to Nacos `big-market-platform-config` on every save/delete
+- Chatbot-service subscribes: fetches on startup + listener for live pushes
+- `PlatformConfigService` isolation issue resolved
+
+**Phase 1.3 stability batch completed (2026-06-09):**
+- `SendAwardConsumer` now propagates unexpected failures — DLQ will trigger for award processing errors; INDEX_DUP (duplicate message) is still swallowed gracefully
+- Gateway circuit breakers added (Resilience4J) for all four downstream routes with stable JSON fallback responses (`code=0007`)
+- Trace ID propagation: gateway injects `X-Trace-Id` header (generating one if absent); all servlet services read it into MDC for structured logging
+- Smoke test extended to 16/16 (added fallback endpoint check)
+
+**Phase 2.1 stabilization batch completed (2026-06-09):**
+- Logback MDC key mismatch fixed: patterns now use `%X{traceId}` (was `%X{trace-id}`)
+- `logback-spring.xml` added to auth-service, admin-service, chatbot-service, gateway
+- `TraceIdFilter` added to message-job-service (actuator HTTP endpoints now carry traceId)
+- `logging.config: classpath:logback-spring.xml` added to all service application.yml files
+- `scripts/validate-microservices-stack.sh` added (orchestrates build + docker + smoke test)
+- `scripts/smoke-test-phase-1.sh` comments updated (historically named; validates 6-service stack)
+- `docs/microservices-split-phase-2-2-account-service.md` created (design-only readiness doc)
+
+**Phase 2.2-A dark launch batch completed (2026-06-09):**
+- `big-market-account-service` created as new Spring Boot launcher (port 8086)
+- `IAccountCreditService` and `IAccountQuotaService` Dubbo API contracts added to `big-market-api`
+- `CreditTradeRequestDTO` added to `big-market-api`
+- `AccountCreditServiceRPC` and `AccountQuotaServiceRPC` Dubbo providers implemented; delegate to existing domain services unchanged
+- account-service added to `docker-compose.yml` (port 8086, same infra network)
+- Smoke test extended to **17/17** (7 health checks + 9 functional + 1 fallback)
+- `scripts/validate-microservices-stack.sh` argument parsing bug fixed (`--skip-docker` no longer breaks HOST detection)
+- `docs/microservices-split-phase-2-2-account-service.md` updated with dark-launch status and Phase 2.2-B plan
+- **No traffic cutover**: market-service and message-job-service callers still use domain services in-process
+
+**Phase 2.2-B1 read-only adapter batch completed (2026-06-09):**
+- `AccountCreditServiceRPC`: null-request guard; invalid tradeName/tradeType now returns `ILLEGAL_PARAMETER` instead of leaking `IllegalArgumentException`
+- `IAccountReadAdapter` interface added in `big-market-trigger`; `AccountRemoteReadAdapter` implements it in `big-market-market-service` with `@DubboReference(check=false)` for both account-service APIs
+- `LocalAccountReadAdapter` added in `big-market-trigger` as `@ConditionalOnMissingBean` fallback for `big-market-app` and any host without account-service clients
+- Feature flag `account.service.remote-read.enabled=false` added to market-service — defaults off; remote reads fall back to local on any failure
+- `RaffleActivityController` read-only methods (`queryUserCreditAccount`, `queryUserActivityAccount`) wired to adapter
+- `RaffleStrategyController` account count reads (`queryRaffleAwardList`, `queryRaffleStrategyRuleWeight`) wired to adapter
+- All write paths (draw, creditPayExchangeSku, calendarSignRebate, MQ consumers) unchanged
+- Smoke test remains **17/17** (no behaviour change with flag=false)
+- **No traffic flowing to account-service yet** — flag defaults false
+
+**Phase 2.2-B validation/write-scaffold batch completed (2026-06-09):**
+- `docker-compose.yml` now wires `ACCOUNT_SERVICE_REMOTE_READ_ENABLED=false` into market-service explicitly
+- `scripts/validate-account-remote-read.sh` validates remote-read=true, checks the four read endpoints, proves `AccountRemoteReadAdapter` logs, stops account-service for one fallback check, restarts it, and restores remote-read=false
+- `AccountRemoteReadAdapter` logs remote successes as well as fallbacks/non-success responses
+- Write-path feature flags added with defaults false:
+  - `account.service.remote-credit-write.enabled=false`
+  - `account.service.remote-quota-write.enabled=false`
+- Trigger-level write adapter interfaces/local defaults and market-service remote-capable adapters were added, but no caller is routed through them yet
+- `IAccountQuotaService` now has quota write RPC scaffold methods (`createOrder`, `updateOrder`) with provider implementations in account-service
+- **No write traffic is cut over by default**
+
+**Known residual issues:**
+- Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
+- Remote-read script depends on local test data for `userId=xiaofuge` and `activityId=100301`; override with `ACCOUNT_REMOTE_READ_USER_ID` / `ACCOUNT_REMOTE_READ_ACTIVITY_ID` if needed
+- Static gateway routing (no service-discovery integration; account-service has no gateway route — Dubbo/internal only)
 - All market-service tables share one MySQL instance with no per-service schema isolation
+- MQ DLQ behavior is not covered by the smoke test (requires real RabbitMQ integration test)
+- Write-path cutover to account-service is Phase 2.2-B2 — only after Docker 17/17 + `./scripts/validate-account-remote-read.sh`
+- See `docs/microservices-split-phase-2-2-account-service.md` for gate checks and validation steps
 
 ---
 
@@ -59,7 +129,7 @@ If the domain API (`IBehaviorRebateService`, `IAwardService`, etc.) is still cha
 
 ## 3. Phase 1 Completed — Runtime Split
 
-**Status: Done and validated.**
+**Status: Done. Phase 1.2 reliability cleanup also complete (2026-06-09).**
 
 All five services deploy from the root `docker-compose.yml`. Startup is two commands:
 
@@ -68,7 +138,7 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 docker compose up --build -d
 ```
 
-Verification: `./scripts/smoke-test-phase-1.sh` expects 14/14 PASS.
+Verification: `./scripts/smoke-test-phase-1.sh` expects 16/16 PASS (6 health checks + 9 functional checks + 1 fallback endpoint check). Use `./scripts/validate-microservices-stack.sh` to orchestrate build + docker + smoke in one command. This is the acceptance gate for current runtime validation, not a guarantee that the local Docker stack is running right now.
 
 Key design decisions locked in Phase 1:
 - Shared library modules (`big-market-domain`, `big-market-infrastructure`, etc.) are JARs — no code was moved
@@ -367,29 +437,22 @@ Replace static gateway routes in `application.yml` with Nacos service discovery:
 
 These items are not prerequisites for Phase 2/3 but must be done before any service goes to a shared or production environment.
 
-### 4.1 Circuit breakers at the gateway
+### ~~4.1 Circuit breakers at the gateway~~ DONE (Phase 1.3, 2026-06-09)
 
-Add Spring Cloud CircuitBreaker (Resilience4J) to the gateway for each downstream route:
-```yaml
-spring.cloud.gateway.routes:
-  - id: market-route
-    filters:
-      - name: CircuitBreaker
-        args:
-          name: market-cb
-          fallbackUri: forward:/fallback/market
-```
-
-Tuning: 50% failure rate threshold, 10-second window, 30-second open state.
+Resilience4J circuit breakers are active on all four gateway routes (`auth-cb`, `admin-cb`, `chatbot-cb`, `market-cb`). Fallback returns `{"code":"0007","info":"网关接口调用失败","data":null}`. Tuning: 50% failure rate, 10-request sliding window, 10s open-state wait.
 
 ### 4.2 Distributed tracing
 
-Add Micrometer Tracing + Zipkin (or OpenTelemetry) to all services:
-- Gateway injects trace context into downstream requests
-- Each service propagates trace context through MDC and MQ message headers
-- Zipkin UI shows end-to-end latency breakdown per request
+Lightweight trace ID propagation complete (Phase 1.3 + Phase 2.1 stabilization batch):
+- `X-Trace-Id` injected by gateway, forwarded to all downstream services
+- All servlet services (auth, admin, market, chatbot, message-job) read it into MDC as `traceId`
+- All logback-spring.xml files now use `%X{traceId}` pattern (MDC key mismatch fixed in stabilization batch)
+- Gateway (WebFlux) logs do not carry `traceId` in MDC — Reactor context bridging required for that; deferred
 
-Prerequisite: Phase 1.2 structured logging must be in place first.
+Full distributed tracing (Micrometer Tracing + Zipkin/OpenTelemetry) is still pending:
+- End-to-end latency breakdown in a tracing UI
+- MQ message header trace propagation
+- Prerequisite: structured JSON log format per service
 
 ### 4.3 Per-service rate limiting at the gateway
 
@@ -439,7 +502,7 @@ The following will **not** be done regardless of architectural pressure. These a
 
 These are the three highest-value tasks to do immediately after Phase 1 stabilization, in order.
 
-### Task 1: Implement DLQ policy (Phase 1.2)
+### ~~Task 1: Implement DLQ policy (Phase 1.2)~~ DONE (2026-06-09)
 
 **File:** `big-market-market-service/src/main/resources/application.yml`
 
@@ -456,19 +519,24 @@ And add `RabbitMQConfig` class declaring DLX and DLQ bindings for the 4 consumer
 
 **Why first:** Eliminates the infinite-retry risk from Phase 1. Low risk, high reliability benefit, no new services.
 
-### Task 2: Shared config via Nacos (Phase 1.2)
+### ~~Task 2: Shared config via Nacos (Phase 1.2)~~ DONE (2026-06-09)
 
-**Files:** `big-market-admin-service`, `big-market-chatbot-service`
+`NacosConfigSyncService` added to `big-market-management` (conditional on `nacos.config.sync.enabled=true`).
+Admin-service publishes the full config to Nacos dataId `big-market-platform-config` on every save/delete.
+Chatbot-service fetches current config from Nacos on startup and registers a listener for live updates.
+Both services connect to `nacos:8848` in Docker via `NACOS_HOST` env var.
 
-Migrate `PlatformConfigService` to write to Nacos config namespace on save; chatbot-service subscribes. This fixes the most visible Phase 1 limitation: chatbot enable/disable toggle does not propagate in real time.
+### ~~Task 3: Extract `message-job-service` (Phase 2.1)~~ DONE (2026-06-09)
 
-**Why second:** High visibility fix. Admin can toggle chatbot in the admin API and chatbot-service respects it immediately.
+`big-market-message-job-service` created on port 8085. MQ consumers and XXL-Job handlers moved from market-service scan scope. Market-service is now HTTP + Dubbo only.
 
-### Task 3: Extract `message-job-service` (Phase 2.1)
+### Task 4: Confirm Docker runtime and extract account-service (Phase 2.2)
 
-Create `big-market-message-job-service` module (port 8085). Move XXL-Job handlers and MQ consumers from market-service scan scope into the new service.
+**Next up.** Gate: `./scripts/validate-microservices-stack.sh` returns 16/16 PASS.
 
-**Why third:** Smallest, cleanest extract. No domain ownership transfer, no schema migration needed. Reduces market-service startup time and scope. Validates the extraction pattern before the harder domain-ownership splits.
+Design doc: [docs/microservices-split-phase-2-2-account-service.md](microservices-split-phase-2-2-account-service.md)
+
+Proposed: `big-market-account-service` on port 8086, owning `domain.credit` + `domain.activity.service.quota` + five account tables. All callers (`CreditAdjustSuccessConsumer`, `UserCreditRandomAward`, `RaffleActivityPartakeService`) must be wired via Dubbo before the cut-over.
 
 ---
 
@@ -480,15 +548,19 @@ Every future phase change must pass all three layers of validation before it is 
 ```bash
 mvn clean package -DskipTests
 ```
-Must complete with 0 errors and 0 compilation warnings for all 20+ modules.
+Must complete with 0 errors and 0 compilation warnings for all Maven modules. As of Phase 1, the root `pom.xml` declares 19 modules.
 
 ### Layer 2: Smoke test (regression gate)
 ```bash
+# Quick (smoke only):
 ./scripts/smoke-test-phase-1.sh
-```
-Must return 14/14 PASS. This test must remain green after every change, whether it's an infra config change, a new service module, or a compose file update.
 
-As new services are added in Phase 2, extend the smoke test script with new checks for the new service's health endpoint and at least one functional endpoint.
+# Full orchestration (build + docker + smoke):
+./scripts/validate-microservices-stack.sh
+```
+Must return 16/16 PASS (as of Phase 2.1 stabilization). This test must remain green after every change.
+
+As new services are added in Phase 2, extend the smoke test script with new checks for the new service's health endpoint and at least one functional endpoint. The script is historically named `smoke-test-phase-1` for backwards compatibility.
 
 ### Layer 3: Integration validation (manual)
 

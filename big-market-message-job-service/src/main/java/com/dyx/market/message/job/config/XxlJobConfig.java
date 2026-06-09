@@ -1,4 +1,4 @@
-package com.dyx.market.market.config;
+package com.dyx.market.message.job.config;
 
 import com.xxl.job.core.executor.impl.XxlJobSpringExecutor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Slf4j
 @Configuration
-public class XxlJobAutoConfig {
+public class XxlJobConfig {
 
     @Value("${xxl.job.admin.addresses}")
     private String adminAddresses;

@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
-# Phase 1 microservices smoke test.
+# Microservices smoke test — validates the full 7-service stack (Phase 2.2-A dark launch).
+#
+# Historical note: this script is named smoke-test-phase-1 for backwards compatibility
+# (it was introduced in Phase 1) but it now covers all 7 services including
+# big-market-message-job-service (added in Phase 2.1) and
+# big-market-account-service (dark-launched in Phase 2.2-A, Dubbo/internal only).
+# The canonical alias is:
+#   ./scripts/validate-microservices-stack.sh  ← orchestrates build + docker + this script
+#
 # Usage: ./scripts/smoke-test-phase-1.sh [gateway-host]
 # Default host: localhost
+#
+# Expected result: 17/17 PASS
+#   - 7 health checks  (gateway + 6 backend services, including account-service dark launch)
+#   - 9 functional API checks
+#   - 1 gateway fallback endpoint check
 
 set -euo pipefail
 
@@ -11,6 +24,8 @@ AUTH="http://$HOST:8081"
 ADMIN="http://$HOST:8082"
 MARKET="http://$HOST:8083"
 CHATBOT="http://$HOST:8084"
+MSGJ="http://$HOST:8085"
+ACCOUNT="http://$HOST:8086"
 ADMIN_TOKEN="${ADMIN_TOKEN:-admin-dev-token}"
 
 PASS=0
@@ -27,11 +42,11 @@ check() {
   fi
 }
 
-echo "=== Phase 1 Smoke Test ==="
+echo "=== Phase 2.2-A Smoke Test (7-service dark launch) ==="
 echo ""
 
 echo "--- Health checks ---"
-for svc_port in "auth-service:$HOST:8081" "admin-service:$HOST:8082" "market-service:$HOST:8083" "chatbot-service:$HOST:8084" "gateway:$HOST:8080"; do
+for svc_port in "auth-service:$HOST:8081" "admin-service:$HOST:8082" "market-service:$HOST:8083" "chatbot-service:$HOST:8084" "gateway:$HOST:8080" "message-job-service:$HOST:8085" "account-service(dark):$HOST:8086"; do
   name="${svc_port%%:*}"; addr="${svc_port#*:}"
   result=$(curl -sf "http://$addr/actuator/health" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "UNREACHABLE")
   if [ "$result" = "UP" ]; then
@@ -87,7 +102,12 @@ GW_DRAW_NO_TOKEN=$(curl -sf -X POST "$GW/api/v1/raffle/activity/draw_by_token" \
 check "gateway → market/draw_by_token (no token, expect 0009)" "0009" "$GW_DRAW_NO_TOKEN"
 
 echo ""
+echo "--- Gateway fallback endpoint ---"
+GW_FALLBACK=$(curl -sf "$GW/fallback/auth-service" 2>/dev/null || echo '{"code":"FAIL"}')
+check "gateway fallback endpoint returns 0007" "0007" "$GW_FALLBACK"
+
+echo ""
 echo "=========================================="
-echo "Results: $PASS passed, $FAIL failed"
+echo "Results: $PASS passed, $FAIL failed  (expected 17/17)"
 echo "=========================================="
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1
