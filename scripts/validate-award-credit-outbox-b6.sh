@@ -18,6 +18,7 @@
 #   14. ICreditAwardTaskDao is annotated @DBRouterStrategy(splitTable = true).
 #   15. DynamicTableNamePlugin knows how to rewrite credit_award_task to physical shard tables.
 #   16. DispatchCreditAwardTaskJob scans all four table shards per DB.
+#   17. docker-compose.yml exposes ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED to message-job-service container.
 #
 # None of these checks require a running stack.
 
@@ -34,6 +35,7 @@ MJS_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/applicatio
 MAPPER_APP="$REPO_ROOT/big-market-app/src/main/resources/mybatis/mapper/mysql/credit_award_task_mapper.xml"
 MAPPER_MJS="$REPO_ROOT/big-market-message-job-service/src/main/resources/mybatis/mapper/mysql/credit_award_task_mapper.xml"
 MAPPER_ACC="$REPO_ROOT/big-market-account-service/src/main/resources/mybatis/mapper/mysql/credit_award_task_mapper.xml"
+DOCKER_COMPOSE="$REPO_ROOT/docker-compose.yml"
 
 PASS=0
 FAIL=0
@@ -175,6 +177,14 @@ if [[ -f "$JOB_FILE" ]] && grep -q "tbIdx < 4" "$JOB_FILE" && grep -q "dbRouter.
     check_pass "DispatchCreditAwardTaskJob iterates all four table shards per DB"
 else
     check_fail "DispatchCreditAwardTaskJob does not clearly iterate all four table shards per DB — pending tasks may be missed"
+fi
+
+# --- Check 17: docker-compose.yml exposes ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED to message-job-service ---
+if [[ -f "$DOCKER_COMPOSE" ]] && grep -A 30 "big-market-message-job-service:" "$DOCKER_COMPOSE" \
+    | grep -q "ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED"; then
+    check_pass "docker-compose.yml exposes ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED to message-job-service container"
+else
+    check_fail "docker-compose.yml does NOT expose ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED — container flag cannot be overridden at runtime"
 fi
 
 echo ""

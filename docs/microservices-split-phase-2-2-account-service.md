@@ -333,7 +333,7 @@ account:
 | `big-market-infrastructure/.../dao/ICreditAwardTaskDao.java` | Mapper interface: `insert`, `queryPendingTasks`, `updateDispatched`, `updateRetryFailed` |
 | `big-market-app/.../mybatis/mapper/mysql/credit_award_task_mapper.xml` | MyBatis mapper SQL (copied to all three services) |
 | `big-market-message-job-service/.../config/DispatchCreditAwardTaskJob.java` | XXL-Job poller: reads pending rows, calls `IAccountCreditWriteAdapter.createOrder` |
-| `scripts/validate-award-credit-outbox-b6.sh` | 16 static checks for B6 invariants |
+| `scripts/validate-award-credit-outbox-b6.sh` | 17 static checks for B6 invariants |
 
 ### Files modified
 
@@ -386,7 +386,7 @@ When `flag=false`:
 ```bash
 ./scripts/validate-award-credit-path.sh         # B4: 8 checks
 ./scripts/validate-award-credit-outbox-readiness.sh  # B5: 8 checks (check 7 updated)
-./scripts/validate-award-credit-outbox-b6.sh    # B6: 16 checks
+./scripts/validate-award-credit-outbox-b6.sh    # B6: 17 checks
 ```
 
 ### Before enabling in staging
@@ -400,6 +400,103 @@ When `flag=false`:
 7. Promote to production only after step 6 passes.
 
 **Explicitly forbidden until above steps complete:** setting `account.award-credit-outbox.enabled=true` in any environment before the SQL has been applied. The flag is `false` by default for exactly this reason.
+
+---
+
+## Phase 2.2-B7 — Award Credit Outbox Integration Validation Scaffold
+
+**Completed (2026-06-09). This is a validation scaffold only — NOT production enablement.**
+
+This batch provides a safe, recoverable local/staging integration path to validate the Phase 2.2-B6 outbox producer/consumer before any production cutover. No default business behaviour is changed. All flags remain `false` by default.
+
+### Goal
+
+Validate that:
+1. `credit_award_task_000..003` tables can be created correctly in both shard DBs.
+2. `message-job-service` starts cleanly with `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true`.
+3. `DispatchCreditAwardTaskJob` bean is registered and XXL-Job handlers are available when the flag is enabled.
+4. The service restores cleanly to `flag=false` after validation.
+5. (Manual, staging) A pending outbox row transitions `pending → dispatched` without double-credit.
+
+### New file
+
+| File | Purpose |
+|------|---------|
+| `scripts/validate-award-credit-outbox-integration.sh` | B7 integration validation scaffold |
+
+### Script modes
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| Default (static preflight) | `./scripts/validate-award-credit-outbox-integration.sh` | 9 static checks + Docker health/flag/table checks if stack is up. No data modified. |
+| Apply DDL locally | `APPLY_LOCAL_OUTBOX_DDL=true ./scripts/validate-award-credit-outbox-integration.sh` | Applies `docs/sql/proposed-credit-award-task-outbox.sql` to local Docker MySQL only. Blocked for non-localhost MySQL hosts. |
+| Test flag=true startup | `RUN_FLAG_TRUE_VALIDATION=true ./scripts/validate-award-credit-outbox-integration.sh` | Recreates `big-market-message-job-service` with `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true`, verifies health + bean registration, then restores `flag=false`. EXIT trap guarantees restoration. |
+| Full local validation | `APPLY_LOCAL_OUTBOX_DDL=true RUN_FLAG_TRUE_VALIDATION=true ./scripts/validate-award-credit-outbox-integration.sh` | Applies DDL and runs flag=true startup in one pass. |
+
+### Execution order (local integration)
+
+```bash
+# Step 0: Confirm B4/B5/B6 static checks still pass
+./scripts/validate-award-credit-path.sh               # B4: 8 checks
+./scripts/validate-award-credit-outbox-readiness.sh   # B5: 8 checks
+./scripts/validate-award-credit-outbox-b6.sh          # B6: 17 checks
+
+# Step 1: Run static preflight (no Docker required)
+./scripts/validate-award-credit-outbox-integration.sh
+
+# Step 2: Start Docker stack
+docker compose up -d
+
+# Step 3: Apply DDL to local MySQL (localhost only)
+APPLY_LOCAL_OUTBOX_DDL=true ./scripts/validate-award-credit-outbox-integration.sh
+
+# Step 4: Confirm table existence (re-run in default mode)
+./scripts/validate-award-credit-outbox-integration.sh
+
+# Step 5: Validate flag=true startup and restore
+RUN_FLAG_TRUE_VALIDATION=true ./scripts/validate-award-credit-outbox-integration.sh
+```
+
+### Manual steps (staging only — not auto-executed)
+
+After completing Steps 0-5 above, the following must be done manually in staging:
+
+| Step | Action | Expected |
+|------|--------|---------|
+| A | Insert test outbox row into the actual routed `credit_award_task_000..003` shard with `state='pending'` | Row visible in DB |
+| B | Trigger the matching `DispatchCreditAwardTaskJob_DB1` or `DispatchCreditAwardTaskJob_DB2` handler from XXL-Job admin | Job runs, logs show dispatch attempt |
+| C | Check row state | `state='dispatched'` |
+| D | Check `user_credit_order.out_business_no` | Exactly one row with `out_business_no=award_order_id` |
+| E | Re-trigger job (idempotency) | No additional `user_credit_order` row — account-service deduplicates on `outBusinessNo` |
+| F | Restore `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=false` in staging | Service healthy |
+
+XXL-Job cannot be triggered automatically by the validation script. Always trigger manually.
+
+### Safety constraints
+
+- `APPLY_LOCAL_OUTBOX_DDL=true` is blocked for any `MYSQL_HOST` other than `localhost`/`127.0.0.1`.
+- `RUN_FLAG_TRUE_VALIDATION=true` registers an EXIT trap that always restores `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=false`, even on script failure.
+- No Java code changes in this batch — B7 is scripts/docs plus Docker Compose env-var exposure only.
+- All feature flags remain `false` by default. No production cutover.
+
+### Remaining risks
+
+| Risk | Status |
+|------|--------|
+| Tables not yet applied to staging | Pending — apply `docs/sql/proposed-credit-award-task-outbox.sql` before any `flag=true` run |
+| XXL-Job handler registration | Pending — must register `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin after enabling flag |
+| Replay idempotency (Steps C-E) | Pending — must pass in staging before production promotion |
+| `RaffleActivityPartakeService` quota decrement | Deferred — high risk; needs purpose-built decrement RPC |
+| MQ idempotency end-to-end | Deferred — required before enabling remote write flags |
+
+### Validation
+
+```bash
+./scripts/validate-award-credit-path.sh                    # B4: 8 static checks
+./scripts/validate-award-credit-outbox-readiness.sh        # B5: 8 static checks
+./scripts/validate-award-credit-outbox-b6.sh               # B6: 17 static checks
+./scripts/validate-award-credit-outbox-integration.sh      # B7: static preflight (9+)
+```
 
 ---
 
