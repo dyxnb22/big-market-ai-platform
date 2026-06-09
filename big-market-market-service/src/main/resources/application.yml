@@ -179,6 +179,11 @@ account:
     remote-quota-write:
       # Phase 2.2-B2 scaffold only. Default false keeps all quota writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
+    remote-quota-decrement:
+      # Phase 2.2-B11 scaffold. Default false — LocalActivityAccountPort is used.
+      # Set true only after B12 idempotency ledger DDL is applied, decrementQuota
+      # provider is fully implemented, and end-to-end staging validation passes.
+      enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
 management:
   endpoints:

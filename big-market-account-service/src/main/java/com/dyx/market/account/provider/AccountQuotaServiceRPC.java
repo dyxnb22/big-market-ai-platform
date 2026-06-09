@@ -9,6 +9,7 @@ import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService
 import com.dyx.market.trigger.api.IAccountQuotaService;
 import com.dyx.market.trigger.api.dto.AccountQuotaCreateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaDecrementRequestDTO;
+import com.dyx.market.trigger.api.dto.AccountQuotaRollbackRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaUpdateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.UnpaidActivityOrderResponseDTO;
 import com.dyx.market.trigger.api.dto.UserActivityAccountResponseDTO;
@@ -223,15 +224,32 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request) {
-        // Phase 2.2-B10 scaffold: not yet implemented. Returning UN_ERROR prevents
-        // accidental live wiring while the decrement+rollback path is still under validation.
-        log.warn("account quota decrementQuota called but not implemented — userId:{} activityId:{} outBusinessNo:{}",
+        // Phase 2.2-B11 stub: not yet implemented. Returns UN_ERROR until the
+        // account-service idempotency ledger (B12 DDL) is applied and validated.
+        // RaffleActivityPartakeService is NOT wired to call this method yet.
+        log.warn("[AccountQuotaServiceRPC] decrementQuota not yet implemented (B11 stub) — userId:{} activityId:{} outBusinessNo:{}",
                 request == null ? "null" : request.getUserId(),
                 request == null ? "null" : request.getActivityId(),
                 request == null ? "null" : request.getOutBusinessNo());
         return Response.<Boolean>builder()
                 .code(ResponseCode.UN_ERROR.getCode())
-                .info("decrementQuota not yet implemented (Phase 2.2-B10 scaffold)")
+                .info("decrementQuota not yet implemented (Phase 2.2-B11 stub — pending idempotency ledger DDL)")
+                .data(false)
+                .build();
+    }
+
+    @Override
+    public Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request) {
+        // Phase 2.2-B11 stub: not yet implemented. Returns UN_ERROR until the
+        // account-service idempotency ledger (B12 DDL) is applied and validated.
+        // No callers are wired to this method at this stage.
+        log.warn("[AccountQuotaServiceRPC] rollbackQuota not yet implemented (B11 stub) — userId:{} activityId:{} outBusinessNo:{}",
+                request == null ? "null" : request.getUserId(),
+                request == null ? "null" : request.getActivityId(),
+                request == null ? "null" : request.getOutBusinessNo());
+        return Response.<Boolean>builder()
+                .code(ResponseCode.UN_ERROR.getCode())
+                .info("rollbackQuota not yet implemented (Phase 2.2-B11 stub — pending idempotency ledger DDL)")
                 .data(false)
                 .build();
     }

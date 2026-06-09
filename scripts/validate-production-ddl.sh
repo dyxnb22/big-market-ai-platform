@@ -130,13 +130,22 @@ else
     fail "S11: AccountQuotaServiceRPC.decrementQuota stub guard missing"
 fi
 
-# S12: No caller wires decrementQuota in market-service or message-job-service
+# S12: No caller wires decrementQuota in business logic (port/adapter scaffolds are allowed)
 decrementQuota_callers=$(grep -r "decrementQuota" \
     big-market-market-service big-market-message-job-service \
     big-market-trigger big-market-infrastructure big-market-domain \
     2>/dev/null \
     | grep -v "IAccountQuotaService.java" \
     | grep -v "AccountQuotaServiceRPC.java" \
+    | grep -v "IActivityAccountPort.java" \
+    | grep -v "LocalActivityAccountPort.java" \
+    | grep -v "AccountRemoteActivityAccountPort.java" \
+    | grep -v "AccountQuotaDecrementRequestDTO.java" \
+    | grep -v "AccountQuotaRollbackRequestDTO.java" \
+    | grep -v "validate-quota-decrement-contract.sh" \
+    | grep -v "\.class:" \
+    | grep -v "\.yml:" \
+    | grep -v "\.yaml:" \
     | wc -l | tr -d ' ') || true
 if [[ "$decrementQuota_callers" -eq 0 ]]; then
     ok "S12: decrementQuota not wired in any live service caller"

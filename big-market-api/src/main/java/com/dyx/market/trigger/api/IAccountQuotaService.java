@@ -2,6 +2,7 @@ package com.dyx.market.trigger.api;
 
 import com.dyx.market.trigger.api.dto.AccountQuotaCreateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaDecrementRequestDTO;
+import com.dyx.market.trigger.api.dto.AccountQuotaRollbackRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaUpdateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.UnpaidActivityOrderResponseDTO;
 import com.dyx.market.trigger.api.dto.UserActivityAccountResponseDTO;
@@ -59,13 +60,25 @@ public interface IAccountQuotaService {
     Response<Integer> queryRaffleActivityAccountDayPartakeCount(Long activityId, String userId);
 
     /**
-     * Decrement quota counters after a confirmed raffle participation.
+     * Decrement quota counters (total/month/day) after a confirmed raffle participation.
      *
-     * Phase 2.2-B10 scaffold only — NOT implemented. Returns UN_ERROR immediately.
-     * Wiring RaffleActivityPartakeService to call this remotely is deferred until
-     * the decrement + rollback path is fully validated end-to-end in staging.
-     * No callers in market-service are wired to this method.
+     * Idempotent: repeated calls with the same outBusinessNo are safe.
+     *
+     * Phase 2.2-B11 contract — provider stub only. Returns UN_ERROR until
+     * account-service idempotency ledger (B12 DDL) is in place.
+     * No callers in market-service are wired to this method until B12 validation passes.
      */
     Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request);
+
+    /**
+     * Rollback a previously decremented quota slot (saga compensation).
+     *
+     * Safe to call even if the matching decrementQuota was never applied.
+     *
+     * Phase 2.2-B11 contract — provider stub only. Returns UN_ERROR until
+     * account-service idempotency ledger is in place (B12+).
+     * No callers are wired at this stage.
+     */
+    Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request);
 
 }

@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B10 production blocker validation added)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B11 quota-decrement domain port contract added)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate), and Phase 2.2-B10 (production DDL verification, MQ idempotency validation, decrementQuota RPC stub). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate), Phase 2.2-B10 (production DDL verification, MQ idempotency validation, decrementQuota RPC stub), and Phase 2.2-B11 (quota-decrement domain port contract — `IActivityAccountPort`, local no-op, remote stub, `rollbackQuota` RPC, flag=false). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -182,8 +182,17 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - `credit_award_task_000..003` tables not yet applied to staging — apply `docs/sql/proposed-credit-award-task-outbox.sql`; use `APPLY_LOCAL_OUTBOX_DDL=true` for local validation; use `CONNECT_DOCKER=true ./scripts/validate-production-ddl.sh` to confirm
 - XXL-Job handlers `DispatchCreditAwardTaskJob_DB1/_DB2` must be registered in XXL-Job admin before any `flag=true` staging test
 - Replay idempotency (Steps C-E in B7 script) must pass in staging before production promotion
-- `RaffleActivityPartakeService` quota decrement: deferred B11+ — needs `IActivityAccountPort` domain port + exactly-once decrement contract design before any cutover attempt
-- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B10 section for DDL verification details, MQ idempotency probe design, decrementQuota scaffold, remaining risks, and validation commands
+- `RaffleActivityPartakeService` quota decrement: B11 defines `IActivityAccountPort` domain port + client scaffold (flag=false); server-side idempotency ledger DDL + `decrementQuota` real implementation deferred to B12
+- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B10 and B11 sections for details
+
+**Phase 2.2-B11 quota-decrement domain port contract completed (2026-06-09):**
+- `IActivityAccountPort` domain port added — `decrementQuota(userId, activityId, outBusinessNo)` synchronous pre-draw gate + `rollbackQuota` saga compensation; idempotent via `outBusinessNo` key
+- `LocalActivityAccountPort` added — `@ConditionalOnMissingBean` no-op (default); safe because `RaffleActivityPartakeService` still uses existing `saveCreatePartakeOrderAggregate` path unchanged
+- `AccountRemoteActivityAccountPort` added — `@ConditionalOnProperty(remote-quota-decrement.enabled=true)` Dubbo stub; calls `IAccountQuotaService.decrementQuota`/`rollbackQuota`; never active by default
+- `AccountQuotaRollbackRequestDTO` added to `big-market-api`; `rollbackQuota` method added to `IAccountQuotaService` and `AccountQuotaServiceRPC` (UN_ERROR stub, no callers)
+- `account.service.remote-quota-decrement.enabled=false` flag added to market-service `application.yml`
+- `scripts/validate-quota-decrement-contract.sh` — 18/18 PASS: port interface checks, impl checks, safety gates (partake service not wired), no config enables remote flag
+- **B11 produces zero behavior change** — all paths identical to B10 at runtime; B12 gates on idempotency ledger DDL + real server implementation
 
 ---
 

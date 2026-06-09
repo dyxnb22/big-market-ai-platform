@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B10 production blocker validation added. B10 adds DDL verification across all physical shard DBs (`validate-production-ddl.sh`), MQ idempotency end-to-end validation (`validate-mq-idempotency.sh`), and the deferred `decrementQuota` RPC stub (UN_ERROR, no callers wired). B9 added E2E rehearsal + promotion gate; B8 covered staging idempotency; B7 integration validation; B6 outbox producer/consumer scaffold; B5 DDL design; B4 award credit path audit. Write flags still default false — remaining blockers: XXL-Job staging registration/trigger, production DDL deployment on staging shard DBs.**
+**Status: Phase 2.2-B11 quota-decrement domain port contract added. B11 defines `IActivityAccountPort` (domain port), `LocalActivityAccountPort` (local no-op), `AccountRemoteActivityAccountPort` (remote stub, flag=false), `rollbackQuota` RPC method added to `IAccountQuotaService` + `AccountQuotaServiceRPC`, and `validate-quota-decrement-contract.sh` (18/18 PASS). RaffleActivityPartakeService NOT wired to port (deferred to B12). B10 validated 12/12 DDL + MQ idempotency; remaining blockers: XXL-Job staging registration, production DDL on staging shard DBs, B12 idempotency ledger.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -1184,6 +1184,74 @@ Before marking extraction complete, verify these flows end-to-end with Docker st
 | Sign-in rebate credit | POST behavior rebate, confirm `user_credit_account.account_amount` increases |
 | Raffle win → credit award | Draw raffle, confirm credit award issued via account-service log |
 | Activity quota decrement | Draw raffle, confirm `raffle_activity_account` decremented via account-service |
+
+---
+
+## Phase 2.2-B11 — Quota Decrement Domain Port Contract
+
+**Status: Completed (2026-06-09). Defines the synchronous `decrementQuota` port contract and client-side scaffold. Server-side implementation (idempotency ledger) deferred to B12.**
+
+### Goal
+
+Define a safe, synchronous, idempotent `decrementQuota` domain port that `RaffleActivityPartakeService` will use (in B12) instead of the current local `IActivityRepository.saveCreatePartakeOrderAggregate` call. The port must:
+
+1. Return synchronously — `decrementQuota` is a **pre-draw gate**, not an async outbox. The draw must be rejected immediately if quota is exhausted.
+2. Be idempotent via `outBusinessNo` — repeated calls with the same key are safe.
+3. Support saga compensation via `rollbackQuota(outBusinessNo)` for cases where the draw fails after the quota was taken.
+4. Default to local behavior — `RaffleActivityPartakeService` is NOT wired to the port until B12 end-to-end validation passes.
+
+### Design decision: synchronous gate, not async outbox
+
+`decrementQuota` is fundamentally different from `creditAward`:
+
+| | `creditAward` | `decrementQuota` |
+|---|---|---|
+| Timing | After draw result confirmed | Before draw is executed |
+| Failure mode | Retry/idempotency outbox | Must reject draw synchronously |
+| Pattern | Async outbox (B5–B9) | Synchronous RPC with saga rollback |
+| Remote path active | B9 gated (flag=false) | B12+ (flag=false until validated) |
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `big-market-domain/.../adapter/port/IActivityAccountPort.java` | Domain port: `decrementQuota` + `rollbackQuota` |
+| `big-market-infrastructure/.../adapter/port/LocalActivityAccountPort.java` | Local no-op (default, `@ConditionalOnMissingBean`) |
+| `big-market-market-service/.../config/AccountRemoteActivityAccountPort.java` | Remote Dubbo stub (`@ConditionalOnProperty`, flag=false) |
+| `big-market-api/.../dto/AccountQuotaRollbackRequestDTO.java` | DTO for saga compensation RPC |
+| `scripts/validate-quota-decrement-contract.sh` | 18-check static validation script |
+
+### Modified files
+
+| File | Change |
+|------|--------|
+| `big-market-api/.../IAccountQuotaService.java` | Added `rollbackQuota(AccountQuotaRollbackRequestDTO)` |
+| `big-market-account-service/.../AccountQuotaServiceRPC.java` | `rollbackQuota` stub (UN_ERROR, no callers) |
+| `big-market-market-service/resources/application.yml` | Added `account.service.remote-quota-decrement.enabled=false` |
+| `scripts/validate-production-ddl.sh` | S12 exclusion list updated for B11 scaffold files |
+
+### `validate-quota-decrement-contract.sh` — B11 static checks
+
+**18 checks, all PASS:**
+
+| # | What is checked |
+|---|----------------|
+| C1–C3 | `IActivityAccountPort` exists with `decrementQuota` + `rollbackQuota` |
+| C4–C6 | `LocalActivityAccountPort` implements port with `@ConditionalOnMissingBean` |
+| C7–C9 | `AccountRemoteActivityAccountPort` implements port, gated by `@ConditionalOnProperty` |
+| C10 | `AccountQuotaRollbackRequestDTO` exists in `big-market-api` |
+| C11–C12 | `IAccountQuotaService` declares both methods |
+| C13 | `AccountQuotaServiceRPC` has `rollbackQuota` stub |
+| C14–C15 | `remote-quota-decrement` flag present and defaults false |
+| C16–C17 | **Safety gates** — `RaffleActivityPartakeService` and `AbstractRaffleActivityPartake` not yet wired to port |
+| C18 | No config file enables `remote-quota-decrement` |
+
+### Remaining blockers before B12
+
+1. **Account-service idempotency ledger** — new table `raffle_quota_decrement_ledger` with idempotency UNIQUE KEY on `(user_id, activity_id, out_business_no)` needs DDL design + staging deployment.
+2. **`AccountQuotaServiceRPC.decrementQuota` real implementation** — currently returns `UN_ERROR`. Needs to decrement `raffle_activity_account` (total/month/day) in a local transaction, using the idempotency ledger to guard duplicate calls.
+3. **Wire `RaffleActivityPartakeService`** — replace the `activityRepository.saveCreatePartakeOrderAggregate` call with the new `IActivityAccountPort.decrementQuota` seam, keeping the local no-op as default.
+4. **End-to-end staging validation** — validate decrement + rollback + idempotency before enabling remote flag.
 
 ---
 
