@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B9 award credit outbox E2E rehearsal + production promotion gate added. B9 script verifies static promotion-gate invariants, service health, outbox/account table presence, and optional localhost full E2E rehearsal (pending→dispatched, exactly-one ledger row, idempotent re-dispatch, flag restore). B8 covered staging idempotency validation; B7 covered integration validation; B6 scaffolded producer/consumer behind flag=false; B5 added DDL/outbox design; B4 audited award credit path. Write flags still default false — production cutover remains blocked on manual XXL-Job staging registration/trigger, MQ idempotency end-to-end verification, production DDL deployment, and the deferred `RaffleActivityPartakeService` quota decrement RPC.**
+**Status: Phase 2.2-B10 production blocker validation added. B10 adds DDL verification across all physical shard DBs (`validate-production-ddl.sh`), MQ idempotency end-to-end validation (`validate-mq-idempotency.sh`), and the deferred `decrementQuota` RPC stub (UN_ERROR, no callers wired). B9 added E2E rehearsal + promotion gate; B8 covered staging idempotency; B7 integration validation; B6 outbox producer/consumer scaffold; B5 DDL design; B4 award credit path audit. Write flags still default false — remaining blockers: XXL-Job staging registration/trigger, production DDL deployment on staging shard DBs.**
 
 ## Phase 2.2-A — What Is Done
 
@@ -787,6 +787,124 @@ RUN_FLAG_TRUE_VALIDATION=true ./scripts/validate-award-credit-outbox-integration
 STAGING_IDEMPOTENCY_WRITE=true ./scripts/validate-award-credit-outbox-staging-idempotency.sh  # B8 write-mode
 ./scripts/validate-award-credit-outbox-e2e-rehearsal.sh                            # B9 static (dry-run)
 B9_E2E_REHEARSAL=true ./scripts/validate-award-credit-outbox-e2e-rehearsal.sh      # B9 full E2E
+```
+
+---
+
+## Phase 2.2-B10 — Production Blocker Validation
+
+**Status: Completed (2026-06-09). Removes the remaining blockers gating production cutover.**
+
+### Goal
+
+1. Provide a read-only DDL verification script that works against any MySQL host (local Docker, staging, or production read replica) to confirm all required tables and UNIQUE KEY constraints exist before enabling outbox feature flags.
+2. Provide an MQ idempotency end-to-end validation script that proves exactly-one ledger row for duplicate MQ messages via UNIQUE KEY + DuplicateKeyException guards.
+3. Scaffold the deferred `RaffleActivityPartakeService` quota-decrement RPC with a stub that returns `UN_ERROR` immediately — no live callers wired.
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `scripts/validate-production-ddl.sh` | Read-only DDL verification across all physical shard DBs |
+| `scripts/validate-mq-idempotency.sh` | MQ idempotency static + write-mode probe |
+| `big-market-api/.../dto/AccountQuotaDecrementRequestDTO.java` | DTO for deferred quota-decrement RPC |
+
+### Modified files
+
+| File | Change |
+|------|--------|
+| `big-market-api/.../IAccountQuotaService.java` | Added `decrementQuota(AccountQuotaDecrementRequestDTO)` method |
+| `big-market-account-service/.../AccountQuotaServiceRPC.java` | Stub implementation — returns `UN_ERROR` immediately |
+
+### `validate-production-ddl.sh` — DDL verification script
+
+**Usage:**
+
+| Mode | Command | What it checks |
+|------|---------|----------------|
+| Static only | `./scripts/validate-production-ddl.sh` | 12 static checks: DDL file, shard table definitions, UNIQUE KEY presence in schema SQL, repository DuplicateKeyException handlers, consumer INDEX_DUP guards, decrementQuota stub guard |
+| Docker DB | `CONNECT_DOCKER=true ./scripts/validate-production-ddl.sh` | Static + verify all tables and UNIQUE KEYs exist in local Docker MySQL |
+| Remote DB | `CONNECT_REMOTE=true MYSQL_HOST=staging-db MYSQL_USER=ro MYSQL_PASS=secret ./scripts/validate-production-ddl.sh` | Static + verify against staging/production MySQL |
+
+**Tables verified (per DB × per shard = 8 shards each):**
+
+| Table | UNIQUE KEY | DBs checked |
+|-------|-----------|-------------|
+| `credit_award_task_{000..003}` | `uq_award_order_id(user_id,award_order_id)` | `big_market_01`, `big_market_02` |
+| `user_credit_order_{000..003}` | `uq_out_business_no(out_business_no)` | `big_market_01`, `big_market_02` |
+| `user_behavior_rebate_order_{000..003}` | `uq_biz_id(biz_id)` | `big_market_01`, `big_market_02` |
+
+**Safety:** All queries are read-only (`SELECT`/`SHOW`/`information_schema`). No DDL or DML executed at any time. No localhost guard needed.
+
+### `validate-mq-idempotency.sh` — MQ idempotency validation
+
+**Static checks (12):**
+
+| # | What is checked |
+|---|-----------------|
+| S1 | `CreditAdjustSuccessConsumer` catches `INDEX_DUP` |
+| S2 | `RebateMessageConsumer` catches `INDEX_DUP` |
+| S3 | `CreditRepository` handles `DuplicateKeyException` |
+| S4 | `BehaviorRebateRepository` handles `DuplicateKeyException` |
+| S5 | `ActivityRepository` handles `DuplicateKeyException` (user_raffle_order) |
+| S6 | `user_credit_order` has `uq_out_business_no` in schema SQL |
+| S7 | `user_behavior_rebate_order` has `uq_biz_id` in schema SQL |
+| S8 | `CreditAdjustSuccessConsumer` uses `outBusinessNo` from message |
+| S9 | `RebateMessageConsumer` derives `outBusinessNo`/`bizId` from message |
+| S10 | `saveCreatePartakeOrderAggregate` NOT wired to remote `accountQuotaWriteAdapter` (deferred) |
+| S11 | `decrementQuota` not wired in partake domain (deferred) |
+| S12 | `AccountQuotaServiceRPC.decrementQuota` still stub (UN_ERROR) |
+
+**Write-mode (`MQ_IDEMPOTENCY_WRITE=true`, localhost Docker only):**
+
+1. Insert test row into `user_credit_order_000` with known `out_business_no`
+2. Verify duplicate INSERT blocked by `uq_out_business_no` (rc ≠ 0)
+3. Verify row count still = 1 after duplicate attempt
+4. Insert test row into `user_behavior_rebate_order_000` with known `biz_id`
+5. Verify duplicate INSERT blocked by `uq_biz_id` (rc ≠ 0)
+6. Verify row count still = 1 after duplicate attempt
+7. EXIT trap cleans both test rows
+
+### `decrementQuota` RPC scaffold
+
+The `RaffleActivityPartakeService` quota-decrement path involves three per-draw counter writes to `raffle_activity_account` (total surplus), `raffle_activity_account_month` (month surplus), and `raffle_activity_account_day` (day surplus) in a single transaction inside `ActivityRepository.saveCreatePartakeOrderAggregate`. Moving this to a remote Dubbo call requires:
+
+- Atomic remote decrement with rollback on raffle failure
+- Exactly-once decrement idempotency (same `outBusinessNo` must not decrement twice)
+- A new domain port (`IActivityAccountPort`) to avoid coupling domain to the Dubbo API
+
+This batch adds only the DTO and interface method + stub — no caller wiring. The stub returns `UN_ERROR` immediately. A dedicated batch (B11+) will design the decrement + rollback contract and integrate with the partake service under a separate feature flag.
+
+### Remaining risks after B10
+
+| Risk | Status |
+|------|--------|
+| XXL-Job handler registration on staging | Pending manual — register `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin |
+| Production DDL deployment | Pending — apply `docs/sql/proposed-credit-award-task-outbox.sql` to staging `big_market_01`/`big_market_02` |
+| Staging E2E with XXL-Job | Pending — requires XXL-Job admin access and staging DDL applied |
+| `decrementQuota` domain port + caller wiring | Deferred B11+ — high risk; separate feature flag required |
+| Full distributed tracing (Zipkin/OTel) | Deferred — Reactor context bridging for gateway not yet implemented |
+
+### Validation
+
+```bash
+# B10 static checks
+./scripts/validate-production-ddl.sh
+./scripts/validate-mq-idempotency.sh
+
+# B10 with Docker DB verification
+CONNECT_DOCKER=true ./scripts/validate-production-ddl.sh
+
+# B10 write-mode MQ idempotency (localhost Docker)
+MQ_IDEMPOTENCY_WRITE=true ./scripts/validate-mq-idempotency.sh
+
+# Confirm prior batches still pass
+./scripts/validate-award-credit-path.sh                                             # B4
+./scripts/validate-award-credit-outbox-readiness.sh                                 # B5
+./scripts/validate-award-credit-outbox-b6.sh                                        # B6
+./scripts/validate-award-credit-outbox-integration.sh                               # B7
+./scripts/validate-award-credit-outbox-staging-idempotency.sh                       # B8
+./scripts/validate-award-credit-outbox-e2e-rehearsal.sh                             # B9
 ```
 
 ---

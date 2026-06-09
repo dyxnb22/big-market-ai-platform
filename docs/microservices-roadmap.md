@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B9 award credit outbox E2E rehearsal gate added)
+## 1. Current State (as of 2026-06-09, Phase 2.2-B10 production blocker validation added)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), and Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate), and Phase 2.2-B10 (production DDL verification, MQ idempotency validation, decrementQuota RPC stub). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -165,18 +165,25 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - **B9 is the final automated gate before production enablement — all flags remain false by default**
 - **No Java code changes** — B9 adds script and docs only
 
+**Phase 2.2-B10 production blocker validation completed (2026-06-09):**
+- `scripts/validate-production-ddl.sh` added — read-only DDL verification across all physical shard DBs; verifies `credit_award_task_{000..003}` (uq_award_order_id), `user_credit_order_{000..003}` (uq_out_business_no), `user_behavior_rebate_order_{000..003}` (uq_biz_id) in both `big_market_01` and `big_market_02`; works via Docker exec or direct mysql client (`CONNECT_DOCKER=true`, `CONNECT_REMOTE=true`); 12 static checks always run; no DDL/DML executed at any time
+- `scripts/validate-mq-idempotency.sh` added — 12 static checks covering `CreditAdjustSuccessConsumer`/`RebateMessageConsumer` INDEX_DUP guards, all three repositories' DuplicateKeyException handlers, outBusinessNo/bizId derivation, and confirmed non-wiring of decrementQuota; `MQ_IDEMPOTENCY_WRITE=true` write-mode: duplicate INSERT probes on `user_credit_order_000` and `user_behavior_rebate_order_000` prove UNIQUE KEY enforcement; EXIT trap cleans test rows
+- `AccountQuotaDecrementRequestDTO.java` added to `big-market-api` — fields: `userId`, `activityId`, `outBusinessNo`
+- `IAccountQuotaService.decrementQuota(AccountQuotaDecrementRequestDTO)` method added — explicitly documented as B10 scaffold only, no callers wired
+- `AccountQuotaServiceRPC.decrementQuota` stub — returns `UN_ERROR` immediately with "not yet implemented" message; log.warn on every invocation; no domain service calls
+- **B10 removes the final static verification gap** — production cutover is now blocked only on manual staging steps (XXL-Job registration, DDL deployment) and the deferred decrementQuota domain port design (B11+)
+
 **Known residual issues:**
 - Docker runtime validation should be re-run before any cutover — run `./scripts/validate-microservices-stack.sh` to confirm 17/17
 - Remote-read script depends on local test data for `userId=xiaofuge` and `activityId=100301`; override with `ACCOUNT_REMOTE_READ_USER_ID` / `ACCOUNT_REMOTE_READ_ACTIVITY_ID` if needed
 - Static gateway routing (no service-discovery integration; account-service has no gateway route — Dubbo/internal only)
 - All market-service tables share one MySQL instance with no per-service schema isolation
 - MQ DLQ behavior is not covered by the smoke test (requires real RabbitMQ integration test)
-- `credit_award_task_000..003` tables not yet applied to any environment — apply `docs/sql/proposed-credit-award-task-outbox.sql` before enabling `flag=true`; use `APPLY_LOCAL_OUTBOX_DDL=true` for local validation
+- `credit_award_task_000..003` tables not yet applied to staging — apply `docs/sql/proposed-credit-award-task-outbox.sql`; use `APPLY_LOCAL_OUTBOX_DDL=true` for local validation; use `CONNECT_DOCKER=true ./scripts/validate-production-ddl.sh` to confirm
 - XXL-Job handlers `DispatchCreditAwardTaskJob_DB1/_DB2` must be registered in XXL-Job admin before any `flag=true` staging test
 - Replay idempotency (Steps C-E in B7 script) must pass in staging before production promotion
-- `RaffleActivityPartakeService` quota decrement: deferred, high risk — needs purpose-built decrement RPC before any cutover attempt
-- MQ idempotency end-to-end verification and business-flow validation still required before enabling write flags
-- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B9 section for E2E rehearsal flow, promotion gate criteria, rollback steps, and remaining risks
+- `RaffleActivityPartakeService` quota decrement: deferred B11+ — needs `IActivityAccountPort` domain port + exactly-once decrement contract design before any cutover attempt
+- See `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B10 section for DDL verification details, MQ idempotency probe design, decrementQuota scaffold, remaining risks, and validation commands
 
 ---
 

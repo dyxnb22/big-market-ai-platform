@@ -1,9 +1,10 @@
 package com.dyx.market.trigger.api;
 
-import com.dyx.market.trigger.api.dto.UserActivityAccountResponseDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaCreateOrderRequestDTO;
+import com.dyx.market.trigger.api.dto.AccountQuotaDecrementRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaUpdateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.UnpaidActivityOrderResponseDTO;
+import com.dyx.market.trigger.api.dto.UserActivityAccountResponseDTO;
 import com.dyx.market.trigger.api.response.Response;
 
 /**
@@ -56,5 +57,15 @@ public interface IAccountQuotaService {
      * @return daily partake count consumed today
      */
     Response<Integer> queryRaffleActivityAccountDayPartakeCount(Long activityId, String userId);
+
+    /**
+     * Decrement quota counters after a confirmed raffle participation.
+     *
+     * Phase 2.2-B10 scaffold only — NOT implemented. Returns UN_ERROR immediately.
+     * Wiring RaffleActivityPartakeService to call this remotely is deferred until
+     * the decrement + rollback path is fully validated end-to-end in staging.
+     * No callers in market-service are wired to this method.
+     */
+    Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request);
 
 }
