@@ -11,6 +11,61 @@ Do NOT enable `remote-quota-decrement=true` in production until every section is
 
 ---
 
+## Operator Quick Start — Ordered Staging Path
+
+Execute these steps in order. Fill in each Phase section below as you go.
+
+```
+Step 1 — Apply ledger DDL (manual, both shards):
+    mysql -h <staging-host> -u <admin> -p big_market_01 < docs/sql/proposed-quota-decrement-ledger.sql
+    mysql -h <staging-host> -u <admin> -p big_market_02 < docs/sql/proposed-quota-decrement-ledger.sql
+
+Step 2 — Apply outbox DDL (manual, both shards):
+    mysql -h <staging-host> -u <admin> -p big_market_01 < docs/sql/proposed-credit-award-task-outbox.sql
+    mysql -h <staging-host> -u <admin> -p big_market_02 < docs/sql/proposed-credit-award-task-outbox.sql
+
+Step 3 — Register XXL-Job handlers in staging admin UI (manual):
+    DispatchCreditAwardTaskJob_DB1   cron: 0/30 * * * * ?
+    DispatchCreditAwardTaskJob_DB2   cron: 0/30 * * * * ?
+
+Step 4 — Verify all DDL landed (CONNECT_REMOTE gate — read-only, never writes):
+    CONNECT_REMOTE=true MYSQL_HOST=<host> MYSQL_PORT=3306 MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+        ./scripts/execute-account-service-staging-b17.sh
+    Must show 0 FAIL. Hard gate: do NOT enable flag if any check fails.
+
+Step 5 — Enable flag on staging market-service ONLY:
+    ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=true
+    (redeploy big-market-market-service on staging; confirm via env grep)
+
+Step 6 — Armory before draw (required — draw returns code=0001 without it):
+    GET /api/v1/raffle/activity/armory?activityId=<activityId>
+    Expect HTTP 200, code=0000, data=true
+
+Step 7 — E2E draw test (fill Phases F-H below):
+    a) POST /api/v1/raffle/activity/draw  -> verify ledger=applied, quota decremented by 1
+    b) Duplicate draw (same outBusinessNo) -> verify quota unchanged, ledger row count = 1
+    c) Trigger rollback -> verify ledger=rolled_back, quota restored
+    d) Duplicate rollback -> verify 0 rows affected, quota unchanged
+    e) Manual XXL-Job trigger -> verify outbox pending->dispatched, user_credit_order count = 1
+    f) Second XXL-Job trigger -> verify user_credit_order count still = 1 (no double credit)
+
+Step 8 — Restore flag (Phase I):
+    ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=false
+    (redeploy; confirm health: curl -sf http://<host>:8083/actuator/health | jq .status)
+
+Step 9 — Post-window verification (Phase J):
+    B17_POST_CHECK=true MYSQL_HOST=<host> MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+        ./scripts/execute-account-service-staging-b17.sh
+    Must show 0 FAIL.
+
+Step 10 — Fill Phase K go/no-go decision and sign off.
+```
+
+> **Production flag must remain `false` throughout this entire window.**
+> Do NOT merge B18 production promotion until Phase K shows GO and this file is fully signed off.
+
+---
+
 ## Phase A — Ledger DDL Apply
 
 | | big_market_01 | big_market_02 |

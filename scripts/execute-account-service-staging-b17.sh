@@ -670,7 +670,8 @@ else
     echo ""
     info "=== Section 4: Evidence file write — SKIPPED ==="
     info "    Set B17_EVIDENCE_FILE=<path> to write the evidence template to a local file."
-    info "    Suggested: B17_EVIDENCE_FILE=docs/evidence/phase-2-2-b17-staging-cutover-template.md"
+    info "    Suggested: B17_EVIDENCE_FILE=docs/evidence/b17-staging-evidence-\$(date +%Y%m%d).md"
+    info "    (Do NOT point at phase-2-2-b17-staging-cutover-template.md — that is the blank template)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -721,8 +722,8 @@ if [[ "$CONNECT_REMOTE" != "true" && -z "$B17_EVIDENCE_FILE" && "$B17_POST_CHECK
   Step 1 — Print the ordered cutover plan:
     B17_PRINT_PLAN=true ./scripts/execute-account-service-staging-b17.sh
 
-  Step 2 — Generate evidence file:
-    B17_EVIDENCE_FILE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+  Step 2 — Generate evidence file (use a dated file, NOT the template):
+    B17_EVIDENCE_FILE=docs/evidence/b17-staging-evidence-$(date +%Y%m%d).md \
         ./scripts/execute-account-service-staging-b17.sh
 
   Step 3 — Apply Blocker 1: ledger DDL (manual):
