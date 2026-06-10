@@ -282,13 +282,19 @@ The Engineer is responsible for running static pre-flight validation, executing 
 #### Pre-flight (any time, no staging/prod access required)
 
 ```bash
+# Run evidence consistency validator — checks doc coverage, gitignore policy, tags, flags, cross-links
+bash scripts/validate-phase-2-evidence-consistency.sh
+# Expected: ALL CHECKS PASS
+
 # Run full suite validator — must be all PASS before any staging action
 bash scripts/validate-fulfillment-service-phase-2-3.sh
 # Expected: ALL SUITES PASS
 
-# Collect local evidence snapshot
+# Collect local evidence snapshot (output gitignored — local only, never committed)
 bash scripts/collect-phase-2-external-evidence.sh
 # Output: docs/evidence/generated/phase2-evidence-YYYYMMDDHHMMSS/
+# Note: docs/evidence/generated/ is listed in .gitignore. No staging or production
+# traffic is enabled by running this script. All dangerous flags remain false by default.
 ```
 
 #### Phase 1: B17 Staging E2E (after DBA Phase 1 and Ops Phase 1 complete)
@@ -480,6 +486,7 @@ After Phase 4 completion — sign Final Phase 2.3-E decision:
 | [`docs/evidence/phase-2-ops-xxl-job-checklist.md`](phase-2-ops-xxl-job-checklist.md) | Ops XXL-Job registration checklist |
 | [`docs/sql/proposed-quota-decrement-ledger.sql`](../sql/proposed-quota-decrement-ledger.sql) | Ledger DDL (apply to staging and production) |
 | [`docs/sql/proposed-credit-award-task-outbox.sql`](../sql/proposed-credit-award-task-outbox.sql) | Outbox DDL (apply to staging and production) |
-| [`scripts/collect-phase-2-external-evidence.sh`](../../scripts/collect-phase-2-external-evidence.sh) | Local evidence collector (no staging/prod access required) |
+| [`scripts/collect-phase-2-external-evidence.sh`](../../scripts/collect-phase-2-external-evidence.sh) | Local evidence collector; output written to `docs/evidence/generated/` (gitignored — local only, never committed) |
 | [`scripts/validate-phase-2-external-execution-pack.sh`](../../scripts/validate-phase-2-external-execution-pack.sh) | Validator for this pack (no staging/prod access required) |
 | [`scripts/validate-fulfillment-service-phase-2-3.sh`](../../scripts/validate-fulfillment-service-phase-2-3.sh) | Full Phase 2.3 suite validator (run before any staging/prod action) |
+| [`scripts/validate-phase-2-evidence-consistency.sh`](../../scripts/validate-phase-2-evidence-consistency.sh) | Evidence consistency validator: checks Phase 2.2/2.3 doc coverage, gitignore policy, key tags, dangerous flags, and cross-links (no network/Docker/DB required) |

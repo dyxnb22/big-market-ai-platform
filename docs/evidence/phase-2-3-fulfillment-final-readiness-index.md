@@ -2,7 +2,9 @@
 
 **Date:** 2026-06-10
 **Status:** REPO COMPLETE — Awaiting external sign-offs before staging/production execution
-**HEAD:** 0a13a06 (tag: phase-2.3-e-fulfillment-cutover-execution-pack)
+**HEAD:** 143f1ce (chore: ignore generated Phase 2 evidence snapshots)
+**Baseline at final readiness:** 0a13a06 (tag: phase-2.3-e-fulfillment-cutover-execution-pack)
+**Latest Phase 2 tag:** phase-2-external-execution-pack (d8f375d — docs: add Phase 2 external execution pack)
 
 > **This document is an index, not an execution approval.**
 > It summarises the completed repo work for all Phase 2.3 batches (B23-A through B23-E)
@@ -62,8 +64,9 @@
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/collect-phase-2-external-evidence.sh` | Local-only evidence collector; outputs timestamped snapshot to `docs/evidence/generated/` |
+| `scripts/collect-phase-2-external-evidence.sh` | Local-only evidence collector; outputs timestamped snapshot to `docs/evidence/generated/` (gitignored — local only) |
 | `scripts/validate-phase-2-external-execution-pack.sh` | Validates all new pack artifacts + runs Phase 2.3 suite + flag scan; no staging/prod required |
+| `scripts/validate-phase-2-evidence-consistency.sh` | **Evidence consistency validator** (new — 2026-06-10 hardening batch): checks Phase 2.2/2.3 docs exist, gitignore policy, key tags, dangerous flags, and cross-links; no network/Docker/DB required |
 
 ### DDL
 
@@ -146,7 +149,16 @@ Run `bash scripts/validate-fulfillment-service-phase-2-3.sh` as pre-flight (gate
 
 ---
 
-## One-Command Validator
+## Generated Evidence Snapshots
+
+`docs/evidence/generated/` is listed in `.gitignore` and contains only local-only timestamped
+snapshots produced by `scripts/collect-phase-2-external-evidence.sh`. These files are never
+committed. No repo-only batch enables staging or production traffic, and all dangerous flags
+remain `false` by default unless an external sign-off gate has been passed.
+
+## Validators
+
+### One-Command Phase 2.3 Suite
 
 ```bash
 bash scripts/validate-fulfillment-service-phase-2-3.sh
@@ -155,3 +167,14 @@ bash scripts/validate-fulfillment-service-phase-2-3.sh
 Runs B23-B/C/D/E validators in order, performs a final dangerous-flag scan across all config files,
 and verifies all five Phase 2.3 git tags exist locally. Prints a concise PASS/FAIL summary.
 No network, Docker, DB, staging, or production access required.
+
+### Evidence Consistency Validator (hardening batch — 2026-06-10)
+
+```bash
+bash scripts/validate-phase-2-evidence-consistency.sh
+```
+
+Checks Phase 2.2 and Phase 2.3 doc coverage, gitignore policy for `docs/evidence/generated/`,
+current key Phase 2 tag presence, dangerous-flag scan, and cross-link correctness between
+final readiness and external execution documents. No network, Docker, DB, staging, or
+production access required.
