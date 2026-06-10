@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-09, Phase 2.2-B12 quota-decrement idempotency foundation complete)
+## 1. Current State (as of 2026-06-10, Phase 2.2-B13 quota-decrement staging validation complete)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate), Phase 2.2-B10 (production DDL verification, MQ idempotency validation, decrementQuota RPC stub), Phase 2.2-B11 (quota-decrement domain port contract — `IActivityAccountPort`, local no-op, remote stub, `rollbackQuota` RPC, flag=false), and Phase 2.2-B12 (quota-decrement idempotency foundation — `raffle_quota_decrement_ledger` proposed DDL + DAO + mapper, `decrementQuotaWithLedger` atomic implementation, `AccountQuotaServiceRPC.decrementQuota` promoted to real ledger-guarded impl, 22/22 PASS). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1 (read-only adapter), Phase 2.2-B remote-read validation, Phase 2.2-B2 (MQ write adapters), Phase 2.2-B3 (HTTP credit exchange write adapter), Phase 2.2-B4 (award credit path audit), Phase 2.2-B5 (award credit outbox scaffold — design and DDL only), Phase 2.2-B6 (outbox producer/consumer scaffold — disabled by default), Phase 2.2-B7 (integration validation scaffold), Phase 2.2-B8 (staging idempotency validation), Phase 2.2-B9 (controlled E2E rehearsal + production promotion gate), Phase 2.2-B10 (production DDL verification, MQ idempotency validation, decrementQuota RPC stub), Phase 2.2-B11 (quota-decrement domain port contract — `IActivityAccountPort`, local no-op, remote stub, `rollbackQuota` RPC, flag=false), Phase 2.2-B12 (quota-decrement idempotency foundation — `raffle_quota_decrement_ledger` proposed DDL + DAO + mapper, `decrementQuotaWithLedger` atomic implementation, `AccountQuotaServiceRPC.decrementQuota` promoted to real ledger-guarded impl, 22/22 PASS), and Phase 2.2-B13 (quota-decrement staging validation — `validate-quota-decrement-b13.sh` 12 static checks + Docker read-only + write-mode idempotency probe, extended `validate-production-ddl.sh` with ledger table DB checks, staging DDL steps and rollback plan documented). Seven independently deployable Spring Boot launchers run behind an API gateway. Re-run the smoke test in the current local environment before treating the runtime state as current.
 
 **Running services:**
 
@@ -204,6 +204,15 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - `scripts/validate-quota-decrement-b12.sh` — 22/22 PASS; `validate-production-ddl.sh` 12/12 PASS; `validate-mq-idempotency.sh` 12/12 PASS; `mvn compile` BUILD SUCCESS
 - **B12 produces zero behavior change at runtime** — `remote-quota-decrement.enabled=false`; `RaffleActivityPartakeService` not wired to port; local `saveCreatePartakeOrderAggregate` path unchanged
 - Remaining blockers: staging ledger DDL deployment, `rollbackQuota` impl (B13), `RaffleActivityPartakeService` wiring (B13+), end-to-end integration validation (B13)
+
+**Phase 2.2-B13 quota-decrement staging validation completed (2026-06-10):**
+- `scripts/validate-quota-decrement-b13.sh` — 12 static checks (S1-S12): ledger DDL, DAO, mapper, real RPC impl, rollbackQuota stub, safety gates, flag=false, outbox DDL presence, IActivityAccountPort contract; Docker read-only mode (D1-D16): ledger table existence + UNIQUE KEY in both shard DBs; write-mode (W1-W4, `LEDGER_WRITE=true`, localhost only): insert test row, verify readable, prove UNIQUE KEY blocks duplicate INSERT, verify count=1; EXIT trap always cleans up test row
+- `scripts/validate-production-ddl.sh` extended: S13-S14 static ledger DDL checks; C45-C76 DB mode checks for `raffle_quota_decrement_ledger_{000..003}` table existence and `UNIQUE KEY uq_user_activity_biz` in both shard DBs
+- Manual staging DDL steps documented in script Section 4 and B13 doc section: apply ledger DDL → verify → idempotency probe → apply outbox DDL → register XXL-Job handlers → enable flag in staging only
+- Credit-award outbox staging blocker noted: both ledger DDL and outbox DDL must be applied before full staging E2E
+- Rollback plan: ledger tables are additive; `remote-quota-decrement.enabled=false` by default ensures no traffic impact; drop tables to remove if needed
+- **B13 produces zero behavior change at runtime** — no Java code wired or changed; all flags remain false
+- Remaining blockers: staging ledger DDL deployment (manual), XXL-Job registration (manual), `rollbackQuota` real impl (B14), `RaffleActivityPartakeService` wiring (B14+)
 
 ---
 

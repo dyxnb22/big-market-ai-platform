@@ -143,6 +143,21 @@ else
     ok "S12: Safety gate — RaffleActivityPartakeService not yet wired to decrementQuota"
 fi
 
+# S13: B13 ledger DDL file exists (quota-decrement ledger must be applied before enabling remote flag)
+if [[ -f "docs/sql/proposed-quota-decrement-ledger.sql" ]]; then
+    ok "S13: docs/sql/proposed-quota-decrement-ledger.sql exists (B13 ledger DDL)"
+else
+    fail "S13: docs/sql/proposed-quota-decrement-ledger.sql missing"
+fi
+
+# S14: Ledger DDL defines all four shard tables
+if grep -q "raffle_quota_decrement_ledger_000" docs/sql/proposed-quota-decrement-ledger.sql 2>/dev/null \
+    && grep -q "raffle_quota_decrement_ledger_003" docs/sql/proposed-quota-decrement-ledger.sql 2>/dev/null; then
+    ok "S14: ledger DDL defines tables _000 and _003 (all four shards)"
+else
+    fail "S14: ledger DDL missing _000 or _003 shard definition"
+fi
+
 # ---------------------------------------------------------------------------
 # Section 2 — Docker DB verification (CONNECT_DOCKER=true)
 # ---------------------------------------------------------------------------
@@ -236,6 +251,28 @@ else
                 ok "C${CHECK_NUM}: $db.$table has UNIQUE KEY uq_biz_id"
             else
                 fail "C${CHECK_NUM}: $db.$table missing UNIQUE KEY uq_biz_id"
+            fi
+            ((CHECK_NUM++))
+        done
+    done
+
+    # raffle_quota_decrement_ledger shards (B13): 4 per DB × 2 DBs = 8 table + 8 key checks
+    for db in big_market_01 big_market_02; do
+        for shard in 000 001 002 003; do
+            table="raffle_quota_decrement_ledger_$shard"
+            cnt=$(check_table_exists "$db" "$table")
+            if [[ "$cnt" -gt 0 ]]; then
+                ok "C${CHECK_NUM}: $db.$table exists (B13 ledger)"
+            else
+                fail "C${CHECK_NUM}: $db.$table NOT FOUND (apply docs/sql/proposed-quota-decrement-ledger.sql)"
+            fi
+            ((CHECK_NUM++))
+
+            key_cnt=$(check_unique_key_exists "$db" "$table" "uq_user_activity_biz")
+            if [[ "$key_cnt" -gt 0 ]]; then
+                ok "C${CHECK_NUM}: $db.$table has UNIQUE KEY uq_user_activity_biz"
+            else
+                fail "C${CHECK_NUM}: $db.$table missing UNIQUE KEY uq_user_activity_biz"
             fi
             ((CHECK_NUM++))
         done

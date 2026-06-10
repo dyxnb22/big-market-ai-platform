@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B12 quota-decrement idempotency foundation complete. B12 adds `raffle_quota_decrement_ledger` proposed DDL (4 shards, UNIQUE KEY), DAO + mapper, `IRaffleActivityAccountQuotaService.decrementQuota`, `IActivityRepository.decrementQuotaWithLedger` (atomic ledger + total/month/day in one transaction), and `AccountQuotaServiceRPC.decrementQuota` promoted from UN_ERROR stub to real ledger-guarded impl (22/22 PASS). RaffleActivityPartakeService NOT wired to remote port (deferred to B13). Remaining blockers: XXL-Job staging registration, production DDL on staging shard DBs + ledger DDL, rollbackQuota real impl (B13), end-to-end integration validation (B13).**
+**Status: Phase 2.2-B13 quota-decrement staging validation complete. B13 adds `scripts/validate-quota-decrement-b13.sh` (12 static + Docker read-only + write-mode idempotency probe), extends `validate-production-ddl.sh` with ledger table checks (S13-S14 static, C45-C76 DB), and documents manual staging DDL steps, outbox blocker, and rollback plan. All baselines green (22/22 B12, 18/18 B11, 14/14 B10+B13 static, 12/12 MQ idempotency). RaffleActivityPartakeService NOT wired. remote-quota-decrement.enabled=false. Remaining blockers: staging ledger DDL deployment, XXL-Job registration, rollbackQuota real impl (B14), RaffleActivityPartakeService wiring (B14+).**
 
 ## Phase 2.2-A — What Is Done
 
@@ -1354,6 +1354,156 @@ mvn compile                                     # BUILD SUCCESS
 | Month/day account race on concurrent first-draw | `insertActivityAccountMonth/Day` has UNIQUE KEY in main schema — DuplicateKeyException causes rollback, retry wins |
 | `rollbackQuota` not yet implemented | No callers wired to rollback; B13 will implement before any wiring occurs |
 | `remote-quota-decrement.enabled=false` by default | Runtime behavior unchanged; all quota operations still go through local `saveCreatePartakeOrderAggregate` |
+
+---
+
+## Phase 2.2-B13 — Quota Decrement Staging Validation
+
+**Status: Completed (2026-06-10). Staging readiness and E2E integration guidance for quota-decrement ledger. No behavior change. `remote-quota-decrement.enabled=false`. `RaffleActivityPartakeService` NOT wired.**
+
+### Goal
+
+Provide machine-verifiable staging gates for the B12 ledger foundation before any remote decrement traffic flows. The batch:
+1. Adds a dedicated staging validation script (`validate-quota-decrement-b13.sh`) with static, Docker read-only, and localhost write-mode (idempotency probe) modes.
+2. Extends `validate-production-ddl.sh` with ledger table verification in DB mode.
+3. Documents the exact manual staging DDL deployment steps, the credit-award outbox staging blocker, and the rollback plan.
+
+No Java code is wired or changed in this batch. All feature flags remain false.
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `scripts/validate-quota-decrement-b13.sh` | B13 staging readiness script — static (S1-S12), Docker read-only, write-mode idempotency probe, staging steps |
+
+### Modified files
+
+| File | Change |
+|------|--------|
+| `scripts/validate-production-ddl.sh` | Added S13-S14 static ledger DDL checks; added `raffle_quota_decrement_ledger_{000..003}` table and UNIQUE KEY verification in DB mode (C45-C76) |
+| `docs/microservices-split-phase-2-2-account-service.md` | This section |
+| `docs/microservices-roadmap.md` | B13 entry added |
+
+### `validate-quota-decrement-b13.sh` — check summary
+
+**Static checks (S1-S12):**
+
+| # | What is checked |
+|---|----------------|
+| S1 | `proposed-quota-decrement-ledger.sql` exists |
+| S2 | DDL has `UNIQUE KEY uq_user_activity_biz (user_id, activity_id, out_business_no)` |
+| S3 | DDL defines all four shard tables (`_000` through `_003`) |
+| S4 | `IRaffleQuotaDecrementLedgerDao` exists |
+| S5 | `raffle_quota_decrement_ledger_mapper.xml` exists in account-service resources |
+| S6 | `AccountQuotaServiceRPC.decrementQuota` is real ledger-guarded implementation (not stub) |
+| S7 | `rollbackQuota` remains safely stubbed (UN_ERROR — no live callers) |
+| S8 | **Safety gate** — `RaffleActivityPartakeService` NOT wired to `IActivityAccountPort` |
+| S9 | **Safety gate** — `AbstractRaffleActivityPartake` NOT wired to `IActivityAccountPort` |
+| S10 | No config enables `remote-quota-decrement` |
+| S11 | `credit_award_task` outbox DDL exists (staging dependency reminder — both must be applied) |
+| S12 | `IActivityAccountPort` declares both `decrementQuota` and `rollbackQuota` (B11 contract intact) |
+
+**Docker read-only checks (D1-D16, `CONNECT_DOCKER=true`):**
+
+| # | What is checked |
+|---|----------------|
+| D1-D4 | `raffle_quota_decrement_ledger_{000..003}` exist in `big_market_01` |
+| D5-D8 | `raffle_quota_decrement_ledger_{000..003}` exist in `big_market_02` |
+| D9-D12 | `UNIQUE KEY uq_user_activity_biz` on each table in `big_market_01` |
+| D13-D16 | `UNIQUE KEY uq_user_activity_biz` on each table in `big_market_02` |
+
+**Write-mode checks (W1-W4, `CONNECT_DOCKER=true LEDGER_WRITE=true`, localhost Docker only):**
+
+| # | What is checked |
+|---|----------------|
+| W1 | Test ledger row inserted (`status=applied`) |
+| W2 | Row readable with `status=applied` |
+| W3 | Duplicate INSERT blocked by `UNIQUE KEY uq_user_activity_biz` (DuplicateKeyException path proven) |
+| W4 | Row count = 1 after duplicate attempt (no double-decrement possible) |
+| — | EXIT trap removes test row unconditionally |
+
+### Staging DDL deployment steps (manual)
+
+**Prerequisite:** All B12 static checks pass (`./scripts/validate-quota-decrement-b12.sh` 22/22).
+
+```bash
+# Step 1: Apply ledger DDL to staging big_market_01
+mysql -h <staging-host> -u <admin-user> -p big_market_01 \
+    < docs/sql/proposed-quota-decrement-ledger.sql
+
+# Step 2: Apply ledger DDL to staging big_market_02
+mysql -h <staging-host> -u <admin-user> -p big_market_02 \
+    < docs/sql/proposed-quota-decrement-ledger.sql
+
+# Step 3: Verify tables exist in staging (read-only)
+CONNECT_REMOTE=true \
+  MYSQL_HOST=<staging-host> MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+  ./scripts/validate-production-ddl.sh
+
+# Step 4: Verify tables in local Docker (if stack is running)
+CONNECT_DOCKER=true ./scripts/validate-quota-decrement-b13.sh
+
+# Step 5: Prove idempotency locally (write-mode, localhost only)
+CONNECT_DOCKER=true LEDGER_WRITE=true ./scripts/validate-quota-decrement-b13.sh
+
+# Step 6: Apply credit_award_task outbox DDL (if not done — required for full staging)
+mysql -h <staging-host> -u <admin-user> -p big_market_01 \
+    < docs/sql/proposed-credit-award-task-outbox.sql
+mysql -h <staging-host> -u <admin-user> -p big_market_02 \
+    < docs/sql/proposed-credit-award-task-outbox.sql
+
+# Step 7: Register XXL-Job handlers (manual in admin UI)
+# DispatchCreditAwardTaskJob_DB1, DispatchCreditAwardTaskJob_DB2
+
+# Step 8: Only after Steps 1-7 pass — enable remote-quota-decrement in staging
+# (staging env only — never in production without full E2E; partake wiring is B14+)
+```
+
+### Credit-award outbox staging blocker reminder
+
+The `credit_award_task` outbox tables must also be applied before a full staging E2E run because `DispatchCreditAwardTaskJob_DB1/_DB2` scans them. See Phase 2.2-B9 section for the full outbox staging checklist. **Do not enable `account.award-credit-outbox.enabled=true` until XXL-Job handlers are registered and outbox DDL is applied.**
+
+### Rollback plan
+
+1. Ledger tables are additive — no existing columns or indexes are modified.
+2. If `decrementQuota` RPC throws `TableNotFoundException` after DDL applied with errors: the RPC returns `UN_ERROR`; market-service caller gets a failure response; quota is not decremented. `remote-quota-decrement.enabled=false` ensures no traffic reaches this path by default.
+3. If ledger tables must be removed from staging: `DROP TABLE raffle_quota_decrement_ledger_{000..003}` in each shard DB. No data loss to production tables; ledger is audit-only.
+4. Restore default behavior: `remote-quota-decrement.enabled=false` (already the default — no action needed unless flag was temporarily enabled).
+
+### What is still NOT done (deferred to B14+)
+
+- `rollbackQuota` real implementation (ledger `applied` → `rolled_back` + quota restore)
+- `RaffleActivityPartakeService` wired to `IActivityAccountPort.decrementQuota` seam
+- `remote-quota-decrement.enabled=true` in production
+- Full distributed tracing on the decrement RPC path
+
+### Validation commands
+
+```bash
+# B13 static checks (new)
+./scripts/validate-quota-decrement-b13.sh          # 12/12 static
+
+# B13 with Docker DB verification (after applying local DDL)
+CONNECT_DOCKER=true ./scripts/validate-quota-decrement-b13.sh
+
+# B13 full write-mode (idempotency probe)
+CONNECT_DOCKER=true LEDGER_WRITE=true ./scripts/validate-quota-decrement-b13.sh
+
+# Baseline scripts (must remain green)
+./scripts/validate-quota-decrement-b12.sh          # B12: 22/22 PASS
+./scripts/validate-quota-decrement-contract.sh     # B11: 18/18 PASS
+./scripts/validate-production-ddl.sh               # B10+B13: 14/14 static PASS
+./scripts/validate-mq-idempotency.sh               # B10: 12/12 PASS
+mvn compile                                        # BUILD SUCCESS
+```
+
+### Remaining blockers before B14
+
+1. **Apply ledger DDL to staging** — `raffle_quota_decrement_ledger_{000..003}` in both shard DBs (Step 1-2 above).
+2. **XXL-Job handler registration** — `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin.
+3. **Credit-award outbox DDL** — `credit_award_task_{000..003}` in staging DBs.
+4. **`rollbackQuota` real implementation** — ledger status update + quota restore (B14).
+5. **`RaffleActivityPartakeService` wiring** — replace local path with `IActivityAccountPort.decrementQuota` seam under flag (B14+).
 
 ---
 
