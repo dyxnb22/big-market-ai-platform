@@ -194,13 +194,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# D18: Safety gate — RaffleActivityPartakeService NOT wired to IActivityAccountPort
+# D18: RaffleActivityPartakeService wiring check
+# B12: must NOT be wired. B14: flag-gated wiring completed — gate satisfied.
 # ---------------------------------------------------------------------------
 PARTAKE_SVC="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/RaffleActivityPartakeService.java"
 if grep -q "IActivityAccountPort\|activityAccountPort" "$PARTAKE_SVC" 2>/dev/null; then
-    fail "D18: SAFETY GATE — RaffleActivityPartakeService is wired to IActivityAccountPort (must NOT be for B12)"
+    if grep -q "remoteQuotaDecrementEnabled\|remote-quota-decrement" "$PARTAKE_SVC" 2>/dev/null; then
+        ok "D18: RaffleActivityPartakeService wired to IActivityAccountPort with flag gate (B14 wiring complete)"
+    else
+        fail "D18: SAFETY GATE — RaffleActivityPartakeService wired to IActivityAccountPort without flag gate"
+    fi
 else
-    ok "D18: Safety gate — RaffleActivityPartakeService not yet wired to IActivityAccountPort"
+    ok "D18: Safety gate — RaffleActivityPartakeService not yet wired to IActivityAccountPort (pre-B14)"
 fi
 
 # ---------------------------------------------------------------------------

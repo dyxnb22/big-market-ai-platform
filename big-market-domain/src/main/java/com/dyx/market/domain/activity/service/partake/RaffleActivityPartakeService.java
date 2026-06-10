@@ -1,12 +1,15 @@
 package com.dyx.market.domain.activity.service.partake;
 
+import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.model.aggregate.CreatePartakeOrderAggregate;
 import com.dyx.market.domain.activity.model.entity.*;
 import com.dyx.market.domain.activity.model.valobj.UserRaffleOrderStateVO;
 import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -19,14 +22,22 @@ import java.util.Date;
  * @description
  * @create 2024-04-05 07:53
  */
+@Slf4j
 @Service
-public class RaffleActivityPartakeService extends AbstractRaffleActivityPartake{
+public class RaffleActivityPartakeService extends AbstractRaffleActivityPartake {
 
     private static final DateTimeFormatter DATE_FORMAT_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final DateTimeFormatter DATE_FORMAT_DAY = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public RaffleActivityPartakeService(IActivityRepository activityRepository) {
+    private final IActivityAccountPort activityAccountPort;
+    private final boolean remoteQuotaDecrementEnabled;
+
+    public RaffleActivityPartakeService(IActivityRepository activityRepository,
+                                        IActivityAccountPort activityAccountPort,
+                                        @Value("${account.service.remote-quota-decrement.enabled:false}") boolean remoteQuotaDecrementEnabled) {
         super(activityRepository);
+        this.activityAccountPort = activityAccountPort;
+        this.remoteQuotaDecrementEnabled = remoteQuotaDecrementEnabled;
     }
 
     @Override
@@ -104,6 +115,40 @@ public class RaffleActivityPartakeService extends AbstractRaffleActivityPartake{
         userRaffleOrder.setOrderState(UserRaffleOrderStateVO.create);
         userRaffleOrder.setEndDateTime(activityEntity.getEndDateTime());
         return userRaffleOrder;
+    }
+
+    /**
+     * Phase 2.2-B14 flag-gated wiring.
+     *
+     * flag=false (default): original saveCreatePartakeOrderAggregate — quota decrement and
+     *   order insert happen atomically in a single local transaction. No change to runtime behavior.
+     *
+     * flag=true: pre-draw remote quota decrement via IActivityAccountPort.decrementQuota,
+     *   then savePartakeOrderOnly to insert only the order row. If the order insert fails,
+     *   rollbackQuota restores the slot (saga compensation).
+     */
+    @Override
+    protected void doSavePartakeOrder(CreatePartakeOrderAggregate aggregate) {
+        if (!remoteQuotaDecrementEnabled) {
+            activityRepository.saveCreatePartakeOrderAggregate(aggregate);
+            return;
+        }
+        String userId = aggregate.getUserId();
+        Long activityId = aggregate.getActivityId();
+        String outBusinessNo = aggregate.getUserRaffleOrderEntity().getOrderId();
+        boolean decremented = activityAccountPort.decrementQuota(userId, activityId, outBusinessNo);
+        if (!decremented) {
+            log.warn("[RaffleActivityPartakeService] remote decrementQuota exhausted userId:{} activityId:{}", userId, activityId);
+            throw new AppException(ResponseCode.ACCOUNT_QUOTA_ERROR.getCode(), ResponseCode.ACCOUNT_QUOTA_ERROR.getInfo());
+        }
+        try {
+            activityRepository.savePartakeOrderOnly(aggregate);
+        } catch (Exception e) {
+            log.error("[RaffleActivityPartakeService] savePartakeOrderOnly failed, compensating rollbackQuota userId:{} activityId:{} outBusinessNo:{}",
+                    userId, activityId, outBusinessNo, e);
+            activityAccountPort.rollbackQuota(userId, activityId, outBusinessNo);
+            throw e;
+        }
     }
 
 }

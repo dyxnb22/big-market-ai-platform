@@ -972,4 +972,119 @@ public class ActivityRepository implements IActivityRepository {
         }
     }
 
+    /**
+     * Phase 2.2-B14: ledger-guarded saga compensation.
+     *
+     * Transaction contract (single shard):
+     *   1. Query ledger row by (userId, activityId, outBusinessNo).
+     *   2. No row → safe no-op, return true (decrement never applied or already cleaned up).
+     *   3. status = rolled_back → idempotent, return true.
+     *   4. status = applied → CAS: UPDATE ledger SET status='rolled_back' WHERE status='applied'.
+     *      If 0 rows updated: concurrent rollback won the race, return true.
+     *   5. Restore total_count_surplus + 1.
+     *   6. If month account exists for current month: restore month_count_surplus + 1 in month
+     *      table and mirror in main account.
+     *   7. If day account exists for today: restore day_count_surplus + 1 in day table and
+     *      mirror in main account.
+     */
+    @Override
+    public boolean rollbackQuotaWithLedger(String userId, Long activityId, String outBusinessNo) {
+        String month = RaffleActivityAccountMonth.currentMonth();
+        String day = RaffleActivityAccountDay.currentDay();
+        try {
+            dbRouter.doRouter(userId);
+            Boolean result = transactionTemplate.execute(status -> {
+                RaffleQuotaDecrementLedger ledger = raffleQuotaDecrementLedgerDao.queryByKey(
+                        RaffleQuotaDecrementLedger.builder()
+                                .userId(userId).activityId(activityId).outBusinessNo(outBusinessNo).build());
+
+                if (ledger == null) {
+                    log.warn("[rollbackQuotaWithLedger] no ledger row, no-op userId:{} activityId:{} outBusinessNo:{}",
+                            userId, activityId, outBusinessNo);
+                    return true;
+                }
+                if ("rolled_back".equals(ledger.getStatus())) {
+                    log.info("[rollbackQuotaWithLedger] already rolled_back, idempotent userId:{} activityId:{} outBusinessNo:{}",
+                            userId, activityId, outBusinessNo);
+                    return true;
+                }
+
+                int updated = raffleQuotaDecrementLedgerDao.updateStatusToRolledBack(
+                        RaffleQuotaDecrementLedger.builder()
+                                .userId(userId).activityId(activityId).outBusinessNo(outBusinessNo).build());
+                if (updated != 1) {
+                    log.warn("[rollbackQuotaWithLedger] concurrent rollback, returning success userId:{} activityId:{} outBusinessNo:{}",
+                            userId, activityId, outBusinessNo);
+                    return true;
+                }
+
+                raffleActivityAccountDao.addAccountTotalSurplusQuota(
+                        RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
+
+                RaffleActivityAccountMonth monthAccount = raffleActivityAccountMonthDao.queryActivityAccountMonthByUserId(
+                        RaffleActivityAccountMonth.builder().userId(userId).activityId(activityId).month(month).build());
+                if (monthAccount != null) {
+                    raffleActivityAccountMonthDao.addAccountQuota(
+                            RaffleActivityAccountMonth.builder()
+                                    .userId(userId).activityId(activityId).month(month)
+                                    .monthCountSurplus(1).monthCount(0).build());
+                    raffleActivityAccountDao.addAccountMonthSurplusQuota(
+                            RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
+                }
+
+                RaffleActivityAccountDay dayAccount = raffleActivityAccountDayDao.queryActivityAccountDayByUserId(
+                        RaffleActivityAccountDay.builder().userId(userId).activityId(activityId).day(day).build());
+                if (dayAccount != null) {
+                    raffleActivityAccountDayDao.addAccountQuota(
+                            RaffleActivityAccountDay.builder()
+                                    .userId(userId).activityId(activityId).day(day)
+                                    .dayCountSurplus(1).dayCount(0).build());
+                    raffleActivityAccountDao.addAccountDaySurplusQuota(
+                            RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
+                }
+
+                log.info("[rollbackQuotaWithLedger] done userId:{} activityId:{} outBusinessNo:{}",
+                        userId, activityId, outBusinessNo);
+                return true;
+            });
+            return Boolean.TRUE.equals(result);
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    /**
+     * Phase 2.2-B14: insert only the raffle participation order row, shard-routed by userId.
+     * Used when quota was already decremented via IActivityAccountPort.decrementQuota (flag=true path).
+     */
+    @Override
+    public void savePartakeOrderOnly(CreatePartakeOrderAggregate createPartakeOrderAggregate) {
+        try {
+            String userId = createPartakeOrderAggregate.getUserId();
+            UserRaffleOrderEntity userRaffleOrderEntity = createPartakeOrderAggregate.getUserRaffleOrderEntity();
+            dbRouter.doRouter(userId);
+            transactionTemplate.execute(status -> {
+                try {
+                    userRaffleOrderDao.insert(UserRaffleOrder.builder()
+                            .userId(userRaffleOrderEntity.getUserId())
+                            .activityId(userRaffleOrderEntity.getActivityId())
+                            .activityName(userRaffleOrderEntity.getActivityName())
+                            .strategyId(userRaffleOrderEntity.getStrategyId())
+                            .orderId(userRaffleOrderEntity.getOrderId())
+                            .orderTime(userRaffleOrderEntity.getOrderTime())
+                            .orderState(userRaffleOrderEntity.getOrderState().getCode())
+                            .build());
+                    return 1;
+                } catch (DuplicateKeyException e) {
+                    status.setRollbackOnly();
+                    log.error("[savePartakeOrderOnly] duplicate orderId userId:{} orderId:{}",
+                            userId, userRaffleOrderEntity.getOrderId(), e);
+                    throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
+                }
+            });
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
 }

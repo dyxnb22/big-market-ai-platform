@@ -142,20 +142,26 @@ else
     fail "S7: rollbackQuota method missing from AccountQuotaServiceRPC"
 fi
 
-# S8: Safety gate — RaffleActivityPartakeService NOT wired to IActivityAccountPort
+# S8: RaffleActivityPartakeService wiring check
+# B13: must NOT be wired. B14: flag-gated wiring was added — gate satisfied.
 PARTAKE_SVC="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/RaffleActivityPartakeService.java"
 if grep -q "IActivityAccountPort\|activityAccountPort" "$PARTAKE_SVC" 2>/dev/null; then
-    fail "S8: SAFETY GATE — RaffleActivityPartakeService is wired to IActivityAccountPort (must NOT be for B13)"
+    # B14 completed the flag-gated wiring — this is expected after B14
+    if grep -q "remoteQuotaDecrementEnabled\|remote-quota-decrement" "$PARTAKE_SVC" 2>/dev/null; then
+        ok "S8: RaffleActivityPartakeService wired to IActivityAccountPort with flag gate (B14 wiring complete)"
+    else
+        fail "S8: RaffleActivityPartakeService wired to IActivityAccountPort but missing flag gate"
+    fi
 else
-    ok "S8: Safety gate — RaffleActivityPartakeService not wired to IActivityAccountPort"
+    ok "S8: Safety gate — RaffleActivityPartakeService not yet wired to IActivityAccountPort (pre-B14)"
 fi
 
 # S9: Safety gate — AbstractRaffleActivityPartake NOT wired to IActivityAccountPort
 ABSTRACT_PARTAKE="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java"
 if grep -q "IActivityAccountPort\|activityAccountPort" "$ABSTRACT_PARTAKE" 2>/dev/null; then
-    fail "S9: SAFETY GATE — AbstractRaffleActivityPartake is wired to IActivityAccountPort (must NOT be for B13)"
+    fail "S9: SAFETY GATE — AbstractRaffleActivityPartake is wired to IActivityAccountPort (must NOT be)"
 else
-    ok "S9: Safety gate — AbstractRaffleActivityPartake not wired to IActivityAccountPort"
+    ok "S9: Safety gate — AbstractRaffleActivityPartake not directly wired to IActivityAccountPort"
 fi
 
 # S10: No config enables remote-quota-decrement

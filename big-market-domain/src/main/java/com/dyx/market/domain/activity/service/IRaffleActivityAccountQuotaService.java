@@ -66,4 +66,17 @@ public interface IRaffleActivityAccountQuotaService {
      */
     boolean decrementQuota(String userId, Long activityId, String outBusinessNo);
 
+    /**
+     * Roll back a previously decremented quota slot (saga compensation).
+     *
+     * Phase 2.2-B14: ledger-guarded. Safe to call if decrement was never applied.
+     * Idempotent: repeated calls with the same key return true without double-restore.
+     *
+     * @param userId        user identifier (shard key)
+     * @param activityId    activity identifier
+     * @param outBusinessNo idempotency key — same value used in decrementQuota
+     * @return true if rolled back (or already rolled back / no ledger row); false on infra failure
+     */
+    boolean rollbackQuota(String userId, Long activityId, String outBusinessNo);
+
 }

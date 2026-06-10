@@ -1470,17 +1470,15 @@ The `credit_award_task` outbox tables must also be applied before a full staging
 3. If ledger tables must be removed from staging: `DROP TABLE raffle_quota_decrement_ledger_{000..003}` in each shard DB. No data loss to production tables; ledger is audit-only.
 4. Restore default behavior: `remote-quota-decrement.enabled=false` (already the default — no action needed unless flag was temporarily enabled).
 
-### What is still NOT done (deferred to B14+)
+### What is still NOT done after B13 (now addressed in B14)
 
-- `rollbackQuota` real implementation (ledger `applied` → `rolled_back` + quota restore)
-- `RaffleActivityPartakeService` wired to `IActivityAccountPort.decrementQuota` seam
-- `remote-quota-decrement.enabled=true` in production
-- Full distributed tracing on the decrement RPC path
+- `rollbackQuota` real implementation → **done in B14**
+- `RaffleActivityPartakeService` wired to `IActivityAccountPort.decrementQuota` seam → **done in B14**
 
-### Validation commands
+### Validation commands (B13)
 
 ```bash
-# B13 static checks (new)
+# B13 static checks
 ./scripts/validate-quota-decrement-b13.sh          # 12/12 static
 
 # B13 with Docker DB verification (after applying local DDL)
@@ -1488,22 +1486,103 @@ CONNECT_DOCKER=true ./scripts/validate-quota-decrement-b13.sh
 
 # B13 full write-mode (idempotency probe)
 CONNECT_DOCKER=true LEDGER_WRITE=true ./scripts/validate-quota-decrement-b13.sh
+```
 
-# Baseline scripts (must remain green)
+### Remaining blockers before enabling `remote-quota-decrement=true`
+
+1. **Apply ledger DDL to staging** — `raffle_quota_decrement_ledger_{000..003}` in both shard DBs.
+2. **XXL-Job handler registration** — `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin.
+3. **Credit-award outbox DDL** — `credit_award_task_{000..003}` in staging DBs.
+
+---
+
+## Phase 2.2-B14 — rollbackQuota real implementation and flag-gated wiring
+
+**Commit:** `feat: add B14 quota decrement rollback and flag-gated wiring`
+**Tag:** `phase-2.2-b14-quota-decrement-rollback-wiring`
+
+### What was implemented
+
+#### 1. Real `rollbackQuota` (saga compensation)
+
+**Transaction contract** (`ActivityRepository.rollbackQuotaWithLedger`):
+1. Query ledger row by `(userId, activityId, outBusinessNo)`.
+2. No row → safe no-op, return `true` (decrement never applied).
+3. `status = rolled_back` → idempotent, return `true` (already compensated).
+4. `status = applied` → CAS update: `applied → rolled_back` (concurrent rollbacks resolved by DB row-level lock).
+5. If CAS returns 0 rows → concurrent rollback won race, return `true`.
+6. Restore `total_count_surplus + 1` in `raffle_activity_account`.
+7. If month account exists for current month: restore `month_count_surplus + 1` in `raffle_activity_account_month` and mirror in main account.
+8. If day account exists for today: restore `day_count_surplus + 1` in `raffle_activity_account_day` and mirror in main account.
+
+All steps in one `transactionTemplate` block, shard-routed by `userId`.
+
+**Domain service** (`IRaffleActivityAccountQuotaService.rollbackQuota`) delegates to `IActivityRepository.rollbackQuotaWithLedger`.
+
+**`AccountQuotaServiceRPC.rollbackQuota`** now calls the real domain service (stub removed).
+
+#### 2. Flag-gated `RaffleActivityPartakeService` wiring
+
+`AbstractRaffleActivityPartake` gains a protected hook:
+```
+doSavePartakeOrder(CreatePartakeOrderAggregate) // default: saveCreatePartakeOrderAggregate
+```
+
+`RaffleActivityPartakeService.doSavePartakeOrder` overrides it:
+
+| `remote-quota-decrement.enabled` | Behavior |
+|---|---|
+| `false` (default) | `saveCreatePartakeOrderAggregate` — unchanged local transaction (quota + order atomically) |
+| `true` | `decrementQuota` via `IActivityAccountPort` → `savePartakeOrderOnly` (order-only insert). On `savePartakeOrderOnly` failure: `rollbackQuota` compensates. |
+
+`savePartakeOrderOnly` in `ActivityRepository` inserts only the `user_raffle_order` row (no quota modification).
+
+#### 3. LocalActivityAccountPort — real local fallback
+
+`LocalActivityAccountPort` now delegates to `IActivityRepository`:
+- `decrementQuota` → `activityRepository.decrementQuotaWithLedger`
+- `rollbackQuota` → `activityRepository.rollbackQuotaWithLedger`
+
+This enables consistent ledger semantics in local-only deployments (flag=true without live account-service). Requires ledger DDL applied to local DB before use.
+
+#### 4. New DAO operations
+
+Three new methods in `IRaffleActivityAccountDao` for rollback compensation:
+- `addAccountTotalSurplusQuota` — `total_count_surplus + 1`
+- `addAccountMonthSurplusQuota` — `month_count_surplus + 1` (mirror in main account)
+- `addAccountDaySurplusQuota` — `day_count_surplus + 1` (mirror in main account)
+
+SQL added to all three mapper XML copies (account-service, app, message-job-service).
+
+### Validation commands (B14)
+
+```bash
+./scripts/validate-quota-decrement-b14.sh          # B14: 21/21 PASS
+
+# Baseline scripts (all must remain green)
+./scripts/validate-quota-decrement-b13.sh          # B13: 12/12 PASS
 ./scripts/validate-quota-decrement-b12.sh          # B12: 22/22 PASS
 ./scripts/validate-quota-decrement-contract.sh     # B11: 18/18 PASS
-./scripts/validate-production-ddl.sh               # B10+B13: 14/14 static PASS
-./scripts/validate-mq-idempotency.sh               # B10: 12/12 PASS
+./scripts/validate-production-ddl.sh               # 14/14 static PASS
+./scripts/validate-mq-idempotency.sh               # 12/12 PASS
 mvn compile                                        # BUILD SUCCESS
 ```
 
-### Remaining blockers before B14
+### Remaining blockers before enabling `remote-quota-decrement=true`
 
-1. **Apply ledger DDL to staging** — `raffle_quota_decrement_ledger_{000..003}` in both shard DBs (Step 1-2 above).
-2. **XXL-Job handler registration** — `DispatchCreditAwardTaskJob_DB1/_DB2` in XXL-Job admin.
-3. **Credit-award outbox DDL** — `credit_award_task_{000..003}` in staging DBs.
-4. **`rollbackQuota` real implementation** — ledger status update + quota restore (B14).
-5. **`RaffleActivityPartakeService` wiring** — replace local path with `IActivityAccountPort.decrementQuota` seam under flag (B14+).
+1. **Staging ledger DDL** — `raffle_quota_decrement_ledger_{000..003}` in `big_market_01` and `big_market_02` (manual apply).
+2. **Staging credit-award outbox DDL** — `credit_award_task_{000..003}` (manual apply).
+3. **XXL-Job handlers** — `DispatchCreditAwardTaskJob_DB1`, `DispatchCreditAwardTaskJob_DB2` registered in staging admin UI.
+
+### Rollback plan
+
+The flag default is `false`. To revert flag=true behavior instantly: set `remote-quota-decrement.enabled=false` (env var `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=false`) and redeploy. No DB schema changes are needed. The `saveCreatePartakeOrderAggregate` path is unchanged and immediately active.
+
+### What is deferred to B15
+
+- E2E staging test: apply DDL, enable `remote-quota-decrement.enabled=true`, run full partake flow, verify rollback path triggers correctly.
+- Full distributed tracing on the decrement RPC path.
+- `remote-quota-decrement.enabled=true` in production.
 
 ---
 

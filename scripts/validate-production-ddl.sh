@@ -130,17 +130,19 @@ else
     fail "S11: AccountQuotaServiceRPC.decrementQuota real implementation missing"
 fi
 
-# S12: RaffleActivityPartakeService NOT wired to remote decrementQuota (safety gate)
-# Domain service and infrastructure may reference decrementQuota — only market-service wiring is unsafe.
+# S12: RaffleActivityPartakeService wiring check (B12: not wired; B14: flag-gated wiring)
 PARTAKE_SVC="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/RaffleActivityPartakeService.java"
 ABSTRACT_PARTAKE="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java"
-partake_wired=false
-if grep -q "IActivityAccountPort\|activityAccountPort\|decrementQuota" "$PARTAKE_SVC" 2>/dev/null; then partake_wired=true; fi
-if grep -q "IActivityAccountPort\|activityAccountPort\|decrementQuota" "$ABSTRACT_PARTAKE" 2>/dev/null; then partake_wired=true; fi
-if $partake_wired; then
-    fail "S12: SAFETY GATE — RaffleActivityPartakeService or AbstractRaffleActivityPartake is wired to decrementQuota (must NOT be for B12)"
+if grep -q "IActivityAccountPort\|activityAccountPort" "$PARTAKE_SVC" 2>/dev/null; then
+    if grep -q "remoteQuotaDecrementEnabled\|remote-quota-decrement" "$PARTAKE_SVC" 2>/dev/null; then
+        ok "S12: RaffleActivityPartakeService wired to IActivityAccountPort with flag gate (B14 complete)"
+    else
+        fail "S12: SAFETY GATE — RaffleActivityPartakeService wired to IActivityAccountPort without flag gate"
+    fi
+elif grep -q "IActivityAccountPort\|activityAccountPort\|decrementQuota" "$ABSTRACT_PARTAKE" 2>/dev/null; then
+    fail "S12: SAFETY GATE — AbstractRaffleActivityPartake directly wired to IActivityAccountPort"
 else
-    ok "S12: Safety gate — RaffleActivityPartakeService not yet wired to decrementQuota"
+    ok "S12: Safety gate — RaffleActivityPartakeService not yet wired to decrementQuota (pre-B14)"
 fi
 
 # S13: B13 ledger DDL file exists (quota-decrement ledger must be applied before enabling remote flag)

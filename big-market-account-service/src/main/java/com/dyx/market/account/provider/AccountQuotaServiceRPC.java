@@ -276,20 +276,54 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request) {
-        // Phase 2.2-B12: rollback deferred to B13.
-        // The idempotency ledger (raffle_quota_decrement_ledger) DDL is now designed.
-        // Ledger status update (applied → rolled_back) and quota restore will be wired
-        // once the ledger is deployed to staging and end-to-end validation passes (B13).
-        // No callers are wired to this method at this stage.
-        log.warn("[AccountQuotaServiceRPC] rollbackQuota not yet implemented (B12 — pending staging DDL deployment) — userId:{} activityId:{} outBusinessNo:{}",
-                request == null ? "null" : request.getUserId(),
-                request == null ? "null" : request.getActivityId(),
-                request == null ? "null" : request.getOutBusinessNo());
-        return Response.<Boolean>builder()
-                .code(ResponseCode.UN_ERROR.getCode())
-                .info("rollbackQuota not yet implemented (Phase 2.2-B12 — pending ledger deployment and B13 validation)")
-                .data(false)
-                .build();
+        // Phase 2.2-B14: real ledger-guarded rollback implementation.
+        // Ledger status update (applied → rolled_back) and quota restore in one transaction.
+        // Idempotent: safe to call even if the matching decrementQuota was never applied.
+        // Requires raffle_quota_decrement_ledger DDL applied to the shard DBs.
+        if (request == null
+                || StringUtils.isBlank(request.getUserId())
+                || request.getActivityId() == null
+                || StringUtils.isBlank(request.getOutBusinessNo())) {
+            log.warn("[AccountQuotaServiceRPC] rollbackQuota illegal parameter request:{}", request);
+            return Response.<Boolean>builder()
+                    .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                    .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                    .data(false)
+                    .build();
+        }
+        log.info("[AccountQuotaServiceRPC] rollbackQuota userId:{} activityId:{} outBusinessNo:{}",
+                request.getUserId(), request.getActivityId(), request.getOutBusinessNo());
+        try {
+            boolean rolledBack = raffleActivityAccountQuotaService.rollbackQuota(
+                    request.getUserId(), request.getActivityId(), request.getOutBusinessNo());
+            if (rolledBack) {
+                return Response.<Boolean>builder()
+                        .code(ResponseCode.SUCCESS.getCode())
+                        .info(ResponseCode.SUCCESS.getInfo())
+                        .data(true)
+                        .build();
+            } else {
+                return Response.<Boolean>builder()
+                        .code(ResponseCode.UN_ERROR.getCode())
+                        .info("rollbackQuota infra failure")
+                        .data(false)
+                        .build();
+            }
+        } catch (AppException e) {
+            log.error("[AccountQuotaServiceRPC] rollbackQuota appException userId:{} code:{}", request.getUserId(), e.getCode(), e);
+            return Response.<Boolean>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .data(false)
+                    .build();
+        } catch (Exception e) {
+            log.error("[AccountQuotaServiceRPC] rollbackQuota failed userId:{}", request.getUserId(), e);
+            return Response.<Boolean>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .data(false)
+                    .build();
+        }
     }
 
     private OrderTradeTypeVO resolveOrderTradeType(String code) {

@@ -97,4 +97,25 @@ public interface IActivityRepository {
      */
     boolean decrementQuotaWithLedger(String userId, Long activityId, String outBusinessNo);
 
+    /**
+     * Atomically roll back a previously decremented quota slot (saga compensation).
+     *
+     * Phase 2.2-B14: ledger-guarded rollback.
+     *   - No ledger row         → safe no-op, return true
+     *   - status = rolled_back  → idempotent, return true
+     *   - status = applied      → CAS applied→rolled_back + restore total/month/day surplus
+     *
+     * @return true in all safe cases; caller should log but not retry on false
+     */
+    boolean rollbackQuotaWithLedger(String userId, Long activityId, String outBusinessNo);
+
+    /**
+     * Persist only the raffle participation order row without touching quota accounts.
+     *
+     * Phase 2.2-B14: used in the flag=true (remote quota decrement) path where quota
+     * has already been decremented via IActivityAccountPort.decrementQuota before this
+     * call. Shard-routed by userId, same as saveCreatePartakeOrderAggregate.
+     */
+    void savePartakeOrderOnly(CreatePartakeOrderAggregate createPartakeOrderAggregate);
+
 }

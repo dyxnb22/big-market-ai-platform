@@ -31,4 +31,13 @@ public interface IRaffleActivityAccountDao {
 
     RaffleActivityAccount queryAccountByUserId(RaffleActivityAccount raffleActivityAccount);
 
+    /** Restore total_count_surplus + 1 (rollback compensation). */
+    void addAccountTotalSurplusQuota(RaffleActivityAccount raffleActivityAccount);
+
+    /** Restore month_count_surplus mirror + 1 in main account (rollback compensation). */
+    void addAccountMonthSurplusQuota(RaffleActivityAccount raffleActivityAccount);
+
+    /** Restore day_count_surplus mirror + 1 in main account (rollback compensation). */
+    void addAccountDaySurplusQuota(RaffleActivityAccount raffleActivityAccount);
+
 }

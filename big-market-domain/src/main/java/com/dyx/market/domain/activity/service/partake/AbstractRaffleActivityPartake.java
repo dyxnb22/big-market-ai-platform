@@ -73,8 +73,8 @@ public abstract class AbstractRaffleActivityPartake implements IRaffleActivityPa
         // 5. 填充抽奖单实体对象
         createPartakeOrderAggregate.setUserRaffleOrderEntity(userRaffleOrder);
 
-        // 6. 保存聚合对象 - 一个领域内的一个聚合是一个事务操作
-        activityRepository.saveCreatePartakeOrderAggregate(createPartakeOrderAggregate);
+        // 6. 保存聚合对象 - flag=false: 本地事务含quota扣减; flag=true: quota已通过port扣减，仅存订单
+        doSavePartakeOrder(createPartakeOrderAggregate);
         log.info("创建活动抽奖单完成 userId:{} activityId:{} orderId:{}", userId, activityId, userRaffleOrder.getOrderId());
         // 7. 返回订单信息
         return userRaffleOrder;
@@ -83,5 +83,14 @@ public abstract class AbstractRaffleActivityPartake implements IRaffleActivityPa
     protected abstract CreatePartakeOrderAggregate doFilterAccount(String userId, Long activityId, Date currentDate);
 
     protected abstract UserRaffleOrderEntity buildUserRaffleOrder(String userId, Long activityId, Date currentDate);
+
+    /**
+     * Persist the partake order aggregate. Default: local saveCreatePartakeOrderAggregate (quota
+     * decrement + order insert in one transaction). Override in subclasses to apply flag-gated
+     * remote quota decrement before the order insert (B14+).
+     */
+    protected void doSavePartakeOrder(CreatePartakeOrderAggregate aggregate) {
+        activityRepository.saveCreatePartakeOrderAggregate(aggregate);
+    }
 
 }

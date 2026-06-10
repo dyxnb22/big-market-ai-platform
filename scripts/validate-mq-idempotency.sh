@@ -137,14 +137,16 @@ else
     ok "S10: saveCreatePartakeOrderAggregate NOT wired to remote accountQuotaWriteAdapter (deferred)"
 fi
 
-# S11: RaffleActivityPartakeService (partake path) does not call decrementQuota directly
-# (B12: ActivityRepository implements decrementQuotaWithLedger — allowed; partake domain must NOT wire it)
-if grep -rq "decrementQuota\|IActivityAccountPort\|activityAccountPort" \
-    big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/ \
-    2>/dev/null; then
-    fail "S11: decrementQuota unexpectedly wired in partake domain service"
+# S11: RaffleActivityPartakeService wiring check (B12: not wired; B14: flag-gated wiring expected)
+PARTAKE_SVC="big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/RaffleActivityPartakeService.java"
+if grep -q "IActivityAccountPort\|activityAccountPort" "$PARTAKE_SVC" 2>/dev/null; then
+    if grep -q "remoteQuotaDecrementEnabled\|remote-quota-decrement" "$PARTAKE_SVC" 2>/dev/null; then
+        ok "S11: RaffleActivityPartakeService wired to IActivityAccountPort with flag gate (B14 complete)"
+    else
+        fail "S11: SAFETY GATE — RaffleActivityPartakeService wired to IActivityAccountPort without flag gate"
+    fi
 else
-    ok "S11: Safety gate — decrementQuota not wired in partake domain (deferred as designed)"
+    ok "S11: Safety gate — decrementQuota not wired in partake domain (pre-B14)"
 fi
 
 # S12: AccountQuotaServiceRPC.decrementQuota is ledger-guarded real implementation (B12 promoted stub)
