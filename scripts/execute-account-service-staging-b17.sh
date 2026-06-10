@@ -138,6 +138,11 @@ Phase E: Enable flag in staging market-service only
 
 Phase F: Partake flow E2E test
 --------------------------------
+  Step F.0 — Armory (REQUIRED before draw — draw returns code=0001 without it):
+
+    GET /api/v1/raffle/activity/armory?activityId=<activityId>
+    Expected: HTTP 200, code=0000, data=true
+
   POST /api/v1/raffle/activity/draw  {"activityId": <id>, "userId": "<user>"}
   Expected: HTTP 200, awardId present.
 
@@ -227,8 +232,8 @@ Phase K: Production go/no-go decision
     - No double-credit observed at any step
 
   Record decision, approver, and timestamp in evidence file.
-  Evidence file path: docs/evidence/phase-2-2-b17-staging-cutover-template.md
-  (or the B17_EVIDENCE_FILE path you provided)
+  Evidence file path: docs/evidence/b17-staging-evidence-<YYYYMMDD>.md
+  (the dated B17_EVIDENCE_FILE path you provided — never use the blank template)
 
 =============================================================================
 '
@@ -373,6 +378,17 @@ if [[ -n "$B17_EVIDENCE_FILE" ]]; then
     info "=== Section 4: Evidence file write ==="
     info "    Target: $B17_EVIDENCE_FILE"
 
+    # Hard safety guard: the blank template must never be written to.
+    TEMPLATE_BASENAME="phase-2-2-b17-staging-cutover-template.md"
+    if [[ "$(basename "$B17_EVIDENCE_FILE")" == "$TEMPLATE_BASENAME" ]]; then
+        echo ""
+        echo "[ERROR] B17_EVIDENCE_FILE must NOT point to the blank template ($TEMPLATE_BASENAME)."
+        echo "        The blank template is a read-only artefact and must never be written to."
+        echo "        Use a dated path instead:"
+        echo "        B17_EVIDENCE_FILE=docs/evidence/b17-staging-evidence-\$(date +%Y%m%d).md"
+        exit 1
+    fi
+
     EVIDENCE_DIR=$(dirname "$B17_EVIDENCE_FILE")
     if [[ ! -d "$EVIDENCE_DIR" ]]; then
         mkdir -p "$EVIDENCE_DIR"
@@ -466,6 +482,18 @@ Phase C gate: PASS / FAIL
 | userId | ___________________ |
 | activityId | ___________________ |
 | outBusinessNo | ___________________ |
+
+**Step F.0 — Armory (REQUIRED before draw):**
+
+\`\`\`
+GET /api/v1/raffle/activity/armory?activityId=<activityId>
+\`\`\`
+
+| | Value |
+|---|---|
+| Response code | ___________________ (expected: 200) |
+| code field | ___________________ (expected: 0000) |
+| data field | ___________________ (expected: true) |
 
 **HTTP request:**
 \`\`\`
@@ -750,6 +778,11 @@ if [[ "$CONNECT_REMOTE" != "true" && -z "$B17_EVIDENCE_FILE" && "$B17_POST_CHECK
 
   Step 7 — Open flag=true window (Phase E, manual):
     Deploy big-market-market-service with ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=true
+
+  Step 7a — Armory before draw (Phase F.0 — required):
+    GET /api/v1/raffle/activity/armory?activityId=<activityId>
+    Expected: HTTP 200, code=0000, data=true
+    (draw returns code=0001 if armory not run — do NOT skip)
 
   Step 8 — Run Phases F, G, H (manual E2E, per cutover plan):
     B17_PRINT_PLAN=true ./scripts/execute-account-service-staging-b17.sh | grep -A 200 "Phase F"
