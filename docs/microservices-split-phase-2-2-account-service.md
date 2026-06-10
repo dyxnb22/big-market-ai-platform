@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B15 E2E staging runbook gate complete. B15 adds `scripts/validate-quota-decrement-b15-e2e.sh` (20 static + CONNECT_DOCKER read-only + B15_E2E_REHEARSAL write-mode ledger state-machine proof) and the full B15 staging runbook (DDL apply, XXL-Job registration, partake flow E2E, rollback path, outbox dispatch, flag restore, failure rollback plan). B14 delivered real `rollbackQuotaWithLedger`, flag-gated `RaffleActivityPartakeService → IActivityAccountPort.decrementQuota`, `savePartakeOrderOnly`, and `LocalActivityAccountPort` real delegation (21/21 B14 PASS). All baselines green (21/21 B14, 12/12 B13, 22/22 B12, 18/18 B11, 14/14 production DDL static, 12/12 MQ idempotency). remote-quota-decrement.enabled=false. Remaining blockers: staging ledger DDL (manual), staging credit-award outbox DDL (manual), XXL-Job handler registration (manual).**
+**Status: Phase 2.2-B16 account service cutover gate complete. B16 adds `scripts/validate-account-service-cutover-b16.sh` (18 static checks, CONNECT_DOCKER orchestration of B15 + production-DDL scripts, CONNECT_REMOTE read-only staging verification of all tables and UNIQUE KEYs, B16_EVIDENCE_TEMPLATE staging evidence template, B16_POST_CHECK post-window checklist). B15 added the full staging runbook (20 static + CONNECT_DOCKER + B15_E2E_REHEARSAL write-mode). All baselines green (20/20 B15, 21/21 B14, 12/12 B13, 22/22 B12, 18/18 B11, 14/14 production DDL static, 12/12 MQ idempotency). remote-quota-decrement.enabled=false. Remaining manual blockers: staging ledger DDL, staging credit-award outbox DDL, XXL-Job handler registration (DispatchCreditAwardTaskJob_DB1/DB2).**
 
 ## Phase 2.2-A — What Is Done
 
@@ -1783,6 +1783,136 @@ CONNECT_DOCKER=true B15_E2E_REHEARSAL=true ./scripts/validate-quota-decrement-b1
 ./scripts/validate-production-ddl.sh               # 14/14 static
 ./scripts/validate-mq-idempotency.sh               # 12/12
 mvn compile                                        # BUILD SUCCESS
+```
+
+---
+
+## Phase 2.2-B16 — Account Service Cutover Gate
+
+**Status: In progress. B15 staging runbook complete. Three manual blockers remain before the live staging E2E window can open.**
+
+### Purpose
+
+B16 is the final automated code-side gate before the live staging E2E cutover window. It does not enable any flags, apply any DDL, or modify staging data. It:
+
+1. Verifies all B11–B15 static invariants are intact (safety gates, flag defaults, DDL artefacts, port contracts, rollback impl).
+2. Orchestrates the existing B15 and production-DDL scripts against the local Docker MySQL stack (`CONNECT_DOCKER=true`).
+3. Provides a `CONNECT_REMOTE=true` read-only mode to verify staging DB tables and UNIQUE KEY presence after manual DDL apply.
+4. Prints the complete evidence template that must be filled out during the live staging window.
+5. Provides a `B16_POST_CHECK=true` mode for the post-window checklist review.
+
+### Script modes
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| Static (default) | `./scripts/validate-account-service-cutover-b16.sh` | 18 static checks; no DB; no writes |
+| Docker orchestration | `CONNECT_DOCKER=true ./scripts/validate-account-service-cutover-b16.sh` | Delegates to B15 + production-DDL scripts against local Docker MySQL |
+| Remote verification | `CONNECT_REMOTE=true MYSQL_HOST=... ./scripts/validate-account-service-cutover-b16.sh` | Read-only staging DB check: all ledger/outbox tables + 4 UNIQUE KEYs; prints next steps if all pass |
+| Evidence template | `B16_EVIDENCE_TEMPLATE=true ./scripts/validate-account-service-cutover-b16.sh` | Prints the staging cutover evidence template to fill out during the live window |
+| Post-check | `B16_POST_CHECK=true MYSQL_HOST=... ./scripts/validate-account-service-cutover-b16.sh` | CONNECT_REMOTE checks + evidence completion checklist |
+
+### Cutover gate checklist
+
+Before opening the staging cutover window, all of the following must be green:
+
+- [ ] `./scripts/validate-account-service-cutover-b16.sh` — 18/18 PASS (static)
+- [ ] `CONNECT_DOCKER=true ./scripts/validate-account-service-cutover-b16.sh` — all delegated checks PASS
+- [ ] All three manual blockers resolved (see below)
+- [ ] `CONNECT_REMOTE=true ./scripts/validate-account-service-cutover-b16.sh` — all remote checks PASS
+- [ ] All B15 baselines still green (see validation commands below)
+
+### Manual blockers (unchanged from B15)
+
+1. **Staging ledger DDL** — apply `docs/sql/proposed-quota-decrement-ledger.sql` to `big_market_01` and `big_market_02`.
+2. **Staging credit-award outbox DDL** — apply `docs/sql/proposed-credit-award-task-outbox.sql` to `big_market_01` and `big_market_02`.
+3. **XXL-Job handler registration** — register `DispatchCreditAwardTaskJob_DB1` and `DispatchCreditAwardTaskJob_DB2` in the staging XXL-Job admin UI (cron: `0/30 * * * * ?`).
+
+### Remote verification — UNIQUE KEY checks
+
+`CONNECT_REMOTE=true` mode verifies all four idempotency keys across both shard DBs:
+
+| Table (shards _000–_003) | UNIQUE KEY | DB |
+|--------------------------|------------|----|
+| `raffle_quota_decrement_ledger_*` | `uq_user_activity_biz` | `big_market_01`, `big_market_02` |
+| `credit_award_task_*` | `uq_award_order_id` | `big_market_01`, `big_market_02` |
+| `user_credit_order_*` | `uq_out_business_no` | `big_market_01`, `big_market_02` |
+| `user_behavior_rebate_order_*` | `uq_biz_id` | `big_market_01`, `big_market_02` |
+
+All 4 keys must be present on all shards in both DBs before the cutover window opens. Any missing key is a hard blocker.
+
+### Staging evidence template
+
+Run `B16_EVIDENCE_TEMPLATE=true ./scripts/validate-account-service-cutover-b16.sh` to print the full template. Fill it out during the live window. Sections:
+
+1. DDL apply timestamps (who, when, which DB)
+2. DB verification command and result (CONNECT_REMOTE output)
+3. XXL-Job handler IDs and registration screenshots
+4. flag=true window start/end timestamps
+5. Partake flow test values (userId, activityId, outBusinessNo) and before/after rows
+6. Quota before/after values
+7. Rollback before/after (ledger status, quota restore, duplicate rollback = 0 rows)
+8. Outbox pending→dispatched evidence and idempotency (count = 1 after second trigger)
+9. Flag restored=false evidence (health check = "UP")
+10. Production go/no-go decision with approver and timestamp
+
+### Production no-go criteria
+
+Do NOT enable `remote-quota-decrement=true` in production if any of the following are true:
+
+- Any FAIL in B16 static or CONNECT_REMOTE checks
+- Partake flow E2E failed (non-200 response, ledger row missing, quota not decremented)
+- Idempotency violation (quota changed on duplicate draw, or ledger count > 1)
+- Rollback failure (quota not restored, or double-restore on duplicate rollback)
+- Outbox dispatch failure (row stays `pending`, or `user_credit_order` count != 1)
+- Double credit observed (`user_credit_order` count > 1 for same `out_business_no`)
+- Evidence template not filled out and preserved
+
+### Rollback plan
+
+1. **Instant rollback:** Set `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=false` and redeploy. `saveCreatePartakeOrderAggregate` path takes effect instantly — no data loss on the fallback path.
+2. **Quota leak repair (if rollback did not fire):**
+   ```sql
+   UPDATE raffle_quota_decrement_ledger_000
+     SET status='rolled_back'
+     WHERE user_id='<user>' AND out_business_no='<biz-no>';
+   UPDATE raffle_activity_account
+     SET total_count_surplus = total_count_surplus + 1
+     WHERE user_id='<user>' AND activity_id=<id>;
+   ```
+3. **Ledger DDL not applied:** RPC throws `TableNotFoundException` → returns `UN_ERROR`; quota NOT decremented. Apply DDL and retry.
+4. **Double credit escalation:** If `user_credit_order` count > 1 for any `out_business_no`, halt immediately, do not promote to production, and investigate the UNIQUE KEY.
+
+### Validation commands (B16)
+
+```bash
+# B16 static gate
+./scripts/validate-account-service-cutover-b16.sh
+
+# B16 Docker orchestration
+CONNECT_DOCKER=true ./scripts/validate-account-service-cutover-b16.sh
+
+# B16 remote staging verification (after DDL apply)
+CONNECT_REMOTE=true \
+  MYSQL_HOST=<staging-host> MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+  ./scripts/validate-account-service-cutover-b16.sh
+
+# B16 evidence template
+B16_EVIDENCE_TEMPLATE=true ./scripts/validate-account-service-cutover-b16.sh
+
+# B16 post-check (after flag restored to false)
+B16_POST_CHECK=true \
+  MYSQL_HOST=<staging-host> MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+  ./scripts/validate-account-service-cutover-b16.sh
+
+# Baselines (must remain green throughout)
+./scripts/validate-quota-decrement-b15-e2e.sh          # B15: 20/20
+./scripts/validate-quota-decrement-b14.sh              # B14: 21/21
+./scripts/validate-quota-decrement-b13.sh              # B13: 12/12
+./scripts/validate-quota-decrement-b12.sh              # B12: 22/22
+./scripts/validate-quota-decrement-contract.sh         # B11: 18/18
+./scripts/validate-production-ddl.sh                   # DDL static: 14/14
+./scripts/validate-mq-idempotency.sh                   # MQ: 12/12
+mvn compile                                            # BUILD SUCCESS
 ```
 
 ---
