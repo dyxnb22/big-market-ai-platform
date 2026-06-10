@@ -1,8 +1,8 @@
 # big-market Microservices Evolution Roadmap
 
-## 1. Current State (as of 2026-06-10, Phase 2.3-A fulfillment-service dark launch complete)
+## 1. Current State (as of 2026-06-10, Phase 3 rebate-service boundary scaffold complete)
 
-The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2-A (account-service dark launch), Phase 2.2-B1–B21 (read adapters, write adapters, outbox scaffold, quota-decrement, staging/production gates, evidence consistency hardening), and Phase 2.3-A (fulfillment-service dark launch — `big-market-fulfillment-service` port 8087 with `FulfillmentAwardServiceRPC` Dubbo provider wrapping `IAwardService`; `validate-fulfillment-service-b23-a.sh` 15/15 PASS; smoke test extended to 18/18; no traffic cutover yet). Eight independently deployable Spring Boot launchers run behind an API gateway. Phase 2.2 completion remains blocked on 3 manual staging actions (staging DB DDL, XXL-Job registration). Phase 2.3 traffic cutover blocked until credit-award outbox is staging-validated. Re-run the smoke test in the current local environment before treating the runtime state as current.
+The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2 account-service readiness batches, Phase 2.3 fulfillment-service readiness batches, and the first Phase 3 repo-only decomposition batch: `big-market-rebate-service` dark-launch provider scaffold. The new rebate-service module hosts `IRebateService` under its own launcher boundary but does not receive traffic yet; market-service keeps the existing provider until a later adapter/cutover batch. Phase 2.2 and Phase 2.3 traffic cutovers remain blocked by their existing staging/DDL/XXL-Job gates. Re-run the smoke test in the current local environment before treating runtime state as current.
 
 **Running services:**
 
@@ -16,6 +16,14 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 | `big-market-message-job-service` | 8085 | MQ consumers + XXL-Job handlers |
 | `big-market-account-service` | 8086 | **Dark launch** — Dubbo provider for credit + quota. Remote-read validated. MQ write consumers now route through adapters; write flags still default false. |
 | `big-market-fulfillment-service` | 8087 | **Dark launch (Phase 2.3-A)** — Dubbo provider for award fulfillment (`FulfillmentAwardServiceRPC`). No callers wired yet; traffic cutover deferred to Phase 2.3-B+. |
+| `big-market-rebate-service` | 8088 | **Dark launch (Phase 3)** — Dubbo provider for behavior rebate (`RebateServiceRPC`). No callers wired yet; market-service provider remains active. |
+
+**Phase 3 first decomposition batch completed (2026-06-10):**
+- `big-market-rebate-service` created as a Maven module and service launcher.
+- `RebateServiceRPC` added under `com.dyx.market.rebate.provider`; it implements the existing `IRebateService` API contract and delegates to `IBehaviorRebateService`.
+- Service scan is bounded to `com.dyx.market.rebate`, `com.dyx.market.domain.rebate`, and shared infrastructure; it does not scan `trigger.http`, `trigger.rpc`, `trigger.listener`, or `trigger.job`.
+- Rebate mapper resources are limited to `daily_behavior_rebate`, `user_behavior_rebate_order`, and generic `task` outbox publishing.
+- No Docker service, gateway route, caller routing, or dangerous Phase 2 flag changes were added. See `docs/microservices-split-phase-3-next-extraction.md`.
 
 **Phase 1.2 changes completed (2026-06-09):**
 - `spring.rabbitmq.listener.simple.default-requeue-rejected=false` in market-service (now message-job-service)
