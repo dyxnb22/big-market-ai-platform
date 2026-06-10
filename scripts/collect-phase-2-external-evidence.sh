@@ -43,7 +43,7 @@ FAIL=0
 
 # ── 1. Git HEAD and tags ──────────────────────────────────────────────────────
 
-echo "[1/7] Collecting git HEAD and tags..."
+echo "[1/8] Collecting git HEAD and tags..."
 {
   echo "# git HEAD"
   git -C "$ROOT" rev-parse HEAD 2>&1
@@ -61,7 +61,7 @@ echo "[PASS] git-head.txt and git-tags.txt written"
 
 # ── 2. Git status ─────────────────────────────────────────────────────────────
 
-echo "[2/7] Collecting git status..."
+echo "[2/8] Collecting git status..."
 {
   echo "# git status --short"
   git -C "$ROOT" status --short 2>&1
@@ -72,9 +72,32 @@ echo "[2/7] Collecting git status..."
 
 echo "[PASS] git-status.txt written"
 
+# ── 2b. Run validate-phase-2-external-evidence-intake.sh ────────────────────
+
+echo "[2b/8] Running external evidence intake validator..."
+INTAKE_SCRIPT="$ROOT/scripts/validate-phase-2-external-evidence-intake.sh"
+if [ ! -f "$INTAKE_SCRIPT" ]; then
+  echo "[FAIL] validate-phase-2-external-evidence-intake.sh not found"
+  echo "INTAKE VALIDATOR NOT FOUND" > "$OUT_DIR/validate-intake.txt"
+  FAIL=$((FAIL + 1))
+else
+  {
+    echo "# validate-phase-2-external-evidence-intake.sh output"
+    echo "# Run at: $(date)"
+    echo ""
+    bash "$INTAKE_SCRIPT" 2>&1
+  } > "$OUT_DIR/validate-intake.txt"
+  if grep -q "RESULT: ALL CHECKS PASS" "$OUT_DIR/validate-intake.txt"; then
+    echo "[PASS] External evidence intake validator: ALL CHECKS PASS"
+  else
+    echo "[FAIL] External evidence intake validator: one or more checks failed — see validate-intake.txt"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
 # ── 3. Run validate-fulfillment-service-phase-2-3.sh ─────────────────────────
 
-echo "[3/7] Running Phase 2.3 suite validator..."
+echo "[3/8] Running Phase 2.3 suite validator..."
 VALIDATOR_SCRIPT="$ROOT/scripts/validate-fulfillment-service-phase-2-3.sh"
 if [ ! -f "$VALIDATOR_SCRIPT" ]; then
   echo "[FAIL] validate-fulfillment-service-phase-2-3.sh not found at $VALIDATOR_SCRIPT"
@@ -97,7 +120,7 @@ fi
 
 # ── 4. Dangerous flag scan ────────────────────────────────────────────────────
 
-echo "[4/7] Scanning for dangerous flags..."
+echo "[4/8] Scanning for dangerous flags..."
 {
   echo "# Dangerous flag scan — $(date)"
   echo "# Scans all *.yml and *.properties (excluding target/) for flags hardcoded true"
@@ -143,7 +166,7 @@ fi
 
 # ── 5. Doc manifest ───────────────────────────────────────────────────────────
 
-echo "[5/7] Collecting relevant doc manifest..."
+echo "[5/8] Collecting relevant doc manifest..."
 {
   echo "# Relevant evidence and design docs — $(date)"
   echo ""
@@ -151,6 +174,10 @@ echo "[5/7] Collecting relevant doc manifest..."
     "docs/evidence/phase-2-external-execution-pack.md" \
     "docs/evidence/phase-2-dba-checklist.md" \
     "docs/evidence/phase-2-ops-xxl-job-checklist.md" \
+    "docs/evidence/intake-dba-ddl-evidence.md" \
+    "docs/evidence/intake-ops-xxl-job-evidence.md" \
+    "docs/evidence/intake-engineer-b17-b23c-e2e-evidence.md" \
+    "docs/evidence/intake-oncall-signoff-evidence.md" \
     "docs/evidence/phase-2-3-fulfillment-final-readiness-index.md" \
     "docs/evidence/phase-2-3-c-fulfillment-staging-readiness.md" \
     "docs/evidence/phase-2-3-d-fulfillment-production-promotion-gate.md" \
@@ -171,7 +198,7 @@ echo "[PASS] doc-manifest.txt written"
 
 # ── 6. SQL manifest ───────────────────────────────────────────────────────────
 
-echo "[6/7] Collecting SQL file manifest..."
+echo "[6/8] Collecting SQL file manifest..."
 {
   echo "# SQL files — $(date)"
   echo ""
@@ -197,7 +224,28 @@ echo "[PASS] sql-manifest.txt written"
 
 # ── 7. Summary ────────────────────────────────────────────────────────────────
 
-echo "[7/7] Writing summary..."
+echo "[7/8] Collecting script manifest..."
+{
+  echo "# Validator scripts — $(date)"
+  echo ""
+  for script in \
+    "scripts/validate-phase-2-external-evidence-intake.sh" \
+    "scripts/validate-phase-2-evidence-consistency.sh" \
+    "scripts/validate-phase-2-external-execution-pack.sh" \
+    "scripts/validate-fulfillment-service-phase-2-3.sh" \
+    "scripts/collect-phase-2-external-evidence.sh"; do
+    if [ -f "$ROOT/$script" ]; then
+      SIZE=$(wc -l < "$ROOT/$script" 2>/dev/null || echo "?")
+      echo "[FOUND] $script ($SIZE lines)"
+    else
+      echo "[MISSING] $script"
+    fi
+  done
+} > "$OUT_DIR/script-manifest.txt"
+
+echo "[PASS] script-manifest.txt written"
+
+echo "[8/8] Writing summary..."
 {
   echo "# Phase 2 External Evidence Collection Summary"
   echo "# Timestamp: $TIMESTAMP"
@@ -216,7 +264,14 @@ echo "[7/7] Writing summary..."
     echo ""
     echo "This snapshot represents local repo state only."
     echo "No staging or production evidence was accessed."
-    echo "For staging/production evidence, see the external execution pack:"
+    echo "All dangerous flags remain false by default."
+    echo ""
+    echo "For role-specific evidence intake templates, see:"
+    echo "  docs/evidence/intake-dba-ddl-evidence.md"
+    echo "  docs/evidence/intake-ops-xxl-job-evidence.md"
+    echo "  docs/evidence/intake-engineer-b17-b23c-e2e-evidence.md"
+    echo "  docs/evidence/intake-oncall-signoff-evidence.md"
+    echo "For the full execution pack, see:"
     echo "  docs/evidence/phase-2-external-execution-pack.md"
   else
     echo "RESULT: $FAIL STEP(S) FAILED — review output above"

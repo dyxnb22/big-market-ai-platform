@@ -67,6 +67,19 @@
 | `scripts/collect-phase-2-external-evidence.sh` | Local-only evidence collector; outputs timestamped snapshot to `docs/evidence/generated/` (gitignored — local only) |
 | `scripts/validate-phase-2-external-execution-pack.sh` | Validates all new pack artifacts + runs Phase 2.3 suite + flag scan; no staging/prod required |
 | `scripts/validate-phase-2-evidence-consistency.sh` | **Evidence consistency validator** (new — 2026-06-10 hardening batch): checks Phase 2.2/2.3 docs exist, gitignore policy, key tags, dangerous flags, and cross-links; no network/Docker/DB required |
+| `scripts/validate-phase-2-external-evidence-intake.sh` | **Intake validator** (2026-06-10 automation batch): checks all four role-specific evidence intake templates exist and contain required sections, B23-E prerequisites, and dangerous flag safety language; no network/Docker/DB required |
+
+### Evidence Intake Templates (2026-06-10 automation batch)
+
+Operators fill these templates during real staging/production execution. The intake validator verifies
+their structure deterministically from the repo.
+
+| Template | Owner | Gate It Unlocks |
+|----------|-------|-----------------|
+| `docs/evidence/intake-dba-ddl-evidence.md` | DBA | DA1–DA14 DDL evidence; blocks B17 E2E and P5 flag enable |
+| `docs/evidence/intake-ops-xxl-job-evidence.md` | Ops | OA1–OA6 XXL-Job evidence; blocks B23-C E2E and P5 flag enable |
+| `docs/evidence/intake-engineer-b17-b23c-e2e-evidence.md` | Engineer | EA1–EA10 E2E evidence; blocks SE11 and B23-D gate |
+| `docs/evidence/intake-oncall-signoff-evidence.md` | Oncall Lead | OC1–OC5 sign-offs; all five phase gates including P4 written approval |
 
 ### DDL
 

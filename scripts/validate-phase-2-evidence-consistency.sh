@@ -139,6 +139,18 @@ check_file_exists "P23-DOC-8: Phase 2.3 fulfillment-service design doc" \
 check_file_exists "P23-DOC-9: Phase 2.2 account-service design doc" \
   "docs/microservices-split-phase-2-2-account-service.md"
 
+check_file_exists "P23-DOC-10: DBA DDL evidence intake template" \
+  "docs/evidence/intake-dba-ddl-evidence.md"
+
+check_file_exists "P23-DOC-11: Ops XXL-Job evidence intake template" \
+  "docs/evidence/intake-ops-xxl-job-evidence.md"
+
+check_file_exists "P23-DOC-12: Engineer B17/B23-C E2E evidence intake template" \
+  "docs/evidence/intake-engineer-b17-b23c-e2e-evidence.md"
+
+check_file_exists "P23-DOC-13: Oncall sign-off evidence intake template" \
+  "docs/evidence/intake-oncall-signoff-evidence.md"
+
 # ── 3. docs/evidence/generated/ is gitignored ─────────────────────────────────
 
 echo ""
@@ -272,6 +284,18 @@ check_file_contains "XLINK-5: final readiness index mentions generated/ gitignor
 check_file_contains "XLINK-6: B17 staging evidence notes historical baseline" \
   "docs/evidence/b17-staging-evidence-20260610.md" "historical baseline\|point-in-time\|Evidence Preservation"
 
+# External execution pack must reference the intake templates
+check_file_contains "XLINK-7: external execution pack links intake templates" \
+  "$EXTPACK" "intake-dba-ddl-evidence\|intake-oncall-signoff-evidence"
+
+# Final readiness index must mention the intake templates
+check_file_contains "XLINK-8: final readiness index mentions intake templates" \
+  "$READINESS" "intake-dba-ddl-evidence\|intake-oncall-signoff-evidence"
+
+# External execution pack must reference the intake validator
+check_file_contains "XLINK-9: external execution pack references intake validator" \
+  "$EXTPACK" "validate-phase-2-external-evidence-intake"
+
 # ── 7. Key validator scripts exist ────────────────────────────────────────────
 
 echo ""
@@ -294,6 +318,29 @@ check_executable "SCRIPT-5: validate-b17-evidence-consistency.sh" \
 
 check_executable "SCRIPT-6: validate-phase-2-evidence-consistency.sh (this script)" \
   "scripts/validate-phase-2-evidence-consistency.sh"
+
+check_executable "SCRIPT-7: validate-phase-2-external-evidence-intake.sh" \
+  "scripts/validate-phase-2-external-evidence-intake.sh"
+
+# ── 8. Run external evidence intake validator ─────────────────────────────────
+
+echo ""
+echo "── [8] External evidence intake validator ───────────────────────────────────"
+
+INTAKE_SCRIPT="$ROOT/scripts/validate-phase-2-external-evidence-intake.sh"
+if [ ! -f "$INTAKE_SCRIPT" ]; then
+  fail "INTAKE-RUN-1: validate-phase-2-external-evidence-intake.sh not found"
+else
+  if bash "$INTAKE_SCRIPT" > /tmp/phase2-intake-out.txt 2>&1; then
+    pass "INTAKE-RUN-1: validate-phase-2-external-evidence-intake.sh ALL CHECKS PASS"
+  else
+    fail "INTAKE-RUN-1: validate-phase-2-external-evidence-intake.sh FAILED"
+    echo ""
+    echo "  --- Intake validator output (last 20 lines) ---"
+    tail -20 /tmp/phase2-intake-out.txt | sed 's/^/  /'
+    echo "  ---"
+  fi
+fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 

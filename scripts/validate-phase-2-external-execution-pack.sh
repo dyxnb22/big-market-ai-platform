@@ -88,6 +88,21 @@ check_file_exists "EXP-DOC-4: evidence collector script" \
 check_file_exists "EXP-DOC-5: this validator script" \
   "scripts/validate-phase-2-external-execution-pack.sh"
 
+check_file_exists "EXP-DOC-6: intake validator script" \
+  "scripts/validate-phase-2-external-evidence-intake.sh"
+
+check_file_exists "EXP-DOC-7: DBA DDL evidence intake template" \
+  "docs/evidence/intake-dba-ddl-evidence.md"
+
+check_file_exists "EXP-DOC-8: Ops XXL-Job evidence intake template" \
+  "docs/evidence/intake-ops-xxl-job-evidence.md"
+
+check_file_exists "EXP-DOC-9: Engineer B17/B23-C E2E evidence intake template" \
+  "docs/evidence/intake-engineer-b17-b23c-e2e-evidence.md"
+
+check_file_exists "EXP-DOC-10: Oncall sign-off evidence intake template" \
+  "docs/evidence/intake-oncall-signoff-evidence.md"
+
 # ── 2. External pack has required role sections ────────────────────────────────
 
 echo ""
@@ -271,6 +286,26 @@ check_file_not_contains "COLL-11: collector does not invoke curl" \
 
 check_file_not_contains "COLL-12: collector does not invoke wget" \
   "$COLLECTOR" "^[^#]*wget "
+
+# ── 5b. Run validate-phase-2-external-evidence-intake.sh ────────────────────
+
+echo ""
+echo "── [5b] External evidence intake validator ──────────────────────────────────"
+
+INTAKE_SCRIPT="$ROOT/scripts/validate-phase-2-external-evidence-intake.sh"
+if [ ! -f "$INTAKE_SCRIPT" ]; then
+  fail "INTAKE-RUN-1: validate-phase-2-external-evidence-intake.sh not found"
+else
+  if bash "$INTAKE_SCRIPT" > /tmp/phase2-intake-pack-out.txt 2>&1; then
+    pass "INTAKE-RUN-1: validate-phase-2-external-evidence-intake.sh ALL CHECKS PASS"
+  else
+    fail "INTAKE-RUN-1: validate-phase-2-external-evidence-intake.sh FAILED"
+    echo ""
+    echo "  --- Intake validator output (last 20 lines) ---"
+    tail -20 /tmp/phase2-intake-pack-out.txt | sed 's/^/  /'
+    echo "  ---"
+  fi
+fi
 
 # ── 6. Run validate-fulfillment-service-phase-2-3.sh ─────────────────────────
 

@@ -490,3 +490,13 @@ After Phase 4 completion — sign Final Phase 2.3-E decision:
 | [`scripts/validate-phase-2-external-execution-pack.sh`](../../scripts/validate-phase-2-external-execution-pack.sh) | Validator for this pack (no staging/prod access required) |
 | [`scripts/validate-fulfillment-service-phase-2-3.sh`](../../scripts/validate-fulfillment-service-phase-2-3.sh) | Full Phase 2.3 suite validator (run before any staging/prod action) |
 | [`scripts/validate-phase-2-evidence-consistency.sh`](../../scripts/validate-phase-2-evidence-consistency.sh) | Evidence consistency validator: checks Phase 2.2/2.3 doc coverage, gitignore policy, key tags, dangerous flags, and cross-links (no network/Docker/DB required) |
+| [`scripts/validate-phase-2-external-evidence-intake.sh`](../../scripts/validate-phase-2-external-evidence-intake.sh) | Intake validator: checks all four evidence intake templates exist and contain required role sections, B23-E prerequisites, and flag safety language (no network/Docker/DB required) |
+
+### Evidence Intake Templates (operator fills these during execution)
+
+| Template | Owner | Gate |
+|----------|-------|------|
+| [`docs/evidence/intake-dba-ddl-evidence.md`](intake-dba-ddl-evidence.md) | DBA | DA1–DA14; blocks B17 E2E and P5 outbox flag enable |
+| [`docs/evidence/intake-ops-xxl-job-evidence.md`](intake-ops-xxl-job-evidence.md) | Ops | OA1–OA6; blocks B23-C E2E and P5 outbox flag enable |
+| [`docs/evidence/intake-engineer-b17-b23c-e2e-evidence.md`](intake-engineer-b17-b23c-e2e-evidence.md) | Engineer | EA1–EA10; blocks SE11 and B23-D gate |
+| [`docs/evidence/intake-oncall-signoff-evidence.md`](intake-oncall-signoff-evidence.md) | Oncall Lead | OC1–OC5; all five sign-off gates including P4 written approval |
