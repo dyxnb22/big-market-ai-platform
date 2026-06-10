@@ -109,6 +109,12 @@ check_file_exists "EXP-DOC-11: completion gate validator script" \
 check_file_exists "EXP-DOC-12: external readiness dashboard" \
   "docs/evidence/phase-2-external-readiness-dashboard.md"
 
+check_file_exists "EXP-DOC-13: handoff bundle generator script" \
+  "scripts/prepare-phase-2-external-handoff-bundle.sh"
+
+check_file_exists "EXP-DOC-14: handoff bundle validator script" \
+  "scripts/validate-phase-2-external-handoff-bundle.sh"
+
 # ── 2. External pack has required role sections ────────────────────────────────
 
 echo ""

@@ -257,6 +257,8 @@ echo "[7/8] Collecting script manifest..."
     "scripts/validate-phase-2-evidence-consistency.sh" \
     "scripts/validate-phase-2-external-execution-pack.sh" \
     "scripts/validate-fulfillment-service-phase-2-3.sh" \
+    "scripts/prepare-phase-2-external-handoff-bundle.sh" \
+    "scripts/validate-phase-2-external-handoff-bundle.sh" \
     "scripts/collect-phase-2-external-evidence.sh"; do
     if [ -f "$ROOT/$script" ]; then
       SIZE=$(wc -l < "$ROOT/$script" 2>/dev/null || echo "?")
@@ -266,6 +268,25 @@ echo "[7/8] Collecting script manifest..."
     fi
   done
 } > "$OUT_DIR/script-manifest.txt"
+
+echo "[7b/8] Running handoff bundle validator..."
+BUNDLE_VALIDATOR="$ROOT/scripts/validate-phase-2-external-handoff-bundle.sh"
+if [ ! -f "$BUNDLE_VALIDATOR" ]; then
+  echo "[SKIP] validate-phase-2-external-handoff-bundle.sh not found — skipping"
+else
+  {
+    echo "# validate-phase-2-external-handoff-bundle.sh output"
+    echo "# Run at: $(date)"
+    echo ""
+    bash "$BUNDLE_VALIDATOR" 2>&1
+  } > "$OUT_DIR/validate-handoff-bundle.txt"
+  if grep -q "RESULT: ALL CHECKS PASS" "$OUT_DIR/validate-handoff-bundle.txt"; then
+    echo "[PASS] Handoff bundle validator: ALL CHECKS PASS"
+  else
+    echo "[FAIL] Handoff bundle validator: one or more checks failed — see validate-handoff-bundle.txt"
+    FAIL=$((FAIL + 1))
+  fi
+fi
 
 echo "[PASS] script-manifest.txt written"
 

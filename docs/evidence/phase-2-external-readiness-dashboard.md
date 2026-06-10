@@ -154,21 +154,38 @@ Run these in order. All must pass before any staging or production action.
 
 ```bash
 # 1. Check intake template structure (64 checks)
+#    Run: any time after intake templates are modified, or before first handoff
 bash scripts/validate-phase-2-external-evidence-intake.sh
 
 # 2. Check completion state per role and B23-E gate
+#    Run: after any role fills their intake template; re-run to confirm gate state
 bash scripts/validate-phase-2-external-evidence-completion.sh
 
 # 3. Check Phase 2.2/2.3 doc coverage, gitignore, tags, flags, cross-links
+#    Run: after any doc or script change; always before handing off to external roles
 bash scripts/validate-phase-2-evidence-consistency.sh
 
 # 4. Validate full external execution pack artifacts
+#    Run: after any pack doc or script change; includes intake + completion sub-runs
 bash scripts/validate-phase-2-external-execution-pack.sh
 
 # 5. Full Phase 2.3 suite (B23-B/C/D/E validators + flag scan + tag check)
+#    Run: before any staging or production action (Engineer pre-flight EA1)
 bash scripts/validate-fulfillment-service-phase-2-3.sh
 
-# 6. Collect local evidence snapshot (output: docs/evidence/generated/ — gitignored)
+# 6. Validate the handoff bundle generator (repo-only safety checks)
+#    Run: after any change to prepare-phase-2-external-handoff-bundle.sh; confirms
+#    the generator is repo-only safe (no mysql/docker/curl/wget, writes only to generated/)
+bash scripts/validate-phase-2-external-handoff-bundle.sh
+
+# 7. Generate the handoff bundle for DBA / Ops / Engineer / Oncall
+#    Run: when preparing materials to hand off to external roles; output is gitignored
+#    Creates: docs/evidence/generated/phase2-handoff-bundle-<TIMESTAMP>/
+#    Contains: role folders (DBA/Ops/Engineer/Oncall), README, MANIFEST, validator outputs
+bash scripts/prepare-phase-2-external-handoff-bundle.sh
+
+# 8. Collect local evidence snapshot (output: docs/evidence/generated/ — gitignored)
+#    Run: to capture a broader repo snapshot (includes all validators + flag scan)
 bash scripts/collect-phase-2-external-evidence.sh
 ```
 
@@ -192,3 +209,5 @@ Run `bash scripts/collect-phase-2-external-evidence.sh` to capture a timestamped
 | [`docs/evidence/phase-2-external-execution-pack.md`](phase-2-external-execution-pack.md) | Full external execution pack (role tasks, evidence tables, gate summary) |
 | [`docs/evidence/phase-2-3-fulfillment-final-readiness-index.md`](phase-2-3-fulfillment-final-readiness-index.md) | Final readiness index (batch history, artifact links) |
 | [`scripts/validate-phase-2-external-evidence-completion.sh`](../../scripts/validate-phase-2-external-evidence-completion.sh) | Completion gate validator (this dashboard's automated check) |
+| [`scripts/prepare-phase-2-external-handoff-bundle.sh`](../../scripts/prepare-phase-2-external-handoff-bundle.sh) | **Handoff bundle generator** (2026-06-10 handoff-bundle batch): creates timestamped local-only bundle under docs/evidence/generated/ with role folders (DBA/Ops/Engineer/Oncall), validator outputs, README, MANIFEST, and NOT-AN-APPROVAL.txt |
+| [`scripts/validate-phase-2-external-handoff-bundle.sh`](../../scripts/validate-phase-2-external-handoff-bundle.sh) | **Handoff bundle validator** (2026-06-10 handoff-bundle batch): repo-only checks that the generator is safe (no mysql/docker/curl/wget), writes only to generated/, and produces all required outputs |

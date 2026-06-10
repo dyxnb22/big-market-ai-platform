@@ -308,6 +308,14 @@ check_file_contains "XLINK-11: external execution pack references completion gat
 check_file_contains "XLINK-12: external execution pack references readiness dashboard" \
   "$EXTPACK" "phase-2-external-readiness-dashboard"
 
+# Final readiness index must mention the handoff bundle generator
+check_file_contains "XLINK-13: final readiness index mentions handoff bundle generator" \
+  "$READINESS" "prepare-phase-2-external-handoff-bundle"
+
+# External execution pack must reference the handoff bundle generator
+check_file_contains "XLINK-14: external execution pack references handoff bundle generator" \
+  "$EXTPACK" "prepare-phase-2-external-handoff-bundle"
+
 # ── 7. Key validator scripts exist ────────────────────────────────────────────
 
 echo ""
@@ -336,6 +344,12 @@ check_executable "SCRIPT-7: validate-phase-2-external-evidence-intake.sh" \
 
 check_executable "SCRIPT-8: validate-phase-2-external-evidence-completion.sh" \
   "scripts/validate-phase-2-external-evidence-completion.sh"
+
+check_executable "SCRIPT-9: prepare-phase-2-external-handoff-bundle.sh" \
+  "scripts/prepare-phase-2-external-handoff-bundle.sh"
+
+check_executable "SCRIPT-10: validate-phase-2-external-handoff-bundle.sh" \
+  "scripts/validate-phase-2-external-handoff-bundle.sh"
 
 # ── 8. Run external evidence intake validator ─────────────────────────────────
 

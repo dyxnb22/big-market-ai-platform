@@ -69,6 +69,8 @@
 | `scripts/validate-phase-2-evidence-consistency.sh` | **Evidence consistency validator** (new — 2026-06-10 hardening batch): checks Phase 2.2/2.3 docs exist, gitignore policy, key tags, dangerous flags, and cross-links; no network/Docker/DB required |
 | `scripts/validate-phase-2-external-evidence-intake.sh` | **Intake validator** (2026-06-10 automation batch): checks all four role-specific evidence intake templates exist and contain required sections, B23-E prerequisites, and dangerous flag safety language; no network/Docker/DB required |
 | `scripts/validate-phase-2-external-evidence-completion.sh` | **Completion gate validator** (2026-06-10 completion-gates batch): reads the `## Completion Status` table in each intake template; reports TEMPLATE_READY / PARTIAL / COMPLETE / NO_GO; reports B23-E gate status; fails only on NO-GO or malformed templates; no network/Docker/DB required |
+| `scripts/prepare-phase-2-external-handoff-bundle.sh` | **Handoff bundle generator** (2026-06-10 handoff-bundle batch): creates timestamped local-only bundle under docs/evidence/generated/ with role folders (DBA/Ops/Engineer/Oncall), intake templates, role-specific instructions, validator outputs, README, MANIFEST, and NOT-AN-APPROVAL.txt; no network/DB/Docker; output gitignored |
+| `scripts/validate-phase-2-external-handoff-bundle.sh` | **Handoff bundle validator** (2026-06-10 handoff-bundle batch): repo-only checks that the generator is safe (no forbidden commands), writes only to generated/, produces all required role folders and docs; optionally validates a specific generated bundle path |
 
 ### Evidence Intake Templates (2026-06-10 automation batch)
 
@@ -206,3 +208,32 @@ Fails only on NO-GO or malformed templates. No network, Docker, DB, staging, or 
 access required.
 
 See: `docs/evidence/phase-2-external-readiness-dashboard.md` for the dashboard view.
+
+### Handoff Bundle Generator (handoff-bundle batch — 2026-06-10)
+
+```bash
+# Run when preparing materials for DBA / Ops / Engineer / Oncall
+bash scripts/prepare-phase-2-external-handoff-bundle.sh
+# Output: docs/evidence/generated/phase2-handoff-bundle-<TIMESTAMP>/
+# Contains: DBA/ Ops/ Engineer/ Oncall/ role folders, README.md, MANIFEST.md,
+#           NOT-AN-APPROVAL.txt, validator outputs, git state
+# This output is gitignored — never committed.
+```
+
+Packages intake templates, role-specific instructions, validator outputs, current
+readiness state, and execution ordering into a single local bundle for external role
+distribution. Run before handing off to DBA, Ops, Engineer, or Oncall.
+
+### Handoff Bundle Validator (handoff-bundle batch — 2026-06-10)
+
+```bash
+# Validate the generator script (repo-only)
+bash scripts/validate-phase-2-external-handoff-bundle.sh
+
+# Validate a specific generated bundle
+bash scripts/validate-phase-2-external-handoff-bundle.sh <bundle-path>
+```
+
+Repo-only checks: generator has no forbidden commands (mysql/docker/curl/wget),
+writes only to docs/evidence/generated/, produces all required role folders and
+output docs. Run after any change to the generator script.
