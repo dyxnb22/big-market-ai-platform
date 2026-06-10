@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B16 account service cutover gate complete. B16 adds `scripts/validate-account-service-cutover-b16.sh` (18 static checks, CONNECT_DOCKER orchestration of B15 + production-DDL scripts, CONNECT_REMOTE read-only staging verification of all tables and UNIQUE KEYs, B16_EVIDENCE_TEMPLATE staging evidence template, B16_POST_CHECK post-window checklist). B15 added the full staging runbook (20 static + CONNECT_DOCKER + B15_E2E_REHEARSAL write-mode). All baselines green (20/20 B15, 21/21 B14, 12/12 B13, 22/22 B12, 18/18 B11, 14/14 production DDL static, 12/12 MQ idempotency). remote-quota-decrement.enabled=false. Remaining manual blockers: staging ledger DDL, staging credit-award outbox DDL, XXL-Job handler registration (DispatchCreditAwardTaskJob_DB1/DB2).**
+**Status: Phase 2.2-B17 staging cutover execution package complete. B17 adds `scripts/execute-account-service-staging-b17.sh` (operator-driven live cutover executor: dry-run pre-flight, B17_PRINT_PLAN ordered cutover plan, CONNECT_REMOTE read-only staging verification delegating to B16, B17_EVIDENCE_FILE evidence template writer, B17_POST_CHECK post-window verifier) and `docs/evidence/phase-2-2-b17-staging-cutover-template.md` (fully structured evidence template covering Phases A–K). B16 added the final automated gate (18 static checks). All baselines green (18/18 B17 pre-flight, 18/18 B16, 20/20 B15, 21/21 B14, 12/12 B13, 22/22 B12, 18/18 B11, 14/14 production DDL static, 12/12 MQ idempotency). remote-quota-decrement.enabled=false. Remaining manual blockers: staging ledger DDL, staging credit-award outbox DDL, XXL-Job handler registration (DispatchCreditAwardTaskJob_DB1/DB2).**
 
 ## Phase 2.2-A — What Is Done
 
@@ -1913,6 +1913,132 @@ B16_POST_CHECK=true \
 ./scripts/validate-production-ddl.sh                   # DDL static: 14/14
 ./scripts/validate-mq-idempotency.sh                   # MQ: 12/12
 mvn compile                                            # BUILD SUCCESS
+```
+
+---
+
+## Phase 2.2-B17 — Live Staging Cutover Execution Package
+
+**Status: Complete. Three manual blockers remain before the staging cutover window can open.**
+
+### Purpose
+
+B17 is the live staging cutover execution package. It provides all operator-facing tooling to safely execute the staging E2E window after the three manual blockers are resolved. B17 does not enable any flags, apply any DDL, or modify staging data. It:
+
+1. Provides `scripts/execute-account-service-staging-b17.sh` — an operator-driven executor with dry-run pre-flight, ordered cutover plan print, read-only remote DB verification, evidence file writer, and post-window verifier.
+2. Provides `docs/evidence/phase-2-2-b17-staging-cutover-template.md` — the fully structured evidence template that must be filled out during the live staging window and preserved as the production promotion gate artefact.
+3. Defines the ordered cutover plan (Phases A–K) and the production go/no-go criteria.
+
+### Script modes
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| Dry-run (default) | `./scripts/execute-account-service-staging-b17.sh` | Pre-flight static checks + blocker status summary; no DB, no writes |
+| Print plan | `B17_PRINT_PLAN=true ./scripts/execute-account-service-staging-b17.sh` | Print the exact ordered cutover plan (Phases A–K) with commands |
+| Remote verification | `CONNECT_REMOTE=true MYSQL_HOST=... ./scripts/execute-account-service-staging-b17.sh` | Read-only staging DB check via B16 CONNECT_REMOTE; verifies all tables and UNIQUE KEYs |
+| Evidence file | `B17_EVIDENCE_FILE=<path> ./scripts/execute-account-service-staging-b17.sh` | Write/append the evidence template to the given local file |
+| Post-check | `B17_POST_CHECK=true MYSQL_HOST=... ./scripts/execute-account-service-staging-b17.sh` | Post-window verification via B16 B16_POST_CHECK; read-only |
+
+All flags compose freely — `B17_PRINT_PLAN`, `CONNECT_REMOTE`, `B17_EVIDENCE_FILE`, and `B17_POST_CHECK` can be combined in a single invocation.
+
+### Ordered cutover plan (Phases A–K)
+
+| Phase | Step | Gate |
+|-------|------|------|
+| A | Apply ledger DDL to `big_market_01` + `big_market_02` | Phase C CONNECT_REMOTE must show all ledger tables present |
+| B | Apply outbox DDL to `big_market_01` + `big_market_02` | Phase C CONNECT_REMOTE must show all outbox tables present |
+| C | Read-only remote DB verification (CONNECT_REMOTE) | Hard gate: 0 FAIL — do not proceed to Phase E on any failure |
+| D | Register XXL-Job handlers (`DispatchCreditAwardTaskJob_DB1/DB2`) | Handler IDs recorded in evidence file |
+| E | Enable `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=true` in staging market-service | Record start timestamp; production flag unchanged |
+| F | Partake flow E2E (draw, ledger verify, quota before/after, duplicate draw idempotency) | All checks pass; quota decremented by 1; duplicate draw = no change |
+| G | Rollback path (rollback trigger, ledger status=rolled_back, quota restore, duplicate rollback=0 rows) | Quota fully restored; no double-restore |
+| H | Outbox dispatch (pending→dispatched, user_credit_order count=1, second dispatch idempotency) | No double credit; count=1 after two dispatches |
+| I | Restore `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=false`; verify health="UP" | flag restored; service healthy |
+| J | Post-window verification (`B17_POST_CHECK=true`) | All B16 post-check items confirmed |
+| K | Production go/no-go decision | All phases passed; evidence file complete; approver and timestamp recorded |
+
+### Evidence template
+
+File: `docs/evidence/phase-2-2-b17-staging-cutover-template.md`
+
+Generate/populate via:
+```bash
+B17_EVIDENCE_FILE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+    ./scripts/execute-account-service-staging-b17.sh
+```
+
+The template covers:
+1. DDL apply timestamps (Phases A & B)
+2. Remote DB verification result and check count (Phase C)
+3. XXL-Job handler IDs and screenshots (Phase D)
+4. flag=true window start/end timestamps (Phases E & I)
+5. Partake flow test values and before/after rows (Phase F)
+6. Quota before/after values and idempotency proof (Phase F)
+7. Rollback before/after (ledger status, quota restore, duplicate rollback = 0 rows) (Phase G)
+8. Outbox pending→dispatched evidence and idempotency (Phase H)
+9. Flag restored=false and health check (Phase I)
+10. Post-window verification result (Phase J)
+11. Production go/no-go decision with approver and timestamp (Phase K)
+
+### Production no-go criteria
+
+Do NOT enable `remote-quota-decrement=true` in production if any of the following are true:
+
+- Any FAIL in B17 pre-flight or CONNECT_REMOTE checks (Phase C gate)
+- Partake flow E2E failed (non-200 response, ledger row missing, quota not decremented) (Phase F)
+- Idempotency violation (quota changed on duplicate draw, or ledger count > 1) (Phase F)
+- Rollback failure (quota not restored, or double-restore on duplicate rollback) (Phase G)
+- Outbox dispatch failure (row stays `pending`, or `user_credit_order` count != 1) (Phase H)
+- Double credit observed (`user_credit_order` count > 1 for same `out_business_no`) (Phase H)
+- Evidence template not filled out and preserved
+
+### Production canary window (after go decision)
+
+- Enable `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=true` on one production market-service instance for ~15 minutes.
+- Monitor: quota leak queries, `user_credit_order` double-count, error rate, latency P99.
+- Expand to full production only if canary is clean.
+- Rollback at any anomaly: restore flag=false and redeploy.
+
+### Manual blockers (unchanged from B16)
+
+1. **Staging ledger DDL** — apply `docs/sql/proposed-quota-decrement-ledger.sql` to `big_market_01` and `big_market_02`.
+2. **Staging credit-award outbox DDL** — apply `docs/sql/proposed-credit-award-task-outbox.sql` to `big_market_01` and `big_market_02`.
+3. **XXL-Job handler registration** — register `DispatchCreditAwardTaskJob_DB1` and `DispatchCreditAwardTaskJob_DB2` in the staging XXL-Job admin UI (cron: `0/30 * * * * ?`).
+
+### Validation commands (B17)
+
+```bash
+# B17 pre-flight (dry-run)
+./scripts/execute-account-service-staging-b17.sh
+
+# Print ordered cutover plan
+B17_PRINT_PLAN=true ./scripts/execute-account-service-staging-b17.sh
+
+# Generate evidence file
+B17_EVIDENCE_FILE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+    ./scripts/execute-account-service-staging-b17.sh
+
+# Phase C gate: remote DB verification (read-only, after DDL apply)
+CONNECT_REMOTE=true \
+  MYSQL_HOST=<staging-host> MYSQL_PORT=3306 \
+  MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+  ./scripts/execute-account-service-staging-b17.sh
+
+# Phase J gate: post-window verification (read-only, after flag restore)
+B17_POST_CHECK=true \
+  MYSQL_HOST=<staging-host> MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+  ./scripts/execute-account-service-staging-b17.sh
+
+# Baselines (must remain green throughout)
+./scripts/validate-account-service-cutover-b16.sh        # B16: 18/18
+./scripts/validate-quota-decrement-b15-e2e.sh            # B15: 20/20
+./scripts/validate-quota-decrement-b14.sh                # B14: 21/21
+./scripts/validate-quota-decrement-b13.sh                # B13: 12/12
+./scripts/validate-quota-decrement-b12.sh                # B12: 22/22
+./scripts/validate-quota-decrement-contract.sh           # B11: 18/18
+./scripts/validate-production-ddl.sh                     # DDL: 14/14
+./scripts/validate-mq-idempotency.sh                     # MQ:  12/12
+mvn compile                                              # BUILD SUCCESS
 ```
 
 ---

@@ -242,6 +242,16 @@ The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extrac
 - **B16 produces zero behavior change at runtime** — no Java code added or modified; all flags remain false; script + docs only
 - Remaining blockers (unchanged): staging ledger DDL (manual), staging credit-award outbox DDL (manual), XXL-Job handler registration (manual)
 
+**Phase 2.2-B17 staging cutover execution package completed (2026-06-10):**
+- `scripts/execute-account-service-staging-b17.sh` — operator-driven live staging cutover executor; default dry-run pre-flight (P1-P6 static checks + blocker status); `B17_PRINT_PLAN=true` prints the ordered Phases A–K cutover plan with exact commands; `CONNECT_REMOTE=true` delegates to B16 read-only staging DB verification; `B17_EVIDENCE_FILE=<path>` writes/appends the full evidence template to the given local file; `B17_POST_CHECK=true` delegates to B16 B16_POST_CHECK mode; all flags compose freely; no DDL, no flag changes, no staging writes in any mode
+- `docs/evidence/phase-2-2-b17-staging-cutover-template.md` — structured evidence template covering Phases A–K: DDL apply timestamps, remote DB verification result, XXL-Job handler IDs, flag=true window start/end, test user/activityId/outBusinessNo, ledger before/after rows, quota before/after, rollback state/quota-restore/duplicate-rollback proof, outbox pending→dispatched proof, second-dispatch idempotency, flag=false restore proof, post-window checklist, production go/no-go decision with approver + timestamp
+- Ordered cutover plan: Phase A (ledger DDL) → B (outbox DDL) → C (CONNECT_REMOTE gate) → D (XXL-Job registration) → E (flag=true staging only) → F (partake E2E + idempotency) → G (rollback + quota restore) → H (outbox dispatch + no-double-credit) → I (flag=false restore + health) → J (B17_POST_CHECK gate) → K (go/no-go decision)
+- Production no-go criteria: any B17 pre-flight FAIL, Phase C CONNECT_REMOTE FAIL, quota changed on duplicate draw, double credit (user_credit_order count > 1), rollback failure, incomplete evidence file
+- Production canary window: ~15-minute single-instance canary with flag=true after go decision; expand to full production only if clean; rollback at any anomaly
+- Docs updated: `docs/microservices-split-phase-2-2-account-service.md` Phase 2.2-B17 section added; `docs/microservices-roadmap.md` batch history updated; doc header status updated to B17
+- **B17 produces zero behavior change at runtime** — no Java code added or modified; all flags remain false; script + docs + evidence template only
+- Remaining blockers (unchanged): staging ledger DDL (manual), staging credit-award outbox DDL (manual), XXL-Job handler registration (manual)
+
 ---
 
 ## 2. Design Principles for Future Splitting
