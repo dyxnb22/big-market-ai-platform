@@ -17,8 +17,10 @@ Do NOT enable `remote-quota-decrement=true` on all production instances until ev
 | Check | Result |
 |-------|--------|
 | B17 evidence file path | ___________________ |
-| B18_STAGING_EVIDENCE validation command | `B18_STAGING_EVIDENCE=<path> ./scripts/validate-account-service-production-b18.sh` |
+| B18_STAGING_EVIDENCE validation command | `B18_STAGING_EVIDENCE=docs/evidence/b17-staging-evidence-<YYYYMMDD>.md ./scripts/validate-account-service-production-b18.sh` |
+| B17 evidence consistency command | `./scripts/validate-b17-evidence-consistency.sh docs/evidence/b17-staging-evidence-<YYYYMMDD>.md` |
 | Validation result | PASS / FAIL |
+| B17 pre-flight count matches script dry-run | YES / NO |
 | All B17 Phases A–K present | YES / NO |
 | All required fields non-empty | YES / NO |
 | Phase K staging GO decision recorded | YES / NO |

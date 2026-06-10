@@ -8,7 +8,7 @@
 
 ## Pre-Flight Verification (automated — 2026-06-10 ~17:03 HKT)
 
-### Repo State
+### Repo State (validation run)
 | Item | Value |
 |------|-------|
 | HEAD commit | `89187e4` feat: add B17 evidence file safety guard and armory step |
@@ -16,7 +16,14 @@
 | Working tree | CLEAN |
 | git diff --check | PASS (no whitespace errors) |
 
-### B17 Pre-Flight Gate: 7/7 PASS
+### Evidence Preservation
+| Item | Value |
+|------|-------|
+| Evidence file commit | `c26f635` docs: add B17 staging evidence file for 2026-06-10 |
+| Evidence tag | `phase-2.2-b17-staging-evidence-20260610` |
+| Count policy | B17 Pre-Flight Gate counts only `./scripts/execute-account-service-staging-b17.sh` dry-run checks; local evidence-file materialization is recorded separately. |
+
+### B17 Pre-Flight Gate: 6/6 PASS
 | Check | Result |
 |-------|--------|
 | P1: B16 gate script exists and is executable | PASS |
@@ -25,7 +32,15 @@
 | P4: `proposed-credit-award-task-outbox.sql` exists | PASS |
 | P5: Evidence template exists | PASS |
 | P6: `remote-quota-decrement=false` in all configs | PASS |
-| E1: Evidence file written to dated path (this file) | PASS |
+
+### Evidence File Materialization
+| Check | Result |
+|-------|--------|
+| Dated evidence file exists at `docs/evidence/b17-staging-evidence-20260610.md` | PASS |
+| Blank template was not modified for this evidence capture | PASS |
+
+### B17 Evidence Consistency: PASS
+`./scripts/validate-b17-evidence-consistency.sh docs/evidence/b17-staging-evidence-20260610.md` confirms this file's B17 pre-flight count matches the current script dry-run summary (`6/6 PASS`, `0 FAIL`).
 
 ### B20 Hardening Gate: 11/11 PASS
 | Check | Result |
@@ -50,13 +65,13 @@
 | B3: XXL-Job handler registration | **PENDING** | XXL-Job UI access not available in this session |
 
 ### Staging Credentials
-No `MYSQL_HOST`, `MYSQL_USER`, or `MYSQL_PASS` environment variables found. Phase C gate cannot be executed automatically. See exact commands in the blocker section below.
+No staging `MYSQL_HOST`, `MYSQL_USER`, or `MYSQL_PASS` values were available in this local session. Phase C gate remains **PENDING** and cannot be executed automatically here. See exact read-only verification command in Phase C below.
 
 ---
 
 ## Phase A — Ledger DDL Apply  ⚠ PENDING
 
-> **Blocker:** Staging DB admin credentials required. Run these exact commands once credentials are available.
+> **Blocker:** Staging DB admin credentials required. Run these commands only inside the approved staging maintenance window.
 
 ```bash
 # big_market_01
@@ -78,7 +93,7 @@ mysql -h <staging-host> -u <admin> -p big_market_02 \
 
 ## Phase B — Credit-Award Outbox DDL Apply  ⚠ PENDING
 
-> **Blocker:** Staging DB admin credentials required. Run these exact commands once credentials are available.
+> **Blocker:** Staging DB admin credentials required. Run these commands only inside the approved staging maintenance window.
 
 ```bash
 # big_market_01
@@ -367,4 +382,3 @@ The `saveCreatePartakeOrderAggregate` path takes effect immediately — no data 
 - Monitor: quota leak queries, user_credit_order double-count, error rate, latency P99.
 - Expand to full production only if canary is clean.
 - Rollback at any anomaly: restore flag=false and redeploy.
-

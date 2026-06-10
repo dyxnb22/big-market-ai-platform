@@ -1,6 +1,6 @@
 # Phase 2.2 — account-service Extraction Readiness Document
 
-**Status: Phase 2.2-B17 staging cutover execution package complete. B17 adds `scripts/execute-account-service-staging-b17.sh` (operator-driven live cutover executor: dry-run pre-flight, B17_PRINT_PLAN ordered cutover plan, CONNECT_REMOTE read-only staging verification delegating to B16, B17_EVIDENCE_FILE evidence template writer, B17_POST_CHECK post-window verifier) and `docs/evidence/phase-2-2-b17-staging-cutover-template.md` (fully structured evidence template covering Phases A–K). B16 added the final automated gate (18 static checks). All baselines green (18/18 B17 pre-flight, 18/18 B16, 20/20 B15, 21/21 B14, 12/12 B13, 22/22 B12, 18/18 B11, 14/14 production DDL static, 12/12 MQ idempotency). remote-quota-decrement.enabled=false. Remaining manual blockers: staging ledger DDL, staging credit-award outbox DDL, XXL-Job handler registration (DispatchCreditAwardTaskJob_DB1/DB2).**
+**Status: Phase 2.2-B21 evidence consistency hardening complete. B21 adds `scripts/validate-b17-evidence-consistency.sh`, corrects the dated 2026-06-10 B17 evidence file to match the B17 dry-run summary (`6/6 PASS`, `0 FAIL`), and updates B18 staging-evidence validation to guard against future B17 PASS-count drift. B17/B18/B20 remain local gate/runbook packages only. remote-quota-decrement.enabled=false. Remaining manual blockers: staging ledger DDL, staging credit-award outbox DDL, XXL-Job handler registration (DispatchCreditAwardTaskJob_DB1/DB2).**
 
 ## Phase 2.2-A — What Is Done
 
@@ -1963,9 +1963,11 @@ File: `docs/evidence/phase-2-2-b17-staging-cutover-template.md`
 
 Generate/populate via:
 ```bash
-B17_EVIDENCE_FILE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+B17_EVIDENCE_FILE=docs/evidence/b17-staging-evidence-$(date +%Y%m%d).md \
     ./scripts/execute-account-service-staging-b17.sh
 ```
+
+Do not point `B17_EVIDENCE_FILE` at `docs/evidence/phase-2-2-b17-staging-cutover-template.md`; that blank template is a source artefact.
 
 The template covers:
 1. DDL apply timestamps (Phases A & B)
@@ -2015,7 +2017,7 @@ Do NOT enable `remote-quota-decrement=true` in production if any of the followin
 B17_PRINT_PLAN=true ./scripts/execute-account-service-staging-b17.sh
 
 # Generate evidence file
-B17_EVIDENCE_FILE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+B17_EVIDENCE_FILE=docs/evidence/b17-staging-evidence-$(date +%Y%m%d).md \
     ./scripts/execute-account-service-staging-b17.sh
 
 # Phase C gate: remote DB verification (read-only, after DDL apply)
@@ -2149,6 +2151,14 @@ The validator checks:
 
 If any field is incomplete, the script fails with a printed list of missing fields and blocks production promotion.
 
+Starting in B21, B18 staging-evidence validation also runs:
+
+```bash
+./scripts/validate-b17-evidence-consistency.sh docs/evidence/b17-staging-evidence-<YYYYMMDD>.md
+```
+
+This local guard compares the dated evidence file's declared B17 pre-flight count with the current `./scripts/execute-account-service-staging-b17.sh` dry-run summary and fails if the evidence counts local file materialization as an extra B17 pre-flight check.
+
 ### Production no-go criteria (any one triggers immediate flag=false rollback)
 
 - B17 staging evidence validation FAIL or evidence file incomplete
@@ -2190,7 +2200,7 @@ Phase 2.2 cannot be marked complete until:
 ./scripts/validate-account-service-production-b18.sh
 
 # B18 staging evidence validation (after B17 staging cutover is complete)
-B18_STAGING_EVIDENCE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+B18_STAGING_EVIDENCE=docs/evidence/b17-staging-evidence-<YYYYMMDD>.md \
     ./scripts/validate-account-service-production-b18.sh
 
 # B18 production evidence template generation

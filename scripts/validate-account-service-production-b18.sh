@@ -18,7 +18,8 @@
 #   B18_STAGING_EVIDENCE=<path> ./scripts/validate-account-service-production-b18.sh
 #       Validate that the B17 staging evidence file exists and has all required
 #       sections filled (no obvious placeholder blanks).  Prints missing fields
-#       on failure.  Required before any production promotion action.
+#       and evidence-count drift on failure.  Required before any production
+#       promotion action.
 #
 #   CONNECT_REMOTE=true \
 #     MYSQL_HOST=<prod-or-staging-host> MYSQL_PORT=3306 \
@@ -39,7 +40,7 @@
 #       checks and prints the Phase 2.2 completion sign-off checklist.
 #
 # Combined examples (all flags compose freely):
-#   B18_STAGING_EVIDENCE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+#   B18_STAGING_EVIDENCE=docs/evidence/b17-staging-evidence-<YYYYMMDD>.md \
 #     B18_PRINT_PLAN=true \
 #     ./scripts/validate-account-service-production-b18.sh
 #
@@ -70,6 +71,7 @@ B16_SCRIPT="scripts/validate-account-service-cutover-b16.sh"
 B15_SCRIPT="scripts/validate-quota-decrement-b15-e2e.sh"
 B14_SCRIPT="scripts/validate-quota-decrement-b14.sh"
 PROD_DDL_SCRIPT="scripts/validate-production-ddl.sh"
+B17_EVIDENCE_CONSISTENCY_SCRIPT="scripts/validate-b17-evidence-consistency.sh"
 
 PASS=0
 FAIL=0
@@ -380,6 +382,20 @@ if [[ -n "$B18_STAGING_EVIDENCE" ]]; then
     else
         ok "E1: $B18_STAGING_EVIDENCE exists"
 
+        if [[ -x "$B17_EVIDENCE_CONSISTENCY_SCRIPT" ]]; then
+            CONSISTENCY_OUT=$("./$B17_EVIDENCE_CONSISTENCY_SCRIPT" "$B18_STAGING_EVIDENCE" 2>&1) || true
+            CONSISTENCY_FAIL=$(echo "$CONSISTENCY_OUT" | awk -F': *' '/^FAIL:/ {print $2}' | tail -1)
+            CONSISTENCY_FAIL="${CONSISTENCY_FAIL:-1}"
+            if [[ "$CONSISTENCY_FAIL" == "0" ]]; then
+                ok "E1a: B17 evidence PASS count matches B17 script dry-run output"
+            else
+                fail "E1a: B17 evidence consistency guard failed — run $B17_EVIDENCE_CONSISTENCY_SCRIPT $B18_STAGING_EVIDENCE"
+                echo "$CONSISTENCY_OUT" | sed 's/^/      /'
+            fi
+        else
+            fail "E1a: $B17_EVIDENCE_CONSISTENCY_SCRIPT missing or not executable"
+        fi
+
         # Check required sections are present
         MISSING_SECTIONS=()
         for section in \
@@ -400,56 +416,52 @@ if [[ -n "$B18_STAGING_EVIDENCE" ]]; then
         # Check placeholders are not obviously empty (contains ___ in critical fields)
         MISSING_FIELDS=()
 
+        PHASE_C_BLOCK=$(awk '/Phase C/,/Phase D/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+        PHASE_D_BLOCK=$(awk '/Phase D/,/Phase E/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+        PHASE_E_BLOCK=$(awk '/Phase E/,/Phase F/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+        PHASE_F_BLOCK=$(awk '/Phase F/,/Phase G/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+        PHASE_G_BLOCK=$(awk '/Phase G/,/Phase H/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+        PHASE_H_BLOCK=$(awk '/Phase H/,/Phase I/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+        PHASE_K_BLOCK=$(awk '/Phase K/,/Production Promotion/' "$B18_STAGING_EVIDENCE" 2>/dev/null || true)
+
         # Phase C: DB verification result
-        if ! awk '/Phase C/,/Phase D/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qiE "(PASS|FAIL|check count|[0-9]+/[0-9]+)"; then
+        if echo "$PHASE_C_BLOCK" | grep -qiE "Result .*PENDING|Phase C gate: PENDING|Result .*_{3,}"; then
             MISSING_FIELDS+=("Phase-C: DB verification result")
         fi
 
         # Phase D: XXL-Job handler IDs
-        if awk '/Phase D/,/Phase E/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "Handler ID.*___"; then
+        if echo "$PHASE_D_BLOCK" | grep -qE "DispatchCreditAwardTaskJob_DB[12] \| (PENDING|_{3,})"; then
             MISSING_FIELDS+=("Phase-D: XXL-Job handler IDs")
         fi
 
         # Phase E: flag=true window timestamp
-        if awk '/Phase E/,/Phase F/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "flag=true start.*___"; then
+        if echo "$PHASE_E_BLOCK" | grep -qE "flag=true start.*_{3,}"; then
             MISSING_FIELDS+=("Phase-E: flag=true start timestamp")
         fi
 
         # Phase F: partake E2E result (response code or ledger status)
-        if awk '/Phase F/,/Phase G/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "Response code.*___"; then
+        if echo "$PHASE_F_BLOCK" | grep -qE "Response code.*_{3,}|HTTP status.*_{3,}|Armory gate.*PASS / FAIL"; then
             MISSING_FIELDS+=("Phase-F: partake HTTP response code")
         fi
 
         # Phase G: rollback result (ledger status)
-        if awk '/Phase G/,/Phase H/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "rolled_back.*___\|status.*___"; then
+        if echo "$PHASE_G_BLOCK" | grep -qE "Status: *_{3,}|Ledger status.*_{3,}|Second rollback rows affected.*_{3,}"; then
             MISSING_FIELDS+=("Phase-G: rollback ledger status")
         fi
 
         # Phase H: outbox dispatch result
-        if awk '/Phase H/,/Phase I/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "state after dispatch.*___\|Outbox row state.*___"; then
+        if echo "$PHASE_H_BLOCK" | grep -qE "state after dispatch.*_{3,}|Outbox row state.*_{3,}"; then
             MISSING_FIELDS+=("Phase-H: outbox row state after dispatch")
         fi
 
         # Phase H: idempotency (user_credit_order count)
-        if awk '/Phase H/,/Phase I/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "user_credit_order count.*___\|count.*expected.*1.*___"; then
+        if echo "$PHASE_H_BLOCK" | grep -qE "user_credit_order count.*_{3,}|Count: *_{3,}|count.*expected.*1.*_{3,}"; then
             MISSING_FIELDS+=("Phase-H: user_credit_order count after dispatch")
         fi
 
         # Phase K: final staging GO decision
-        if awk '/Phase K/,/Production Promotion/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                | grep -qE "go decision.*___\|GO / NO-GO\b" ; then
-            # The template has "GO / NO-GO" as the placeholder — check if it still shows that
-            if ! awk '/Phase K/,/Production Promotion/' "$B18_STAGING_EVIDENCE" 2>/dev/null \
-                    | grep -qiE "go decision.*(GO|NO-GO)[^/]"; then
-                MISSING_FIELDS+=("Phase-K: production go/no-go decision")
-            fi
+        if echo "$PHASE_K_BLOCK" | grep -qE "Production go decision.*GO / NO-GO|Decision by.*_{3,}|Decision timestamp.*_{3,}"; then
+            MISSING_FIELDS+=("Phase-K: production go/no-go decision")
         fi
 
         if [[ "${#MISSING_FIELDS[@]}" -eq 0 ]]; then
@@ -471,7 +483,7 @@ else
     echo ""
     info "=== Section 2: B17 staging evidence validation — SKIPPED ==="
     info "    Set B18_STAGING_EVIDENCE=<path-to-completed-b17-evidence> to validate."
-    info "    Suggested: B18_STAGING_EVIDENCE=docs/evidence/phase-2-2-b17-staging-cutover-template.md"
+    info "    Suggested: B18_STAGING_EVIDENCE=docs/evidence/b17-staging-evidence-<YYYYMMDD>.md"
     info "    IMPORTANT: production promotion is BLOCKED until this validation passes."
 fi
 
@@ -998,7 +1010,7 @@ if [[ "$CONNECT_REMOTE" != "true" && -z "$B18_STAGING_EVIDENCE" && \
     (Follow all phases A–K, fill evidence file, record Phase K GO decision)
 
   Step 3 — Validate completed B17 staging evidence:
-    B18_STAGING_EVIDENCE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+    B18_STAGING_EVIDENCE=docs/evidence/b17-staging-evidence-<YYYYMMDD>.md \
         ./scripts/validate-account-service-production-b18.sh
 
   Step 4 — Generate production promotion evidence template:
