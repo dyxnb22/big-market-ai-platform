@@ -50,16 +50,38 @@ Enabling fulfillment-service traffic cutover while `award-credit-outbox.enabled=
 - Traffic cutover flag enabled after staging evidence complete
 - `user_award_record` and `award` tables logically owned by fulfillment-service
 
-## 4. Remaining batches before production cutover
+## 4. Phase 2.3-B: Award dispatch adapter scaffold (completed 2026-06-10)
+
+**What was wired:**
+- `IAwardDispatchAdapter` interface added to `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/` — seam between `SendAwardConsumer` and fulfillment-service Dubbo provider
+- `LocalAwardDispatchAdapter` — `@Service @ConditionalOnMissingBean`; delegates to existing `IAwardService` bean (unchanged behavior when flag=false)
+- `RemoteAwardDispatchAdapter` — registered via `@Bean @ConditionalOnProperty(name="account.fulfillment.remote-award.enabled", havingValue="true")` in `WriteAdapterLocalConfig`; carries `@DubboReference(interfaceClass=IAwardService.class, version="1.0", check=false)` pointing at `FulfillmentAwardServiceRPC`; re-throws `RpcException` (no silent swallow, no local fallback)
+- `SendAwardConsumer` now injects `IAwardDispatchAdapter` (was `IAwardService`)
+
+**Flag state:**
+- `account.fulfillment.remote-award.enabled=false` in all configs (message-job-service, big-market-app)
+- `ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED=${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:-false}` in docker-compose.yml
+
+**Enabling the remote path requires (non-negotiable):**
+1. Phase 2.2 staging GO (B17 evidence filed and Phase K decision = GO)
+2. `credit_award_task` outbox DDL applied to staging and `award-credit-outbox.enabled=true` staging-validated
+
+**Validation gate:** `validate-fulfillment-service-b23-b.sh` 16/16 PASS
+
+## 5. Remaining batches before production cutover
 
 | Batch | Description | Blocked on |
 |-------|-------------|-----------|
-| **B23-B** | Wire SendAwardConsumer → FulfillmentAwardServiceRPC via Dubbo; enable outbox in fulfillment-service | Phase 2.2 staging GO (B17 evidence) |
-| **B23-C** | Staging validation: outbox tables DDL applied, E2E award flow through fulfillment-service, evidence | B23-B + staging DB access |
+| **B23-C** | Staging validation: outbox DDL applied, E2E award flow through fulfillment-service, evidence | B23-B + Phase 2.2 staging GO + staging DB access |
 | **B23-D** | Production promotion gate: static checks + evidence template + post-window checklist | B23-C evidence GO |
 | **B23-E** | Production cutover: flag flip, traffic redirect, post-cutover verification | B23-D sign-off |
 
-## 5. Known risk: UserCreditRandomAward writes user_credit_account directly
+**Remaining blockers:**
+- Phase 2.2 staging GO (B17 evidence — staging ledger DDL, outbox DDL, XXL-Job registration all pending)
+- `credit_award_task` DDL applied to staging and outbox poller validated end-to-end
+- Decision on where `DispatchCreditAwardTaskJob` runs after cutover (fulfillment-service vs. stays in message-job-service)
+
+## 6. Known risk: UserCreditRandomAward writes user_credit_account directly
 
 `UserCreditRandomAward` never calls `ICreditAdjustService`. The credit write goes through `AwardRepository.saveGiveOutPrizesAggregate` → `updateOrCreateCreditAccount` → `userCreditAccountDao` directly. This is NOT mediated by account-service's credit domain service.
 
@@ -67,7 +89,7 @@ The outbox (Phase 2.2-B6) was built to handle exactly this: when enabled, `saveG
 
 **Action required before B23-B:** Confirm that `DispatchCreditAwardTaskJob` will run in fulfillment-service (not message-job-service) after the cutover, or add it to fulfillment-service's scan and remove from message-job-service. The job should live in whichever service owns the outbox tables. This decision should be made in B23-B design.
 
-## 6. Phase 2.3-A dark launch summary
+## 7. Phase 2.3-A dark launch summary
 
 **Completed in this batch:**
 - `big-market-fulfillment-service` module created (port 8087, Dubbo port 20882)

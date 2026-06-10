@@ -2,7 +2,7 @@ package com.dyx.market.trigger.listener;
 
 import com.dyx.market.domain.award.adapter.event.SendAwardMessageEvent;
 import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
-import com.dyx.market.domain.award.service.IAwardService;
+import com.dyx.market.trigger.adapter.IAwardDispatchAdapter;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.event.BaseEvent;
 import com.dyx.market.types.exception.AppException;
@@ -30,7 +30,7 @@ public class SendAwardConsumer {
     private String topic;
 
     @Resource
-    private IAwardService awardService;
+    private IAwardDispatchAdapter awardDispatchAdapter;
 
     @RabbitListener(queuesToDeclare = @Queue(
             value = "${spring.rabbitmq.topic.send_award}",
@@ -49,7 +49,7 @@ public class SendAwardConsumer {
             distributeAwardEntity.setOrderId(sendAwardMessage.getOrderId());
             distributeAwardEntity.setAwardId(sendAwardMessage.getAwardId());
             distributeAwardEntity.setAwardConfig(sendAwardMessage.getAwardConfig());
-            awardService.distributeAward(distributeAwardEntity);
+            awardDispatchAdapter.distributeAward(distributeAwardEntity);
 
             log.info("监听用户奖品发送消息，发奖完成 topic: {} message: {}", topic, message);
         } catch (AppException e) {

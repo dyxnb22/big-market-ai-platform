@@ -1,10 +1,13 @@
 package com.dyx.market.message.job.config;
 
+import com.dyx.market.trigger.adapter.IAwardDispatchAdapter;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.trigger.adapter.LocalAccountCreditWriteAdapter;
 import com.dyx.market.trigger.adapter.LocalAccountQuotaWriteAdapter;
+import com.dyx.market.trigger.adapter.LocalAwardDispatchAdapter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,6 +40,18 @@ public class WriteAdapterLocalConfig {
     @ConditionalOnMissingBean(IAccountCreditWriteAdapter.class)
     public LocalAccountCreditWriteAdapter localAccountCreditWriteAdapter() {
         return new LocalAccountCreditWriteAdapter();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "account.fulfillment.remote-award.enabled", havingValue = "true")
+    public RemoteAwardDispatchAdapter remoteAwardDispatchAdapter() {
+        return new RemoteAwardDispatchAdapter();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(IAwardDispatchAdapter.class)
+    public LocalAwardDispatchAdapter localAwardDispatchAdapter() {
+        return new LocalAwardDispatchAdapter();
     }
 
 }

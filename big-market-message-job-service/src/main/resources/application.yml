@@ -144,6 +144,10 @@ gateway:
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
 
 account:
+  fulfillment:
+    remote-award:
+      # Phase 2.3-B scaffold; enable only after Phase 2.2 staging GO + outbox staging-validated.
+      enabled: ${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:false}
   service:
     remote-credit-write:
       # Phase 2.2-B2 scaffold only. Default false keeps message-job credit writes local.
