@@ -76,6 +76,41 @@ Enabling fulfillment-service traffic cutover while `award-credit-outbox.enabled=
 | **B23-D** | Production promotion gate: static checks + evidence template + post-window checklist | B23-C evidence GO |
 | **B23-E** | Production cutover: flag flip, traffic redirect, post-cutover verification | B23-D sign-off |
 
+## 8. Phase 2.3-D: Production Promotion Gate (this batch — 2026-06-10)
+
+**This batch does NOT enable production traffic.** Remote-award cutover remains blocked until B23-C staging evidence is attached and approved.
+
+### What was added
+
+- `docs/evidence/phase-2-3-d-fulfillment-production-promotion-gate.md` — strict GO/NO-GO checklist for promoting fulfillment-service award dispatch to production after B23-C staging evidence is complete. Includes: staging evidence dependency table (SE1–SE11), production prerequisites, DBA/ops sign-off table, deployment order (9 steps), flag matrix, rollback plan, observability checks, and explicit NO-GO triggers.
+- `scripts/validate-fulfillment-service-b23-d-production-gate.sh` — deterministic local validator (no network, no Docker, no DB). Verifies B23-D doc completeness, config safety (all three dangerous flags false), adapter wiring (B23-B/C re-check), job ownership (DispatchCreditAwardTaskJob in message-job-service), provider integrity, and required docs/scripts.
+
+### Flag state (unchanged — all false)
+
+| Flag | Default |
+|------|---------|
+| `account.award-credit-outbox.enabled` | `false` |
+| `account.fulfillment.remote-award.enabled` | `false` |
+| `account.service.remote-quota-decrement.enabled` | `false` |
+
+### Job ownership (unchanged)
+
+`DispatchCreditAwardTaskJob` remains in `big-market-message-job-service` through Phase 2.3-D. Any future move to fulfillment-service requires a dedicated batch.
+
+### What remains blocked
+
+| Blocker | Gate |
+|---------|------|
+| B23-C staging evidence (SE1–SE11) completed and signed | Required before any production action |
+| DBA applies `credit_award_task` DDL to production shard DBs | Required before outbox flag enable |
+| Ops registers `DispatchCreditAwardTaskJob_DB1/_DB2` in production XXL-Job | Required before outbox flag enable |
+| Oncall lead approves production flag enable window | Hard gate before step 5 in deployment order |
+| B23-D evidence file filled in and signed | Required for final Phase 2.3-D sign-off |
+
+**Validation gate:** `bash scripts/validate-fulfillment-service-b23-d-production-gate.sh` — all checks PASS (local/static).
+
+**Evidence doc:** `docs/evidence/phase-2-3-d-fulfillment-production-promotion-gate.md`
+
 **Remaining blockers:**
 - Phase 2.2 staging GO (B17 evidence — staging ledger DDL, outbox DDL, XXL-Job registration all pending)
 - `credit_award_task` DDL applied to staging and outbox poller validated end-to-end
