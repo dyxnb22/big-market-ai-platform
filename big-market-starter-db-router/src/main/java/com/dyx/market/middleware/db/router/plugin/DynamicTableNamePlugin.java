@@ -28,7 +28,8 @@ public class DynamicTableNamePlugin implements Interceptor {
             "user_behavior_rebate_order",
             "credit_award_task",
             "user_credit_order",
-            "user_raffle_order"
+            "user_raffle_order",
+            "raffle_quota_decrement_ledger"
     };
 
     @Override

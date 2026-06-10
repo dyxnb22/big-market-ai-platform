@@ -3,7 +3,7 @@ package com.dyx.market.infrastructure.adapter.port;
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -26,7 +26,7 @@ import javax.annotation.Resource;
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(IActivityAccountPort.class)
+@ConditionalOnProperty(name = "account.service.remote-quota-decrement.enabled", havingValue = "false", matchIfMissing = true)
 public class LocalActivityAccountPort implements IActivityAccountPort {
 
     @Resource

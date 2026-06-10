@@ -1,6 +1,7 @@
 package com.dyx.market.infrastructure.dao;
 
 import com.dyx.market.infrastructure.dao.po.RaffleQuotaDecrementLedger;
+import com.dyx.market.middleware.db.router.annotation.DBRouter;
 import com.dyx.market.middleware.db.router.annotation.DBRouterStrategy;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -16,10 +17,13 @@ import org.apache.ibatis.annotations.Mapper;
 @DBRouterStrategy(splitTable = true)
 public interface IRaffleQuotaDecrementLedgerDao {
 
+    @DBRouter
     void insert(RaffleQuotaDecrementLedger ledger);
 
+    @DBRouter
     RaffleQuotaDecrementLedger queryByKey(RaffleQuotaDecrementLedger query);
 
+    @DBRouter
     int updateStatusToRolledBack(RaffleQuotaDecrementLedger query);
 
 }

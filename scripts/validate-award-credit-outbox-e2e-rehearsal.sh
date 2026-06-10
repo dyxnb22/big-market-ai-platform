@@ -248,7 +248,14 @@ except:
     trigger_resp="$(curl -sf --max-time 5 \
         -b "$cookie_jar" \
         --data "id=${job_id}&executorParam=&addressList=" \
-        "${XXL_JOB_ADMIN_URL}/jobinfo/triggerJob" 2>/dev/null || echo "FAIL")"
+        "${XXL_JOB_ADMIN_URL}/jobinfo/trigger" 2>/dev/null || true)"
+
+    if ! echo "$trigger_resp" | grep -q '"code":200'; then
+        trigger_resp="$(curl -sf --max-time 5 \
+            -b "$cookie_jar" \
+            --data "id=${job_id}&executorParam=&addressList=" \
+            "${XXL_JOB_ADMIN_URL}/jobinfo/triggerJob" 2>/dev/null || echo "FAIL")"
+    fi
     rm -f "$cookie_jar"
 
     if echo "$trigger_resp" | grep -q '"code":200'; then

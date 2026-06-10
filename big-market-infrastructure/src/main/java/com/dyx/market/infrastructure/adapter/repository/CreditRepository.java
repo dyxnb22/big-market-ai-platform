@@ -131,11 +131,15 @@ public class CreditRepository implements ICreditRepository {
             // 发送消息【在事务外执行，如果失败还有任务补偿】
             eventPublisher.publish(task.getTopic(), task.getMessage());
             // 更新数据库记录，task 任务表
+            dbRouter.doRouter(userId);
             taskDao.updateTaskSendMessageCompleted(task);
             log.info("调整账户积分记录，发送MQ消息完成 userId: {} orderId:{} topic: {}", userId, creditOrderEntity.getOrderId(), task.getTopic());
         } catch (Exception e) {
             log.error("调整账户积分记录，发送MQ消息失败 userId: {} topic: {}", userId, task.getTopic());
+            dbRouter.doRouter(userId);
             taskDao.updateTaskSendMessageFail(task);
+        } finally {
+            dbRouter.clear();
         }
 
     }
