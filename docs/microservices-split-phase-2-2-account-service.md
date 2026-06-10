@@ -2085,6 +2085,142 @@ adds latency to the raffle critical path — benchmark and set an appropriate ti
 
 ---
 
+## Phase 2.2-B18 — Production Promotion Gate
+
+**Status: Phase 2.2-B18 production promotion gate package complete. B18 adds `scripts/validate-account-service-production-b18.sh` (operator-driven production promotion validator: dry-run pre-flight, B18_PRINT_PLAN ordered promotion plan Phases A–J, B18_STAGING_EVIDENCE evidence validator, CONNECT_REMOTE read-only production DB verification, B18_EVIDENCE_FILE evidence template writer, B18_POST_CHECK post-window sign-off mode) and `docs/evidence/phase-2-2-b18-production-promotion-template.md` (fully structured production promotion evidence template covering Phases A–J including staging evidence validation, production DDL apply, canary flag enable, E2E partake + rollback + outbox, monitoring, and final Phase 2.2 sign-off). All baselines green. remote-quota-decrement.enabled=false. Phase 2.2 completion blocked until B17 staging evidence file is completed with a GO decision.**
+
+### Purpose
+
+B18 is the final gate/runbook package for promoting account-service quota-decrement extraction to production. It does not enable any production flags, apply any DDL, or mutate any data. It provides:
+
+- **Static validation**: all code-side artefacts, baseline scripts, and flag defaults verified
+- **Staging evidence gate**: validates the completed B17 evidence file before any production action
+- **Production promotion plan**: ordered Phases A–J for the live production window
+- **Production evidence template**: structured operator-filled record of the production window
+- **Production go/no-go validator**: read-only production DB verification via `CONNECT_REMOTE`
+- **Post-window sign-off checklist**: final Phase 2.2 completion verification
+
+### New files
+
+| File | Purpose |
+|------|---------|
+| `scripts/validate-account-service-production-b18.sh` | B18 production promotion gate script |
+| `docs/evidence/phase-2-2-b18-production-promotion-template.md` | Production promotion evidence template |
+
+### Script modes
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| Default (static gate) | `./scripts/validate-account-service-production-b18.sh` | P1–P12 static checks: B17/B16/B15/B14 script existence, flag defaults, DDL artefacts, B17 evidence template, doc structure. No DB, no writes. |
+| Print promotion plan | `B18_PRINT_PLAN=true ./scripts/...` | Print ordered production promotion plan (Phases A–J) and exit. |
+| Validate staging evidence | `B18_STAGING_EVIDENCE=<path> ./scripts/...` | Validate completed B17 evidence file: section presence + placeholder non-emptiness for all required fields. Fails with a missing-field list if incomplete. |
+| Read-only DB verification | `CONNECT_REMOTE=true MYSQL_HOST=<h> MYSQL_USER=<u> MYSQL_PASS=<p> ./scripts/...` | Delegate to B16 CONNECT_REMOTE mode: verify all ledger/outbox tables and UNIQUE KEYs in production or staging. Read-only — no writes. |
+| Write evidence template | `B18_EVIDENCE_FILE=<path> ./scripts/...` | Write the production promotion evidence template to the specified path. Append-safe. |
+| Post-window sign-off | `B18_POST_CHECK=true MYSQL_HOST=<h> MYSQL_USER=<u> MYSQL_PASS=<p> ./scripts/...` | Re-run CONNECT_REMOTE read-only checks and print the Phase 2.2 completion sign-off checklist. |
+
+### Production promotion plan (Phases A–J)
+
+| Phase | Description | Gate |
+|-------|-------------|------|
+| A | Verify B17 staging GO evidence (`B18_STAGING_EVIDENCE` validation) | Hard gate: all required fields filled, Phase K GO recorded |
+| B | Apply production DDL manually (ledger + outbox, both DBs) | DDL apply timestamps recorded |
+| C | Read-only production DB verification (`CONNECT_REMOTE`) | Hard gate: 0 FAIL |
+| D | Enable `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=true` on canary instance only | Oncall lead approval required; canary window ≤15 min |
+| E | Canary partake flow: HTTP 200, ledger applied, quota decremented, idempotency confirmed | Hard gate: any FAIL → flag=false immediately |
+| F | Rollback path: ledger rolled_back, quota restored, duplicate rollback idempotent | Hard gate: any FAIL → flag=false |
+| G | Outbox dispatch: pending→dispatched, count=1, second dispatch count=1 (no double credit) | Hard gate: count>1 → flag=false immediately |
+| H | Monitor: error rate, quota leak, double-count, P99, GC (entire canary window) | Hard gate: any anomaly → flag=false |
+| I | GO (full rollout) or NO-GO (flag=false restore) | Manual operator decision |
+| J | Final Phase 2.2 sign-off: all Phases A–I PASS, evidence file complete, approver recorded | Phase 2.2 declared complete |
+
+### Staging evidence validation (B18_STAGING_EVIDENCE)
+
+The validator checks:
+- B17 evidence file exists at the specified path
+- All required sections present (Phases A–K, Production go decision, Production Promotion Criteria, Rollback Plan)
+- The following fields are non-empty (not `___` placeholder):
+  - Phase C: DB verification result
+  - Phase D: XXL-Job handler IDs
+  - Phase E: flag=true start timestamp
+  - Phase F: partake HTTP response code
+  - Phase G: rollback ledger status
+  - Phase H: outbox row state after dispatch and `user_credit_order` count
+  - Phase K: production go/no-go decision
+
+If any field is incomplete, the script fails with a printed list of missing fields and blocks production promotion.
+
+### Production no-go criteria (any one triggers immediate flag=false rollback)
+
+- B17 staging evidence validation FAIL or evidence file incomplete
+- Any FAIL in B18 static checks (P1–P12) or CONNECT_REMOTE checks (Phase C)
+- Phase E idempotency violation: quota changed on duplicate draw
+- Phase G double credit: `user_credit_order` count > 1 for same `out_business_no`
+- Phase F rollback failure: quota not restored
+- Phase H anomaly: error rate > 0%, quota leak, latency regression > 20%
+
+### Rollback plan
+
+**Instant rollback (no data loss):**
+```bash
+ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=false
+docker compose up -d --no-deps --build big-market-market-service
+```
+The `saveCreatePartakeOrderAggregate` path takes effect immediately.
+
+**flag=false rollback command (safe to run at any time):**
+```bash
+ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=false
+docker compose up -d --no-deps --build big-market-market-service
+```
+
+### Remaining blockers (staging evidence missing)
+
+Phase 2.2 cannot be marked complete until:
+
+1. **Staging ledger DDL** — apply `docs/sql/proposed-quota-decrement-ledger.sql` to staging `big_market_01` and `big_market_02`. Status: **PENDING**
+2. **Staging credit-award outbox DDL** — apply `docs/sql/proposed-credit-award-task-outbox.sql` to staging `big_market_01` and `big_market_02`. Status: **PENDING**
+3. **XXL-Job handler registration** — register `DispatchCreditAwardTaskJob_DB1` and `DispatchCreditAwardTaskJob_DB2` in staging XXL-Job admin UI. Status: **PENDING**
+4. **B17 staging cutover** — complete the staging E2E window (Phases A–K) and fill out the B17 evidence file with a GO decision. Status: **PENDING**
+5. **B18 production promotion** — complete Phases A–J above, fill out the B18 evidence file, and record final sign-off. Status: **PENDING** (after B17 GO)
+
+### Validation commands
+
+```bash
+# B18 default static gate (P1–P12)
+./scripts/validate-account-service-production-b18.sh
+
+# B18 staging evidence validation (after B17 staging cutover is complete)
+B18_STAGING_EVIDENCE=docs/evidence/phase-2-2-b17-staging-cutover-template.md \
+    ./scripts/validate-account-service-production-b18.sh
+
+# B18 production evidence template generation
+B18_EVIDENCE_FILE=docs/evidence/phase-2-2-b18-production-promotion-template.md \
+    ./scripts/validate-account-service-production-b18.sh
+
+# B18 print production promotion plan
+B18_PRINT_PLAN=true ./scripts/validate-account-service-production-b18.sh
+
+# B18 production DB read-only verification (after Phase B DDL apply)
+CONNECT_REMOTE=true MYSQL_HOST=<prod-host> MYSQL_PORT=3306 \
+  MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+  ./scripts/validate-account-service-production-b18.sh
+
+# B18 post-production sign-off
+B18_POST_CHECK=true MYSQL_HOST=<prod-host> MYSQL_USER=<ro-user> MYSQL_PASS=<pass> \
+    ./scripts/validate-account-service-production-b18.sh
+
+# Baseline validations (must remain green)
+./scripts/execute-account-service-staging-b17.sh       # B17: 6/6
+./scripts/validate-account-service-cutover-b16.sh      # B16: 18/18
+./scripts/validate-quota-decrement-b15-e2e.sh          # B15: 20/20
+./scripts/validate-quota-decrement-b14.sh              # B14: 21/21
+./scripts/validate-production-ddl.sh                   # DDL: 14/14
+./scripts/validate-mq-idempotency.sh                   # MQ:  12/12
+mvn compile                                            # BUILD SUCCESS
+```
+
+---
+
 ## 8. Rollback Criteria
 
 Immediately revert account-service extraction (remove from scan, redeploy market-service) if:
