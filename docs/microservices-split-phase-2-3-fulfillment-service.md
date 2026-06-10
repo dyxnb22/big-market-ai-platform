@@ -76,6 +76,43 @@ Enabling fulfillment-service traffic cutover while `award-credit-outbox.enabled=
 | **B23-D** | Production promotion gate: static checks + evidence template + post-window checklist | B23-C evidence GO |
 | **B23-E** | Production cutover: flag flip, traffic redirect, post-cutover verification | B23-D sign-off |
 
+## 9. Phase 2.3-E: Cutover Execution Pack (2026-06-10)
+
+**This batch does NOT enable production or staging traffic.** All three dangerous flags remain `false` by default.
+
+### What was added
+
+- `docs/evidence/phase-2-3-e-fulfillment-cutover-execution.md` — strict execution worksheet for the actual remote-award cutover. Includes: preconditions inherited from B23-C (SE1–SE11) and B23-D (D1–D8), exact staging cutover steps (S1–S8), exact production cutover steps (P1–P8), flag matrix, canary plan (≥15 min staging, ≥30 min production), rollback commands for all failure modes, observability checklist, evidence attachment table (E1–E12), and a final five-phase GO/NO-GO decision table.
+- `scripts/validate-fulfillment-service-b23-e-cutover-execution.sh` — deterministic local validator (no network, Docker, DB, staging, or production access). Verifies B23-E doc completeness, config safety (all three flags false), adapter wiring (B23-B/C/D re-check), job ownership, provider integrity, and all required prior docs/scripts.
+
+### Flag state (unchanged — all false)
+
+| Flag | Default |
+|------|---------|
+| `account.award-credit-outbox.enabled` | `false` |
+| `account.fulfillment.remote-award.enabled` | `false` |
+| `account.service.remote-quota-decrement.enabled` | `false` |
+
+### Job ownership (unchanged)
+
+`DispatchCreditAwardTaskJob` remains in `big-market-message-job-service`. Any future move requires a dedicated batch.
+
+### What remains blocked
+
+| Blocker | Gate |
+|---------|------|
+| B23-C staging evidence (SE1–SE11) completed and signed by oncall lead | Required before staging cutover steps |
+| B23-D evidence file completed and signed | Required before production cutover steps |
+| DBA applies `credit_award_task` DDL to production shard DBs | Required before outbox flag enable |
+| Ops registers `DispatchCreditAwardTaskJob_DB1/_DB2` in production XXL-Job | Required before outbox flag enable |
+| Oncall lead issues written approval for production cutover window | Hard gate before step P5 |
+
+**Validation gate:** `bash scripts/validate-fulfillment-service-b23-e-cutover-execution.sh` — all checks PASS (local/static).
+
+**Evidence doc:** `docs/evidence/phase-2-3-e-fulfillment-cutover-execution.md`
+
+---
+
 ## 8. Phase 2.3-D: Production Promotion Gate (this batch — 2026-06-10)
 
 **This batch does NOT enable production traffic.** Remote-award cutover remains blocked until B23-C staging evidence is attached and approved.
