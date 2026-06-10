@@ -50,10 +50,26 @@
 | `scripts/validate-fulfillment-service-b23-e-cutover-execution.sh` | B23-E full pack (37 checks) | 37 |
 | `scripts/validate-fulfillment-service-phase-2-3.sh` | **One-command suite: B23-B/C/D/E + flag scan + tag verification** | all |
 
+### External Execution Pack (new — 2026-06-10)
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/evidence/phase-2-external-execution-pack.md`](phase-2-external-execution-pack.md) | Consolidated pack: B17 staging GO + B23-C/D/E gates; role sections for DBA, Ops, Engineer, Oncall |
+| [`docs/evidence/phase-2-dba-checklist.md`](phase-2-dba-checklist.md) | DBA checklist: staging + production DDL apply, verification SQL, sign-off table |
+| [`docs/evidence/phase-2-ops-xxl-job-checklist.md`](phase-2-ops-xxl-job-checklist.md) | Ops checklist: XXL-Job registration for DB1/DB2 in staging and production |
+
+### External Pack Scripts (new — 2026-06-10)
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/collect-phase-2-external-evidence.sh` | Local-only evidence collector; outputs timestamped snapshot to `docs/evidence/generated/` |
+| `scripts/validate-phase-2-external-execution-pack.sh` | Validates all new pack artifacts + runs Phase 2.3 suite + flag scan; no staging/prod required |
+
 ### DDL
 
 | File | Purpose |
 |------|---------|
+| `docs/sql/proposed-quota-decrement-ledger.sql` | `raffle_quota_decrement_ledger` DDL (apply to staging only for Phase 2.2-B17) |
 | `docs/sql/proposed-credit-award-task-outbox.sql` | `credit_award_task` outbox DDL (apply to staging then production) |
 
 ---
