@@ -30,6 +30,7 @@
         <module>big-market-market-service</module>
         <module>big-market-message-job-service</module>
         <module>big-market-account-service</module>
+        <module>big-market-fulfillment-service</module>
     </modules>
 
     <properties>

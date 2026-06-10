@@ -235,6 +235,45 @@ services:
       retries: 10
       start_period: 90s
 
+  # ── Fulfillment service (dark launch — Dubbo/internal only, no traffic cutover) ──
+
+  big-market-fulfillment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        MODULE_NAME: big-market-fulfillment-service
+    image: big-market-fulfillment-service:latest
+    container_name: big-market-fulfillment-service
+    restart: always
+    ports:
+      - "8087:8087"
+    environment:
+      - SERVER_PORT=8087
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
+      - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
+      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-false}
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - GATEWAY_API_HOST=127.0.0.1
+    networks:
+      - dev-ops_my-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8087/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
   # ─────────────────────────── API Gateway ─────────────────────────────────
 
   big-market-gateway:
