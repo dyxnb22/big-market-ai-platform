@@ -68,11 +68,13 @@
 | `scripts/validate-phase-2-external-execution-pack.sh` | Validates all new pack artifacts + runs Phase 2.3 suite + flag scan; no staging/prod required |
 | `scripts/validate-phase-2-evidence-consistency.sh` | **Evidence consistency validator** (new — 2026-06-10 hardening batch): checks Phase 2.2/2.3 docs exist, gitignore policy, key tags, dangerous flags, and cross-links; no network/Docker/DB required |
 | `scripts/validate-phase-2-external-evidence-intake.sh` | **Intake validator** (2026-06-10 automation batch): checks all four role-specific evidence intake templates exist and contain required sections, B23-E prerequisites, and dangerous flag safety language; no network/Docker/DB required |
+| `scripts/validate-phase-2-external-evidence-completion.sh` | **Completion gate validator** (2026-06-10 completion-gates batch): reads the `## Completion Status` table in each intake template; reports TEMPLATE_READY / PARTIAL / COMPLETE / NO_GO; reports B23-E gate status; fails only on NO-GO or malformed templates; no network/Docker/DB required |
 
 ### Evidence Intake Templates (2026-06-10 automation batch)
 
 Operators fill these templates during real staging/production execution. The intake validator verifies
-their structure deterministically from the repo.
+their structure deterministically from the repo. The completion gate validator reports per-role
+completion state and B23-E gate readiness.
 
 | Template | Owner | Gate It Unlocks |
 |----------|-------|-----------------|
@@ -191,3 +193,16 @@ Checks Phase 2.2 and Phase 2.3 doc coverage, gitignore policy for `docs/evidence
 current key Phase 2 tag presence, dangerous-flag scan, and cross-link correctness between
 final readiness and external execution documents. No network, Docker, DB, staging, or
 production access required.
+
+### Completion Gate Validator (completion-gates batch — 2026-06-10)
+
+```bash
+bash scripts/validate-phase-2-external-evidence-completion.sh
+```
+
+Reads the `## Completion Status` table in each intake template. Reports TEMPLATE_READY /
+PARTIAL / COMPLETE / NO_GO per role, and reports whether B23-E cutover prerequisites are met.
+Fails only on NO-GO or malformed templates. No network, Docker, DB, staging, or production
+access required.
+
+See: `docs/evidence/phase-2-external-readiness-dashboard.md` for the dashboard view.

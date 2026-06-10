@@ -218,6 +218,23 @@ Stop and refuse sign-off if ANY of the following:
 
 ---
 
+## Completion Status
+
+<!-- Operator: update Status values as evidence is collected.
+     Machine-readable by validate-phase-2-external-evidence-completion.sh
+     Valid values — TODO: not started | PASS: complete | FAIL: failed (triggers NO-GO) | GO: gate approved | NO-GO: gate refused | PENDING: waiting -->
+
+| Check | Status |
+|-------|--------|
+| OC1 B17 Phase K Decision | PENDING |
+| OC2 B23-C SE11 Decision | PENDING |
+| OC3 B23-D Phase E Decision | PENDING |
+| OC4 P4 Written Approval | PENDING |
+| OC5 B23-E Final Decision | PENDING |
+| B23-E Gate Decision | PENDING |
+
+---
+
 ## Evidence Storage Note
 
 All sign-off records, reviewed evidence artifacts, and decision logs must be stored in your team's
@@ -225,4 +242,6 @@ incident/change management system. References to `docs/evidence/generated/` path
 and are gitignored — they are never committed to this repo.
 
 See: `scripts/collect-phase-2-external-evidence.sh` for the local evidence snapshot script.
+See: `scripts/validate-phase-2-external-evidence-completion.sh` for the completion gate validator.
 See: `docs/evidence/phase-2-external-execution-pack.md` for the full execution pack.
+See: `docs/evidence/phase-2-external-readiness-dashboard.md` for the current readiness dashboard.

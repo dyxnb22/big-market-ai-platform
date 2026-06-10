@@ -127,6 +127,22 @@ Stop and escalate immediately to the oncall lead if ANY of the following:
 
 ---
 
+## Completion Status
+
+<!-- Operator: update Status values as evidence is collected.
+     Machine-readable by validate-phase-2-external-evidence-completion.sh
+     Valid values — TODO: not started | PASS: complete | FAIL: failed (triggers NO-GO) | GO: gate approved | NO-GO: gate refused | PENDING: waiting -->
+
+| Check | Status |
+|-------|--------|
+| Staging Handler Registration (OA1–OA4) | TODO |
+| Production Handler Registration (OA5–OA6) | TODO |
+| Ops Staging Sign-Off | TODO |
+| Ops Production Sign-Off | TODO |
+| B23-E Gate Decision | PENDING |
+
+---
+
 ## Evidence Storage Note
 
 XXL-Job screenshots, execution logs, and job configuration exports must be stored in your team's secure
@@ -134,4 +150,6 @@ artifact store or in the local `docs/evidence/generated/` directory. The `genera
 in `.gitignore` and is local-only — evidence in that directory is never committed to this repo.
 
 See: `scripts/collect-phase-2-external-evidence.sh` for the local evidence snapshot script.
+See: `scripts/validate-phase-2-external-evidence-completion.sh` for the completion gate validator.
 See: `docs/evidence/phase-2-external-execution-pack.md` for the full execution pack.
+See: `docs/evidence/phase-2-external-readiness-dashboard.md` for the current readiness dashboard.

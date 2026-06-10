@@ -103,6 +103,12 @@ check_file_exists "EXP-DOC-9: Engineer B17/B23-C E2E evidence intake template" \
 check_file_exists "EXP-DOC-10: Oncall sign-off evidence intake template" \
   "docs/evidence/intake-oncall-signoff-evidence.md"
 
+check_file_exists "EXP-DOC-11: completion gate validator script" \
+  "scripts/validate-phase-2-external-evidence-completion.sh"
+
+check_file_exists "EXP-DOC-12: external readiness dashboard" \
+  "docs/evidence/phase-2-external-readiness-dashboard.md"
+
 # ── 2. External pack has required role sections ────────────────────────────────
 
 echo ""
@@ -287,7 +293,7 @@ check_file_not_contains "COLL-11: collector does not invoke curl" \
 check_file_not_contains "COLL-12: collector does not invoke wget" \
   "$COLLECTOR" "^[^#]*wget "
 
-# ── 5b. Run validate-phase-2-external-evidence-intake.sh ────────────────────
+# ── 5b. Run validate-phase-2-external-evidence-intake.sh ─────────────────────
 
 echo ""
 echo "── [5b] External evidence intake validator ──────────────────────────────────"
@@ -303,6 +309,26 @@ else
     echo ""
     echo "  --- Intake validator output (last 20 lines) ---"
     tail -20 /tmp/phase2-intake-pack-out.txt | sed 's/^/  /'
+    echo "  ---"
+  fi
+fi
+
+# ── 5c. Run validate-phase-2-external-evidence-completion.sh ─────────────────
+
+echo ""
+echo "── [5c] Evidence completion gate validator ──────────────────────────────────"
+
+COMPLETION_SCRIPT="$ROOT/scripts/validate-phase-2-external-evidence-completion.sh"
+if [ ! -f "$COMPLETION_SCRIPT" ]; then
+  fail "COMPLETION-RUN-1: validate-phase-2-external-evidence-completion.sh not found"
+else
+  if bash "$COMPLETION_SCRIPT" > /tmp/phase2-completion-pack-out.txt 2>&1; then
+    pass "COMPLETION-RUN-1: validate-phase-2-external-evidence-completion.sh GATE PASS"
+  else
+    fail "COMPLETION-RUN-1: validate-phase-2-external-evidence-completion.sh GATE FAIL"
+    echo ""
+    echo "  --- Completion gate output (last 20 lines) ---"
+    tail -20 /tmp/phase2-completion-pack-out.txt | sed 's/^/  /'
     echo "  ---"
   fi
 fi

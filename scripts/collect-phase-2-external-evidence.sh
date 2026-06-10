@@ -95,6 +95,29 @@ else
   fi
 fi
 
+# ── 2c. Run validate-phase-2-external-evidence-completion.sh ─────────────────
+
+echo "[2c/8] Running evidence completion gate validator..."
+COMPLETION_SCRIPT="$ROOT/scripts/validate-phase-2-external-evidence-completion.sh"
+if [ ! -f "$COMPLETION_SCRIPT" ]; then
+  echo "[FAIL] validate-phase-2-external-evidence-completion.sh not found"
+  echo "COMPLETION VALIDATOR NOT FOUND" > "$OUT_DIR/validate-completion.txt"
+  FAIL=$((FAIL + 1))
+else
+  {
+    echo "# validate-phase-2-external-evidence-completion.sh output"
+    echo "# Run at: $(date)"
+    echo ""
+    bash "$COMPLETION_SCRIPT" 2>&1
+  } > "$OUT_DIR/validate-completion.txt"
+  if grep -q "RESULT: GATE PASS" "$OUT_DIR/validate-completion.txt"; then
+    echo "[PASS] Completion gate validator: GATE PASS"
+  else
+    echo "[FAIL] Completion gate validator: GATE FAIL — see validate-completion.txt"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
 # ── 3. Run validate-fulfillment-service-phase-2-3.sh ─────────────────────────
 
 echo "[3/8] Running Phase 2.3 suite validator..."
@@ -230,6 +253,7 @@ echo "[7/8] Collecting script manifest..."
   echo ""
   for script in \
     "scripts/validate-phase-2-external-evidence-intake.sh" \
+    "scripts/validate-phase-2-external-evidence-completion.sh" \
     "scripts/validate-phase-2-evidence-consistency.sh" \
     "scripts/validate-phase-2-external-execution-pack.sh" \
     "scripts/validate-fulfillment-service-phase-2-3.sh" \

@@ -296,6 +296,18 @@ check_file_contains "XLINK-8: final readiness index mentions intake templates" \
 check_file_contains "XLINK-9: external execution pack references intake validator" \
   "$EXTPACK" "validate-phase-2-external-evidence-intake"
 
+# Final readiness index must mention the completion gate validator
+check_file_contains "XLINK-10: final readiness index mentions completion gate validator" \
+  "$READINESS" "validate-phase-2-external-evidence-completion"
+
+# External execution pack must reference the completion gate validator
+check_file_contains "XLINK-11: external execution pack references completion gate validator" \
+  "$EXTPACK" "validate-phase-2-external-evidence-completion"
+
+# External execution pack must reference the readiness dashboard
+check_file_contains "XLINK-12: external execution pack references readiness dashboard" \
+  "$EXTPACK" "phase-2-external-readiness-dashboard"
+
 # ── 7. Key validator scripts exist ────────────────────────────────────────────
 
 echo ""
@@ -322,6 +334,9 @@ check_executable "SCRIPT-6: validate-phase-2-evidence-consistency.sh (this scrip
 check_executable "SCRIPT-7: validate-phase-2-external-evidence-intake.sh" \
   "scripts/validate-phase-2-external-evidence-intake.sh"
 
+check_executable "SCRIPT-8: validate-phase-2-external-evidence-completion.sh" \
+  "scripts/validate-phase-2-external-evidence-completion.sh"
+
 # ── 8. Run external evidence intake validator ─────────────────────────────────
 
 echo ""
@@ -338,6 +353,26 @@ else
     echo ""
     echo "  --- Intake validator output (last 20 lines) ---"
     tail -20 /tmp/phase2-intake-out.txt | sed 's/^/  /'
+    echo "  ---"
+  fi
+fi
+
+# ── 9. Run completion gate validator ─────────────────────────────────────────
+
+echo ""
+echo "── [9] Evidence completion gate validator ───────────────────────────────────"
+
+COMPLETION_SCRIPT="$ROOT/scripts/validate-phase-2-external-evidence-completion.sh"
+if [ ! -f "$COMPLETION_SCRIPT" ]; then
+  fail "COMPLETION-RUN-1: validate-phase-2-external-evidence-completion.sh not found"
+else
+  if bash "$COMPLETION_SCRIPT" > /tmp/phase2-completion-out.txt 2>&1; then
+    pass "COMPLETION-RUN-1: validate-phase-2-external-evidence-completion.sh GATE PASS"
+  else
+    fail "COMPLETION-RUN-1: validate-phase-2-external-evidence-completion.sh GATE FAIL"
+    echo ""
+    echo "  --- Completion gate output (last 20 lines) ---"
+    tail -20 /tmp/phase2-completion-out.txt | sed 's/^/  /'
     echo "  ---"
   fi
 fi

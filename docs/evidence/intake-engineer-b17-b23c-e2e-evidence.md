@@ -137,6 +137,23 @@ Stop and escalate immediately to the oncall lead if ANY of the following:
 
 ---
 
+## Completion Status
+
+<!-- Operator: update Status values as evidence is collected.
+     Machine-readable by validate-phase-2-external-evidence-completion.sh
+     Valid values — TODO: not started | PASS: complete | FAIL: failed (triggers NO-GO) | GO: gate approved | NO-GO: gate refused | PENDING: waiting -->
+
+| Check | Status |
+|-------|--------|
+| Pre-flight Gate (EA1–EA2) | TODO |
+| B17 E2E Gate (EA3–EA6) | TODO |
+| B23-C E2E Gate (EA7–EA10) | TODO |
+| Engineer B17 Sign-Off | TODO |
+| Engineer B23-C Sign-Off | TODO |
+| B23-E Gate Decision | PENDING |
+
+---
+
 ## Evidence Storage Note
 
 All E2E test outputs, screenshots, and log excerpts must be stored in your team's secure artifact store
@@ -144,4 +161,6 @@ or in the local `docs/evidence/generated/` directory. The `generated/` directory
 and is local-only — evidence in that directory is never committed to this repo.
 
 See: `scripts/collect-phase-2-external-evidence.sh` for the local evidence snapshot script.
+See: `scripts/validate-phase-2-external-evidence-completion.sh` for the completion gate validator.
 See: `docs/evidence/phase-2-external-execution-pack.md` for the full execution pack.
+See: `docs/evidence/phase-2-external-readiness-dashboard.md` for the current readiness dashboard.
