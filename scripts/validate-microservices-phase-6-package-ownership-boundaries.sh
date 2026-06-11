@@ -19,10 +19,16 @@
 #
 #   [AL-1] StrategyRepository -> IRaffleActivityDao
 #          context: strategy reads activity table for ID resolution
-#   [AL-2] StrategyRepository -> IRaffleActivityAccountDao
+#   [AL-2] StrategyRepository -> IRaffleActivityAccountDao  *** RESOLVED — Phase 7-A prep (AL-2/AL-3) ***
 #          context: strategy reads quota for totalRaffleCount rule
-#   [AL-3] StrategyRepository -> IRaffleActivityAccountDayDao
+#          resolution: routed through IStrategyActivityAccountPort.queryTotalUseCount;
+#                      LocalStrategyActivityAccountPort delegates to IRaffleActivityAccountDao;
+#                      StrategyRepository no longer imports IRaffleActivityAccountDao directly.
+#   [AL-3] StrategyRepository -> IRaffleActivityAccountDayDao  *** RESOLVED — Phase 7-A prep (AL-2/AL-3) ***
 #          context: strategy reads day-quota for dayRaffleCount rule
+#          resolution: routed through IStrategyActivityAccountPort.queryTodayRaffleCount;
+#                      LocalStrategyActivityAccountPort delegates to IRaffleActivityAccountDayDao;
+#                      StrategyRepository no longer imports IRaffleActivityAccountDayDao directly.
 #   [AL-4] ActivityRepository -> IUserCreditAccountDao  *** RESOLVED — Phase 7-A prep ***
 #          context: activity reads credit balance for SKU credit-purchase partake
 #          resolution: routed through IActivityAccountPort.queryUserCreditAccountAmount;
@@ -124,15 +130,17 @@ check_field_present \
   "$INFRA_REPO/StrategyRepository.java" \
   "IRaffleActivityDao"
 
-check_field_present \
-  "AL-2 StrategyRepository->IRaffleActivityAccountDao" \
-  "$INFRA_REPO/StrategyRepository.java" \
-  "IRaffleActivityAccountDao"
+# AL-2 StrategyRepository->IRaffleActivityAccountDao — RESOLVED in Phase 7-A prep (AL-2/AL-3).
+# StrategyRepository now routes total-use-count reads through
+# IStrategyActivityAccountPort.queryTotalUseCount (LocalStrategyActivityAccountPort
+# delegates to IRaffleActivityAccountDao). The forbidden-DAO check below enforces
+# that the direct coupling does not regress.
 
-check_field_present \
-  "AL-3 StrategyRepository->IRaffleActivityAccountDayDao" \
-  "$INFRA_REPO/StrategyRepository.java" \
-  "IRaffleActivityAccountDayDao"
+# AL-3 StrategyRepository->IRaffleActivityAccountDayDao — RESOLVED in Phase 7-A prep (AL-2/AL-3).
+# StrategyRepository now routes today-raffle-count reads through
+# IStrategyActivityAccountPort.queryTodayRaffleCount (LocalStrategyActivityAccountPort
+# delegates to IRaffleActivityAccountDayDao). The forbidden-DAO check below enforces
+# that the direct coupling does not regress.
 
 # AL-4 ActivityRepository->IUserCreditAccountDao — RESOLVED in Phase 7-A prep.
 # The violation has been removed; ActivityRepository now routes credit-account reads
@@ -187,15 +195,15 @@ echo "── 3. No new cross-boundary DAO coupling outside allowlist ──"
 # Ownership map (simplified):
 #   StrategyRepository    -> owns: IStrategyDao, IStrategyAwardDao, IStrategyRuleDao,
 #                                   IRuleTreeDao, IRuleTreeNodeDao, IRuleTreeNodeLineDao
-#                            allowed foreign: IRaffleActivityDao, IRaffleActivityAccountDao,
-#                                             IRaffleActivityAccountDayDao (AL-1,2,3)
+#                            allowed foreign: IRaffleActivityDao (AL-1)
+#                            resolved: IRaffleActivityAccountDao (AL-2), IRaffleActivityAccountDayDao (AL-3)
 #
 #   ActivityRepository    -> owns: IRaffleActivityDao, IRaffleActivityCountDao,
 #                                   IRaffleActivitySkuDao, IRaffleActivityStageDao,
 #                                   IRaffleActivityOrderDao, IUserRaffleOrderDao,
 #                                   IRaffleActivityAccountDao, IRaffleActivityAccountDayDao,
 #                                   IRaffleActivityAccountMonthDao, IRaffleQuotaDecrementLedgerDao
-#                            allowed foreign: IUserCreditAccountDao (AL-4)
+#                            resolved: IUserCreditAccountDao (AL-4)
 #
 #   AwardRepository       -> owns: IAwardDao, IUserAwardRecordDao
 #                            allowed foreign: IUserRaffleOrderDao (AL-5), IUserCreditAccountDao (AL-6)
@@ -231,10 +239,15 @@ check_no_forbidden_dao() {
 }
 
 # StrategyRepository must not import any DAO outside its own context or the
-# three explicitly allowlisted (AL-1,2,3). Forbidden: everything else.
+# one remaining allowlisted violation (AL-1: IRaffleActivityDao).
+# AL-2 (IRaffleActivityAccountDao) and AL-3 (IRaffleActivityAccountDayDao) were
+# resolved in Phase 7-A prep — now explicitly forbidden.
 check_no_forbidden_dao \
   "StrategyRepository forbidden DAOs" \
   "$INFRA_REPO/StrategyRepository.java" \
+  "IRaffleActivityAccountDao" \
+  "IRaffleActivityAccountDayDao" \
+  "IRaffleActivityAccountMonthDao" \
   "IUserCreditAccountDao" \
   "IUserCreditOrderDao" \
   "ICreditAwardTaskDao" \
@@ -527,8 +540,8 @@ echo "Checks failed: $FAIL"
 echo ""
 echo "Allowlisted violations (not new failures — must be fixed before Phase 7-A):"
 echo "  AL-1  StrategyRepository -> IRaffleActivityDao"
-echo "  AL-2  StrategyRepository -> IRaffleActivityAccountDao"
-echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao"
+echo "  AL-2  StrategyRepository -> IRaffleActivityAccountDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
+echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
 echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep]"
 echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao"
 echo "  AL-6  AwardRepository    -> IUserCreditAccountDao"

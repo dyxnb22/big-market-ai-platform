@@ -1,5 +1,6 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
+import com.dyx.market.domain.strategy.adapter.port.IStrategyActivityAccountPort;
 import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.StrategyEntity;
 import com.dyx.market.domain.strategy.model.entity.StrategyRuleEntity;
@@ -9,12 +10,12 @@ import com.dyx.market.domain.strategy.service.rule.chain.factory.DefaultChainFac
 import com.dyx.market.infrastructure.dao.*;
 import com.dyx.market.infrastructure.dao.po.*;
 import com.dyx.market.infrastructure.redis.IRedisService;
-import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.common.Constants;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -40,14 +41,11 @@ public class StrategyRepository implements IStrategyRepository {
     private IStrategyRuleDao strategyRuleDao;
     @Resource
     private IStrategyAwardDao strategyAwardDao;
+    @Lazy
     @Resource
-    private IRaffleActivityAccountDao raffleActivityAccountDao;
-    @Resource
-    private IRaffleActivityAccountDayDao raffleActivityAccountDayDao;
+    private IStrategyActivityAccountPort strategyActivityAccountPort;
     @Resource
     private IRedisService redisService;
-    @Resource
-    private IDBRouterStrategy dbRouter;
     @Resource
     private IRuleTreeDao ruleTreeDao;
     @Resource
@@ -344,22 +342,8 @@ public class StrategyRepository implements IStrategyRepository {
 
     @Override
     public Integer queryTodayUserRaffleCount(String userId, Long strategyId) {
-        // 活动配置表不分片，先在默认库查询活动 ID，再按用户切到分片账户表。
         Long activityId = raffleActivityDao.queryActivityIdByStrategyId(strategyId);
-        try {
-            dbRouter.doRouter(userId);
-            // 封装参数
-            RaffleActivityAccountDay raffleActivityAccountDayReq = new RaffleActivityAccountDay();
-            raffleActivityAccountDayReq.setUserId(userId);
-            raffleActivityAccountDayReq.setActivityId(activityId);
-            raffleActivityAccountDayReq.setDay(RaffleActivityAccountDay.currentDay());
-            RaffleActivityAccountDay raffleActivityAccountDay = raffleActivityAccountDayDao.queryActivityAccountDayByUserId(raffleActivityAccountDayReq);
-            if (null == raffleActivityAccountDay) return 0;
-            // 总次数 - 剩余的，等于今日参与的
-            return raffleActivityAccountDay.getDayCount() - raffleActivityAccountDay.getDayCountSurplus();
-        } finally {
-            dbRouter.clear();
-        }
+        return strategyActivityAccountPort.queryTodayRaffleCount(userId, activityId);
     }
 
     @Override
@@ -377,19 +361,8 @@ public class StrategyRepository implements IStrategyRepository {
 
     @Override
     public Integer queryActivityAccountTotalUseCount(String userId, Long strategyId) {
-        // 活动配置表不分片，先在默认库查询活动 ID，再按用户切到分片账户表。
         Long activityId = raffleActivityDao.queryActivityIdByStrategyId(strategyId);
-        try {
-            dbRouter.doRouter(userId);
-            RaffleActivityAccount raffleActivityAccount = raffleActivityAccountDao.queryActivityAccountByUserId(RaffleActivityAccount.builder()
-                    .userId(userId)
-                    .activityId(activityId)
-                    .build());
-            // 返回计算使用量
-            return raffleActivityAccount.getTotalCount() - raffleActivityAccount.getTotalCountSurplus();
-        } finally {
-            dbRouter.clear();
-        }
+        return strategyActivityAccountPort.queryTotalUseCount(userId, activityId);
     }
 
     @Override

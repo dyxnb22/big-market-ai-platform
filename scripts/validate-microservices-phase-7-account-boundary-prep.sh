@@ -1,18 +1,28 @@
 #!/usr/bin/env bash
 # validate-microservices-phase-7-account-boundary-prep.sh
 #
-# Phase 7-A prep validator: ActivityRepository credit-account boundary.
+# Phase 7-A prep validator: account boundary port isolation.
 #
-# Asserts that AL-4 (ActivityRepository -> IUserCreditAccountDao) has been
-# resolved by routing credit-account reads through IActivityAccountPort.
+# Asserts that:
+#   AL-4 (ActivityRepository -> IUserCreditAccountDao) has been resolved by
+#        routing credit-account reads through IActivityAccountPort.
+#   AL-2 (StrategyRepository -> IRaffleActivityAccountDao) has been resolved by
+#        routing total-use-count reads through IStrategyActivityAccountPort.
+#   AL-3 (StrategyRepository -> IRaffleActivityAccountDayDao) has been resolved by
+#        routing today-raffle-count reads through IStrategyActivityAccountPort.
 #
 # Hard constraints verified:
 #   1. ActivityRepository no longer imports IUserCreditAccountDao.
 #   2. IActivityAccountPort declares queryUserCreditAccountAmount.
 #   3. LocalActivityAccountPort implements queryUserCreditAccountAmount and
 #      delegates to IUserCreditAccountDao (local infra path, no remote call).
-#   4. No account remote-read/write flags are enabled.
-#   5. Phase 6-B package-ownership validator passes.
+#   4. StrategyRepository no longer imports IRaffleActivityAccountDao or
+#      IRaffleActivityAccountDayDao.
+#   5. IStrategyActivityAccountPort declares queryTodayRaffleCount and queryTotalUseCount.
+#   6. LocalStrategyActivityAccountPort implements both methods and delegates to
+#      IRaffleActivityAccountDayDao / IRaffleActivityAccountDao.
+#   7. No account remote-read/write flags are enabled.
+#   8. Phase 6-B package-ownership validator passes.
 
 set -uo pipefail
 
@@ -26,10 +36,11 @@ fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 INFRA_REPO="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository"
 INFRA_PORT="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port"
 DOMAIN_PORT="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/activity/adapter/port"
+DOMAIN_STRATEGY_PORT="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/strategy/adapter/port"
 
 echo ""
 echo "========================================================================"
-echo "  Phase 7-A Prep: Activity Credit-Account Boundary Validator"
+echo "  Phase 7-A Prep: Account Boundary Port Isolation Validator"
 echo "  Repo: $REPO_ROOT"
 echo "========================================================================"
 
@@ -114,9 +125,126 @@ else
   fi
 fi
 
-# ── 4. No account remote flags enabled ───────────────────────────────────────
+# ── 4. StrategyRepository must NOT import account quota DAOs (AL-2/AL-3) ──────
 echo ""
-echo "── 4. Account remote flags still disabled ──"
+echo "── 4. StrategyRepository direct account-quota DAO access removed ──"
+
+STRATEGY_REPO="$INFRA_REPO/StrategyRepository.java"
+if [[ ! -f "$STRATEGY_REPO" ]]; then
+  fail "StrategyRepository.java not found: $STRATEGY_REPO"
+else
+  if grep -q "IRaffleActivityAccountDao" "$STRATEGY_REPO" 2>/dev/null; then
+    fail "StrategyRepository still references IRaffleActivityAccountDao — AL-2 not resolved"
+  else
+    pass "StrategyRepository does not reference IRaffleActivityAccountDao"
+  fi
+
+  if grep -q "IRaffleActivityAccountDayDao" "$STRATEGY_REPO" 2>/dev/null; then
+    fail "StrategyRepository still references IRaffleActivityAccountDayDao — AL-3 not resolved"
+  else
+    pass "StrategyRepository does not reference IRaffleActivityAccountDayDao"
+  fi
+
+  if grep -q "raffleActivityAccountDao\b" "$STRATEGY_REPO" 2>/dev/null; then
+    fail "StrategyRepository still has raffleActivityAccountDao field — AL-2 not fully removed"
+  else
+    pass "StrategyRepository has no raffleActivityAccountDao field"
+  fi
+
+  if grep -q "raffleActivityAccountDayDao\b" "$STRATEGY_REPO" 2>/dev/null; then
+    fail "StrategyRepository still has raffleActivityAccountDayDao field — AL-3 not fully removed"
+  else
+    pass "StrategyRepository has no raffleActivityAccountDayDao field"
+  fi
+
+  if grep -q "IStrategyActivityAccountPort" "$STRATEGY_REPO" 2>/dev/null; then
+    pass "StrategyRepository injects IStrategyActivityAccountPort (port seam wired)"
+  else
+    fail "StrategyRepository does not inject IStrategyActivityAccountPort — port seam missing"
+  fi
+
+  if grep -q "strategyActivityAccountPort.queryTodayRaffleCount\|strategyActivityAccountPort\.queryTodayRaffleCount" "$STRATEGY_REPO" 2>/dev/null; then
+    pass "StrategyRepository.queryTodayUserRaffleCount delegates to strategyActivityAccountPort"
+  else
+    fail "StrategyRepository.queryTodayUserRaffleCount does not delegate to strategyActivityAccountPort"
+  fi
+
+  if grep -q "strategyActivityAccountPort.queryTotalUseCount\|strategyActivityAccountPort\.queryTotalUseCount" "$STRATEGY_REPO" 2>/dev/null; then
+    pass "StrategyRepository.queryActivityAccountTotalUseCount delegates to strategyActivityAccountPort"
+  else
+    fail "StrategyRepository.queryActivityAccountTotalUseCount does not delegate to strategyActivityAccountPort"
+  fi
+fi
+
+# ── 5. IStrategyActivityAccountPort declares both read methods ────────────────
+echo ""
+echo "── 5. IStrategyActivityAccountPort declares account-quota read methods ──"
+
+STRATEGY_PORT_IFACE="$DOMAIN_STRATEGY_PORT/IStrategyActivityAccountPort.java"
+if [[ ! -f "$STRATEGY_PORT_IFACE" ]]; then
+  fail "IStrategyActivityAccountPort.java not found: $STRATEGY_PORT_IFACE"
+else
+  if grep -q "queryTodayRaffleCount" "$STRATEGY_PORT_IFACE" 2>/dev/null; then
+    pass "IStrategyActivityAccountPort declares queryTodayRaffleCount"
+  else
+    fail "IStrategyActivityAccountPort does not declare queryTodayRaffleCount"
+  fi
+
+  if grep -q "queryTotalUseCount" "$STRATEGY_PORT_IFACE" 2>/dev/null; then
+    pass "IStrategyActivityAccountPort declares queryTotalUseCount"
+  else
+    fail "IStrategyActivityAccountPort does not declare queryTotalUseCount"
+  fi
+fi
+
+# ── 6. LocalStrategyActivityAccountPort delegates to account-quota DAOs ───────
+echo ""
+echo "── 6. LocalStrategyActivityAccountPort local implementation ──"
+
+LOCAL_STRATEGY_PORT="$INFRA_PORT/LocalStrategyActivityAccountPort.java"
+if [[ ! -f "$LOCAL_STRATEGY_PORT" ]]; then
+  fail "LocalStrategyActivityAccountPort.java not found: $LOCAL_STRATEGY_PORT"
+else
+  if grep -q "queryTodayRaffleCount" "$LOCAL_STRATEGY_PORT" 2>/dev/null; then
+    pass "LocalStrategyActivityAccountPort implements queryTodayRaffleCount"
+  else
+    fail "LocalStrategyActivityAccountPort does not implement queryTodayRaffleCount"
+  fi
+
+  if grep -q "queryTotalUseCount" "$LOCAL_STRATEGY_PORT" 2>/dev/null; then
+    pass "LocalStrategyActivityAccountPort implements queryTotalUseCount"
+  else
+    fail "LocalStrategyActivityAccountPort does not implement queryTotalUseCount"
+  fi
+
+  if grep -q "IRaffleActivityAccountDayDao" "$LOCAL_STRATEGY_PORT" 2>/dev/null; then
+    pass "LocalStrategyActivityAccountPort injects IRaffleActivityAccountDayDao (AL-3 delegation)"
+  else
+    fail "LocalStrategyActivityAccountPort does not inject IRaffleActivityAccountDayDao"
+  fi
+
+  if grep -q "IRaffleActivityAccountDao" "$LOCAL_STRATEGY_PORT" 2>/dev/null; then
+    pass "LocalStrategyActivityAccountPort injects IRaffleActivityAccountDao (AL-2 delegation)"
+  else
+    fail "LocalStrategyActivityAccountPort does not inject IRaffleActivityAccountDao"
+  fi
+
+  if grep -q "raffleActivityAccountDayDao.queryActivityAccountDayByUserId\|raffleActivityAccountDayDao\.queryActivityAccountDayByUserId" "$LOCAL_STRATEGY_PORT" 2>/dev/null; then
+    pass "LocalStrategyActivityAccountPort delegates to raffleActivityAccountDayDao"
+  else
+    fail "LocalStrategyActivityAccountPort does not call raffleActivityAccountDayDao.queryActivityAccountDayByUserId"
+  fi
+
+  if grep -q "raffleActivityAccountDao.queryActivityAccountByUserId\|raffleActivityAccountDao\.queryActivityAccountByUserId" "$LOCAL_STRATEGY_PORT" 2>/dev/null; then
+    pass "LocalStrategyActivityAccountPort delegates to raffleActivityAccountDao"
+  else
+    fail "LocalStrategyActivityAccountPort does not call raffleActivityAccountDao.queryActivityAccountByUserId"
+  fi
+fi
+
+# ── 7. No account remote flags enabled ───────────────────────────────────────
+echo ""
+echo "── 7. Account remote flags still disabled ──"
 
 REMOTE_FLAGS=(
   "account.remote-read.enabled"
@@ -149,9 +277,9 @@ for flag in "${REMOTE_FLAGS[@]}"; do
   fi
 done
 
-# ── 5. Phase 6-B validator passes ────────────────────────────────────────────
+# ── 8. Phase 6-B validator passes ────────────────────────────────────────────
 echo ""
-echo "── 5. Phase 6-B package-ownership validator ──"
+echo "── 8. Phase 6-B package-ownership validator ──"
 
 PHASE6B_SCRIPT="$REPO_ROOT/scripts/validate-microservices-phase-6-package-ownership-boundaries.sh"
 if [[ ! -f "$PHASE6B_SCRIPT" ]]; then
@@ -165,9 +293,9 @@ else
   fi
 fi
 
-# ── 6. DAO ownership doc updated for AL-4 ────────────────────────────────────
+# ── 9. DAO ownership doc updated for AL-2/AL-3/AL-4 ─────────────────────────
 echo ""
-echo "── 6. DAO ownership doc marks AL-4 resolved ──"
+echo "── 9. DAO ownership doc marks AL-2/AL-3/AL-4 resolved ──"
 
 DAO_DOC="$REPO_ROOT/docs/microservices-dao-ownership.md"
 if [[ ! -f "$DAO_DOC" ]]; then
@@ -177,6 +305,11 @@ else
     pass "docs/microservices-dao-ownership.md documents AL-4 resolution"
   else
     fail "docs/microservices-dao-ownership.md does not mention AL-4 resolution"
+  fi
+  if grep -q "IStrategyActivityAccountPort\|AL-2.*resolved\|AL-3.*resolved\|AL-2/AL-3" "$DAO_DOC" 2>/dev/null; then
+    pass "docs/microservices-dao-ownership.md documents AL-2/AL-3 resolution"
+  else
+    fail "docs/microservices-dao-ownership.md does not mention AL-2/AL-3 resolution"
   fi
 fi
 
@@ -192,7 +325,10 @@ echo ""
 if [[ "$FAIL" -eq 0 ]]; then
   echo "RESULT: ALL CHECKS PASSED — Phase 7-A account boundary prep complete"
   echo "        AL-4 (ActivityRepository -> IUserCreditAccountDao) is resolved."
-  echo "        Next recommended batch: AL-2/AL-3 StrategyRepository account DAO removal."
+  echo "        AL-2 (StrategyRepository -> IRaffleActivityAccountDao) is resolved."
+  echo "        AL-3 (StrategyRepository -> IRaffleActivityAccountDayDao) is resolved."
+  echo "        Next recommended batch: Phase 7-A AL-1 (StrategyRepository -> IRaffleActivityDao)"
+  echo "        or Phase 7-B (generic task table strategy decision)."
   exit 0
 else
   echo "RESULT: $FAIL CHECK(S) FAILED — review output above"
