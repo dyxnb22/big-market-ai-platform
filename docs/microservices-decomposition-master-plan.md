@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 4-A/B/C repo-ready (tag `phase-4-strategy-service-read-boundary`). Phase 3 complete. Phase 4-A/B/C complete. Phase 4-D (adapter wiring) and cutover remain future work.
+Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design is next.
 
 ---
 
@@ -163,9 +163,9 @@ later activity/draw split.
 | 4-A | Strategy boundary assessment doc | docs | **Done** — `docs/microservices-split-phase-4-strategy-service.md` |
 | 4-B | Strategy read-only API contract in `big-market-api` | API | **Done** — `IStrategyReadService` with `queryRaffleAwardList` + `queryRaffleStrategyRuleWeight` |
 | 4-C | `big-market-strategy-service` dark-launch module | module | **Done** — port 8089, Dubbo port 20884, `StrategyReadServiceRPC` provider; `strategy.service.remote-read.enabled=false` |
-| 4-D | Market-service read adapters (`IStrategyReadAdapter` + local + remote) | adapter | Pending — `strategy.service.remote-read.enabled=false` |
-| 4-E | Strategy scan / mapper / dependency narrowing validator | validator | Pending — restrict mapper XMLs to `strategy*`, `rule_tree*`, `strategy_rule*` |
-| 4-F | Strategy table ownership mapping (`strategy`, `strategy_award`, `strategy_rule`, `rule_tree*`) | docs | Pending — feeds Phase 7 |
+| 4-D | Market-service read adapters (`IStrategyReadAdapter` + local + remote) | adapter | **Done** — `strategy.service.remote-read.enabled=false`; tag `phase-4-strategy-read-adapter-boundary` |
+| 4-E | Strategy scan / mapper / dependency narrowing validator | validator | **Done** — `scripts/validate-microservices-phase-4-strategy-dependency-narrowing.sh` |
+| 4-F | Strategy table ownership mapping (`strategy`, `strategy_award`, `strategy_rule`, `rule_tree*`) | docs | **Done** — `docs/microservices-split-phase-4-strategy-table-ownership.md`; tag `phase-4-strategy-read-adapter-boundary` |
 
 **Non-goal in Phase 4:** moving the draw *decision* call. The draw decision
 writes participation orders and triggers award fulfillment; that flow stays
@@ -184,7 +184,7 @@ from Phase 4 are stable.
 
 | Sub-batch | Title | Type | Notes |
 |-----------|-------|------|-------|
-| 5-A | Map `RaffleApplicationService` orchestration | docs | Enumerate every call: quota decrement, strategy decision, award persist, MQ publish, task outbox |
+| 5-A | Map `RaffleApplicationService` orchestration | docs | **Done** — `docs/microservices-split-phase-5-activity-draw-orchestration.md`; validator `scripts/validate-microservices-phase-5-activity-draw-orchestration.sh`; tag `phase-5-activity-draw-orchestration-map` |
 | 5-B | Define draw-command boundary | docs | Decide: orchestration adapter inside market-service vs new `activity-service` application boundary |
 | 5-C | Isolate account-quota call behind `IActivityAccountPort` (already done — re-verify post Phase 4) | validator | Confirms B11–B14 still hold |
 | 5-D | Isolate strategy-decision call behind a `IStrategyDecisionAdapter` | adapter | flag false; local delegates to in-process service |
@@ -367,7 +367,7 @@ default flag, validation, risk, dependencies, completion criteria.
 
 ### 5.3 Phase 5 — Activity / Draw Orchestration
 
-**5-A** Orchestration map doc — `docs/microservices-split-phase-5-activity-orchestration.md`. Type: docs. Risk: Medium.
+**5-A** Orchestration map doc — `docs/microservices-split-phase-5-activity-draw-orchestration.md`. Type: docs. Risk: Medium. **Done** — draw call graph, domain dependencies, MQ/job touchpoints, candidate adapters, non-goals. Tag: `phase-5-activity-draw-orchestration-map`.
 
 **5-B** Draw-command boundary design doc. Type: docs. Risk: Medium.
 

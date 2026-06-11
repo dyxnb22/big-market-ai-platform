@@ -224,4 +224,4 @@ in staging**. Until that network path is validated, fallback returns 0 (parity n
 | 4-C | `big-market-strategy-service` dark-launch module | **Done** — port 8089, Dubbo port 20884 |
 | 4-D | `IStrategyReadAdapter` + local/remote impls + legacy gate + account participation port | **Done** — all defaults false/true; no traffic enabled |
 | 4-E | Strategy dependency narrowing validators | **Done** — `validate-microservices-phase-4-strategy-read-adapter.sh` + `validate-microservices-phase-4-strategy-dependency-narrowing.sh` |
-| 4-F | Strategy table ownership mapping doc | Pending (Phase 7 feeds) |
+| 4-F | Strategy table ownership mapping doc | **Done** — `docs/microservices-split-phase-4-strategy-table-ownership.md`; validator `scripts/validate-microservices-phase-4-strategy-table-ownership.sh` |
