@@ -20,4 +20,12 @@ public enum AwardStateVO {
     private final String code;
     private final String desc;
 
+    public static AwardStateVO getByCode(String code) {
+        if (code == null) return null;
+        for (AwardStateVO value : values()) {
+            if (value.code.equals(code)) return value;
+        }
+        return null;
+    }
+
 }
