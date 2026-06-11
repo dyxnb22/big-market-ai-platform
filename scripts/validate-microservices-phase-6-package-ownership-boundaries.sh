@@ -17,8 +17,11 @@
 # ALLOWLIST — current known cross-boundary violations
 # (must be removed before Phase 7-A table isolation proceeds)
 #
-#   [AL-1] StrategyRepository -> IRaffleActivityDao
-#          context: strategy reads activity table for ID resolution
+#   [AL-1] StrategyRepository -> IRaffleActivityDao  *** RESOLVED — Phase 7-A (AL-1) ***
+#          context: strategy reads activity table for activityId <-> strategyId mapping
+#          resolution: routed through IStrategyActivityMappingPort.queryActivityIdByStrategyId /
+#                      queryStrategyIdByActivityId; LocalStrategyActivityMappingPort delegates to
+#                      IRaffleActivityDao; StrategyRepository no longer imports IRaffleActivityDao directly.
 #   [AL-2] StrategyRepository -> IRaffleActivityAccountDao  *** RESOLVED — Phase 7-A prep (AL-2/AL-3) ***
 #          context: strategy reads quota for totalRaffleCount rule
 #          resolution: routed through IStrategyActivityAccountPort.queryTotalUseCount;
@@ -125,10 +128,11 @@ check_field_present() {
   fi
 }
 
-check_field_present \
-  "AL-1 StrategyRepository->IRaffleActivityDao" \
-  "$INFRA_REPO/StrategyRepository.java" \
-  "IRaffleActivityDao"
+# AL-1 StrategyRepository->IRaffleActivityDao — RESOLVED in Phase 7-A (AL-1).
+# StrategyRepository now routes activityId <-> strategyId reads through
+# IStrategyActivityMappingPort (LocalStrategyActivityMappingPort delegates to
+# IRaffleActivityDao). The forbidden-DAO check below enforces that the direct
+# coupling does not regress.
 
 # AL-2 StrategyRepository->IRaffleActivityAccountDao — RESOLVED in Phase 7-A prep (AL-2/AL-3).
 # StrategyRepository now routes total-use-count reads through
@@ -238,13 +242,14 @@ check_no_forbidden_dao() {
   fi
 }
 
-# StrategyRepository must not import any DAO outside its own context or the
-# one remaining allowlisted violation (AL-1: IRaffleActivityDao).
+# StrategyRepository must not import any DAO outside its own context.
+# AL-1 (IRaffleActivityDao) was resolved in Phase 7-A — now explicitly forbidden.
 # AL-2 (IRaffleActivityAccountDao) and AL-3 (IRaffleActivityAccountDayDao) were
-# resolved in Phase 7-A prep — now explicitly forbidden.
+# resolved in Phase 7-A prep — already forbidden.
 check_no_forbidden_dao \
   "StrategyRepository forbidden DAOs" \
   "$INFRA_REPO/StrategyRepository.java" \
+  "IRaffleActivityDao" \
   "IRaffleActivityAccountDao" \
   "IRaffleActivityAccountDayDao" \
   "IRaffleActivityAccountMonthDao" \
@@ -539,7 +544,7 @@ echo "Checks passed: $PASS"
 echo "Checks failed: $FAIL"
 echo ""
 echo "Allowlisted violations (not new failures — must be fixed before Phase 7-A):"
-echo "  AL-1  StrategyRepository -> IRaffleActivityDao"
+echo "  AL-1  StrategyRepository -> IRaffleActivityDao  [RESOLVED Phase 7-A AL-1]"
 echo "  AL-2  StrategyRepository -> IRaffleActivityAccountDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
 echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
 echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep]"

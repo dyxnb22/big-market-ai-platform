@@ -173,23 +173,15 @@ for flag in "${REMOTE_FLAGS[@]}"; do
   fi
 done
 
-# ── 6. No Java behavior changed for this docs-only batch ──────────────────────
+# ── 6. (retired) Docs-and-scripts-only batch constraint ──────────────────────
+# This check was a one-time constraint for the Phase 6-A commit. Phase 7+
+# batches legitimately change Java files (port introductions, repository
+# refactors), so the check is retired here to avoid false failures.
+# Java boundary safety is enforced by the forbidden-DAO checks in
+# validate-microservices-phase-6-package-ownership-boundaries.sh §3.
 echo ""
-echo "── 6. No Java file changes in this batch ──"
-# Check that no new .java files were added/modified relative to Phase 5-G tag
-JAVA_CHANGES=$(git -C "$REPO_ROOT" diff --name-only phase-5-activity-draw-saga-outbox-scaffold HEAD -- '*.java' 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$JAVA_CHANGES" -eq 0 ]]; then
-  pass "No Java files changed since Phase 5-G tag (docs-only batch confirmed)"
-else
-  # Allow if this is after the tag (e.g. commit not yet made)
-  JAVA_CHANGES_UNSTAGED=$(git -C "$REPO_ROOT" diff --name-only -- '*.java' 2>/dev/null | wc -l | tr -d ' ')
-  JAVA_CHANGES_STAGED=$(git -C "$REPO_ROOT" diff --cached --name-only -- '*.java' 2>/dev/null | wc -l | tr -d ' ')
-  if [[ "$JAVA_CHANGES_UNSTAGED" -eq 0 && "$JAVA_CHANGES_STAGED" -eq 0 ]]; then
-    pass "No Java files in working tree or index (docs-only batch confirmed)"
-  else
-    fail "Java files changed — this must be a docs-only batch ($JAVA_CHANGES_UNSTAGED unstaged, $JAVA_CHANGES_STAGED staged)"
-  fi
-fi
+echo "── 6. Java-change constraint (retired for Phase 7+) ──"
+pass "Java-change check retired — Phase 7+ batches legitimately change Java files"
 
 # ── 7. Cross-boundary access documented ───────────────────────────────────────
 echo ""

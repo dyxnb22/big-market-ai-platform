@@ -161,22 +161,26 @@ This section records every DAO call that crosses a bounded context boundary — 
 
 ### 4.1 StrategyRepository → Activity / Quota tables
 
-**AL-2 / AL-3 resolved — Phase 7-A prep (AL-2/AL-3), tag `phase-7-account-boundary-prep-strategy-account-port`.**
-`StrategyRepository` no longer imports `IRaffleActivityAccountDao` or `IRaffleActivityAccountDayDao` directly.
+**ALL RESOLVED — Phase 7-A (AL-1), tag `phase-7-strategy-activity-mapping-port`.**
+`StrategyRepository` no longer imports `IRaffleActivityDao`, `IRaffleActivityAccountDao`, or `IRaffleActivityAccountDayDao` directly.
+
+**AL-1 resolved** — `StrategyRepository` → `IRaffleActivityDao`: ID-mapping reads routed through `IStrategyActivityMappingPort`:
+- `queryStrategyIdByActivityId` → `IStrategyActivityMappingPort.queryStrategyIdByActivityId` → `LocalStrategyActivityMappingPort` → `IRaffleActivityDao`
+- `queryTodayUserRaffleCount` / `queryActivityAccountTotalUseCount` (activityId lookup) → `IStrategyActivityMappingPort.queryActivityIdByStrategyId` → `LocalStrategyActivityMappingPort` → `IRaffleActivityDao`
+
+**AL-2 / AL-3 resolved** — Phase 7-A prep (AL-2/AL-3), tag `phase-7-account-boundary-prep-strategy-account-port`.
 Both reads are now routed through `IStrategyActivityAccountPort`:
 - `queryActivityAccountTotalUseCount` → `IStrategyActivityAccountPort.queryTotalUseCount` → `LocalStrategyActivityAccountPort` → `IRaffleActivityAccountDao`
 - `queryTodayUserRaffleCount` → `IStrategyActivityAccountPort.queryTodayRaffleCount` → `LocalStrategyActivityAccountPort` → `IRaffleActivityAccountDayDao`
 
-**AL-1 remains** (`StrategyRepository` → `IRaffleActivityDao`): still a direct cross-boundary call for activity-ID/strategy-ID resolution. Remediation requires an activity-service read API and is deferred to Phase 7-A proper.
-
 | Cross-boundary call | From context | Foreign context | Foreign table(s) | Method | Status |
 |--------------------|--------------|-----------------|-----------------|--------|--------|
-| `StrategyRepository` → `IRaffleActivityDao.queryStrategyIdByActivityId` | strategy | activity | `raffle_activity` | `queryStrategyIdByActivityId(activityId)` | **AL-1 open** — deferred to Phase 7-A |
-| `StrategyRepository` → `IRaffleActivityDao.queryActivityIdByStrategyId` | strategy | activity | `raffle_activity` | `queryActivityIdByStrategyId(strategyId)` | **AL-1 open** — deferred to Phase 7-A |
+| `StrategyRepository` → `IRaffleActivityDao.queryStrategyIdByActivityId` | strategy | activity | `raffle_activity` | `queryStrategyIdByActivityId(activityId)` | **AL-1 resolved** — `IStrategyActivityMappingPort` |
+| `StrategyRepository` → `IRaffleActivityDao.queryActivityIdByStrategyId` | strategy | activity | `raffle_activity` | `queryActivityIdByStrategyId(strategyId)` | **AL-1 resolved** — `IStrategyActivityMappingPort` |
 | `StrategyRepository` → `IStrategyActivityAccountPort.queryTotalUseCount` → `IRaffleActivityAccountDao` | strategy | account/quota | `raffle_activity_account` | port-delegated | **AL-2 resolved** — `IStrategyActivityAccountPort` |
 | `StrategyRepository` → `IStrategyActivityAccountPort.queryTodayRaffleCount` → `IRaffleActivityAccountDayDao` | strategy | account/quota | `raffle_activity_account_day` | port-delegated | **AL-3 resolved** — `IStrategyActivityAccountPort` |
 
-Risk level: **HIGH** (AL-1 remains open) — `IRaffleActivityDao` cross-access still blocks full strategy-service isolation.
+Risk level: ~~HIGH~~ → **Resolved**. All StrategyRepository cross-boundary DAO couplings removed. `raffle_activity` table isolation no longer blocked by this coupling.
 
 ---
 
@@ -236,7 +240,7 @@ Risk level: **MEDIUM** — not a blocker for Phase 7-A; becomes a blocker for Ph
 
 | # | Violation | From | To | Tables | Must fix by | Risk |
 |---|-----------|------|-----|--------|-------------|------|
-| 1 | `StrategyRepository` reads activity + quota DAOs | strategy | activity + quota | `raffle_activity`, `raffle_activity_account`, `raffle_activity_account_day` | Before Phase 7-A strategy isolation | Critical |
+| 1 | `StrategyRepository` reads activity + quota DAOs | strategy | activity + quota | `raffle_activity`, `raffle_activity_account`, `raffle_activity_account_day` | ~~Before Phase 7-A~~ **RESOLVED Phase 7-A (AL-1/AL-2/AL-3)** | ~~Critical~~ Resolved |
 | 2 | `ActivityRepository` reads credit DAO | activity | credit | `user_credit_account` | ~~Before Phase 7-A~~ **RESOLVED Phase 7-A prep** | ~~High~~ Resolved |
 | 3 | `AwardRepository` reads activity DAO | fulfillment | activity | `user_raffle_order` | Before Phase 7-A fulfillment + activity isolation | High |
 | 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account` | Before Phase 8-B (outbox already gating this) | High |
@@ -290,7 +294,8 @@ Based on this inventory the lowest-risk next phases are:
 | **Phase 6-B**: package-ownership validator script | Done — tag `phase-6-package-ownership-boundaries` |
 | **Phase 7-A prep (AL-4)**: ActivityRepository credit-account boundary | Done — tag `phase-7-account-boundary-prep-activity-credit-port`; `ActivityRepository` no longer imports `IUserCreditAccountDao` |
 | **Phase 7-A prep (AL-2/AL-3)**: StrategyRepository account DAO removal | Done — tag `phase-7-account-boundary-prep-strategy-account-port`; `StrategyRepository` no longer imports `IRaffleActivityAccountDao` or `IRaffleActivityAccountDayDao`; reads route through `IStrategyActivityAccountPort` (`LocalStrategyActivityAccountPort`) |
-| **Phase 7-A**: account table ownership gate | B18 cutover; all activity/strategy cross-boundary couplings must be removed first |
+| **Phase 7-A (AL-1)**: StrategyRepository activity mapping boundary | Done — tag `phase-7-strategy-activity-mapping-port`; `StrategyRepository` no longer imports `IRaffleActivityDao`; reads route through `IStrategyActivityMappingPort` (`LocalStrategyActivityMappingPort`) |
+| **Phase 7-A**: account table ownership gate | B18 cutover; all StrategyRepository cross-boundary couplings now removed (AL-1/2/3 resolved); remaining blockers: AwardRepository cross-access (AL-5/6) |
 | **Phase 7-B**: generic `task` table strategy decision doc | Required before rebate or credit Phase 8 cutover windows |
 
 The highest-risk work requiring dedicated design is **§4.1** (StrategyRepository → activity/quota): it touches the raffle rule-evaluation hot path and requires either an API call in the draw critical path or a redesign where the orchestration layer injects the mapping. This is the primary blocker for strategy-service and account-service table isolation and should be scoped as a dedicated design doc before any code change.

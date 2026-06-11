@@ -1,6 +1,7 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.domain.strategy.adapter.port.IStrategyActivityAccountPort;
+import com.dyx.market.domain.strategy.adapter.port.IStrategyActivityMappingPort;
 import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.StrategyEntity;
 import com.dyx.market.domain.strategy.model.entity.StrategyRuleEntity;
@@ -34,7 +35,7 @@ import static com.dyx.market.types.enums.ResponseCode.UN_ASSEMBLED_STRATEGY_ARMO
 public class StrategyRepository implements IStrategyRepository {
 
     @Resource
-    private IRaffleActivityDao raffleActivityDao;
+    private IStrategyActivityMappingPort strategyActivityMappingPort;
     @Resource
     private IStrategyDao strategyDao;
     @Resource
@@ -337,12 +338,12 @@ public class StrategyRepository implements IStrategyRepository {
 
     @Override
     public Long queryStrategyIdByActivityId(Long activityId) {
-        return raffleActivityDao.queryStrategyIdByActivityId(activityId);
+        return strategyActivityMappingPort.queryStrategyIdByActivityId(activityId);
     }
 
     @Override
     public Integer queryTodayUserRaffleCount(String userId, Long strategyId) {
-        Long activityId = raffleActivityDao.queryActivityIdByStrategyId(strategyId);
+        Long activityId = strategyActivityMappingPort.queryActivityIdByStrategyId(strategyId);
         return strategyActivityAccountPort.queryTodayRaffleCount(userId, activityId);
     }
 
@@ -361,7 +362,7 @@ public class StrategyRepository implements IStrategyRepository {
 
     @Override
     public Integer queryActivityAccountTotalUseCount(String userId, Long strategyId) {
-        Long activityId = raffleActivityDao.queryActivityIdByStrategyId(strategyId);
+        Long activityId = strategyActivityMappingPort.queryActivityIdByStrategyId(strategyId);
         return strategyActivityAccountPort.queryTotalUseCount(userId, activityId);
     }
 
