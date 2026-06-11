@@ -7,26 +7,29 @@ Last revised: 2026-06-11.
 这份文档用于新会话继续跟踪微服务拆分后的下一阶段工作。
 
 当前仓库侧已经完成 Phase 7、Phase 8 的 repo-ready、外部证据接入、
-清理门禁，以及 **Batch 1: Phase 8 cutover evidence execution pack**。
+清理门禁、**Batch 1: Phase 8 cutover evidence execution pack**，以及
+staging evidence intake 的 repo-only 准备批次
+`phase-8-staging-evidence-intake-prep`。
 接下来不要直接做生产切流，也不要默认打开任何
 production/remote/outbox/cutover flag。下一会话建议从
-`phase-8-cutover-evidence-execution-pack` 标签继续，优先进入真实
-staging 外部证据录入；如果没有真实外部证据，则只能做 repo-only 的
+`phase-8-staging-evidence-intake-prep` 标签继续，优先进入真实
+staging 外部证据录入；如果仍然没有真实外部证据，则只能做 repo-only 的
 证据收集辅助文档或验证增强，不能把任何 staging/production gate 标为完成。
 
 后续路线按顺序分为：
 
 1. repo-only 切流证据执行包。已完成：`phase-8-cutover-evidence-execution-pack`。
-2. 真实 staging 切流证据录入。下一批。
-3. 真实 production 切流证据录入。
-4. 7 天稳定后关闭 legacy provider 的准备。
-5. 30 天稳定后清理废弃兼容路径。
-6. 最终微服务拆分收口与归档。
+2. staging 证据 intake 准备。已完成：`phase-8-staging-evidence-intake-prep`。
+3. 真实 staging 切流证据录入。下一批，必须依赖真实外部证据。
+4. 真实 production 切流证据录入。
+5. 7 天稳定后关闭 legacy provider 的准备。
+6. 30 天稳定后清理废弃兼容路径。
+7. 最终微服务拆分收口与归档。
 
 新会话可直接复制本文第 10 节的 prompt 作为起始任务。
 
 Purpose: this document is the handoff plan for the next tracking session. It
-starts after tag `phase-8-cutover-evidence-execution-pack` and covers the
+starts after tag `phase-8-staging-evidence-intake-prep` and covers the
 remaining work needed to move from repo-ready microservice decomposition to
 externally verified cutover and post-cutover cleanup.
 
@@ -37,6 +40,8 @@ Current status:
   complete.
 - Phase 8 cutover evidence execution pack is complete and tagged as
   `phase-8-cutover-evidence-execution-pack`.
+- Phase 8 staging evidence intake prep is complete and tagged as
+  `phase-8-staging-evidence-intake-prep`.
 - AL-1 through AL-11 direct repository DAO couplings are resolved.
 - `scripts/validate-microservices-split-all-gates.sh` is the aggregate
   repo-only gate and currently covers 21 gates.
@@ -63,7 +68,8 @@ production cutover must wait for staging GO evidence.
 | Order | Batch | Objective | Type | Expected tag |
 |-------|-------|-----------|------|--------------|
 | 1 | Phase 8 cutover evidence execution pack | Create concrete staging/prod evidence templates and GO/NO-GO validators | repo-only | `phase-8-cutover-evidence-execution-pack` DONE |
-| 2 | Phase 8 staging cutover evidence | Record real staging DBA/Ops/Engineering/Oncall evidence after external execution | external evidence | `phase-8-staging-cutover-evidence` NEXT |
+| 2A | Phase 8 staging evidence intake prep | Add repo-only collection checklist and intake validator when real staging evidence is absent | repo-only | `phase-8-staging-evidence-intake-prep` DONE |
+| 2B | Phase 8 staging cutover evidence | Record real staging DBA/Ops/Engineering/Oncall evidence after external execution | external evidence | `phase-8-staging-cutover-evidence` NEXT |
 | 3 | Phase 8 production cutover evidence | Record real production canary and rollout evidence after staging GO | external evidence | `phase-8-production-cutover-evidence` |
 | 4 | 7-day legacy provider disable readiness | After 7 stable days, prepare default-off legacy provider config and validators | repo + evidence | `phase-8-legacy-provider-disable-after-7d` |
 | 5 | 30-day obsolete path removal readiness | After 30 stable days, remove obsolete local fallbacks and compatibility mapper copies where safe | repo cleanup | `phase-8-obsolete-path-removal-after-30d` |
@@ -249,19 +255,21 @@ For Phase 8 evidence or cleanup batches, also run:
 ## 10. Suggested Prompt for the Next Session
 
 ```text
-Continue from tag `phase-8-cutover-evidence-execution-pack`.
+Continue from tag `phase-8-staging-evidence-intake-prep`.
 
 Use `docs/microservices-next-execution-roadmap.md` as the source of truth for
 the next work. Focus only on the microservices decomposition track.
 
 Goal: complete one coherent batch with maximum efficiency and token utility:
-Batch 2, "Phase 8 staging cutover evidence", but only if real staging evidence
-is available in the repository or provided in the current conversation.
+Batch 2B, "Phase 8 staging cutover evidence", but only if real staging evidence
+is available in the repository or provided in the current conversation. If real
+staging evidence is still absent, complete one safe repo-only guardrail batch
+that improves staging evidence readiness without claiming external completion.
 
 Hard constraints:
 - Do not apply DDL.
 - Do not run Docker/MySQL/MQ/remote commands.
-- Do not flip production, remote, outbox, or cutover flags.
+- Do not flip production, remote, outbox, legacy, or cutover flags.
 - Do not mark staging evidence complete unless every required external evidence
   reference is concrete and auditable.
 - Keep all production evidence EXTERNAL-GATED.
@@ -270,21 +278,28 @@ Hard constraints:
 
 Workflow:
 1. Read this roadmap, the Phase 8 runbook, the external evidence intake doc,
-   the staging evidence template, and the GO/NO-GO checklist.
+   the staging evidence template, the staging evidence intake checklist, and
+   the GO/NO-GO checklist.
 2. Check whether real staging evidence exists locally or was provided in the
    conversation.
 3. If real staging evidence exists, fill the staging evidence document, add or
    update a staging evidence completeness validator, link the result from the
    completion index, and keep production gated.
 4. If real staging evidence does not exist, do not fabricate evidence. Instead,
-   complete the largest safe repo-only preparation batch: add a staging evidence
-   collection bundle/checklist or validator hardening that makes the future
-   evidence intake easier, while preserving EXTERNAL-GATED status.
+   complete the largest safe repo-only guardrail batch. Prefer one of:
+   - staging evidence completeness validator scaffold that fails until real
+     evidence replaces EXTERNAL-GATED placeholders,
+   - cross-document consistency checks between the staging template, intake
+     checklist, GO/NO-GO checklist, completion index, and runbook,
+   - master-plan/runbook hardening that prevents staging or production cutover
+     claims without concrete evidence references.
+5. Preserve all EXTERNAL-GATED status when evidence is absent.
 
 Run:
 - validate-microservices-split-all-gates.sh
 - validate-microservices-master-plan.sh
 - validate-microservices-phase-8-cutover-evidence-pack.sh
+- validate-microservices-phase-8-staging-evidence-intake.sh
 - any new or changed validator
 - mvn clean package -DskipTests
 
@@ -293,6 +308,6 @@ Commit and tag if green. Suggested names if real staging evidence is completed:
 - tag: `phase-8-staging-cutover-evidence`
 
 Suggested names if only repo-only staging evidence preparation is possible:
-- commit: `docs: prepare phase 8 staging evidence intake`
-- tag: `phase-8-staging-evidence-intake-prep`
+- commit: `test: harden phase 8 staging evidence gates`
+- tag: `phase-8-staging-evidence-gates`
 ```
