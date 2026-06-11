@@ -27,6 +27,7 @@ GATES=(
   "scripts/validate-microservices-service-module-ownership.sh"
   "scripts/validate-microservices-production-flag-matrix.sh"
   "scripts/validate-microservices-phase-8-cutover-readiness.sh"
+  "scripts/validate-microservices-phase-8-cutover-evidence-pack.sh"
   "scripts/validate-microservices-phase-8-external-evidence-intake.sh"
   "scripts/validate-microservices-legacy-cleanup-readiness.sh"
   "scripts/validate-microservices-post-cutover-cleanup-gates.sh"

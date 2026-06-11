@@ -19,6 +19,7 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 | Phase 6 DAO and package ownership gates | Complete | `phase-6-dao-ownership-matrix`, `phase-6-package-ownership-boundaries` |
 | Phase 7 data/outbox boundary prep | Repo-complete | `phase-7-complete-phase-8-readiness` |
 | Phase 8 cutover readiness pack | Repo readiness complete; external cutover gated | `phase-8-cutover-readiness-pack`; `scripts/validate-microservices-phase-8-cutover-readiness.sh` |
+| Phase 8 cutover evidence execution pack | Repo-only evidence templates and GO/NO-GO checklist ready; external evidence still gated | `docs/evidence/phase-8-staging-cutover-evidence-template.md`, `docs/evidence/phase-8-production-cutover-evidence-template.md`, `docs/evidence/phase-8-go-no-go-checklist.md`, `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh` |
 | Phase 8 hardening gates | Repo-only regression gates | `scripts/validate-microservices-split-all-gates.sh` |
 | Phase 8 external evidence and cleanup gates | Repo-only intake/readiness scaffolds; all evidence missing and EXTERNAL-GATED | `scripts/validate-microservices-phase-8-external-evidence-intake.sh`, `scripts/validate-microservices-legacy-cleanup-readiness.sh`, `scripts/validate-microservices-post-cutover-cleanup-gates.sh` |
 
@@ -62,6 +63,10 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 - MQ and XXL-Job operational registration where a cutover enables a new job path.
 - Canary flag enablement, rollback rehearsal, and evidence capture.
 - DBA, Ops, Engineering, Oncall, and Product approval where user-visible draw behavior changes.
+- Staging and production evidence fields in
+  `docs/evidence/phase-8-staging-cutover-evidence-template.md`,
+  `docs/evidence/phase-8-production-cutover-evidence-template.md`, and
+  `docs/evidence/phase-8-go-no-go-checklist.md`.
 
 ## Next Executable Repo-Only Batches
 
@@ -77,12 +82,17 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 - DAO ownership matrix: `docs/microservices-dao-ownership.md`
 - Phase 8 runbook: `docs/microservices-phase-8-cutover-runbook.md`
 - Phase 8 external evidence intake: `docs/microservices-phase-8-external-evidence-intake.md`
+- Phase 8 staging evidence template: `docs/evidence/phase-8-staging-cutover-evidence-template.md`
+- Phase 8 production evidence template: `docs/evidence/phase-8-production-cutover-evidence-template.md`
+- Phase 8 GO/NO-GO checklist: `docs/evidence/phase-8-go-no-go-checklist.md`
 - Legacy cleanup inventory: `docs/microservices-legacy-cleanup-inventory.md`
 - Aggregate repo-only gate: `scripts/validate-microservices-split-all-gates.sh`
 - Service module ownership gate: `scripts/validate-microservices-service-module-ownership.sh`
 - Production flag matrix gate: `scripts/validate-microservices-production-flag-matrix.sh`
 - External evidence intake gate: `scripts/validate-microservices-phase-8-external-evidence-intake.sh`
+- Cutover evidence execution pack gate: `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`
 - Legacy cleanup readiness gate: `scripts/validate-microservices-legacy-cleanup-readiness.sh`
 - Post-cutover cleanup gate: `scripts/validate-microservices-post-cutover-cleanup-gates.sh`
 - Current readiness tag: `phase-7-complete-phase-8-readiness`
 - Previous readiness tag: `phase-8-cutover-readiness-pack`
+- Current evidence pack tag target: `phase-8-cutover-evidence-execution-pack`

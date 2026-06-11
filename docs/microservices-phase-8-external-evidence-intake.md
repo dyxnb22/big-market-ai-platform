@@ -18,6 +18,29 @@ legacy cleanup changes.
 - Validators consume this document only as a readiness index. Green validators
   mean placeholders and links are present, not that external cutover happened.
 
+## Cutover Evidence Pack Mapping
+
+The execution evidence templates are:
+
+- Staging template: `docs/evidence/phase-8-staging-cutover-evidence-template.md`.
+- Production template: `docs/evidence/phase-8-production-cutover-evidence-template.md`.
+- GO/NO-GO checklist: `docs/evidence/phase-8-go-no-go-checklist.md`.
+- Pack validator: `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`.
+
+Each external gate below must be satisfied by replacing the matching
+EXTERNAL-GATED field in a later evidence batch. These mappings do not mark any
+gate complete.
+
+| External gate group | Staging evidence fields | Production evidence fields | GO/NO-GO fields |
+|---------------------|-------------------------|----------------------------|-----------------|
+| DBA DDL and grants | STG-1.1, STG-1.2, STG-1.3, STG-1.4, STG-1.5, STG-1.6, STG-1.7 | PROD-1.1, PROD-1.2, PROD-1.3, PROD-1.4, PROD-1.5, PROD-1.6, PROD-1.7 | GNG-1, GNG-7, GNG-D4 |
+| Ops deploy, provider discovery, jobs, MQ, config | STG-2.1, STG-2.2, STG-2.3, STG-2.4, STG-2.5, STG-2.6, STG-2.7, STG-2.8 | PROD-2.1, PROD-2.2, PROD-2.3, PROD-2.4, PROD-2.5, PROD-2.6, PROD-2.7, PROD-2.8 | GNG-2, GNG-8, GNG-D5 |
+| Engineering flow validation, canary, rollback | STG-3.1, STG-3.2, STG-3.3, STG-3.4, STG-3.5, STG-3.6, STG-3.7 | PROD-3.1, PROD-3.2, PROD-3.3, PROD-3.4, PROD-3.5, PROD-3.6, PROD-3.7 | GNG-3, GNG-9, GNG-D6 |
+| Oncall metrics, logs, observations | STG-4.1, STG-4.2, STG-4.3, STG-4.4, STG-4.5 | PROD-4.1, PROD-4.2, PROD-4.3, PROD-4.4, PROD-4.5 | GNG-4, GNG-10, GNG-D7 |
+| Product approval or exemption | STG-5.1, STG-5.2, STG-5.3, STG-5.4, STG-5.5 | PROD-5.1, PROD-5.2, PROD-5.3, PROD-5.4, PROD-5.5 | GNG-5, GNG-11, GNG-D8 |
+| Staging final decision | STG-6.1, STG-6.2, STG-6.3, STG-6.4, STG-6.5, STG-6.6 | PROD-0.2 must link this before production evidence is accepted | GNG-6, GNG-D9 |
+| Production final decision and stability clock | EXTERNAL-GATED until production batch | PROD-6.1, PROD-6.2, PROD-6.3, PROD-6.4, PROD-6.5, PROD-6.6, PROD-6.7 | GNG-12, GNG-D9, GNG-D10 |
+
 ## DBA Gates
 
 | External gate | Required evidence | Owning team | Related service | Related proposed DDL | Related flags | Validator or runbook that consumes it | Cleanup eligibility unlocked |
