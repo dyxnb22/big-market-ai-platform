@@ -21,9 +21,8 @@ import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.trigger.adapter.IRebateOrderAdapter;
-import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
+import com.dyx.market.trigger.adapter.IRebateReadAdapter;
 import com.dyx.market.domain.rebate.model.valobj.BehaviorTypeVO;
-import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
 import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
 import com.dyx.market.domain.strategy.service.IRaffleStrategy;
@@ -81,11 +80,12 @@ public class RaffleActivityController implements IRaffleActivityService {
     private IStrategyArmory strategyArmory;
     @Resource
     private RaffleApplicationService raffleApplicationService;
-    @Resource
-    private IBehaviorRebateService behaviorRebateService;
     // Phase 3: routes calendarSignRebate createOrder; local adapter active by default (flag=false).
     @Resource
     private IRebateOrderAdapter rebateOrderAdapter;
+    // Phase 3-A/B: routes isCalendarSignRebate reads; local adapter active by default (flag=false).
+    @Resource
+    private IRebateReadAdapter rebateReadAdapter;
     @Resource
     private IAuthService authService;
     @Resource
@@ -384,13 +384,13 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(userId)) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            String outBusinessNo = LocalDate.now().format(DATE_FORMAT_DAY);
-            List<BehaviorRebateOrderEntity> behaviorRebateOrderEntities = behaviorRebateService.queryOrderByOutBusinessNo(userId, outBusinessNo);
-            log.info("查询用户是否完成日历签到返利完成 userId:{} orders.size:{}", userId, behaviorRebateOrderEntities.size());
+            // Phase 3-A/B: routed through IRebateReadAdapter (local by default, remote when flag=true).
+            boolean signed = rebateReadAdapter.isCalendarSignRebate(userId, LocalDate.now().format(DATE_FORMAT_DAY));
+            log.info("查询用户是否完成日历签到返利完成 userId:{} signed:{}", userId, signed);
             return Response.<Boolean>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(!behaviorRebateOrderEntities.isEmpty()) // 只要不为空，则表示已经做了签到
+                    .data(signed)
                     .build();
         } catch (Exception e) {
             log.error("查询用户是否完成日历签到返利失败 userId:{}", userId, e);

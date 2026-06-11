@@ -1,5 +1,6 @@
 package com.dyx.market.trigger.api;
 
+import com.dyx.market.trigger.api.dto.RebateOrderQueryRequestDTO;
 import com.dyx.market.trigger.api.dto.RebateRequestDTO;
 import com.dyx.market.trigger.api.request.Request;
 import com.dyx.market.trigger.api.response.Response;
@@ -12,5 +13,8 @@ import com.dyx.market.trigger.api.response.Response;
 public interface IRebateService {
 
     Response<Boolean> rebate(Request<RebateRequestDTO> request);
+
+    /** Phase 3-A/B: read RPC — returns true when a rebate order exists for the given userId + outBusinessNo. */
+    Response<Boolean> isCalendarSignRebate(Request<RebateOrderQueryRequestDTO> request);
 
 }

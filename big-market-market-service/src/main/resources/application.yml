@@ -200,6 +200,12 @@ rebate:
       enabled: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:false}
       # IRebateService requires appId/appToken. Token value is resolved from appTokenMap.
       app-id: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_APP_ID:chatgpt-data}
+    remote-read:
+      # Phase 3-A/B rebate read adapter boundary. Default false — local IBehaviorRebateService is used.
+      # Do not enable until: legacy trigger.rpc IRebateService provider in market-service is
+      # disabled (duplicate provider risk), and staging validation for big-market-rebate-service passes.
+      enabled: ${REBATE_SERVICE_REMOTE_READ_ENABLED:false}
+      app-id: ${REBATE_SERVICE_REMOTE_READ_APP_ID:chatgpt-data}
 
 management:
   endpoints:

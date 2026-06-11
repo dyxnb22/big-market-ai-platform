@@ -197,6 +197,7 @@ Run:
 bash scripts/validate-microservices-phase-3-next-extraction.sh
 bash scripts/validate-microservices-phase-3-rebate-adapter.sh
 bash scripts/validate-microservices-phase-3-rebate-provider-ownership.sh
+bash scripts/validate-microservices-phase-3-rebate-read-adapter.sh
 ```
 
 `validate-microservices-phase-3-next-extraction.sh` checks Maven wiring, expected files, forbidden dependencies, package scans, mapper presence, provider contract, dangerous flag defaults, generated evidence status, and this document.
@@ -204,3 +205,74 @@ bash scripts/validate-microservices-phase-3-rebate-provider-ownership.sh
 `validate-microservices-phase-3-rebate-adapter.sh` checks the adapter boundary: interface, local adapter, controller wiring, remote adapter, flag defaults, and cutover blocker documentation.
 
 `validate-microservices-phase-3-rebate-provider-ownership.sh` checks the legacy provider ownership gate: `@ConditionalOnProperty` presence, correct property name, `matchIfMissing=true`, config defaults, docker-compose env wiring, remote-create-order still false, and docs mention of duplicate provider risk and cutover order.
+
+`validate-microservices-phase-3-rebate-read-adapter.sh` checks the read adapter boundary: `IRebateReadAdapter`, `LocalRebateReadAdapter`, `RebateRemoteReadAdapter`, `IRebateService.isCalendarSignRebate`, `RebateOrderQueryRequestDTO`, both RPC provider implementations, controller wiring (adapter injected, direct domain call removed), flag defaults, and remaining blocker documentation.
+
+## 13. Code-Level Step Implemented (Batch 4: rebate read adapter boundary — Phase 3-A/B)
+
+### Motivation
+
+`RaffleActivityController.isCalendarSignRebate` still directly called `IBehaviorRebateService.queryOrderByOutBusinessNo`.
+This was the last direct rebate domain read dependency in the market-service HTTP layer. Removing it completes
+the rebate read/write adapter pattern and makes the controller independent of the rebate domain at the source level.
+
+### New adapter interface (`big-market-trigger`)
+
+`com.dyx.market.trigger.adapter.IRebateReadAdapter` — single method `isCalendarSignRebate(String userId, String outBusinessNo)`.
+
+### Local adapter (`big-market-trigger`)
+
+`com.dyx.market.trigger.adapter.LocalRebateReadAdapter`:
+- Annotated `@ConditionalOnMissingBean(IRebateReadAdapter.class)`.
+- Delegates to `IBehaviorRebateService.queryOrderByOutBusinessNo(...)` and returns `!list.isEmpty()`.
+- Active by default in all launchers that do not provide a remote adapter bean.
+- Preserves all existing business semantics exactly.
+
+### Read RPC contract extension (`big-market-api`)
+
+`IRebateService` extended with:
+```java
+Response<Boolean> isCalendarSignRebate(Request<RebateOrderQueryRequestDTO> request);
+```
+
+New DTO `RebateOrderQueryRequestDTO` (fields: `userId`, `outBusinessNo`; `Serializable`).
+
+### Both RPC providers updated
+
+- `big-market-trigger/trigger/rpc/RebateServiceRPC` (legacy, ownership-gated) — implements `isCalendarSignRebate`; validates null request, blank fields, appId/appToken; delegates to `IBehaviorRebateService.queryOrderByOutBusinessNo`; returns `SUCCESS+true` when order exists, `SUCCESS+false` when not.
+- `big-market-rebate-service/rebate/provider/RebateServiceRPC` (dark-launch) — same implementation.
+
+### Remote read adapter (`big-market-market-service`)
+
+`com.dyx.market.market.config.RebateRemoteReadAdapter`:
+- `@Component` — overrides `LocalRebateReadAdapter` in market-service (same pattern as `RebateRemoteCreateOrderAdapter`).
+- Guarded by `rebate.service.remote-read.enabled` (default `false`, env `REBATE_SERVICE_REMOTE_READ_ENABLED`).
+- Uses `rebate.service.remote-read.app-id` (default `chatgpt-data`) and resolves `appToken` from `appTokenMap`.
+- `@DubboReference(version="1.0", check=false)`.
+- flag=false: local `IBehaviorRebateService.queryOrderByOutBusinessNo` fallback.
+- flag=true + remote success: returns `Boolean` from `IRebateService.isCalendarSignRebate`.
+- remote failure: logs and falls back to local.
+
+### Controller wiring
+
+`RaffleActivityController.isCalendarSignRebate`:
+- Now injects `IRebateReadAdapter rebateReadAdapter`.
+- Calls `rebateReadAdapter.isCalendarSignRebate(userId, LocalDate.now().format(DATE_FORMAT_DAY))`.
+- Direct `IBehaviorRebateService.queryOrderByOutBusinessNo` call removed.
+- `IBehaviorRebateService` field and import removed from controller (no longer needed).
+- `calendarSignRebate` write path unchanged.
+- Response semantics preserved exactly.
+
+### Flag defaults
+
+`rebate.service.remote-read.enabled=false` set in:
+- `big-market-market-service/src/main/resources/application.yml`
+- `docker-compose.yml` (`REBATE_SERVICE_REMOTE_READ_ENABLED:-false`)
+
+### Remaining cutover blockers before enabling either remote rebate flag
+
+1. **Duplicate provider risk**: both `market-service` (legacy `trigger.rpc.RebateServiceRPC`) and `big-market-rebate-service` export `IRebateService` version 1.0. The legacy provider must be disabled (`REBATE_LEGACY_RPC_PROVIDER_ENABLED=false`) before enabling either remote flag.
+2. **Shared task outbox ownership**: rebate order creation writes to the generic `task` table also used by award and activity flows.
+3. **RebateMessageConsumer ownership**: MQ-driven rebate result processing remains in `message-job-service`.
+4. **Staging provider verification**: `big-market-rebate-service` must be deployed to staging and both `rebate(...)` and `isCalendarSignRebate(...)` RPCs verified before any remote flag is enabled.
+5. **Datasource/table ownership enforcement**: `user_behavior_rebate_order` and `daily_behavior_rebate` are not yet behind a separate datasource.
