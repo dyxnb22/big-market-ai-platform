@@ -147,15 +147,60 @@ This batch introduces an HTTP caller isolation boundary between `RaffleActivityC
 3. **No DB/schema ownership enforcement**: `user_behavior_rebate_order` and `daily_behavior_rebate` tables are not yet behind a separate datasource or access control.
 4. **RebateMessageConsumer unchanged**: MQ-driven rebate result processing remains in `message-job-service` and is not in scope for this batch.
 
-## 11. Validation
+## 11. Code-Level Step Implemented (Batch 3: legacy rebate RPC provider ownership gate)
+
+### Problem: duplicate IRebateService provider
+
+Both `market-service` (`trigger.rpc.RebateServiceRPC`) and `big-market-rebate-service`
+(`rebate.provider.RebateServiceRPC`) export `IRebateService` version 1.0 to Nacos.
+With two providers registered, Dubbo consumers can load-balance across both at random.
+Enabling `rebate.service.remote-create-order.enabled=true` while the legacy provider is
+still live would risk the remote adapter calling the legacy market-service provider instead
+of the new rebate-service, defeating the extraction.
+
+### Change: `@ConditionalOnProperty` on legacy `trigger.rpc.RebateServiceRPC`
+
+`big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RebateServiceRPC.java`:
+- Added `@ConditionalOnProperty(name = "rebate.legacy-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)`.
+- `matchIfMissing = true` preserves existing behavior: the legacy provider is active in all
+  launchers unless `rebate.legacy-rpc-provider.enabled` is explicitly set to `false`.
+
+### Explicit config defaults
+
+`big-market-market-service/src/main/resources/application.yml`:
+```yaml
+rebate:
+  legacy-rpc-provider:
+    enabled: ${REBATE_LEGACY_RPC_PROVIDER_ENABLED:true}
+```
+
+`docker-compose.yml` (`big-market-market-service` env):
+```
+REBATE_LEGACY_RPC_PROVIDER_ENABLED=${REBATE_LEGACY_RPC_PROVIDER_ENABLED:-true}
+```
+
+### Future cutover order (no traffic enabled in this batch)
+
+1. Deploy `big-market-rebate-service` to Nacos and verify it exports `IRebateService` version 1.0.
+2. Set `REBATE_LEGACY_RPC_PROVIDER_ENABLED=false` on `big-market-market-service` and redeploy.
+3. Verify only `big-market-rebate-service` is registered as the `IRebateService` version 1.0 provider in Nacos.
+4. Run staging smoke tests on `RaffleActivityController.calendarSignRebate` with the local adapter still active.
+5. Only then consider setting `REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED=true`.
+
+No traffic is enabled in this batch. The legacy provider default remains `true`.
+
+## 12. Validation
 
 Run:
 
 ```bash
 bash scripts/validate-microservices-phase-3-next-extraction.sh
 bash scripts/validate-microservices-phase-3-rebate-adapter.sh
+bash scripts/validate-microservices-phase-3-rebate-provider-ownership.sh
 ```
 
 `validate-microservices-phase-3-next-extraction.sh` checks Maven wiring, expected files, forbidden dependencies, package scans, mapper presence, provider contract, dangerous flag defaults, generated evidence status, and this document.
 
 `validate-microservices-phase-3-rebate-adapter.sh` checks the adapter boundary: interface, local adapter, controller wiring, remote adapter, flag defaults, and cutover blocker documentation.
+
+`validate-microservices-phase-3-rebate-provider-ownership.sh` checks the legacy provider ownership gate: `@ConditionalOnProperty` presence, correct property name, `matchIfMissing=true`, config defaults, docker-compose env wiring, remote-create-order still false, and docs mention of duplicate provider risk and cutover order.

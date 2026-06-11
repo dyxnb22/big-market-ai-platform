@@ -186,6 +186,11 @@ account:
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
 rebate:
+  legacy-rpc-provider:
+    # Phase 3 provider ownership gate. Default true preserves existing behavior.
+    # Set REBATE_LEGACY_RPC_PROVIDER_ENABLED=false on market-service only after
+    # big-market-rebate-service is deployed and verified as the sole IRebateService provider.
+    enabled: ${REBATE_LEGACY_RPC_PROVIDER_ENABLED:true}
   service:
     remote-create-order:
       # Phase 3 rebate adapter boundary. Default false — local IBehaviorRebateService is used.

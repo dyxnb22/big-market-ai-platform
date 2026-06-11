@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.Map;
  */
 @Slf4j
 @DubboService(version = "1.0")
+@ConditionalOnProperty(name = "rebate.legacy-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RebateServiceRPC implements IRebateService {
 
     @Resource
