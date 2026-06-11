@@ -23,9 +23,11 @@ legacy cleanup changes.
 The execution evidence templates are:
 
 - Staging template: `docs/evidence/phase-8-staging-cutover-evidence-template.md`.
+- Staging intake checklist: `docs/evidence/phase-8-staging-evidence-intake-checklist.md`.
 - Production template: `docs/evidence/phase-8-production-cutover-evidence-template.md`.
 - GO/NO-GO checklist: `docs/evidence/phase-8-go-no-go-checklist.md`.
 - Pack validator: `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`.
+- Staging intake validator: `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`.
 
 Each external gate below must be satisfied by replacing the matching
 EXTERNAL-GATED field in a later evidence batch. These mappings do not mark any
@@ -40,6 +42,9 @@ gate complete.
 | Product approval or exemption | STG-5.1, STG-5.2, STG-5.3, STG-5.4, STG-5.5 | PROD-5.1, PROD-5.2, PROD-5.3, PROD-5.4, PROD-5.5 | GNG-5, GNG-11, GNG-D8 |
 | Staging final decision | STG-6.1, STG-6.2, STG-6.3, STG-6.4, STG-6.5, STG-6.6 | PROD-0.2 must link this before production evidence is accepted | GNG-6, GNG-D9 |
 | Production final decision and stability clock | EXTERNAL-GATED until production batch | PROD-6.1, PROD-6.2, PROD-6.3, PROD-6.4, PROD-6.5, PROD-6.6, PROD-6.7 | GNG-12, GNG-D9, GNG-D10 |
+
+The staging intake checklist is the missing-evidence detector for the table
+above. It is expected to remain blocked while any STG field is EXTERNAL-GATED.
 
 ## DBA Gates
 

@@ -19,6 +19,8 @@ EXTERNAL-GATED.
   `docs/microservices-legacy-cleanup-inventory.md`.
 - Staging cutover evidence template:
   `docs/evidence/phase-8-staging-cutover-evidence-template.md`.
+- Staging evidence intake checklist:
+  `docs/evidence/phase-8-staging-evidence-intake-checklist.md`.
 - Production cutover evidence template:
   `docs/evidence/phase-8-production-cutover-evidence-template.md`.
 - GO/NO-GO checklist:
@@ -32,6 +34,8 @@ EXTERNAL-GATED.
 - Evidence template: `docs/evidence/phase-8-cutover-readiness-template.md`.
 - Cutover evidence pack validator:
   `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`.
+- Staging evidence intake validator:
+  `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`.
 
 ## Execution Order After Repo Readiness
 
@@ -39,8 +43,9 @@ EXTERNAL-GATED.
    evidence references in `docs/microservices-phase-8-external-evidence-intake.md`.
 2. Staging cutover evidence: fill
    `docs/evidence/phase-8-staging-cutover-evidence-template.md` and
-   `docs/evidence/phase-8-go-no-go-checklist.md` only after a real staging
-   window produces evidence.
+   `docs/evidence/phase-8-go-no-go-checklist.md` only after
+   `docs/evidence/phase-8-staging-evidence-intake-checklist.md` has concrete
+   DBA/Ops/Engineering/Oncall/Product references from a real staging window.
 3. Production cutover evidence: fill
    `docs/evidence/phase-8-production-cutover-evidence-template.md` only after
    staging GO evidence exists and before any production traffic claim is made.
