@@ -36,6 +36,8 @@ EXTERNAL-GATED.
   `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`.
 - Staging evidence intake validator:
   `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`.
+- Staging evidence consistency validator:
+  `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh`.
 
 ## Execution Order After Repo Readiness
 

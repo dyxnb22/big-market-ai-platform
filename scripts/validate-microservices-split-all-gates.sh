@@ -29,6 +29,7 @@ GATES=(
   "scripts/validate-microservices-phase-8-cutover-readiness.sh"
   "scripts/validate-microservices-phase-8-cutover-evidence-pack.sh"
   "scripts/validate-microservices-phase-8-staging-evidence-intake.sh"
+  "scripts/validate-microservices-phase-8-staging-evidence-consistency.sh"
   "scripts/validate-microservices-phase-8-external-evidence-intake.sh"
   "scripts/validate-microservices-legacy-cleanup-readiness.sh"
   "scripts/validate-microservices-post-cutover-cleanup-gates.sh"

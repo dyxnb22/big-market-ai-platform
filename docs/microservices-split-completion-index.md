@@ -20,7 +20,7 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 | Phase 7 data/outbox boundary prep | Repo-complete | `phase-7-complete-phase-8-readiness` |
 | Phase 8 cutover readiness pack | Repo readiness complete; external cutover gated | `phase-8-cutover-readiness-pack`; `scripts/validate-microservices-phase-8-cutover-readiness.sh` |
 | Phase 8 cutover evidence execution pack | Repo-only evidence templates and GO/NO-GO checklist ready; external evidence still gated | `docs/evidence/phase-8-staging-cutover-evidence-template.md`, `docs/evidence/phase-8-production-cutover-evidence-template.md`, `docs/evidence/phase-8-go-no-go-checklist.md`, `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh` |
-| Phase 8 staging evidence intake prep | Repo-only missing-evidence detector ready; staging remains EXTERNAL-GATED | `docs/evidence/phase-8-staging-evidence-intake-checklist.md`, `scripts/validate-microservices-phase-8-staging-evidence-intake.sh` |
+| Phase 8 staging evidence intake prep | Repo-only missing-evidence detector ready; staging remains EXTERNAL-GATED | `docs/evidence/phase-8-staging-evidence-intake-checklist.md`, `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`, `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh` |
 | Phase 8 hardening gates | Repo-only regression gates | `scripts/validate-microservices-split-all-gates.sh` |
 | Phase 8 external evidence and cleanup gates | Repo-only intake/readiness scaffolds; all evidence missing and EXTERNAL-GATED | `scripts/validate-microservices-phase-8-external-evidence-intake.sh`, `scripts/validate-microservices-legacy-cleanup-readiness.sh`, `scripts/validate-microservices-post-cutover-cleanup-gates.sh` |
 
@@ -97,6 +97,7 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 - External evidence intake gate: `scripts/validate-microservices-phase-8-external-evidence-intake.sh`
 - Cutover evidence execution pack gate: `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`
 - Staging evidence intake prep gate: `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`
+- Staging evidence consistency gate: `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh`
 - Legacy cleanup readiness gate: `scripts/validate-microservices-legacy-cleanup-readiness.sh`
 - Post-cutover cleanup gate: `scripts/validate-microservices-post-cutover-cleanup-gates.sh`
 - Current readiness tag: `phase-7-complete-phase-8-readiness`

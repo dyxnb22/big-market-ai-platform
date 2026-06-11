@@ -28,6 +28,7 @@ The execution evidence templates are:
 - GO/NO-GO checklist: `docs/evidence/phase-8-go-no-go-checklist.md`.
 - Pack validator: `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`.
 - Staging intake validator: `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`.
+- Staging consistency validator: `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh`.
 
 Each external gate below must be satisfied by replacing the matching
 EXTERNAL-GATED field in a later evidence batch. These mappings do not mark any
