@@ -20,6 +20,7 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 | Phase 7 data/outbox boundary prep | Repo-complete | `phase-7-complete-phase-8-readiness` |
 | Phase 8 cutover readiness pack | Repo readiness complete; external cutover gated | `phase-8-cutover-readiness-pack`; `scripts/validate-microservices-phase-8-cutover-readiness.sh` |
 | Phase 8 hardening gates | Repo-only regression gates | `scripts/validate-microservices-split-all-gates.sh` |
+| Phase 8 external evidence and cleanup gates | Repo-only intake/readiness scaffolds; all evidence missing and EXTERNAL-GATED | `scripts/validate-microservices-phase-8-external-evidence-intake.sh`, `scripts/validate-microservices-legacy-cleanup-readiness.sh`, `scripts/validate-microservices-post-cutover-cleanup-gates.sh` |
 
 ## AL-1 Through AL-11 Status
 
@@ -64,18 +65,24 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 
 ## Next Executable Repo-Only Batches
 
-1. Keep `scripts/validate-microservices-split-all-gates.sh` in CI as the single repo-only split gate.
-2. Extend `scripts/validate-microservices-service-module-ownership.sh` when a service module intentionally gains a runtime surface.
-3. Add a Phase 8 evidence consistency check only after external evidence files are produced.
-4. Prepare cleanup-only PRs after external 7-day and 30-day stability gates, without flipping defaults in advance.
+1. External evidence intake: keep `docs/microservices-phase-8-external-evidence-intake.md` current while every missing item remains `EXTERNAL-GATED`.
+2. Staging/prod cutover evidence: attach real DBA/Ops/Engineering/Oncall/Product references only after external windows run.
+3. 7-day stable legacy-provider disable: propose environment-level disables only after real cutover evidence and a clean 7-day oncall window.
+4. 30-day obsolete-path removal: propose repository cleanup only after the 30-day gate in `docs/microservices-legacy-cleanup-inventory.md`.
+5. Keep `scripts/validate-microservices-split-all-gates.sh` in CI as the single repo-only split gate.
 
 ## Cross-Links
 
 - Master plan: `docs/microservices-decomposition-master-plan.md`
 - DAO ownership matrix: `docs/microservices-dao-ownership.md`
 - Phase 8 runbook: `docs/microservices-phase-8-cutover-runbook.md`
+- Phase 8 external evidence intake: `docs/microservices-phase-8-external-evidence-intake.md`
+- Legacy cleanup inventory: `docs/microservices-legacy-cleanup-inventory.md`
 - Aggregate repo-only gate: `scripts/validate-microservices-split-all-gates.sh`
 - Service module ownership gate: `scripts/validate-microservices-service-module-ownership.sh`
 - Production flag matrix gate: `scripts/validate-microservices-production-flag-matrix.sh`
+- External evidence intake gate: `scripts/validate-microservices-phase-8-external-evidence-intake.sh`
+- Legacy cleanup readiness gate: `scripts/validate-microservices-legacy-cleanup-readiness.sh`
+- Post-cutover cleanup gate: `scripts/validate-microservices-post-cutover-cleanup-gates.sh`
 - Current readiness tag: `phase-7-complete-phase-8-readiness`
 - Previous readiness tag: `phase-8-cutover-readiness-pack`

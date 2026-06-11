@@ -13,6 +13,10 @@ EXTERNAL-GATED.
   `scripts/validate-microservices-production-flag-matrix.sh`, and
   `scripts/validate-microservices-split-all-gates.sh`.
 - Completion index: `docs/microservices-split-completion-index.md`.
+- External evidence intake index:
+  `docs/microservices-phase-8-external-evidence-intake.md`.
+- Legacy cleanup inventory:
+  `docs/microservices-legacy-cleanup-inventory.md`.
 - Proposed DDL files: `docs/sql/proposed-credit-award-task-outbox.sql`,
   `docs/sql/proposed-quota-decrement-ledger.sql`,
   `docs/sql/proposed-rebate-task-outbox.sql`,
@@ -20,6 +24,19 @@ EXTERNAL-GATED.
   `docs/sql/proposed-award-dispatch-task-outbox.sql`.
 - Required external approvals: DBA, Ops, Engineering, Oncall, Product where user-visible behavior changes.
 - Evidence template: `docs/evidence/phase-8-cutover-readiness-template.md`.
+
+## Execution Order After Repo Readiness
+
+1. External evidence intake: collect DBA, Ops, Engineering, Oncall, and Product
+   evidence references in `docs/microservices-phase-8-external-evidence-intake.md`.
+2. Staging/prod cutover evidence: attach real cutover results before any
+   environment enables remote, outbox, or production traffic flags.
+3. 7-day stable legacy-provider disable: only after real evidence and a clean
+   oncall window may an environment disable legacy providers.
+4. 30-day obsolete-path removal: only after the removal gate may a repo batch
+   delete compatibility code, shared mapper copies, or fallback adapters.
+
+All four steps are EXTERNAL-GATED. Repo-only validators do not satisfy them.
 
 ## account-service Write Cutover
 

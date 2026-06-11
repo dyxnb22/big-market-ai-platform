@@ -71,12 +71,14 @@ echo
 echo "== Section 4: current execution order present =="
 check "phase 3 through 7 repo-complete"  "Phase 3 through Phase 7 are repo-complete"
 check "phase 8 external-gated"           "Phase 8 repo readiness is complete"
-check "execution batch 1 aggregate gate" '^\| 1 \| Keep `scripts/validate-microservices-split-all-gates\.sh` green in CI'
-check "execution batch 2 service ownership" "^\| 2 \| Extend service ownership validators"
-check "execution batch 3 external evidence" "^\| 3 \| Prepare external evidence files"
-check "execution batch 4 legacy providers" "^\| 4 \| After external 7-day stability gates"
-check "execution batch 5 obsolete paths" "^\| 5 \| After external 30-day stability gates"
+check "execution batch 1 external evidence intake" '^\| 1 \| External evidence intake'
+check "execution batch 2 staging/prod evidence" '^\| 2 \| Staging/prod cutover evidence'
+check "execution batch 3 legacy providers" '^\| 3 \| 7-day stable legacy-provider disable'
+check "execution batch 4 obsolete paths" '^\| 4 \| 30-day obsolete-path removal'
+check "execution batch 5 aggregate gate" '^\| 5 \| Keep `scripts/validate-microservices-split-all-gates\.sh` green in CI'
 check "completion index linked"          "docs/microservices-split-completion-index\.md"
+check "external evidence intake linked"  "docs/microservices-phase-8-external-evidence-intake\.md"
+check "legacy cleanup inventory linked"  "docs/microservices-legacy-cleanup-inventory\.md"
 
 echo
 echo "== Section 5: non-goals enumerated =="
