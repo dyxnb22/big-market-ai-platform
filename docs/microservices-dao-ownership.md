@@ -37,7 +37,7 @@
 | fulfillment / award | fulfillment-service | 2 | 3 | Phase 7-A (B23-E) |
 | rebate | rebate-service | 2 | 2 | Phase 7-A (Phase 8-C) |
 | strategy | strategy-service | 6 | 6 | Phase 7-A (Phase 8-D) |
-| task / outbox | shared (decision Phase 7-B) | 1 | 1 | Phase 7-B |
+| task / outbox | per-domain outbox tables (Phase 7-B decision complete; runtime still shared) | 1 | 1 | Phase 7-B complete; Phase 7-C+ DDL proposals |
 | query / ES | activity-service or strategy-service | ES index | 1 | Phase 4/5 decision |
 | auth | auth-service | — | — | stable (stateless) |
 | admin / config | admin-service | — | — | stable |
@@ -131,11 +131,14 @@ Target service: `big-market-strategy-service` (not yet created; Phase 4-C scaffo
 
 ### 3.7 Task / Outbox Context
 
-Status: shared across multiple bounded contexts; ownership decision deferred to Phase 7-B.
+Status: shared across multiple bounded contexts at runtime. Phase 7-B decision
+complete: replace the generic `task` table with per-domain outbox/task tables,
+following the existing `credit_award_task` precedent. Runtime writes still use
+`ITaskDao` until proposed DDL, staging evidence, and traffic cutover batches land.
 
 | DAO interface | PO | Mapper XML (app) | Mapper XML (service) | Physical table | Current repository | Caller modules | Target service | Phase | Risk | Blockers |
 |---------------|----|-----------------|---------------------|----------------|-------------------|----------------|----------------|-------|------|----------|
-| `ITaskDao` | `Task` | `task_mapper.xml` | rebate-service, market-service, message-job-service | `task` | `TaskRepository`, `BehaviorRebateRepository`†, `CreditRepository`† | message-job-service (SendMessageTaskJob), rebate writes, credit writes | TBD: per-domain outbox tables (Phase 7-B decision) | 7-B | Medium | Phase 7-B decision doc; `credit_award_task` outbox already precedent; `task` sharded across DB1/DB2 |
+| `ITaskDao` | `Task` | `task_mapper.xml` | rebate-service, market-service, message-job-service | `task` | `TaskRepository`, `BehaviorRebateRepository`†, `CreditRepository`†, `AwardRepository`† | message-job-service (SendMessageTaskJob), rebate writes, credit writes, award dispatch writes | per-domain outbox tables: `rebate_task_outbox`, `credit_trade_task_outbox`, `award_dispatch_task_outbox` | 7-B decision complete; runtime unresolved | Medium | `docs/microservices-split-phase-7-task-outbox-ownership.md`; Phase 7-C+ proposed DDL; `task` sharded across DB1/DB2 |
 
 ---
 
@@ -223,16 +226,29 @@ Risk level: **HIGH** (flag currently guards it; becomes critical at Phase 8-A).
 
 ---
 
-### 4.5 BehaviorRebateRepository / CreditRepository → Shared task table (MEDIUM)
+### 4.5 BehaviorRebateRepository / CreditRepository / AwardRepository → Shared task table (MEDIUM)
 
 | Cross-boundary call | From context | Shared resource | Notes |
 |--------------------|--------------|----------------|-------|
 | `BehaviorRebateRepository` → `ITaskDao` | rebate | `task` (shared) | Outbox publish for rebate order events |
 | `CreditRepository` → `ITaskDao` | credit | `task` (shared) | Outbox publish for credit order events |
+| `AwardRepository` → `ITaskDao` | fulfillment | `task` (shared) | Outbox publish for award dispatch events |
 
-**Required remediation:** Phase 7-B decision doc will determine whether `task` is replaced per-domain (preferred) or kept shared. `credit_award_task` is already the precedent for per-domain outbox. No immediate blocker — mitigated by Phase 7-B scope.
+**Phase 7-B decision complete:** adopt per-domain outbox/task tables and keep
+the current `ITaskDao` paths allowlisted until runtime migration batches land.
+Chosen future tables:
 
-Risk level: **MEDIUM** — not a blocker for Phase 7-A; becomes a blocker for Phase 8-A/B/C if `task` rows mix domains on sharded DB.
+- `rebate_task_outbox_{000..003}` for AL-8 (`BehaviorRebateRepository`).
+- `credit_trade_task_outbox_{000..003}` for AL-9 (`CreditRepository`).
+- `award_dispatch_task_outbox_{000..003}` for AL-10 (`AwardRepository`).
+
+`credit_award_task_{000..003}` remains the precedent for account-owned credit
+award dispatch. See `docs/microservices-split-phase-7-task-outbox-ownership.md`.
+No runtime behavior changed in Phase 7-B.
+
+Risk level: **MEDIUM** — decision complete, runtime unresolved. Not a blocker
+for Phase 7-A docs/prep; still blocks Phase 8-A/B/C table isolation until each
+domain stops writing the shared `task` table.
 
 ---
 
@@ -245,7 +261,7 @@ Risk level: **MEDIUM** — not a blocker for Phase 7-A; becomes a blocker for Ph
 | 3 | `AwardRepository` reads activity DAO | fulfillment | activity | `user_raffle_order` | Before Phase 7-A fulfillment + activity isolation | High |
 | 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account` | Before Phase 8-B (outbox already gating this) | High |
 | 5 | `DispatchCreditAwardTaskJob` imports credit infra DAO | message-job | credit | `credit_award_task` | Before Phase 8-A (flag guards currently) | High |
-| 6 | `BehaviorRebateRepository` / `CreditRepository` share `task` table | rebate + credit | shared | `task` | Before Phase 8-A/B/C | Medium |
+| 6 | `BehaviorRebateRepository` / `CreditRepository` / `AwardRepository` share `task` table | rebate + credit + fulfillment | shared | `task` | Phase 7-B decision complete; runtime fix before Phase 8-A/B/C | Medium |
 
 ---
 
@@ -261,7 +277,8 @@ All mapper XMLs in `big-market-infrastructure` currently have copies in `big-mar
 | `award`, `user_award_record` | fulfillment-service | big-market-app, big-market-market-service, big-market-message-job-service |
 | `daily_behavior_rebate`, `user_behavior_rebate_order` | rebate-service | big-market-app, big-market-rebate-service, big-market-market-service, big-market-message-job-service |
 | `strategy*`, `rule_tree*` | strategy-service | big-market-app, big-market-strategy-service, big-market-market-service, big-market-message-job-service |
-| `task` | TBD per-domain outbox | big-market-app, big-market-rebate-service, big-market-market-service, big-market-message-job-service |
+| `task` | compatibility table until per-domain outboxes replace it | big-market-app, big-market-rebate-service, big-market-market-service, big-market-message-job-service |
+| `rebate_task_outbox`, `credit_trade_task_outbox`, `award_dispatch_task_outbox` | future per-domain task outboxes (Phase 7-B decision) | proposed-only; no mapper XMLs yet |
 
 Mapper XML copies in non-owning service modules should be removed after Phase 7-A table isolation and Phase 8 cutover, not before.
 
@@ -281,7 +298,10 @@ The following conditions must be true before Phase 7-A can isolate any table gro
 
 5. **DispatchCreditAwardTaskJob decoupled** (§4.4): message-job-service must not directly import credit infra DAO. Must be moved before Phase 8-A flag is set. Estimated effort: small; route via account-service Dubbo API.
 
-6. **Phase 7-B task outbox decision** (§4.5): `task` table ownership decision must be made and per-domain outbox tables proposed before Phase 7-A can proceed for rebate or credit.
+6. **Phase 7-B task outbox decision** (§4.5): Done —
+   `docs/microservices-split-phase-7-task-outbox-ownership.md` chooses
+   per-domain outbox/task tables. Runtime migration remains open until Phase
+   7-C+ proposed DDL and Phase 8 cutover gates.
 
 ---
 
@@ -296,7 +316,9 @@ Based on this inventory the lowest-risk next phases are:
 | **Phase 7-A prep (AL-2/AL-3)**: StrategyRepository account DAO removal | Done — tag `phase-7-account-boundary-prep-strategy-account-port`; `StrategyRepository` no longer imports `IRaffleActivityAccountDao` or `IRaffleActivityAccountDayDao`; reads route through `IStrategyActivityAccountPort` (`LocalStrategyActivityAccountPort`) |
 | **Phase 7-A (AL-1)**: StrategyRepository activity mapping boundary | Done — tag `phase-7-strategy-activity-mapping-port`; `StrategyRepository` no longer imports `IRaffleActivityDao`; reads route through `IStrategyActivityMappingPort` (`LocalStrategyActivityMappingPort`) |
 | **Phase 7-A**: account table ownership gate | B18 cutover; all StrategyRepository cross-boundary couplings now removed (AL-1/2/3 resolved); remaining blockers: AwardRepository cross-access (AL-5/6) |
-| **Phase 7-B**: generic `task` table strategy decision doc | Required before rebate or credit Phase 8 cutover windows |
+| **Phase 7-B**: generic `task` table strategy decision doc | Done — tag `phase-7-task-outbox-ownership`; AL-8/AL-9/AL-10 decision complete but runtime still allowlisted |
+| **Phase 7-C**: proposed DDL for per-domain task outbox tables | Next data-ownership docs batch if prioritizing rebate/account/fulfillment outbox isolation |
+| **Phase 7-A prep (AL-5)**: AwardRepository raffle-order boundary | Next code-boundary batch if prioritizing live cross-boundary DAO removal |
 
 The highest-risk work requiring dedicated design is **§4.1** (StrategyRepository → activity/quota): it touches the raffle rule-evaluation hot path and requires either an API call in the draw critical path or a redesign where the orchestration layer injects the mapping. This is the primary blocker for strategy-service and account-service table isolation and should be scoped as a dedicated design doc before any code change.
 

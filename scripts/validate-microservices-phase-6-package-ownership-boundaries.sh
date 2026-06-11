@@ -45,10 +45,16 @@
 #          context: message-job-service reads credit_award_task directly (flag false)
 #   [AL-8] BehaviorRebateRepository -> ITaskDao  (shared task outbox)
 #          context: rebate writes to shared task outbox table
+#          Phase 7-B decision complete: future owner is rebate_task_outbox.
+#          Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
 #   [AL-9]  CreditRepository -> ITaskDao  (shared task outbox)
 #           context: credit writes to shared task outbox table
+#           Phase 7-B decision complete: future owner is credit_trade_task_outbox.
+#           Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
 #   [AL-10] AwardRepository -> ITaskDao  (shared task outbox)
 #           context: fulfillment writes to shared task outbox (e.g. send_award outbox)
+#           Phase 7-B decision complete: future owner is award_dispatch_task_outbox.
+#           Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
 #   [AL-11] AwardRepository -> ICreditAwardTaskDao
 #           context: fulfillment writes credit_award_task outbox row in saveGiveOutPrizesAggregate
 #
@@ -213,10 +219,10 @@ echo "── 3. No new cross-boundary DAO coupling outside allowlist ──"
 #                            allowed foreign: IUserRaffleOrderDao (AL-5), IUserCreditAccountDao (AL-6)
 #
 #   BehaviorRebateRepository -> owns: IDailyBehaviorRebateDao, IUserBehaviorRebateOrderDao
-#                            allowed foreign: ITaskDao (AL-8)
+#                            allowed foreign: ITaskDao (AL-8; Phase 7-B decision complete, runtime unresolved)
 #
 #   CreditRepository      -> owns: IUserCreditAccountDao, IUserCreditOrderDao, ICreditAwardTaskDao
-#                            allowed foreign: ITaskDao (AL-9)
+#                            allowed foreign: ITaskDao (AL-9; Phase 7-B decision complete, runtime unresolved)
 #
 #   TaskRepository        -> owns: ITaskDao
 #
@@ -285,7 +291,8 @@ check_no_forbidden_dao \
 
 # AwardRepository must not import DAOs outside its context or AL-5,6,10,11.
 # Allowed foreign: IUserRaffleOrderDao (AL-5), IUserCreditAccountDao (AL-6),
-#                  ITaskDao (AL-10), ICreditAwardTaskDao (AL-11)
+#                  ITaskDao (AL-10; Phase 7-B decision complete, runtime unresolved),
+#                  ICreditAwardTaskDao (AL-11)
 check_no_forbidden_dao \
   "AwardRepository forbidden DAOs" \
   "$INFRA_REPO/AwardRepository.java" \
@@ -551,9 +558,9 @@ echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A p
 echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao"
 echo "  AL-6  AwardRepository    -> IUserCreditAccountDao"
 echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  (flag false)"
-echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  (shared outbox)"
-echo "  AL-9  CreditRepository          -> ITaskDao  (shared outbox)"
-echo "  AL-10 AwardRepository           -> ITaskDao  (shared outbox)"
+echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
+echo "  AL-9  CreditRepository          -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
+echo "  AL-10 AwardRepository           -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
 echo "  AL-11 AwardRepository           -> ICreditAwardTaskDao  (credit outbox write)"
 echo ""
 
