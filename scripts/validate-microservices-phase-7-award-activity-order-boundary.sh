@@ -136,23 +136,22 @@ else
   fi
 fi
 
-# ── 5. AL-6 and AL-11 remain unchanged ───────────────────────────────────────
+# ── 5. Award credit couplings now route through port ─────────────────────────
 echo ""
-echo "── 5. Remaining award credit couplings unchanged ──"
+echo "── 5. Award credit couplings route through port ──"
 
 if [[ -f "$AWARD_REPO" ]]; then
-  if grep -q "IUserCreditAccountDao" "$AWARD_REPO" 2>/dev/null \
-    && grep -q "userCreditAccountDao" "$AWARD_REPO" 2>/dev/null; then
-    pass "AL-6 remains present: AwardRepository -> IUserCreditAccountDao"
+  if grep -q "IAwardCreditWritePort" "$AWARD_REPO" 2>/dev/null \
+    && grep -q "awardCreditWritePort.updateOrCreateCreditAccount" "$AWARD_REPO" 2>/dev/null; then
+    pass "AL-6 resolved: AwardRepository routes credit-account write through IAwardCreditWritePort"
   else
-    fail "AL-6 changed unexpectedly — IUserCreditAccountDao path not found"
+    fail "AL-6 port boundary not found in AwardRepository"
   fi
 
-  if grep -q "ICreditAwardTaskDao" "$AWARD_REPO" 2>/dev/null \
-    && grep -q "creditAwardTaskDao" "$AWARD_REPO" 2>/dev/null; then
-    pass "AL-11 remains present: AwardRepository -> ICreditAwardTaskDao"
+  if grep -q "awardCreditWritePort.insertCreditAwardTask" "$AWARD_REPO" 2>/dev/null; then
+    pass "AL-11 resolved: AwardRepository routes credit_award_task insert through IAwardCreditWritePort"
   else
-    fail "AL-11 changed unexpectedly — ICreditAwardTaskDao path not found"
+    fail "AL-11 port boundary not found in AwardRepository"
   fi
 fi
 
@@ -232,7 +231,7 @@ if [[ "$FAIL" -eq 0 ]]; then
   echo "RESULT: ALL CHECKS PASSED — Phase 7-A AL-5 award activity-order boundary complete"
   echo "        AL-5 (AwardRepository -> IUserRaffleOrderDao) is RESOLVED."
   echo "        AwardRepository now routes user_raffle_order state transitions through IAwardActivityOrderPort."
-  echo "        AL-6 and AL-11 remain unchanged."
+  echo "        AL-6 and AL-11 route through IAwardCreditWritePort."
   exit 0
 else
   echo "RESULT: $FAIL CHECK(S) FAILED — review output above"

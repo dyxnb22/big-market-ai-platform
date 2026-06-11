@@ -42,8 +42,11 @@
 #          resolution: routed through IAwardActivityOrderPort.markUserRaffleOrderUsed;
 #                      LocalAwardActivityOrderPort delegates to IUserRaffleOrderDao;
 #                      AwardRepository no longer imports IUserRaffleOrderDao directly.
-#   [AL-6] AwardRepository -> IUserCreditAccountDao
+#   [AL-6] AwardRepository -> IUserCreditAccountDao  *** RESOLVED — Phase 7-A prep (AL-6/AL-11) ***
 #          context: fulfillment local-tx credit write (flag-gated outbox path)
+#          resolution: routed through IAwardCreditWritePort.updateOrCreateCreditAccount;
+#                      LocalAwardCreditWritePort delegates to IUserCreditAccountDao;
+#                      AwardRepository no longer imports IUserCreditAccountDao directly.
 #   [AL-7] DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  *** RESOLVED — Phase 7-A prep (AL-7) ***
 #          context: message-job-service reads credit_award_task directly (flag false)
 #          resolution: routed through ICreditAwardTaskDispatchPort.queryPendingTasks /
@@ -62,8 +65,11 @@
 #           context: fulfillment writes to shared task outbox (e.g. send_award outbox)
 #           Phase 7-B decision complete: future owner is award_dispatch_task_outbox.
 #           Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
-#   [AL-11] AwardRepository -> ICreditAwardTaskDao
+#   [AL-11] AwardRepository -> ICreditAwardTaskDao  *** RESOLVED — Phase 7-A prep (AL-6/AL-11) ***
 #           context: fulfillment writes credit_award_task outbox row in saveGiveOutPrizesAggregate
+#           resolution: routed through IAwardCreditWritePort.insertCreditAwardTask;
+#                       LocalAwardCreditWritePort delegates to ICreditAwardTaskDao;
+#                       AwardRepository no longer imports ICreditAwardTaskDao directly.
 #
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -112,12 +118,12 @@ check_violation_in_doc "AL-2 StrategyRepository->IRaffleActivityAccountDao" "Str
 check_violation_in_doc "AL-3 StrategyRepository->IRaffleActivityAccountDayDao" "StrategyRepository"     "IRaffleActivityAccountDayDao"
 check_violation_in_doc "AL-4 ActivityRepository->IUserCreditAccountDao (resolved Phase 7-A prep)" "ActivityRepository" "IUserCreditAccountDao"
 check_violation_in_doc "AL-5 AwardRepository->IUserRaffleOrderDao (resolved Phase 7-A prep)" "AwardRepository" "IUserRaffleOrderDao"
-check_violation_in_doc "AL-6 AwardRepository->IUserCreditAccountDao"        "AwardRepository"           "IUserCreditAccountDao"
+check_violation_in_doc "AL-6 AwardRepository->IUserCreditAccountDao (resolved Phase 7-A prep)" "AwardRepository" "IUserCreditAccountDao"
 check_violation_in_doc "AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao (resolved Phase 7-A prep)" "DispatchCreditAwardTaskJob" "ICreditAwardTaskDao"
 check_violation_in_doc "AL-8 BehaviorRebateRepository->ITaskDao"            "BehaviorRebateRepository"  "ITaskDao"
 check_violation_in_doc "AL-9 CreditRepository->ITaskDao"                    "CreditRepository"          "ITaskDao"
 check_violation_in_doc "AL-10 AwardRepository->ITaskDao"                    "AwardRepository"           "ITaskDao"
-check_violation_in_doc "AL-11 AwardRepository->ICreditAwardTaskDao"         "AwardRepository"           "ICreditAwardTaskDao"
+check_violation_in_doc "AL-11 AwardRepository->ICreditAwardTaskDao (resolved Phase 7-A prep)" "AwardRepository" "ICreditAwardTaskDao"
 
 # ── 2. Allowlisted violations still present (not silently removed) ────────────
 echo ""
@@ -171,10 +177,11 @@ check_field_present() {
 # delegates to IUserRaffleOrderDao). The forbidden-DAO check below enforces that
 # the direct coupling does not regress.
 
-check_field_present \
-  "AL-6 AwardRepository->IUserCreditAccountDao" \
-  "$INFRA_REPO/AwardRepository.java" \
-  "IUserCreditAccountDao"
+# AL-6 AwardRepository->IUserCreditAccountDao — RESOLVED in Phase 7-A prep (AL-6/AL-11).
+# AwardRepository now routes direct credit-account writes through
+# IAwardCreditWritePort.updateOrCreateCreditAccount (LocalAwardCreditWritePort
+# delegates to IUserCreditAccountDao). The forbidden-DAO check below enforces
+# that the direct coupling does not regress.
 
 DISPATCH_JOB=$(find "$REPO_ROOT/big-market-message-job-service/src" \
   -name "DispatchCreditAwardTaskJob.java" ! -path "*/target/*" 2>/dev/null | head -1)
@@ -199,10 +206,11 @@ check_field_present \
   "$INFRA_REPO/AwardRepository.java" \
   "ITaskDao"
 
-check_field_present \
-  "AL-11 AwardRepository->ICreditAwardTaskDao" \
-  "$INFRA_REPO/AwardRepository.java" \
-  "ICreditAwardTaskDao"
+# AL-11 AwardRepository->ICreditAwardTaskDao — RESOLVED in Phase 7-A prep (AL-6/AL-11).
+# AwardRepository now routes credit_award_task inserts through
+# IAwardCreditWritePort.insertCreditAwardTask (LocalAwardCreditWritePort
+# delegates to ICreditAwardTaskDao). The forbidden-DAO check below enforces
+# that the direct coupling does not regress.
 
 # ── 3. No NEW cross-boundary DAO usage outside the allowlist ──────────────────
 echo ""
@@ -226,7 +234,8 @@ echo "── 3. No new cross-boundary DAO coupling outside allowlist ──"
 #
 #   AwardRepository       -> owns: IAwardDao, IUserAwardRecordDao
 #                            resolved: IUserRaffleOrderDao (AL-5)
-#                            allowed foreign: IUserCreditAccountDao (AL-6)
+#                            resolved: IUserCreditAccountDao (AL-6),
+#                                      ICreditAwardTaskDao (AL-11)
 #
 #   BehaviorRebateRepository -> owns: IDailyBehaviorRebateDao, IUserBehaviorRebateOrderDao
 #                            allowed foreign: ITaskDao (AL-8; Phase 7-B decision complete, runtime unresolved)
@@ -299,11 +308,11 @@ check_no_forbidden_dao \
   "IUserBehaviorRebateOrderDao" \
   "ITaskDao"
 
-# AwardRepository must not import DAOs outside its context or AL-6,10,11.
+# AwardRepository must not import DAOs outside its context or AL-10.
 # AL-5 (IUserRaffleOrderDao) was resolved in Phase 7-A prep — now explicitly forbidden.
-# Allowed foreign: IUserCreditAccountDao (AL-6),
-#                  ITaskDao (AL-10; Phase 7-B decision complete, runtime unresolved),
-#                  ICreditAwardTaskDao (AL-11)
+# AL-6 (IUserCreditAccountDao) and AL-11 (ICreditAwardTaskDao) were resolved in
+# Phase 7-A prep — now explicitly forbidden.
+# Allowed foreign: ITaskDao (AL-10; Phase 7-B decision complete, runtime unresolved)
 check_no_forbidden_dao \
   "AwardRepository forbidden DAOs" \
   "$INFRA_REPO/AwardRepository.java" \
@@ -323,7 +332,9 @@ check_no_forbidden_dao \
   "IRaffleActivityAccountDayDao" \
   "IRaffleActivityAccountMonthDao" \
   "IRaffleQuotaDecrementLedgerDao" \
+  "IUserCreditAccountDao" \
   "IUserCreditOrderDao" \
+  "ICreditAwardTaskDao" \
   "IDailyBehaviorRebateDao" \
   "IUserBehaviorRebateOrderDao"
 
@@ -585,12 +596,12 @@ echo "  AL-2  StrategyRepository -> IRaffleActivityAccountDao  [RESOLVED Phase 7
 echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
 echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep]"
 echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao  [RESOLVED Phase 7-A prep AL-5]"
-echo "  AL-6  AwardRepository    -> IUserCreditAccountDao"
+echo "  AL-6  AwardRepository    -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep AL-6/AL-11]"
 echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  [RESOLVED Phase 7-A prep AL-7]"
 echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
 echo "  AL-9  CreditRepository          -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
 echo "  AL-10 AwardRepository           -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
-echo "  AL-11 AwardRepository           -> ICreditAwardTaskDao  (credit outbox write)"
+echo "  AL-11 AwardRepository           -> ICreditAwardTaskDao  [RESOLVED Phase 7-A prep AL-6/AL-11]"
 echo ""
 
 if [[ "$FAIL" -eq 0 ]]; then

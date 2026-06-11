@@ -1,23 +1,19 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.domain.award.adapter.port.IAwardActivityOrderPort;
+import com.dyx.market.domain.award.adapter.port.IAwardCreditWritePort;
 import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.domain.award.model.aggregate.GiveOutPrizesAggregate;
 import com.dyx.market.domain.award.model.aggregate.UserAwardRecordAggregate;
 import com.dyx.market.domain.award.model.entity.TaskEntity;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.entity.UserCreditAwardEntity;
-import com.dyx.market.domain.award.model.valobj.AccountStatusVO;
 import com.dyx.market.infrastructure.dao.IAwardDao;
-import com.dyx.market.infrastructure.dao.ICreditAwardTaskDao;
 import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.infrastructure.dao.IUserAwardRecordDao;
-import com.dyx.market.infrastructure.dao.IUserCreditAccountDao;
 import com.dyx.market.infrastructure.event.EventPublisher;
-import com.dyx.market.infrastructure.dao.po.CreditAwardTask;
 import com.dyx.market.infrastructure.dao.po.Task;
 import com.dyx.market.infrastructure.dao.po.UserAwardRecord;
-import com.dyx.market.infrastructure.dao.po.UserCreditAccount;
 import com.dyx.market.infrastructure.redis.IRedisService;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.common.Constants;
@@ -52,12 +48,7 @@ public class AwardRepository implements IAwardRepository {
     @Resource
     private IAwardActivityOrderPort awardActivityOrderPort;
     @Resource
-    private IUserCreditAccountDao userCreditAccountDao;
-    // Phase 2.2-B6: outbox DAO — only accessed when account.award-credit-outbox.enabled=true.
-    // credit_award_task_000..003 tables must be applied (docs/sql/proposed-credit-award-task-outbox.sql)
-    // before enabling the flag. No SQL is executed via this DAO when flag=false.
-    @Resource
-    private ICreditAwardTaskDao creditAwardTaskDao;
+    private IAwardCreditWritePort awardCreditWritePort;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -177,7 +168,6 @@ public class AwardRepository implements IAwardRepository {
                 // updateAwardRecordCompletedState. credit_award_task tables MUST exist before
                 // enabling this flag (apply docs/sql/proposed-credit-award-task-outbox.sql).
                 // The DispatchCreditAwardTaskJob poller will dispatch the credit asynchronously.
-                CreditAwardTask outboxTask = buildCreditAwardTask(giveOutPrizesAggregate);
                 transactionTemplate.execute(status -> {
                     try {
                         int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
@@ -186,7 +176,10 @@ public class AwardRepository implements IAwardRepository {
                             status.setRollbackOnly();
                             return 1;
                         }
-                        creditAwardTaskDao.insert(outboxTask);
+                        awardCreditWritePort.insertCreditAwardTask(
+                                userId,
+                                userAwardRecordEntity.getOrderId(),
+                                userCreditAwardEntity.getCreditAmount());
                         return 1;
                     } catch (DuplicateKeyException e) {
                         // DuplicateKeyException on credit_award_task means the outbox row already
@@ -200,10 +193,11 @@ public class AwardRepository implements IAwardRepository {
             } else {
                 // Default path (flag=false): direct local credit-account write unchanged.
                 // Redis lock, dbRouter, and transactionTemplate all behave identically to pre-B6.
-                UserCreditAccount userCreditAccountReq = buildCreditAccountReq(userCreditAwardEntity);
                 transactionTemplate.execute(status -> {
                     try {
-                        updateOrCreateCreditAccount(userCreditAccountReq);
+                        awardCreditWritePort.updateOrCreateCreditAccount(
+                                userCreditAwardEntity.getUserId(),
+                                userCreditAwardEntity.getCreditAmount());
                         int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
                         if (0 == updateAwardCount) {
                             log.warn("更新中奖记录，重复更新拦截 userId:{} giveOutPrizesAggregate:{}", userId, JSON.toJSONString(giveOutPrizesAggregate));
@@ -222,35 +216,6 @@ public class AwardRepository implements IAwardRepository {
             if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
-        }
-    }
-
-    // Phase 2.2-B6: build outbox row from aggregate; only called when flag=true.
-    private CreditAwardTask buildCreditAwardTask(GiveOutPrizesAggregate aggregate) {
-        CreditAwardTask task = new CreditAwardTask();
-        task.setUserId(aggregate.getUserId());
-        task.setAwardOrderId(aggregate.getUserAwardRecordEntity().getOrderId());
-        task.setCreditAmount(aggregate.getUserCreditAwardEntity().getCreditAmount());
-        return task;
-    }
-
-    private UserCreditAccount buildCreditAccountReq(UserCreditAwardEntity userCreditAwardEntity) {
-        UserCreditAccount req = new UserCreditAccount();
-        req.setUserId(userCreditAwardEntity.getUserId());
-        req.setTotalAmount(userCreditAwardEntity.getCreditAmount());
-        req.setAvailableAmount(userCreditAwardEntity.getCreditAmount());
-        req.setAccountStatus(AccountStatusVO.open.getCode());
-        return req;
-    }
-
-    // Direct write to user_credit_account — intentionally kept local while award-record write
-    // shares the same transaction. Pending Phase 2.2-B4 saga/outbox design before remote wiring.
-    private void updateOrCreateCreditAccount(UserCreditAccount userCreditAccountReq) {
-        UserCreditAccount existing = userCreditAccountDao.queryUserCreditAccount(userCreditAccountReq);
-        if (null == existing) {
-            userCreditAccountDao.insert(userCreditAccountReq);
-        } else {
-            userCreditAccountDao.updateAddAmount(userCreditAccountReq);
         }
     }
 

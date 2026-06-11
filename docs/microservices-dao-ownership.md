@@ -83,12 +83,13 @@ Target service: `big-market-account-service` (dark-launch; cutover gate B18).
 
 | DAO interface | PO | Mapper XML (app) | Mapper XML (service) | Physical table | Current repository | Caller modules | Target service | Phase | Risk | Blockers |
 |---------------|----|-----------------|---------------------|----------------|-------------------|----------------|----------------|-------|------|----------|
-| `IUserCreditAccountDao` | `UserCreditAccount` | `user_credit_account_mapper.xml` | account-service, market-service, message-job-service | `user_credit_account` | `CreditRepository`, `ActivityRepository`†, `AwardRepository`† | market-service (credit exchange), fulfillment, activity† | account-service | 7-A | Critical | ActivityRepository and AwardRepository cross-access must be removed; B18 cutover |
+| `IUserCreditAccountDao` | `UserCreditAccount` | `user_credit_account_mapper.xml` | account-service, market-service, message-job-service | `user_credit_account` | `CreditRepository`, `ActivityRepository`†, `LocalAwardCreditWritePort`†§ | market-service (credit exchange), fulfillment†§, activity† | account-service | 7-A | Critical | ActivityRepository and AwardRepository direct cross-access removed; B18 cutover |
 | `IUserCreditOrderDao` | `UserCreditOrder` | `user_credit_order_mapper.xml` | account-service, market-service, message-job-service | `user_credit_order` | `CreditRepository` | market-service | account-service | 7-A | Medium | B18 cutover |
-| `ICreditAwardTaskDao` | `CreditAwardTask` | `credit_award_task_mapper.xml` | account-service, message-job-service | `credit_award_task` | `AwardRepository`, `LocalCreditAwardTaskDispatchPort`†‡ | fulfillment-service†, message-job-service†‡ | account-service | 7-A | High | AL-7 resolved via local dispatch port; AwardRepository credit outbox write cleanup remains open (AL-11); B18 cutover |
+| `ICreditAwardTaskDao` | `CreditAwardTask` | `credit_award_task_mapper.xml` | account-service, message-job-service | `credit_award_task` | `LocalAwardCreditWritePort`†§, `LocalCreditAwardTaskDispatchPort`†‡ | fulfillment-service†§, message-job-service†‡ | account-service | 7-A | High | AL-7 and AL-11 resolved via local ports; B18 cutover |
 
 † denotes a cross-boundary caller.
 ‡ `DispatchCreditAwardTaskJob` in `big-market-message-job-service` no longer imports `ICreditAwardTaskDao` directly. It routes credit-award task reads/state transitions through `ICreditAwardTaskDispatchPort`; `LocalCreditAwardTaskDispatchPort` owns the local DAO delegation during the dark-launch phase (see §4.4).
+§ `AwardRepository` no longer imports `IUserCreditAccountDao` or `ICreditAwardTaskDao` directly. It routes credit-account writes and credit-award outbox inserts through `IAwardCreditWritePort`; `LocalAwardCreditWritePort` owns the local DAO delegation during the dark-launch phase (see §4.3).
 
 ---
 
@@ -206,15 +207,21 @@ Risk level: ~~HIGH~~ → **Resolved**. `user_credit_account` table isolation no 
 | Cross-boundary call | From context | Foreign context | Foreign table(s) | Method | Impact | Status |
 |--------------------|--------------|-----------------|-----------------|--------|--------|--------|
 | `AwardRepository` → `IAwardActivityOrderPort` → `IUserRaffleOrderDao` | fulfillment | activity | `user_raffle_order` | Award flow marks raffle order used after writing award record/task | Fulfillment validates draw order is in correct state before dispatch | **AL-5 resolved** — direct DAO dependency removed |
-| `AwardRepository` → `IUserCreditAccountDao` | fulfillment | credit | `user_credit_account` | Credit-award outbox path writes credit account in same local transaction | `saveGiveOutPrizesAggregate` (local tx path, outbox path flag-gated) | AL-6 open |
+| `AwardRepository` → `IAwardCreditWritePort` → `IUserCreditAccountDao` | fulfillment | credit | `user_credit_account` | Credit-award default path writes credit account in same local transaction | `saveGiveOutPrizesAggregate` (flag=false default path) | **AL-6 resolved** — direct DAO dependency removed |
+| `AwardRepository` → `IAwardCreditWritePort` → `ICreditAwardTaskDao` | fulfillment | credit | `credit_award_task` | Credit-award outbox path inserts task row in same local transaction | `saveGiveOutPrizesAggregate` (flag=true outbox path) | **AL-11 resolved** — direct DAO dependency removed |
 
 **AL-5 resolution (Phase 7-A prep):** `IAwardActivityOrderPort.markUserRaffleOrderUsed(String userId, String orderId)` added. `AwardRepository.saveUserAwardRecord` now delegates to the port rather than injecting `IUserRaffleOrderDao` directly. `LocalAwardActivityOrderPort` builds the same `UserRaffleOrder` request (`userId`, `orderId`) and calls `IUserRaffleOrderDao.updateUserRaffleOrderStateUsed`. Behavior is identical: same inputs, same affected-row count semantics, same caller-owned shard routing via `dbRouter.doRouter(userId)`, same `transactionTemplate.execute` boundary, and same rollback/error path when the count is not 1. No remote flags enabled.
 
 New boundary path: `AwardRepository` → `IAwardActivityOrderPort` → `LocalAwardActivityOrderPort` → `IUserRaffleOrderDao` (`user_raffle_order`)
 
-**Required remediation before Phase 7-A:** For `IUserCreditAccountDao`: the `credit_award_task` outbox is the correct long-term pattern; `saveGiveOutPrizesAggregate` direct credit write must be fully replaced by the outbox before Phase 8-B fulfillment cutover.
+**AL-6 / AL-11 resolution (Phase 7-A prep):** `IAwardCreditWritePort` added with the exact write operations used by `AwardRepository`: `updateOrCreateCreditAccount(String userId, BigDecimal creditAmount)` for the default local credit-account path and `insertCreditAwardTask(String userId, String awardOrderId, BigDecimal creditAmount)` for the flag-gated outbox path. `AwardRepository.saveGiveOutPrizesAggregate` now delegates both writes to the port rather than injecting `IUserCreditAccountDao` or `ICreditAwardTaskDao` directly. `LocalAwardCreditWritePort` builds the same `UserCreditAccount` request (`userId`, total/available amount, `AccountStatusVO.open`) and the same `CreditAwardTask` fields (`userId`, `awardOrderId`, `creditAmount`), then delegates to the existing DAOs. Behavior is identical: same inputs, same caller-owned Redis lock, same `dbRouter.doRouter(giveOutPrizesAggregate.getUserId())`, same `transactionTemplate.execute` boundaries, same `DuplicateKeyException` handling, and no remote flags enabled.
 
-Risk level: **HIGH** — AL-5 is resolved. AL-6 still blocks account-service table isolation until the credit-award outbox path fully replaces direct local credit writes.
+New boundary paths:
+
+- `AwardRepository` → `IAwardCreditWritePort` → `LocalAwardCreditWritePort` → `IUserCreditAccountDao` (`user_credit_account`)
+- `AwardRepository` → `IAwardCreditWritePort` → `LocalAwardCreditWritePort` → `ICreditAwardTaskDao` (`credit_award_task`)
+
+Risk level: **HIGH but reduced** — AL-5, AL-6, and AL-11 direct DAO dependencies are resolved. Runtime account-service table isolation still requires Phase 8-B cutover evidence because the default flag remains `account.award-credit-outbox.enabled=false`; this batch only introduces the local boundary and preserves behavior.
 
 ---
 
@@ -265,7 +272,7 @@ domain stops writing the shared `task` table.
 | 1 | `StrategyRepository` reads activity + quota DAOs | strategy | activity + quota | `raffle_activity`, `raffle_activity_account`, `raffle_activity_account_day` | ~~Before Phase 7-A~~ **RESOLVED Phase 7-A (AL-1/AL-2/AL-3)** | ~~Critical~~ Resolved |
 | 2 | `ActivityRepository` reads credit DAO | activity | credit | `user_credit_account` | ~~Before Phase 7-A~~ **RESOLVED Phase 7-A prep** | ~~High~~ Resolved |
 | 3 | `AwardRepository` reads/updates activity DAO | fulfillment | activity | `user_raffle_order` | ~~Before Phase 7-A fulfillment + activity isolation~~ **RESOLVED Phase 7-A prep (AL-5)** | ~~High~~ Resolved |
-| 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account` | Before Phase 8-B (outbox already gating this) | High |
+| 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account`, `credit_award_task` | ~~Before Phase 8-B~~ **RESOLVED Phase 7-A prep (AL-6/AL-11)** | ~~High~~ Resolved |
 | 5 | `DispatchCreditAwardTaskJob` imports credit infra DAO | message-job | credit | `credit_award_task` | ~~Before Phase 8-A~~ **RESOLVED Phase 7-A prep (AL-7)** | ~~High~~ Resolved |
 | 6 | `BehaviorRebateRepository` / `CreditRepository` / `AwardRepository` share `task` table | rebate + credit + fulfillment | shared | `task` | Phase 7-B decision complete; runtime fix before Phase 8-A/B/C | Medium |
 
@@ -302,7 +309,7 @@ The following conditions must be true before Phase 7-A can isolate any table gro
    `IAwardActivityOrderPort.markUserRaffleOrderUsed` introduced; `LocalAwardActivityOrderPort`
    holds the DAO call; `AwardRepository` no longer imports `IUserRaffleOrderDao`.
 
-4. **AwardRepository local credit write removed** (§4.3): `saveGiveOutPrizesAggregate` must no longer write `user_credit_account` directly. The `credit_award_task` outbox path must be the sole credit-write channel. Estimated effort: medium; requires Phase 8-B flag enabled + staging evidence.
+4. **AwardRepository local credit DAO access removed** (§4.3): Done — `IAwardCreditWritePort` introduced; `LocalAwardCreditWritePort` holds `IUserCreditAccountDao` and `ICreditAwardTaskDao`; `AwardRepository` no longer imports either DAO. Runtime cutover to making `credit_award_task` the sole credit-write channel still requires Phase 8-B flag enablement + staging evidence.
 
 5. **DispatchCreditAwardTaskJob decoupled** (§4.4): Done —
    `ICreditAwardTaskDispatchPort` introduced; `LocalCreditAwardTaskDispatchPort`
@@ -327,12 +334,12 @@ Based on this inventory the lowest-risk next phases are:
 | **Phase 7-A prep (AL-4)**: ActivityRepository credit-account boundary | Done — tag `phase-7-account-boundary-prep-activity-credit-port`; `ActivityRepository` no longer imports `IUserCreditAccountDao` |
 | **Phase 7-A prep (AL-2/AL-3)**: StrategyRepository account DAO removal | Done — tag `phase-7-account-boundary-prep-strategy-account-port`; `StrategyRepository` no longer imports `IRaffleActivityAccountDao` or `IRaffleActivityAccountDayDao`; reads route through `IStrategyActivityAccountPort` (`LocalStrategyActivityAccountPort`) |
 | **Phase 7-A (AL-1)**: StrategyRepository activity mapping boundary | Done — tag `phase-7-strategy-activity-mapping-port`; `StrategyRepository` no longer imports `IRaffleActivityDao`; reads route through `IStrategyActivityMappingPort` (`LocalStrategyActivityMappingPort`) |
-| **Phase 7-A**: account table ownership gate | B18 cutover; all StrategyRepository cross-boundary couplings now removed (AL-1/2/3 resolved); remaining blocker: AwardRepository credit cross-access (AL-6) |
+| **Phase 7-A**: account table ownership gate | B18 cutover; StrategyRepository direct cross-boundary couplings removed (AL-1/2/3 resolved) and AwardRepository direct credit DAO couplings removed (AL-6/AL-11 resolved); runtime cutover evidence still required before enabling credit-award outbox traffic |
 | **Phase 7-B**: generic `task` table strategy decision doc | Done — tag `phase-7-task-outbox-ownership`; AL-8/AL-9/AL-10 decision complete but runtime still allowlisted |
 | **Phase 7-C**: proposed DDL for per-domain task outbox tables | Next data-ownership docs batch if prioritizing rebate/account/fulfillment outbox isolation |
 | **Phase 7-A prep (AL-5)**: AwardRepository raffle-order boundary | Done — tag `phase-7-award-activity-order-boundary`; `AwardRepository` no longer imports `IUserRaffleOrderDao`; state transition routes through `IAwardActivityOrderPort` |
 | **Phase 7-A prep (AL-7)**: DispatchCreditAwardTaskJob credit DAO boundary | Done — tag `phase-7-credit-award-task-job-boundary`; job no longer imports `ICreditAwardTaskDao`; reads/state transitions route through `ICreditAwardTaskDispatchPort` |
-| **Phase 7-A prep (AL-6/AL-11)**: AwardRepository credit outbox write cleanup | Recommended next code-boundary batch if prioritizing account/fulfillment isolation |
+| **Phase 7-A prep (AL-6/AL-11)**: AwardRepository credit outbox write cleanup | Done — tag `phase-7-award-credit-outbox-boundary`; `AwardRepository` no longer imports `IUserCreditAccountDao` or `ICreditAwardTaskDao`; writes route through `IAwardCreditWritePort` |
 
 The highest-risk work requiring dedicated design is **§4.1** (StrategyRepository → activity/quota): it touches the raffle rule-evaluation hot path and requires either an API call in the draw critical path or a redesign where the orchestration layer injects the mapping. This is the primary blocker for strategy-service and account-service table isolation and should be scoped as a dedicated design doc before any code change.
 
