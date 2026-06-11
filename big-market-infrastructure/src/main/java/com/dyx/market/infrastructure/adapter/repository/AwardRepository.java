@@ -1,19 +1,23 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
+import com.dyx.market.domain.award.adapter.port.IAwardActivityOrderPort;
+import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.domain.award.model.aggregate.GiveOutPrizesAggregate;
 import com.dyx.market.domain.award.model.aggregate.UserAwardRecordAggregate;
 import com.dyx.market.domain.award.model.entity.TaskEntity;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.entity.UserCreditAwardEntity;
 import com.dyx.market.domain.award.model.valobj.AccountStatusVO;
-import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
-import com.dyx.market.infrastructure.dao.*;
+import com.dyx.market.infrastructure.dao.IAwardDao;
+import com.dyx.market.infrastructure.dao.ICreditAwardTaskDao;
+import com.dyx.market.infrastructure.dao.ITaskDao;
+import com.dyx.market.infrastructure.dao.IUserAwardRecordDao;
+import com.dyx.market.infrastructure.dao.IUserCreditAccountDao;
 import com.dyx.market.infrastructure.event.EventPublisher;
 import com.dyx.market.infrastructure.dao.po.CreditAwardTask;
 import com.dyx.market.infrastructure.dao.po.Task;
 import com.dyx.market.infrastructure.dao.po.UserAwardRecord;
 import com.dyx.market.infrastructure.dao.po.UserCreditAccount;
-import com.dyx.market.infrastructure.dao.po.UserRaffleOrder;
 import com.dyx.market.infrastructure.redis.IRedisService;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.common.Constants;
@@ -46,7 +50,7 @@ public class AwardRepository implements IAwardRepository {
     @Resource
     private IUserAwardRecordDao userAwardRecordDao;
     @Resource
-    private IUserRaffleOrderDao userRaffleOrderDao;
+    private IAwardActivityOrderPort awardActivityOrderPort;
     @Resource
     private IUserCreditAccountDao userCreditAccountDao;
     // Phase 2.2-B6: outbox DAO — only accessed when account.award-credit-outbox.enabled=true.
@@ -100,10 +104,6 @@ public class AwardRepository implements IAwardRepository {
         task.setMessage(JSON.toJSONString(taskEntity.getMessage()));
         task.setState(taskEntity.getState().getCode());
 
-        UserRaffleOrder userRaffleOrderReq = new UserRaffleOrder();
-        userRaffleOrderReq.setUserId(userAwardRecordEntity.getUserId());
-        userRaffleOrderReq.setOrderId(userAwardRecordEntity.getOrderId());
-
         try {
             dbRouter.doRouter(userId);
             transactionTemplate.execute(status -> {
@@ -113,7 +113,9 @@ public class AwardRepository implements IAwardRepository {
                     // 写入任务
                     taskDao.insert(task);
                     // 更新抽奖单
-                    int count = userRaffleOrderDao.updateUserRaffleOrderStateUsed(userRaffleOrderReq);
+                    int count = awardActivityOrderPort.markUserRaffleOrderUsed(
+                            userAwardRecordEntity.getUserId(),
+                            userAwardRecordEntity.getOrderId());
                     if (1 != count) {
                         status.setRollbackOnly();
                         log.error("写入中奖记录，用户抽奖单已使用过，不可重复抽奖 userId: {} activityId: {} awardId: {}", userId, activityId, awardId);

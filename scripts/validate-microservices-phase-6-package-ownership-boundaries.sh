@@ -37,8 +37,11 @@
 #          resolution: routed through IActivityAccountPort.queryUserCreditAccountAmount;
 #                      LocalActivityAccountPort delegates to IUserCreditAccountDao;
 #                      ActivityRepository no longer imports IUserCreditAccountDao directly.
-#   [AL-5] AwardRepository -> IUserRaffleOrderDao
+#   [AL-5] AwardRepository -> IUserRaffleOrderDao  *** RESOLVED — Phase 7-A prep (AL-5) ***
 #          context: fulfillment reads raffle order status before writing award record
+#          resolution: routed through IAwardActivityOrderPort.markUserRaffleOrderUsed;
+#                      LocalAwardActivityOrderPort delegates to IUserRaffleOrderDao;
+#                      AwardRepository no longer imports IUserRaffleOrderDao directly.
 #   [AL-6] AwardRepository -> IUserCreditAccountDao
 #          context: fulfillment local-tx credit write (flag-gated outbox path)
 #   [AL-7] DispatchCreditAwardTaskJob -> ICreditAwardTaskDao
@@ -104,7 +107,7 @@ check_violation_in_doc "AL-1 StrategyRepository->IRaffleActivityDao"        "Str
 check_violation_in_doc "AL-2 StrategyRepository->IRaffleActivityAccountDao" "StrategyRepository"        "IRaffleActivityAccountDao"
 check_violation_in_doc "AL-3 StrategyRepository->IRaffleActivityAccountDayDao" "StrategyRepository"     "IRaffleActivityAccountDayDao"
 check_violation_in_doc "AL-4 ActivityRepository->IUserCreditAccountDao (resolved Phase 7-A prep)" "ActivityRepository" "IUserCreditAccountDao"
-check_violation_in_doc "AL-5 AwardRepository->IUserRaffleOrderDao"          "AwardRepository"           "IUserRaffleOrderDao"
+check_violation_in_doc "AL-5 AwardRepository->IUserRaffleOrderDao (resolved Phase 7-A prep)" "AwardRepository" "IUserRaffleOrderDao"
 check_violation_in_doc "AL-6 AwardRepository->IUserCreditAccountDao"        "AwardRepository"           "IUserCreditAccountDao"
 check_violation_in_doc "AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao" "DispatchCreditAwardTaskJob" "ICreditAwardTaskDao"
 check_violation_in_doc "AL-8 BehaviorRebateRepository->ITaskDao"            "BehaviorRebateRepository"  "ITaskDao"
@@ -158,10 +161,11 @@ check_field_present() {
 # delegates to IUserCreditAccountDao). The forbidden-DAO check below enforces
 # that the direct coupling does not regress.
 
-check_field_present \
-  "AL-5 AwardRepository->IUserRaffleOrderDao" \
-  "$INFRA_REPO/AwardRepository.java" \
-  "IUserRaffleOrderDao"
+# AL-5 AwardRepository->IUserRaffleOrderDao — RESOLVED in Phase 7-A prep (AL-5).
+# AwardRepository now routes the guarded user_raffle_order create->used transition
+# through IAwardActivityOrderPort.markUserRaffleOrderUsed (LocalAwardActivityOrderPort
+# delegates to IUserRaffleOrderDao). The forbidden-DAO check below enforces that
+# the direct coupling does not regress.
 
 check_field_present \
   "AL-6 AwardRepository->IUserCreditAccountDao" \
@@ -216,7 +220,8 @@ echo "── 3. No new cross-boundary DAO coupling outside allowlist ──"
 #                            resolved: IUserCreditAccountDao (AL-4)
 #
 #   AwardRepository       -> owns: IAwardDao, IUserAwardRecordDao
-#                            allowed foreign: IUserRaffleOrderDao (AL-5), IUserCreditAccountDao (AL-6)
+#                            resolved: IUserRaffleOrderDao (AL-5)
+#                            allowed foreign: IUserCreditAccountDao (AL-6)
 #
 #   BehaviorRebateRepository -> owns: IDailyBehaviorRebateDao, IUserBehaviorRebateOrderDao
 #                            allowed foreign: ITaskDao (AL-8; Phase 7-B decision complete, runtime unresolved)
@@ -289,8 +294,9 @@ check_no_forbidden_dao \
   "IUserBehaviorRebateOrderDao" \
   "ITaskDao"
 
-# AwardRepository must not import DAOs outside its context or AL-5,6,10,11.
-# Allowed foreign: IUserRaffleOrderDao (AL-5), IUserCreditAccountDao (AL-6),
+# AwardRepository must not import DAOs outside its context or AL-6,10,11.
+# AL-5 (IUserRaffleOrderDao) was resolved in Phase 7-A prep — now explicitly forbidden.
+# Allowed foreign: IUserCreditAccountDao (AL-6),
 #                  ITaskDao (AL-10; Phase 7-B decision complete, runtime unresolved),
 #                  ICreditAwardTaskDao (AL-11)
 check_no_forbidden_dao \
@@ -307,6 +313,7 @@ check_no_forbidden_dao \
   "IRaffleActivitySkuDao" \
   "IRaffleActivityStageDao" \
   "IRaffleActivityOrderDao" \
+  "IUserRaffleOrderDao" \
   "IRaffleActivityAccountDao" \
   "IRaffleActivityAccountDayDao" \
   "IRaffleActivityAccountMonthDao" \
@@ -555,7 +562,7 @@ echo "  AL-1  StrategyRepository -> IRaffleActivityDao  [RESOLVED Phase 7-A AL-1
 echo "  AL-2  StrategyRepository -> IRaffleActivityAccountDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
 echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao  [RESOLVED Phase 7-A prep AL-2/AL-3]"
 echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep]"
-echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao"
+echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao  [RESOLVED Phase 7-A prep AL-5]"
 echo "  AL-6  AwardRepository    -> IUserCreditAccountDao"
 echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  (flag false)"
 echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
