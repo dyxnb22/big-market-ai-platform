@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced (tag `phase-5-award-fulfillment-port-boundary`). Phase 5-F activity-service dark-launch scaffold introduced (tag `phase-5-activity-service-dark-launch-scaffold`): big-market-activity-service module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added; no remote flag introduced. Remote strategy decision and remote award fulfillment remain future work. Phase 5-G saga/outbox design is next.
+Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced (tag `phase-5-award-fulfillment-port-boundary`). Phase 5-F activity-service dark-launch scaffold introduced (tag `phase-5-activity-service-dark-launch-scaffold`): big-market-activity-service module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added; no remote flag introduced. Phase 5-G draw saga/outbox design complete (tag `phase-5-activity-draw-saga-outbox-scaffold`): orchestration saga pattern chosen; IDrawOutboxPort + DrawOutboxEvent + LocalDrawOutboxPort scaffold contracts introduced; design doc committed; IDrawOutboxPort NOT wired into draw hot-path (requires Phase 7-D DDL + Phase 8-E approval); no remote flags introduced. Phase 5 complete. Recommended next batch: Phase 6-A (DAO ownership matrix).
 
 ---
 
@@ -190,7 +190,7 @@ from Phase 4 are stable.
 | 5-D | Isolate strategy-decision call behind `IStrategyDecisionPort` | adapter | **Done** — local delegates to in-process `IRaffleStrategy`; no remote flag |
 | 5-E | Isolate award-fulfillment call behind `IAwardFulfillmentPort` | adapter | **Done** — local delegates to in-process `IAwardService`; no remote flag |
 | 5-F | Activity-service scaffold decision/prep (dark launch only if approved, no orchestration moved) | module/docs | **Done** — `big-market-activity-service` module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler; no remote flag introduced. Tag: `phase-5-activity-service-dark-launch-scaffold` |
-| 5-G | Activity-service orchestration target and saga/outbox design | docs | Must be approved before any synchronous write moves or any remote award fulfillment path exists |
+| 5-G | Activity-service orchestration target and saga/outbox design | docs | **Done** — orchestration saga chosen; `IDrawOutboxPort` + `DrawOutboxEvent` + `LocalDrawOutboxPort` scaffold contracts introduced; design doc `docs/microservices-split-phase-5-activity-draw-saga-outbox.md` committed; port NOT wired into draw hot-path (requires Phase 7-D + Phase 8-E). Tag: `phase-5-activity-draw-saga-outbox-scaffold` |
 
 **Hard rule for Phase 5:** no synchronous write call moves out of
 market-service until 5-G is signed off and a saga / idempotency design is
@@ -379,7 +379,7 @@ default flag, validation, risk, dependencies, completion criteria.
 
 **5-F** Activity-service scaffold decision/prep (NO orchestration moved). Type: module/docs. Risk: Medium. **Done** — `big-market-activity-service` module created at port 8090; scan restricted to `com.dyx.market.activity` + `com.dyx.market.infrastructure`; no trigger package scanned; no `@DubboService` provider, no HTTP controller, no MQ listener, no XXL-Job, no mapper XML; `RaffleApplicationService` and `RaffleActivityController` remain in place; no remote draw/award flag introduced. Tag: `phase-5-activity-service-dark-launch-scaffold`.
 
-**5-G** Activity orchestration target and saga/outbox design. Type: docs. Risk: High — gates any synchronous write move and any remote award fulfillment write path.
+**5-G** Activity orchestration target and saga/outbox design. Type: docs/scaffold. Risk: High — gates any synchronous write move and any remote award fulfillment write path. **Done** — orchestration saga pattern chosen; `IDrawOutboxPort` + `DrawOutboxEvent` + `LocalDrawOutboxPort` introduced (scaffold only; not wired into draw hot-path); design doc at `docs/microservices-split-phase-5-activity-draw-saga-outbox.md`; validator at `scripts/validate-microservices-phase-5-activity-draw-saga-outbox.sh`. Tag: `phase-5-activity-draw-saga-outbox-scaffold`.
 
 ### 5.4 Phase 6 — Shared Infrastructure / Domain Split
 

@@ -16,9 +16,11 @@
 > big-market-activity-service dark-launch scaffold introduced at port 8090 (tag
 > phase-5-activity-service-dark-launch-scaffold): scan boundary enforced; no draw
 > execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added.
-> All draw execution remains in-process. Remote strategy decision and remote award
-> fulfillment are future work; no new remote draw/award flags were introduced.
-> Phase 5-G saga/outbox design is the next blocker.
+> Phase 5-G draw saga/outbox design complete (tag phase-5-activity-draw-saga-outbox-scaffold):
+> orchestration saga pattern chosen; IDrawOutboxPort + DrawOutboxEvent + LocalDrawOutboxPort
+> scaffold contracts introduced; design doc committed; port NOT wired into draw hot-path
+> (requires Phase 7-D DDL + Phase 8-E cutover approval). Phase 5 complete.
+> Recommended next batch: Phase 6-A (DAO ownership matrix).
 
 ---
 
