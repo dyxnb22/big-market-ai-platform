@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced (tag `phase-5-award-fulfillment-port-boundary`). Phase 5-F activity-service dark-launch scaffold introduced (tag `phase-5-activity-service-dark-launch-scaffold`): big-market-activity-service module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added; no remote flag introduced. Phase 5-G draw saga/outbox design complete (tag `phase-5-activity-draw-saga-outbox-scaffold`): orchestration saga pattern chosen; IDrawOutboxPort + DrawOutboxEvent + LocalDrawOutboxPort scaffold contracts introduced; design doc committed; IDrawOutboxPort NOT wired into draw hot-path (requires Phase 7-D DDL + Phase 8-E approval); no remote flags introduced. Phase 5 complete. Phase 6-A DAO ownership matrix complete (tag `phase-6-dao-ownership-matrix`). Phase 6-B package-ownership boundary validator complete (tag `phase-6-package-ownership-boundaries`). Phase 7-A/7-B predecessor batches complete through tag `phase-7-award-credit-outbox-boundary`. Phase 7-C complete: proposed per-domain task outbox DDL exists for `rebate_task_outbox`, `credit_trade_task_outbox`, and `award_dispatch_task_outbox`; AL-8/AL-9/AL-10 direct repository `ITaskDao` couplings are resolved through task-outbox ports while local adapters preserve legacy `ITaskDao` behavior. Phase 7-E complete: DB users/grants plan is documented. Phase 7-F complete: sharded schema isolation plan is documented. Phase 7 is repo-complete when all Phase 7 validators pass; physical runtime table isolation remains Phase 8 external-gated. Phase 8 status: repo readiness complete / external cutover gated; production cutover is not complete without DBA/Ops/Engineering/Oncall/Product evidence.
+Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced (tag `phase-5-award-fulfillment-port-boundary`). Phase 5-F activity-service dark-launch scaffold introduced (tag `phase-5-activity-service-dark-launch-scaffold`): big-market-activity-service module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added; no remote flag introduced. Phase 5-G draw saga/outbox design complete (tag `phase-5-activity-draw-saga-outbox-scaffold`): orchestration saga pattern chosen; IDrawOutboxPort + DrawOutboxEvent + LocalDrawOutboxPort scaffold contracts introduced; design doc committed; IDrawOutboxPort NOT wired into draw hot-path (requires Phase 7-D DDL + Phase 8-E approval); no remote flags introduced. Phase 5 complete. Phase 6-A DAO ownership matrix complete (tag `phase-6-dao-ownership-matrix`). Phase 6-B package-ownership boundary validator complete (tag `phase-6-package-ownership-boundaries`). Phase 7-A/7-B predecessor batches complete through tag `phase-7-award-credit-outbox-boundary`. Phase 7-C complete: proposed per-domain task outbox DDL exists for `rebate_task_outbox`, `credit_trade_task_outbox`, and `award_dispatch_task_outbox`; AL-8/AL-9/AL-10 direct repository `ITaskDao` couplings are resolved through task-outbox ports while local adapters preserve legacy `ITaskDao` behavior. Phase 7-E complete: DB users/grants plan is documented. Phase 7-F complete: sharded schema isolation plan is documented. Phase 7 is repo-complete (tag `phase-7-complete-phase-8-readiness`); physical runtime table isolation remains Phase 8 external-gated. Phase 8 status: repo readiness complete / external cutover gated; production cutover is not complete without DBA/Ops/Engineering/Oncall/Product evidence.
 
 ---
 
@@ -230,10 +230,11 @@ Goal: turn shared-jar coupling from a convention into a Maven boundary, but
 proposed DDL files live in `docs/sql/proposed-*.sql` and are applied by the
 DBA in an explicit Phase 8 staging window.
 
-**Recommended next repo-only batch after AL-6/AL-11:** continue with the
-Phase 7-C+ proposed DDL/design work for per-domain task outboxes, or prepare
-the Phase 8-B staging evidence needed before enabling credit-award outbox
-traffic. The runtime flag remains default false.
+**Current repo-only posture after Phase 7:** Phase 7-C/7-E/7-F are complete,
+AL-1 through AL-11 direct repository DAO couplings are resolved, and runtime
+physical isolation remains Phase 8 external-gated. The next repo-only work is
+regression hardening: keep the completion index and aggregate validators green
+until external cutover evidence exists. All runtime flags remain default false.
 
 ### 4.6 Phase 8 — Production Cutover and Legacy Cleanup
 
@@ -410,13 +411,13 @@ default flag, validation, risk, dependencies, completion criteria.
 
 **7-B** Generic `task` table strategy decision doc. Type: docs. Risk: Medium. **Done** — per-domain outbox/task tables chosen; no runtime behavior changed.
 
-**7-C** Rebate outbox proposed DDL — `docs/sql/proposed-rebate-task-outbox.sql`. Type: docs. Risk: Low (proposed-only).
+**7-C** Per-domain task outbox proposed DDL and AL-8/AL-9/AL-10 task-outbox ports — `docs/sql/proposed-rebate-task-outbox.sql`, `docs/sql/proposed-credit-trade-task-outbox.sql`, `docs/sql/proposed-award-dispatch-task-outbox.sql`. Type: docs/refactor. Risk: Low (proposed-only; local adapters preserve shared `task` fallback). **Done** — direct repository `ITaskDao` couplings resolved.
 
-**7-D** Activity outbox proposed DDL (only if 5-G commits to async). Type: docs. Risk: Medium.
+**7-D** Activity outbox proposed DDL (only if 5-G commits to async). Type: docs. Risk: Medium. **Deferred to Phase 8-E external approval**; no draw hot-path wiring exists.
 
-**7-E** DB user / schema isolation plan doc. Type: docs. Risk: Low.
+**7-E** DB user / schema isolation plan doc. Type: docs. Risk: Low. **Done** — `docs/microservices-phase-7-db-users-grants-plan.md`; external DBA execution gated.
 
-**7-F** Per-service schema decision doc. Type: docs. Risk: Low.
+**7-F** Per-service schema decision doc. Type: docs. Risk: Low. **Done** — `docs/microservices-phase-7-sharded-schema-isolation-plan.md`; external DBA execution gated.
 
 ### 5.6 Phase 8 — Cutover
 
@@ -473,33 +474,19 @@ do not block legitimate work.
 
 ---
 
-## 8. Recommended Execution Order (Next 10 Batches)
+## 8. Recommended Execution Order
 
-The first batch is **Phase 3-A: rebate read adapter boundary** because the
-rebate write path already routes through `IRebateOrderAdapter`, the legacy
-provider is gated, and the read path is the last in-process direct
-`IBehaviorRebateService` call from `RaffleActivityController`. Closing it
-makes rebate the first context whose controller-level coupling is fully
-decomposed — a known-shape, low-risk batch that proves the master-plan
-backlog format on a small surface before larger moves.
+Phase 3 through Phase 7 are repo-complete. Phase 8 repo readiness is complete,
+but actual cutover remains EXTERNAL-GATED. The next executable repo-only work
+is hardening and consistency, not staging or production traffic enablement.
 
 | # | Batch | Why this order |
 |---|-------|----------------|
-| 1 | **3-A** Rebate read adapter boundary | Smallest remaining coupling on the most-mature service; proves the read-adapter pattern reusable in Phase 4. |
-| 2 | 3-B Rebate read contract on `IRebateService` | Required so 3-A's remote adapter has a Dubbo method to call. |
-| 3 | 3-C Rebate scan / dependency narrowing audit | Validator-only, locks in current state before Phase 4 module work. |
-| 4 | 3-D Rebate task / outbox ownership decision doc | Feeds Phase 7; cheap to write now while context is fresh. |
-| 5 | 3-E Rebate cutover-readiness rehearsal script | Closes Phase 3 with a dry-run gate ready for Phase 8-C. |
-| 6 | 4-A Strategy boundary assessment doc | Cheapest first step of Phase 4; no module work yet. |
-| 7 | 4-B Strategy read-only API contract | Interface-only batch; gates 4-C / 4-D. |
-| 8 | 4-C `big-market-strategy-service` dark-launch module | Pattern matches account / fulfillment / rebate; mechanical. |
-| 9 | 4-D Market-service strategy read adapters | Mirrors 3-A on a new service. |
-| 10 | 4-E Strategy scan / mapper narrowing validator | Locks in 4-C and prevents scope creep. |
-
-After these 10, the program holds at the Phase 4 read-only milestone and
-re-evaluates whether to proceed with Phase 5 orchestration work, Phase 6
-package validators, or a Phase 8-A account-service cutover window. The order
-is deliberately not committed past batch 10.
+| 1 | Keep `scripts/validate-microservices-split-all-gates.sh` green in CI | Aggregates the master plan, Phase 6, Phase 7, Phase 8, service module ownership, and production flag gates without Docker/DB/MQ access. |
+| 2 | Extend service ownership validators only when an approved service gains a runtime surface | Prevents accidental provider/controller/listener/job/mapper drift in dark-launch modules. |
+| 3 | Prepare external evidence files only after a real staging window exists | Avoids marking Phase 8 production complete from repo-only work. |
+| 4 | After external 7-day stability gates, disable legacy providers in a dedicated cleanup batch | Requires cutover evidence and Oncall approval. |
+| 5 | After external 30-day stability gates, remove obsolete local paths in a dedicated cleanup batch | Requires evidence that rollback paths are no longer needed. |
 
 ---
 
@@ -509,7 +496,7 @@ is deliberately not committed past batch 10.
 |---|------|---------|------------|-------|
 | 1 | Duplicate Dubbo provider (legacy + new register the same `Ixxx` v1.0 in Nacos) | Cutover starts before legacy provider gate flipped | All legacy providers carry `@ConditionalOnProperty` (already done for rebate; replicate for strategy / activity); Phase 8-F verifies before traffic |
 | 2 | Distributed transaction loss | A write moves across services without saga / outbox | Rule §10 forbids synchronous write moves before saga design; Phase 5-G gates activity moves; credit-award outbox already mediates account ↔ fulfillment |
-| 3 | Shared `task` outbox runtime coupling | A second domain inserts into `task` after rebate moves out | Phase 7-B decision complete; per-domain outbox tables follow `credit_award_task` precedent; Phase 7-C+ proposed DDL and Phase 8 cutover still required |
+| 3 | Shared `task` outbox runtime coupling | A second domain inserts into `task` after rebate moves out | Phase 7-B/C decision and ports complete; per-domain outbox tables follow `credit_award_task` precedent; physical table cutover still requires DBA-applied DDL and Phase 8 evidence |
 | 4 | Activity draw latency or idempotency regression | Phase 5 wires a remote strategy decision call without measuring the in-process baseline | Phase 5-A includes a latency baseline; remote-decision flag defaults false; P99 < +20% is a Phase 8 NO-GO criterion |
 | 5 | Shared DAO / table ownership drift | New DAO added to `big-market-infrastructure` without an owner | Phase 6-B validator fails CI for unowned DAOs |
 | 6 | Validator false confidence | Repo-only validators pass while staging gate is still pending | Every cutover Phase 8 batch requires an evidence template; validator green ≠ cutover green; documented in §3 item 9 |
@@ -558,6 +545,7 @@ following hard rules. Violating any is a revert criterion.
 - `docs/microservices-split-phase-2-2-account-service.md` — account-service B-series detail (B1 through B21).
 - `docs/microservices-split-phase-2-3-fulfillment-service.md` — fulfillment-service B23 series.
 - `docs/microservices-split-phase-3-next-extraction.md` — Phase 3 batches 1–3 implementation detail; future Phase 3-D / 3-E updates land here.
+- `docs/microservices-split-completion-index.md` — current completion, AL-1 through AL-11 status, external gates, and validator index.
 - `scripts/validate-microservices-phase-3-*.sh` — existing Phase 3 validators.
 - `scripts/validate-microservices-master-plan.sh` — this plan's structural validator (added by this batch).
 - `docs/microservices-dao-ownership.md` — Phase 6-A DAO ownership matrix: full DAO/table/repository inventory and cross-boundary access violations.

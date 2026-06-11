@@ -335,7 +335,9 @@ The following conditions must be true before Phase 7-A can isolate any table gro
 
 ## 8. Recommended Next Steps
 
-Based on this inventory the lowest-risk next phases are:
+Based on this inventory, Phase 7 repo work is complete and the lowest-risk next
+repo-only work is regression hardening. Runtime cutover remains Phase 8
+external-gated.
 
 | Recommended batch | Rationale |
 |------------------|-----------|
@@ -343,14 +345,18 @@ Based on this inventory the lowest-risk next phases are:
 | **Phase 7-A prep (AL-4)**: ActivityRepository credit-account boundary | Done — tag `phase-7-account-boundary-prep-activity-credit-port`; `ActivityRepository` no longer imports `IUserCreditAccountDao` |
 | **Phase 7-A prep (AL-2/AL-3)**: StrategyRepository account DAO removal | Done — tag `phase-7-account-boundary-prep-strategy-account-port`; `StrategyRepository` no longer imports `IRaffleActivityAccountDao` or `IRaffleActivityAccountDayDao`; reads route through `IStrategyActivityAccountPort` (`LocalStrategyActivityAccountPort`) |
 | **Phase 7-A (AL-1)**: StrategyRepository activity mapping boundary | Done — tag `phase-7-strategy-activity-mapping-port`; `StrategyRepository` no longer imports `IRaffleActivityDao`; reads route through `IStrategyActivityMappingPort` (`LocalStrategyActivityMappingPort`) |
-| **Phase 7-A**: account table ownership gate | B18 cutover; StrategyRepository direct cross-boundary couplings removed (AL-1/2/3 resolved) and AwardRepository direct credit DAO couplings removed (AL-6/AL-11 resolved); runtime cutover evidence still required before enabling credit-award outbox traffic |
+| **Phase 7-A**: account table ownership gate | Repo boundary complete; B18 cutover remains external-gated; runtime cutover evidence still required before enabling credit-award outbox traffic |
 | **Phase 7-B**: generic `task` table strategy decision doc | Done — tag `phase-7-task-outbox-ownership`; AL-8/AL-9/AL-10 decision complete but runtime still allowlisted |
 | **Phase 7-C**: proposed DDL for per-domain task outbox tables and AL-8/AL-9/AL-10 port boundaries | Done — direct repository DAO coupling resolved; runtime physical table isolation remains Phase 8 external-gated |
 | **Phase 7-A prep (AL-5)**: AwardRepository raffle-order boundary | Done — tag `phase-7-award-activity-order-boundary`; `AwardRepository` no longer imports `IUserRaffleOrderDao`; state transition routes through `IAwardActivityOrderPort` |
 | **Phase 7-A prep (AL-7)**: DispatchCreditAwardTaskJob credit DAO boundary | Done — tag `phase-7-credit-award-task-job-boundary`; job no longer imports `ICreditAwardTaskDao`; reads/state transitions route through `ICreditAwardTaskDispatchPort` |
 | **Phase 7-A prep (AL-6/AL-11)**: AwardRepository credit outbox write cleanup | Done — tag `phase-7-award-credit-outbox-boundary`; `AwardRepository` no longer imports `IUserCreditAccountDao` or `ICreditAwardTaskDao`; writes route through `IAwardCreditWritePort` |
 
-The highest-risk work requiring dedicated design is **§4.1** (StrategyRepository → activity/quota): it touches the raffle rule-evaluation hot path and requires either an API call in the draw critical path or a redesign where the orchestration layer injects the mapping. This is the primary blocker for strategy-service and account-service table isolation and should be scoped as a dedicated design doc before any code change.
+Next repo-only gates: `scripts/validate-microservices-service-module-ownership.sh`,
+`scripts/validate-microservices-production-flag-matrix.sh`, and
+`scripts/validate-microservices-split-all-gates.sh`. Next runtime gates remain
+external DBA/Ops/Engineering/Oncall approvals, DBA-applied DDL, staging
+evidence, canary enablement, and rollback verification.
 
 ---
 
@@ -373,3 +379,4 @@ The cross-boundary violations in §4 and §5 are now enforced by a repeatable va
 - `docs/microservices-split-phase-5-activity-draw-saga-outbox.md` — outbox/saga design
 - `scripts/validate-microservices-phase-6-dao-ownership-matrix.sh` — Phase 6-A matrix validator
 - `scripts/validate-microservices-phase-6-package-ownership-boundaries.sh` — Phase 6-B boundary enforcement validator
+- `docs/microservices-split-completion-index.md` — current completion and Phase 8 external gate index

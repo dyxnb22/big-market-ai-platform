@@ -8,6 +8,11 @@ EXTERNAL-GATED.
 
 - Do not apply DDL from this repo automatically.
 - Do not enable production, remote, or outbox flags by default.
+- Repo-only hardening validators:
+  `scripts/validate-microservices-service-module-ownership.sh`,
+  `scripts/validate-microservices-production-flag-matrix.sh`, and
+  `scripts/validate-microservices-split-all-gates.sh`.
+- Completion index: `docs/microservices-split-completion-index.md`.
 - Proposed DDL files: `docs/sql/proposed-credit-award-task-outbox.sql`,
   `docs/sql/proposed-quota-decrement-ledger.sql`,
   `docs/sql/proposed-rebate-task-outbox.sql`,

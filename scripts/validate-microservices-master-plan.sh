@@ -3,7 +3,7 @@
 #
 # Deterministic, repo-only validator for the microservices decomposition master plan.
 # Checks only that the plan document exists and contains the required structural
-# headings, the boundary matrix, the next-10 execution order, the non-goals
+# headings, the boundary matrix, the current execution order, the non-goals
 # section, and the safety rules recap. Does not execute Java, DDL, or network.
 
 set -u
@@ -68,17 +68,15 @@ check "boundary row: chatbot"            "\| chatbot \|"
 check "boundary row: query / search"     "query / search"
 
 echo
-echo "== Section 4: next 10 batches present =="
-check "next-10 batch 1 (3-A)"            "^\| 1 \| \*\*3-A\*\*"
-check "next-10 batch 2 (3-B)"            "^\| 2 \| 3-B"
-check "next-10 batch 3 (3-C)"            "^\| 3 \| 3-C"
-check "next-10 batch 4 (3-D)"            "^\| 4 \| 3-D"
-check "next-10 batch 5 (3-E)"            "^\| 5 \| 3-E"
-check "next-10 batch 6 (4-A)"            "^\| 6 \| 4-A"
-check "next-10 batch 7 (4-B)"            "^\| 7 \| 4-B"
-check "next-10 batch 8 (4-C)"            "^\| 8 \| 4-C"
-check "next-10 batch 9 (4-D)"            "^\| 9 \| 4-D"
-check "next-10 batch 10 (4-E)"           "^\| 10 \| 4-E"
+echo "== Section 4: current execution order present =="
+check "phase 3 through 7 repo-complete"  "Phase 3 through Phase 7 are repo-complete"
+check "phase 8 external-gated"           "Phase 8 repo readiness is complete"
+check "execution batch 1 aggregate gate" '^\| 1 \| Keep `scripts/validate-microservices-split-all-gates\.sh` green in CI'
+check "execution batch 2 service ownership" "^\| 2 \| Extend service ownership validators"
+check "execution batch 3 external evidence" "^\| 3 \| Prepare external evidence files"
+check "execution batch 4 legacy providers" "^\| 4 \| After external 7-day stability gates"
+check "execution batch 5 obsolete paths" "^\| 5 \| After external 30-day stability gates"
+check "completion index linked"          "docs/microservices-split-completion-index\.md"
 
 echo
 echo "== Section 5: non-goals enumerated =="
