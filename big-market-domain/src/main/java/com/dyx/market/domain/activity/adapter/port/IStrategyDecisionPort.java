@@ -1,0 +1,44 @@
+package com.dyx.market.domain.activity.adapter.port;
+
+import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
+import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
+
+/**
+ * Domain port for the in-draw strategy decision step.
+ *
+ * Phase 5-D contract.
+ *
+ * Design rationale:
+ *   RaffleApplicationService previously injected IRaffleStrategy directly.
+ *   This port is the future routing seam that allows the strategy decision
+ *   step to be swapped between the local in-process call and a future remote
+ *   Dubbo call without changing the orchestrator.
+ *
+ * Local path (default):
+ *   LocalStrategyDecisionPort (in big-market-infrastructure) delegates to the
+ *   existing in-process IRaffleStrategy bean. Behavior is identical to the
+ *   pre-5-D direct call. Active when no other IStrategyDecisionPort bean exists
+ *   (@ConditionalOnMissingBean).
+ *
+ * Remote path (future, NOT introduced in this batch):
+ *   A future StrategyRemoteDecisionPort would be guarded by
+ *   strategy.service.remote-decision.enabled=false. It must not be introduced
+ *   until Phase 5-G saga design is approved and all preconditions in
+ *   docs/microservices-split-phase-5-draw-command-boundary.md §7 are met.
+ */
+public interface IStrategyDecisionPort {
+
+    /**
+     * Execute the strategy decision for a confirmed raffle participation.
+     *
+     * Semantics are identical to IRaffleStrategy.performRaffle: runs the
+     * rule-chain and rule-tree, decrements Redis award stock, and returns
+     * the selected award. The Redis stock decrement is non-reversible in
+     * this batch; do not add retry or compensation logic here.
+     *
+     * @param factor raffle factor entity carrying userId, strategyId, endDateTime
+     * @return the selected award entity
+     */
+    RaffleAwardEntity performRaffle(RaffleFactorEntity factor);
+
+}

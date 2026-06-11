@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design is next.
+Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Remote strategy decision remains future work — strategy.service.remote-decision.enabled not introduced. Phase 5-E award fulfillment port extension is next.
 
 ---
 
@@ -369,11 +369,11 @@ default flag, validation, risk, dependencies, completion criteria.
 
 **5-A** Orchestration map doc — `docs/microservices-split-phase-5-activity-draw-orchestration.md`. Type: docs. Risk: Medium. **Done** — draw call graph, domain dependencies, MQ/job touchpoints, candidate adapters, non-goals. Tag: `phase-5-activity-draw-orchestration-map`.
 
-**5-B** Draw-command boundary design doc. Type: docs. Risk: Medium.
+**5-B** Draw-command boundary design doc — `docs/microservices-split-phase-5-draw-command-boundary.md`. Type: docs. Risk: Medium. **Done** — two orchestration options assessed; Option A (keep orchestration in market-service, isolate adapters) recommended; DrawCommand/DrawResult contract drafted; idempotency, rollback, and preconditions documented. Tag: `phase-5-strategy-decision-port-boundary`.
 
-**5-C** Re-verify `IActivityAccountPort` (B11–B14 invariants) under Phase 4 ordering. Type: validator. Risk: Low.
+**5-C** Re-verify `IActivityAccountPort` (B11–B14 invariants) under Phase 4 ordering — `docs/microservices-split-phase-5-account-quota-port-reverification.md`. Type: validator/docs. Risk: Low. **Done** — all B11–B14 invariants confirmed intact after Phase 4; local default active; remote decrement disabled; blockers documented. Tag: `phase-5-strategy-decision-port-boundary`.
 
-**5-D** Strategy decision adapter (`IStrategyDecisionAdapter`, local default, remote behind `strategy.service.remote-decision.enabled=false`). Type: adapter. Risk: Medium.
+**5-D** Strategy decision port (`IStrategyDecisionPort`, local default `LocalStrategyDecisionPort`; `RaffleApplicationService` updated). Type: adapter. Risk: Medium. **Done** — local port introduced; all draw execution in-process; no remote-decision flag introduced. Remote strategy decision is future Phase 5-G work. Tag: `phase-5-strategy-decision-port-boundary`.
 
 **5-E** Extend `IAwardDispatchAdapter` coverage for the raffle path (currently used by message-job for credit-award outbox). Type: adapter. Risk: Medium.
 

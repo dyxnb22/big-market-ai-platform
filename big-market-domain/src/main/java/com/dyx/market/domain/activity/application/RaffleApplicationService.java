@@ -5,9 +5,9 @@ import com.dyx.market.domain.activity.service.IRaffleActivityPartakeService;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.valobj.AwardStateVO;
 import com.dyx.market.domain.award.service.IAwardService;
+import com.dyx.market.domain.activity.adapter.port.IStrategyDecisionPort;
 import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
-import com.dyx.market.domain.strategy.service.IRaffleStrategy;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ public class RaffleApplicationService {
     @Resource
     private IRaffleActivityPartakeService raffleActivityPartakeService;
     @Resource
-    private IRaffleStrategy raffleStrategy;
+    private IStrategyDecisionPort strategyDecisionPort;
     @Resource
     private IAwardService awardService;
 
@@ -44,7 +44,7 @@ public class RaffleApplicationService {
         log.info("活动抽奖，创建订单 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
 
         // 3. 抽奖策略 - 执行抽奖
-        RaffleAwardEntity raffleAwardEntity = raffleStrategy.performRaffle(RaffleFactorEntity.builder()
+        RaffleAwardEntity raffleAwardEntity = strategyDecisionPort.performRaffle(RaffleFactorEntity.builder()
                 .userId(orderEntity.getUserId())
                 .strategyId(orderEntity.getStrategyId())
                 .endDateTime(orderEntity.getEndDateTime())

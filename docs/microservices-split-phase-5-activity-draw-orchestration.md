@@ -9,7 +9,11 @@
 > sequenced against a shared, auditable baseline.
 >
 > Last revised: 2026-06-11.
-> Status anchor: Phase 4-D/E/F complete. Phase 5-A docs-only.
+> Status anchor: Phase 4-D/E/F complete. Phase 5-A docs-only. Phase 5-B draw-command
+> boundary design doc complete. Phase 5-C account/quota port re-verification doc complete.
+> Phase 5-D local strategy decision port introduced (IStrategyDecisionPort + LocalStrategyDecisionPort);
+> RaffleApplicationService now uses the port. All draw execution remains in-process.
+> Remote strategy decision is future work; strategy.service.remote-decision.enabled not introduced.
 
 ---
 
@@ -136,24 +140,28 @@ step 3 out of process.
 These adapter interfaces do not exist yet. They are named here so that
 Phase 5-B/C/D can be planned against consistent names.
 
-### 7.1 IStrategyDecisionAdapter (Phase 5-D)
+### 7.1 IStrategyDecisionPort (Phase 5-D) — DONE
 
 Replaces the direct `IRaffleStrategy.performRaffle` call in
-`RaffleApplicationService`.
+`RaffleApplicationService`. Introduced as a domain-side port (not trigger-side
+adapter) to avoid a dependency inversion violation.
 
 ```
-interface IStrategyDecisionAdapter {
+interface IStrategyDecisionPort {
     RaffleAwardEntity performRaffle(RaffleFactorEntity factor);
 }
 ```
 
-- `LocalStrategyDecisionAdapter`: delegates to existing in-process `IRaffleStrategy`.
-  Default bean (`@ConditionalOnMissingBean`).
-- `StrategyRemoteDecisionAdapter` (in market-service config):
-  guarded by `strategy.service.remote-decision.enabled=false`.
-  Falls back to local on failure.
-- Gate: `strategy.service.remote-decision.enabled` defaults false.
-  Must not be enabled until Phase 5-G saga design is approved.
+- `IStrategyDecisionPort`:
+  `big-market-domain/.../domain/activity/adapter/port/IStrategyDecisionPort.java`
+- `LocalStrategyDecisionPort`:
+  `big-market-infrastructure/.../infrastructure/adapter/port/LocalStrategyDecisionPort.java`
+  Default bean (`@ConditionalOnMissingBean`). Delegates to in-process `IRaffleStrategy`.
+- `RaffleApplicationService` now injects `IStrategyDecisionPort` instead of `IRaffleStrategy`.
+- `StrategyRemoteDecisionPort` (future, in market-service config):
+  NOT introduced in this batch. Will be guarded by `strategy.service.remote-decision.enabled=false`.
+- Gate: `strategy.service.remote-decision.enabled` not introduced yet.
+  Must not be introduced until Phase 5-G saga design is approved.
 
 ### 7.2 IActivityAccountPort / quota saga port (Phase 5-C re-verify)
 
