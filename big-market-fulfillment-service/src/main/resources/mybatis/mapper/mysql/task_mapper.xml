@@ -39,7 +39,7 @@
         from task
         where state = 'fail' or (state = 'create' and update_time &lt; DATE_SUB(NOW(), INTERVAL 6 SECOND))
         limit 10
-        -- Recommended index: ALTER TABLE task ADD INDEX idx_state_update (state, update_time);
+        <!-- performance note: an index on (state, update_time) helps this query -->
     </select>
 
 </mapper>
