@@ -1,16 +1,11 @@
 package com.dyx.market.trigger.http;
 
-import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
 import com.dyx.market.domain.auth.service.IAuthService;
-import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
-import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
-import com.dyx.market.domain.strategy.model.valobj.RuleWeightVO;
-import com.dyx.market.domain.strategy.service.IRaffleAward;
-import com.dyx.market.domain.strategy.service.IRaffleRule;
 import com.dyx.market.domain.strategy.service.IRaffleStrategy;
 import com.dyx.market.domain.strategy.service.armory.IStrategyArmory;
+import com.dyx.market.trigger.adapter.IStrategyReadAdapter;
 import com.dyx.market.trigger.api.IRaffleStrategyService;
 import com.dyx.market.trigger.api.dto.*;
 import com.dyx.market.types.enums.ResponseCode;
@@ -19,14 +14,11 @@ import com.dyx.market.trigger.api.response.Response;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -37,26 +29,21 @@ import java.util.Map;
 @RestController()
 @CrossOrigin("${app.config.cross-origin}")
 @RequestMapping("/api/${app.config.api-version}/raffle/strategy/")
-@DubboService(version = "1.0")
 public class RaffleStrategyController implements IRaffleStrategyService {
 
-    @Resource
-    private IRaffleAward raffleAward;
-    @Resource
-    private IRaffleRule raffleRule;
     @Resource
     private IRaffleStrategy raffleStrategy;
     @Resource
     private IStrategyArmory strategyArmory;
     @Resource
-    private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
-    @Resource
     private IAuthService authService;
     @Resource
     private HttpServletRequest httpServletRequest;
-    // Phase 2.2-B1: routes read-only account count queries; flag defaults to local service.
+    // Phase 4-D: routes queryRaffleAwardList and queryRaffleStrategyRuleWeight read endpoints.
+    // Local default: LocalStrategyReadAdapter (IRaffleAward + IRaffleRule + IAccountReadAdapter).
+    // Remote path: StrategyRemoteReadAdapter (strategy.service.remote-read.enabled=false by default).
     @Resource
-    private IAccountReadAdapter accountRemoteReadAdapter;
+    private IStrategyReadAdapter strategyReadAdapter;
 
     /**
      * 策略装配，将策略信息装配到缓存中
@@ -129,38 +116,14 @@ public class RaffleStrategyController implements IRaffleStrategyService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // 2. 查询奖品配置
-            List<StrategyAwardEntity> strategyAwardEntities = raffleAward.queryRaffleStrategyAwardListByActivityId(request.getActivityId());
-            // 3. 获取规则配置
-            String[] treeIds = strategyAwardEntities.stream()
-                    .map(StrategyAwardEntity::getRuleModels)
-                    .filter(ruleModel -> ruleModel != null && !ruleModel.isEmpty())
-                    .toArray(String[]::new);
-            // 4. 查询规则配置 - 获取奖品的解锁限制，抽奖N次后解锁
-            Map<String, Integer> ruleLockCountMap = raffleRule.queryAwardRuleLockCount(treeIds);
-            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
-            Integer dayPartakeCount = accountRemoteReadAdapter.queryRaffleActivityAccountDayPartakeCount(request.getActivityId(), request.getUserId());
-            // 6. 遍历填充数据
-            List<RaffleAwardListResponseDTO> raffleAwardListResponseDTOS = new ArrayList<>(strategyAwardEntities.size());
-            for (StrategyAwardEntity strategyAward : strategyAwardEntities) {
-                Integer awardRuleLockCount = ruleLockCountMap.get(strategyAward.getRuleModels());
-                raffleAwardListResponseDTOS.add(RaffleAwardListResponseDTO.builder()
-                        .awardId(strategyAward.getAwardId())
-                        .awardTitle(strategyAward.getAwardTitle())
-                        .awardSubtitle(strategyAward.getAwardSubtitle())
-                        .sort(strategyAward.getSort())
-                        .awardRuleLockCount(awardRuleLockCount)
-                        .isAwardUnlock(null == awardRuleLockCount || dayPartakeCount >= awardRuleLockCount)
-                        .waitUnLockCount(null == awardRuleLockCount || awardRuleLockCount <= dayPartakeCount ? 0 : awardRuleLockCount - dayPartakeCount)
-                        .build());
-            }
+            // Phase 4-D: routed through IStrategyReadAdapter (local default; remote when flag=true).
+            List<RaffleAwardListResponseDTO> data = strategyReadAdapter.queryRaffleAwardList(request);
             Response<List<RaffleAwardListResponseDTO>> response = Response.<List<RaffleAwardListResponseDTO>>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(raffleAwardListResponseDTOS)
+                    .data(data)
                     .build();
             log.info("查询抽奖奖品列表配置完成 userId:{} activityId：{} response: {}", request.getUserId(), request.getActivityId(), JSON.toJSONString(response));
-            // 返回结果
             return response;
         } catch (Exception e) {
             log.error("查询抽奖奖品列表配置失败 userId:{} activityId：{}", request.getUserId(), request.getActivityId(), e);
@@ -191,33 +154,12 @@ public class RaffleStrategyController implements IRaffleStrategyService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
-            Integer userActivityAccountTotalUseCount = accountRemoteReadAdapter.queryRaffleActivityAccountPartakeCount(request.getActivityId(), request.getUserId());
-            // 3. 查询规则
-            List<RaffleStrategyRuleWeightResponseDTO> raffleStrategyRuleWeightList = new ArrayList<>();
-            List<RuleWeightVO> ruleWeightVOList = raffleRule.queryAwardRuleWeightByActivityId(request.getActivityId());
-            for (RuleWeightVO ruleWeightVO : ruleWeightVOList) {
-                // 转换对象
-                List<RaffleStrategyRuleWeightResponseDTO.StrategyAward> strategyAwards = new ArrayList<>();
-                List<RuleWeightVO.Award> awardList = ruleWeightVO.getAwardList();
-                for (RuleWeightVO.Award award : awardList) {
-                    RaffleStrategyRuleWeightResponseDTO.StrategyAward strategyAward = new RaffleStrategyRuleWeightResponseDTO.StrategyAward();
-                    strategyAward.setAwardId(award.getAwardId());
-                    strategyAward.setAwardTitle(award.getAwardTitle());
-                    strategyAwards.add(strategyAward);
-                }
-                // 封装对象
-                RaffleStrategyRuleWeightResponseDTO raffleStrategyRuleWeightResponseDTO = new RaffleStrategyRuleWeightResponseDTO();
-                raffleStrategyRuleWeightResponseDTO.setRuleWeightCount(ruleWeightVO.getWeight());
-                raffleStrategyRuleWeightResponseDTO.setStrategyAwards(strategyAwards);
-                raffleStrategyRuleWeightResponseDTO.setUserActivityAccountTotalUseCount(userActivityAccountTotalUseCount);
-
-                raffleStrategyRuleWeightList.add(raffleStrategyRuleWeightResponseDTO);
-            }
+            // Phase 4-D: routed through IStrategyReadAdapter (local default; remote when flag=true).
+            List<RaffleStrategyRuleWeightResponseDTO> data = strategyReadAdapter.queryRaffleStrategyRuleWeight(request);
             Response<List<RaffleStrategyRuleWeightResponseDTO>> response = Response.<List<RaffleStrategyRuleWeightResponseDTO>>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(raffleStrategyRuleWeightList)
+                    .data(data)
                     .build();
             log.info("查询抽奖策略权重规则配置完成 userId:{} activityId：{} response: {}", request.getUserId(), request.getActivityId(), JSON.toJSONString(response));
             return response;

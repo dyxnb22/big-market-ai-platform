@@ -54,7 +54,7 @@ the stock-job path, which is NOT in scope for Phase 4 read extraction.
 
 ## 3. Read Paths from Controllers
 
-### `RaffleStrategyController` (HTTP + legacy `@DubboService`)
+### `RaffleStrategyController` (HTTP) + Legacy RPC Provider
 
 | HTTP endpoint | Domain services called | Cross-domain? |
 |---------------|------------------------|---------------|
@@ -136,35 +136,92 @@ evaluation, rule-tree evaluation, stock decrement). These remain in-process in
 Any change that routes `performRaffle` calls out of process before Phase 5 sign-off
 **violates the hard safety boundary** in the master plan.
 
-## 8. Remaining Blockers Before Remote Strategy Read Traffic Can Be Enabled
+## 8. Phase 4-D Adapter Design
+
+### IStrategyReadAdapter (trigger.adapter)
+
+Boundary interface with two methods matching `IStrategyReadService`:
+- `queryRaffleAwardList(RaffleAwardListRequestDTO)` → `List<RaffleAwardListResponseDTO>`
+- `queryRaffleStrategyRuleWeight(RaffleStrategyRuleWeightRequestDTO)` → `List<RaffleStrategyRuleWeightResponseDTO>`
+
+**LocalStrategyReadAdapter** (`@ConditionalOnMissingBean`, no `@DubboReference`):
+Preserves the exact local behavior from `RaffleStrategyController` before Phase 4-D.
+Uses `IRaffleAward`, `IRaffleRule`, and `IAccountReadAdapter` (which itself routes
+to account-service when `account.service.remote-read.enabled=true`).
+
+**StrategyRemoteReadAdapter** (market-service config):
+Implements `IStrategyReadAdapter`. Guards remote traffic behind
+`strategy.service.remote-read.enabled=false`. Overrides `LocalStrategyReadAdapter`
+(`@ConditionalOnMissingBean` yields when this bean is present).
+When remote is enabled and call fails: logs and falls back to the same local logic.
+
+### IStrategyAccountParticipationPort (strategy-service port)
+
+Narrow port introduced in `big-market-strategy-service` to supply real account
+participation counts without importing the activity/account domain directly.
+`LocalStrategyAccountParticipationPort` uses `@DubboReference(check=false) IAccountQuotaService`
+— an existing API contract — to call account-service.
+`check=false`: strategy-service startup succeeds even when account-service is unreachable.
+Fallback: returns 0 (conservative; all locked awards remain locked; unlock thresholds appear unmet).
+
+### Legacy Provider Gate
+
+`RaffleStrategyController` remains an always-on HTTP controller. The legacy
+Dubbo provider was split into `trigger.rpc.RaffleStrategyServiceRPC` and gated with:
+```
+@ConditionalOnProperty(name = "strategy.legacy-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
+```
+`matchIfMissing=true` preserves current behavior (legacy RPC provider active by default).
+Set `STRATEGY_LEGACY_RPC_PROVIDER_ENABLED=false` only after all `IRaffleStrategyService`
+consumers are migrated or explicitly retired. This gate is not required for
+`IStrategyReadService` remote-read routing because the new strategy read service uses
+a different Dubbo contract.
+
+### Remote-Read Flag Semantics
+
+| Flag | Location | Default | Effect |
+|------|----------|---------|--------|
+| `strategy.service.remote-read.enabled` | market-service | `false` | Routes read through `IStrategyReadService` when `true` |
+| `strategy.legacy-rpc-provider.enabled` | market-service | `true` | Registers `RaffleStrategyServiceRPC` as legacy `IRaffleStrategyService` provider |
+| `STRATEGY_SERVICE_REMOTE_READ_ENABLED` | docker-compose | `false` | Overrides application.yml |
+| `STRATEGY_LEGACY_RPC_PROVIDER_ENABLED` | docker-compose | `true` | Overrides application.yml |
+
+### Response Parity Requirement
+
+Remote reads must match local behavior before `strategy.service.remote-read.enabled=true`:
+- `dayPartakeCount` in `queryRaffleAwardList` must equal `IAccountReadAdapter.queryRaffleActivityAccountDayPartakeCount`
+- `userActivityAccountTotalUseCount` in `queryRaffleStrategyRuleWeight` must equal `IAccountReadAdapter.queryRaffleActivityAccountPartakeCount`
+
+`IStrategyAccountParticipationPort` in strategy-service satisfies this by calling the same
+`IAccountQuotaService` methods, but **only when account-service is reachable from strategy-service
+in staging**. Until that network path is validated, fallback returns 0 (parity not guaranteed).
+
+## 9. Remaining Blockers Before Remote Strategy Read Traffic Can Be Enabled
 
 1. **Dark-launch only — no Nacos registration yet**: `big-market-strategy-service` is a
    repo-ready module but is not deployed to staging Nacos. No consumer references it.
-2. **Account enrichment port missing**: `isAwardUnlock` and `waitUnLockCount` in
-   `queryRaffleAwardList`, and `userActivityAccountTotalUseCount` in
-   `queryRaffleStrategyRuleWeight`, require an account-participation read port that
-   crosses into the activity/account domain. Phase 4-D work.
-3. **Market-service read adapters not wired**: `IStrategyReadAdapter` (local + remote)
-   has not been introduced in market-service. HTTP callers still call strategy domain
-   services directly. Phase 4-D work.
-4. **Legacy strategy provider in `RaffleStrategyController`**: `@DubboService(version="1.0")`
-   still exports `IRaffleStrategyService` from market-service. A `@ConditionalOnProperty`
-   gate (analogous to `rebate.legacy-rpc-provider.enabled`) must be added before
-   `strategy.service.remote-read.enabled` can be turned on.
-5. **Table ownership not enforced**: `strategy*` and `rule_tree*` tables are accessed
+2. **Account-service reachability from strategy-service not validated**: `IStrategyAccountParticipationPort`
+   delegates to `IAccountQuotaService` via Dubbo, but the network path between strategy-service
+   and account-service has not been validated in staging. Until it is, response parity is not
+   guaranteed (fallback returns 0).
+3. **Legacy `IRaffleStrategyService` consumers still need an owner**: the new read service
+   uses `IStrategyReadService`, so remote-read cutover does not create a duplicate provider.
+   The legacy provider gate is for later `IRaffleStrategyService` cleanup after remaining
+   consumers are migrated or retired.
+4. **Table ownership not enforced**: `strategy*` and `rule_tree*` tables are accessed
    by market-service, message-job-service, and the new strategy-service. Phase 6
    dependency-narrowing work.
-6. **`strategy.service.remote-read.enabled` defaults false**: no traffic is enabled
-   in this batch and must not be enabled until blockers 1–5 are resolved and DBA +
+5. **`strategy.service.remote-read.enabled` defaults false**: no traffic is enabled
+   in this batch and must not be enabled until blockers 1–4 are resolved and DBA +
    Ops + Engineering + Oncall sign off (Phase 8-D approval gate).
 
-## 9. Phase 4 Sub-Batch Implementation Status
+## 10. Phase 4 Sub-Batch Implementation Status
 
 | Sub-batch | Title | Status |
 |-----------|-------|--------|
 | 4-A | Strategy boundary assessment doc (this document) | **Done** |
-| 4-B | `IStrategyReadService` in `big-market-api` | **Done** — narrow read-only contract with `queryRaffleAwardList` + `queryRaffleStrategyRuleWeight` |
-| 4-C | `big-market-strategy-service` dark-launch module | **Done** — port 8089, Dubbo port 20884, provider scanned from `com.dyx.market.strategy.provider` only |
-| 4-D | Market-service `IStrategyReadAdapter` (local + remote) | Pending |
-| 4-E | Strategy scan / mapper / dependency narrowing validator | Pending (partial — Phase 4 validator covers module boundary and provider contract) |
+| 4-B | `IStrategyReadService` in `big-market-api` | **Done** — narrow read-only contract |
+| 4-C | `big-market-strategy-service` dark-launch module | **Done** — port 8089, Dubbo port 20884 |
+| 4-D | `IStrategyReadAdapter` + local/remote impls + legacy gate + account participation port | **Done** — all defaults false/true; no traffic enabled |
+| 4-E | Strategy dependency narrowing validators | **Done** — `validate-microservices-phase-4-strategy-read-adapter.sh` + `validate-microservices-phase-4-strategy-dependency-narrowing.sh` |
 | 4-F | Strategy table ownership mapping doc | Pending (Phase 7 feeds) |

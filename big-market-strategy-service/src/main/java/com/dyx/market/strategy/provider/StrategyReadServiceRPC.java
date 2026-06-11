@@ -5,6 +5,7 @@ import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
 import com.dyx.market.domain.strategy.model.valobj.RuleWeightVO;
 import com.dyx.market.domain.strategy.service.IRaffleAward;
 import com.dyx.market.domain.strategy.service.IRaffleRule;
+import com.dyx.market.strategy.port.IStrategyAccountParticipationPort;
 import com.dyx.market.trigger.api.IStrategyReadService;
 import com.dyx.market.trigger.api.dto.RaffleAwardListRequestDTO;
 import com.dyx.market.trigger.api.dto.RaffleAwardListResponseDTO;
@@ -29,10 +30,9 @@ import java.util.Map;
  * No draw execution, no stock mutation, no activity/account cross-domain calls.
  *
  * Unlock-status enrichment (isAwardUnlock, waitUnLockCount) requires the account
- * participation count, which crosses into the activity/account domain. In this
- * scaffold those fields default conservatively to dayPartakeCount=0 (all awards
- * appear locked unless awardRuleLockCount is null). Phase 4-D will introduce an
- * IStrategyReadAdapter with an account-participation port to supply the real value.
+ * participation count, which crosses into the activity/account domain. Phase 4-D
+ * supplies those counts through IStrategyAccountParticipationPort, backed by the
+ * existing IAccountQuotaService API contract with conservative fallback to 0.
  */
 @Slf4j
 @DubboService(version = "1.0")
@@ -43,6 +43,9 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
 
     @Resource
     private IRaffleRule raffleRule;
+
+    @Resource
+    private IStrategyAccountParticipationPort strategyAccountParticipationPort;
 
     @Override
     public Response<List<RaffleAwardListResponseDTO>> queryRaffleAwardList(RaffleAwardListRequestDTO request) {
@@ -61,8 +64,10 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
 
             Map<String, Integer> ruleLockCountMap = raffleRule.queryAwardRuleLockCount(treeIds);
 
-            // dayPartakeCount defaults to 0; Phase 4-D will supply real value via account port
-            int dayPartakeCount = 0;
+            // Phase 4-D: real day partake count from account-service via IStrategyAccountParticipationPort.
+            // Falls back to 0 if account-service is unreachable (conservative — all locked awards remain locked).
+            int dayPartakeCount = strategyAccountParticipationPort
+                    .queryRaffleActivityAccountDayPartakeCount(request.getActivityId(), request.getUserId());
 
             List<RaffleAwardListResponseDTO> result = new ArrayList<>(strategyAwardEntities.size());
             for (StrategyAwardEntity strategyAward : strategyAwardEntities) {
@@ -108,8 +113,10 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
 
-            // totalUseCount defaults to 0; Phase 4-D will supply real value via account port
-            int userActivityAccountTotalUseCount = 0;
+            // Phase 4-D: real total use count from account-service via IStrategyAccountParticipationPort.
+            // Falls back to 0 if account-service is unreachable (conservative — unlock thresholds appear unmet).
+            int userActivityAccountTotalUseCount = strategyAccountParticipationPort
+                    .queryRaffleActivityAccountPartakeCount(request.getActivityId(), request.getUserId());
 
             List<RuleWeightVO> ruleWeightVOList = raffleRule.queryAwardRuleWeightByActivityId(request.getActivityId());
             List<RaffleStrategyRuleWeightResponseDTO> result = new ArrayList<>();
