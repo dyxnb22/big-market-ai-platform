@@ -52,3 +52,14 @@ cleanup gates by itself.
 
 Green repo validators only mean this checklist and the evidence templates are
 present and still gated. They do not prove that any external cutover occurred.
+
+## Local Learning-Mode Note
+
+The local learning project has a separate LEARNING-MODE-COMPLETE path documented
+in `docs/microservices-learning-mode-closure.md` and
+`docs/evidence/phase-8-local-learning-cutover-evidence.md`.
+
+That path uses LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE only. It
+does not change GNG-D9, does not replace external evidence, and does not prove
+real production readiness. Production readiness is not proven by this local
+learning-mode closure.

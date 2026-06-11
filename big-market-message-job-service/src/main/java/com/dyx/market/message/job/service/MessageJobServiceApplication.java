@@ -1,9 +1,11 @@
 package com.dyx.market.message.job.service;
 
+import com.dyx.market.message.job.config.LocalActivityPortConfig;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -29,6 +31,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "com.dyx.market.infrastructure"
 })
 @EnableDubbo
+@Import(LocalActivityPortConfig.class)
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class MessageJobServiceApplication {

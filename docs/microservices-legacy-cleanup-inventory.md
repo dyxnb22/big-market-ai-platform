@@ -67,7 +67,13 @@ cutover evidence, 7-day stability evidence, and 30-day removal evidence exist.
 
 Explicit exemptions:
 - `big-market-activity-service` intentionally has no mapper XML in Phase 8; it is dark-launch only.
-- `big-market-fulfillment-service` mapper files are service-owned, not shared compatibility copies, and are still protected by service ownership validators.
+- `big-market-fulfillment-service` award mapper files are service-owned and
+  protected by service ownership validators.
+- `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/user_credit_account_mapper.xml`
+  and `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/credit_award_task_mapper.xml`
+  are local learning-mode compatibility copies required for the dark-launch
+  stack to start with shared infrastructure scanning. They are not evidence of
+  account table ownership transfer and remain cleanup-gated.
 
 ## Generic Task and Outbox Fallbacks
 
@@ -85,3 +91,11 @@ No provider, fallback, mapper copy, or shared task/outbox path is removable at
 this time. The repository has readiness docs and validators, but it does not
 contain real DBA/Ops/Engineering/Oncall/Product evidence proving production
 cutover, 7-day stability, or 30-day removal eligibility.
+
+## Learning-Mode Documentation Cleanup
+
+The local learning project is LEARNING-MODE-COMPLETE using
+LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE, but that does not make
+runtime cleanup candidates removable. Documentation cleanup was handled by
+creating `docs/archive/microservices-historical-docs-index.md` and leaving
+validator-referenced historical docs in place.

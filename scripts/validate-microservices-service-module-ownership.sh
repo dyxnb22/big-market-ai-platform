@@ -99,13 +99,17 @@ echo "── 4. fulfillment-service repositories do not use foreign DAOs directl
 assert_file_exists "fulfillment-service provider exists" "$FULFILLMENT/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java"
 assert_zero "fulfillment-service has no direct activity/account/credit DAO import" "$FULFILLMENT/src/main/java" 'IRaffleActivity|IUserRaffleOrderDao|IUserCredit|ICreditAwardTaskDao|IRaffleQuota|com\.dyx\.market\.infrastructure\.dao\.(IRaffle|IUserCredit|ICredit)'
 BAD_FULFILLMENT_MAPPERS=$(find "$FULFILLMENT/src/main/resources/mybatis/mapper" -type f -name '*.xml' 2>/dev/null \
-  | grep -E '/(raffle_|user_credit_|credit_award_task)' || true)
+  | grep -E '/(raffle_|user_credit_|credit_award_task)' \
+  | grep -Ev '/(user_credit_account_mapper|credit_award_task_mapper)\.xml$' || true)
 if [[ -z "$BAD_FULFILLMENT_MAPPERS" ]]; then
-  pass "fulfillment-service has no repository-owned foreign mapper XML"
+  pass "fulfillment-service has no unapproved repository-owned foreign mapper XML"
 else
-  fail "fulfillment-service has repository-owned foreign mapper XML"
+  fail "fulfillment-service has unapproved repository-owned foreign mapper XML"
   printf '%s\n' "$BAD_FULFILLMENT_MAPPERS" | sed 's#^#       #'
 fi
+for mapper in user_credit_account_mapper.xml credit_award_task_mapper.xml; do
+  assert_file_exists "fulfillment-service local learning compatibility mapper present: $mapper" "$FULFILLMENT/src/main/resources/mybatis/mapper/mysql/$mapper"
+done
 
 echo ""
 echo "── 5. message-job-service credit-award task job uses port boundary ──"

@@ -7,6 +7,13 @@ and Product evidence is EXTERNAL-GATED. This index does not prove staging or
 production cutover completion and does not authorize DDL, traffic, outbox, or
 legacy cleanup changes.
 
+Local learning-mode note: `docs/microservices-learning-mode-closure.md` and
+`docs/evidence/phase-8-local-learning-cutover-evidence.md` mark the local
+learning project as LEARNING-MODE-COMPLETE using LOCAL-LEARNING-EVIDENCE and
+SIMULATED-CUTOVER-EVIDENCE. That local path does not replace any external gate
+in this index. production readiness is not proven by this local learning-mode
+closure.
+
 ## Intake Rules
 
 - Keep every missing evidence item marked `EXTERNAL-GATED`.
@@ -29,6 +36,7 @@ The execution evidence templates are:
 - Pack validator: `scripts/validate-microservices-phase-8-cutover-evidence-pack.sh`.
 - Staging intake validator: `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`.
 - Staging consistency validator: `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh`.
+- Learning-mode closure validator: `scripts/validate-microservices-learning-mode-closure.sh`.
 
 Each external gate below must be satisfied by replacing the matching
 EXTERNAL-GATED field in a later evidence batch. These mappings do not mark any

@@ -33,6 +33,7 @@ GATES=(
   "scripts/validate-microservices-phase-8-external-evidence-intake.sh"
   "scripts/validate-microservices-legacy-cleanup-readiness.sh"
   "scripts/validate-microservices-post-cutover-cleanup-gates.sh"
+  "scripts/validate-microservices-learning-mode-closure.sh"
 )
 
 echo ""

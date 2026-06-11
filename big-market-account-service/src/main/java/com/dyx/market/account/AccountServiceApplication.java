@@ -1,9 +1,11 @@
 package com.dyx.market.account;
 
+import com.dyx.market.account.config.LocalActivityPortConfig;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 
 /**
  * Account service: Dubbo RPC provider for credit and activity quota operations.
@@ -29,6 +31,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
         "com.dyx.market.infrastructure"
 })
 @EnableDubbo
+@Import(LocalActivityPortConfig.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class AccountServiceApplication {
 

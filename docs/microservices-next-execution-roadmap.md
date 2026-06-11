@@ -7,14 +7,15 @@ Last revised: 2026-06-11.
 这份文档用于新会话继续跟踪微服务拆分后的下一阶段工作。
 
 当前仓库侧已经完成 Phase 7、Phase 8 的 repo-ready、外部证据接入、
-清理门禁、**Batch 1: Phase 8 cutover evidence execution pack**，以及
+清理门禁、**Batch 1: Phase 8 cutover evidence execution pack**，
 staging evidence intake 的 repo-only 准备批次
-`phase-8-staging-evidence-intake-prep`。
+`phase-8-staging-evidence-intake-prep`，以及本地学习模式收口。
+本地学习模式状态为 LEARNING-MODE-COMPLETE，证据类型为
+LOCAL-LEARNING-EVIDENCE / SIMULATED-CUTOVER-EVIDENCE。
 接下来不要直接做生产切流，也不要默认打开任何
-production/remote/outbox/cutover flag。下一会话建议从
-`phase-8-staging-evidence-intake-prep` 标签继续，优先进入真实
-staging 外部证据录入；如果仍然没有真实外部证据，则只能做 repo-only 的
-证据收集辅助文档或验证增强，不能把任何 staging/production gate 标为完成。
+production/remote/outbox/cutover flag。真实 staging/production 仍然
+EXTERNAL-GATED；如果没有真实外部证据，不能把真实 staging/production gate
+标为完成。
 
 后续路线按顺序分为：
 
@@ -24,7 +25,7 @@ staging 外部证据录入；如果仍然没有真实外部证据，则只能做
 4. 真实 production 切流证据录入。
 5. 7 天稳定后关闭 legacy provider 的准备。
 6. 30 天稳定后清理废弃兼容路径。
-7. 最终微服务拆分收口与归档。
+7. 最终微服务拆分收口与归档。本地学习模式已完成；真实生产路径仍未证明。
 
 新会话可直接复制本文第 10 节的 prompt 作为起始任务。
 
@@ -46,6 +47,8 @@ Current status:
 - `scripts/validate-microservices-split-all-gates.sh` is the aggregate
   repo-only gate and currently covers 21 gates.
 - Real staging and production cutover remain `EXTERNAL-GATED`.
+- Local learning-mode closure is `LEARNING-MODE-COMPLETE` using
+  `docs/evidence/phase-8-local-learning-cutover-evidence.md`.
 - No DDL has been applied by repo automation.
 - No production, remote, outbox, or cutover flag defaults true.
 - No legacy provider or fallback path is eligible for removal yet.
@@ -74,6 +77,23 @@ production cutover must wait for staging GO evidence.
 | 4 | 7-day legacy provider disable readiness | After 7 stable days, prepare default-off legacy provider config and validators | repo + evidence | `phase-8-legacy-provider-disable-after-7d` |
 | 5 | 30-day obsolete path removal readiness | After 30 stable days, remove obsolete local fallbacks and compatibility mapper copies where safe | repo cleanup | `phase-8-obsolete-path-removal-after-30d` |
 | 6 | Final decomposition closure | Produce final closure index and archive historical phase docs | repo-only | `microservices-decomposition-complete` |
+| 7 | Local learning-mode closure | Close the learning project using local Docker/Maven/validator evidence only | local learning | `microservices-learning-mode-complete` DONE |
+
+## Local Learning-Mode Closure
+
+Status: LEARNING-MODE-COMPLETE.
+
+production readiness is not proven by this local learning-mode closure.
+
+Evidence:
+
+- `docs/microservices-learning-mode-closure.md`
+- `docs/evidence/phase-8-local-learning-cutover-evidence.md`
+- `docs/archive/microservices-historical-docs-index.md`
+- `scripts/validate-microservices-learning-mode-closure.sh`
+
+This lane uses LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE from
+actual local commands. It does not prove real staging or production readiness.
 
 ## 3. Batch 1: Cutover Evidence Execution Pack
 

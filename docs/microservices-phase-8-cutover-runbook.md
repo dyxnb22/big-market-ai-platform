@@ -4,6 +4,14 @@ Status: repo readiness complete when validators pass. External cutover is not
 complete. All staging DDL, production canaries, approvals, and live evidence are
 EXTERNAL-GATED.
 
+Local learning-mode note: the local learning project is LEARNING-MODE-COMPLETE
+when `docs/microservices-learning-mode-closure.md`,
+`docs/evidence/phase-8-local-learning-cutover-evidence.md`, and
+`scripts/validate-microservices-learning-mode-closure.sh` pass. That path uses
+LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE only; it does not claim
+real staging or production readiness. Production readiness is not proven by
+this local learning-mode closure.
+
 ## Common Rules
 
 - Do not apply DDL from this repo automatically.
@@ -38,6 +46,8 @@ EXTERNAL-GATED.
   `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`.
 - Staging evidence consistency validator:
   `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh`.
+- Learning-mode closure validator:
+  `scripts/validate-microservices-learning-mode-closure.sh`.
 
 ## Execution Order After Repo Readiness
 

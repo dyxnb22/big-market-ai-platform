@@ -3,9 +3,11 @@
 Last revised: 2026-06-11.
 
 Status summary: Phase 7 is repo-complete. Phase 8 repo readiness is complete,
-but staging and production cutover remain EXTERNAL-GATED. No DDL has been
-applied from this repository, no production traffic flag is enabled by default,
-and no external DBA/Ops/oncall approval is implied by a green repo validator.
+and the local learning-mode decomposition path is LEARNING-MODE-COMPLETE with
+LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE. Staging and production
+cutover remain EXTERNAL-GATED. No DDL has been applied from this repository, no
+production traffic flag is enabled by default, and no external DBA/Ops/oncall
+approval is implied by a green repo validator.
 
 ## Completion Snapshot
 
@@ -23,6 +25,7 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 | Phase 8 staging evidence intake prep | Repo-only missing-evidence detector ready; staging remains EXTERNAL-GATED | `docs/evidence/phase-8-staging-evidence-intake-checklist.md`, `scripts/validate-microservices-phase-8-staging-evidence-intake.sh`, `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh` |
 | Phase 8 hardening gates | Repo-only regression gates | `scripts/validate-microservices-split-all-gates.sh` |
 | Phase 8 external evidence and cleanup gates | Repo-only intake/readiness scaffolds; all evidence missing and EXTERNAL-GATED | `scripts/validate-microservices-phase-8-external-evidence-intake.sh`, `scripts/validate-microservices-legacy-cleanup-readiness.sh`, `scripts/validate-microservices-post-cutover-cleanup-gates.sh` |
+| Local learning-mode closure | LEARNING-MODE-COMPLETE for local Docker/Maven/validator evidence only; real production readiness not proven | `docs/microservices-learning-mode-closure.md`, `docs/evidence/phase-8-local-learning-cutover-evidence.md`, `scripts/validate-microservices-learning-mode-closure.sh` |
 
 ## AL-1 Through AL-11 Status
 
@@ -58,6 +61,9 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 
 ## Remaining External Gates
 
+These external gates remain not applicable / not proven for this local learning
+project even though the local learning-mode path is LEARNING-MODE-COMPLETE.
+
 - DBA review and application of proposed DDL under `docs/sql/proposed-*.sql`.
 - Per-service DB users/grants and secret rollout.
 - Nacos/Dubbo provider verification in staging.
@@ -80,6 +86,19 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 4. 30-day obsolete-path removal: propose repository cleanup only after the 30-day gate in `docs/microservices-legacy-cleanup-inventory.md`.
 5. Keep `scripts/validate-microservices-split-all-gates.sh` in CI as the single repo-only split gate.
 
+## Local Learning-Mode Closure
+
+The local learning-mode lane is separate from external cutover. Its active
+evidence is:
+
+- Closure: `docs/microservices-learning-mode-closure.md`
+- Local evidence: `docs/evidence/phase-8-local-learning-cutover-evidence.md`
+- Archive/cleanup index: `docs/archive/microservices-historical-docs-index.md`
+- Validator: `scripts/validate-microservices-learning-mode-closure.sh`
+
+The local lane uses actual local commands and simulated role equivalents. It
+does not claim real staging readiness or real production readiness.
+
 ## Cross-Links
 
 - Master plan: `docs/microservices-decomposition-master-plan.md`
@@ -91,6 +110,9 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 - Phase 8 production evidence template: `docs/evidence/phase-8-production-cutover-evidence-template.md`
 - Phase 8 GO/NO-GO checklist: `docs/evidence/phase-8-go-no-go-checklist.md`
 - Legacy cleanup inventory: `docs/microservices-legacy-cleanup-inventory.md`
+- Learning-mode closure: `docs/microservices-learning-mode-closure.md`
+- Learning-mode local evidence: `docs/evidence/phase-8-local-learning-cutover-evidence.md`
+- Historical docs archive index: `docs/archive/microservices-historical-docs-index.md`
 - Aggregate repo-only gate: `scripts/validate-microservices-split-all-gates.sh`
 - Service module ownership gate: `scripts/validate-microservices-service-module-ownership.sh`
 - Production flag matrix gate: `scripts/validate-microservices-production-flag-matrix.sh`
@@ -100,6 +122,7 @@ and no external DBA/Ops/oncall approval is implied by a green repo validator.
 - Staging evidence consistency gate: `scripts/validate-microservices-phase-8-staging-evidence-consistency.sh`
 - Legacy cleanup readiness gate: `scripts/validate-microservices-legacy-cleanup-readiness.sh`
 - Post-cutover cleanup gate: `scripts/validate-microservices-post-cutover-cleanup-gates.sh`
+- Learning-mode closure gate: `scripts/validate-microservices-learning-mode-closure.sh`
 - Current readiness tag: `phase-7-complete-phase-8-readiness`
 - Previous readiness tag: `phase-8-cutover-readiness-pack`
 - Current evidence pack tag target: `phase-8-cutover-evidence-execution-pack`

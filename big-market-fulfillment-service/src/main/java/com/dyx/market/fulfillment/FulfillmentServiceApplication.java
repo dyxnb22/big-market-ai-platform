@@ -27,6 +27,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.fulfillment",
         "com.dyx.market.domain.award",
+        "com.dyx.market.domain.activity.adapter.event",
         "com.dyx.market.infrastructure"
 })
 @EnableDubbo
