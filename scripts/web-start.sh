@@ -12,7 +12,7 @@ if [[ -f logs/big-market-web.pid ]] && kill -0 "$(cat logs/big-market-web.pid)" 
 fi
 
 screen -S big-market-web -X quit >/dev/null 2>&1 || true
-screen -dmS big-market-web bash -lc 'cd /Users/diaoyuxuan/big-market-ai-platform/big-market-web && echo $$ > ../logs/big-market-web.pid && exec python3 -m http.server 5173 --bind 127.0.0.1 > ../logs/big-market-web.log 2>&1'
+screen -dmS big-market-web bash -lc 'cd "$1/big-market-web" && echo $$ > "$1/logs/big-market-web.pid" && exec python3 server.py 5173 > "$1/logs/big-market-web.log" 2>&1' bash "$ROOT_DIR"
 
 for _ in $(seq 1 20); do
   if curl -fsS http://127.0.0.1:5173 >/dev/null 2>&1; then

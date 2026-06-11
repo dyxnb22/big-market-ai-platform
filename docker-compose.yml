@@ -322,6 +322,23 @@ services:
       retries: 5
       start_period: 30s
 
+  # ─────────────────────────── Web Frontend ────────────────────────────────
+
+  big-market-web:
+    build:
+      context: .
+      dockerfile: big-market-web/Dockerfile
+    image: big-market-web:latest
+    container_name: big-market-web
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      big-market-gateway:
+        condition: service_healthy
+    networks:
+      - dev-ops_my-network
+
 # ─────────────────────────── Networks ────────────────────────────────────────
 # Attach to the existing infrastructure network instead of creating a new one.
 # The infra stack (mysql, redis, rabbitmq, nacos, elasticsearch) must already

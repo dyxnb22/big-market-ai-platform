@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# =============================================================================
+# DEPRECATED — This script starts the legacy single-JVM big-market-app on :8098.
+#
+# The project has migrated to a microservices architecture behind the gateway.
+# Use the following commands instead:
+#
+#   docker compose up --build -d          # Start all backend services + gateway
+#   ./scripts/web-start.sh                 # Start frontend on :5173
+#
+# The gateway runs on :8080 and routes to 7+ backend services.
+# =============================================================================
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"

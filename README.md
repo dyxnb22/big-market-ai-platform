@@ -167,14 +167,43 @@ mvn -DskipTests package
 ./scripts/app-status.sh
 ```
 
-应用默认地址：`http://127.0.0.1:8098`
+应用默认地址（gateway）：`http://127.0.0.1:8080`
 
-前端页面：
+### 启动开发环境
 
 ```bash
+# 1. 启动中间件
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
+
+# 2. 打包
+mvn -DskipTests package
+
+# 3. 启动微服务栈（gateway + 7 个后端服务）
+docker compose up -d --build
+
+# 4. 启动前端（开发模式，端口 5173）
 ./scripts/web-start.sh
-open http://127.0.0.1:5173
+open http://127.0.0.1:5173/login.html
 ```
+
+前端 API 默认走 `http://127.0.0.1:8080/api/v1`（gateway），Docker 部署时自动切换同源 `/api/v1`。
+
+### API 验证
+
+```bash
+# Gateway health
+curl -s http://127.0.0.1:8080/actuator/health
+
+# 登录
+curl -s http://127.0.0.1:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"xiaofuge","password":"demo"}'
+
+# 完整 smoke test
+./scripts/smoke-api.sh
+```
+
+---
 
 接口冒烟：
 

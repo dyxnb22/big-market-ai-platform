@@ -1,29 +1,24 @@
-const API_BASE = "http://127.0.0.1:8098/api/v1";
-const AUTH_KEY = "lucky-draw-auth";
-const ACTIVITY_ID = 100301;
-
-/** Read JSON from localStorage safely */
-function readJson(key, fallback) {
-  try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-  catch (e) { return fallback; }
-}
-
-// ===== Auth gate =====
-var auth = readJson(AUTH_KEY, {token: "", userId: ""});
+var auth = readAuth();
 var CHAT_KEY = "lucky-draw-chats-" + (auth.userId || "anon");
 
+// ===== Auth gate =====
 if (!auth.token) {
   showLanding();
 } else {
-  // Show landing first, then validate token
   showLanding();
-  fetch(API_BASE + "/auth/verify", { headers: {"Authorization": auth.token} })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.code === "0000") initApp();
-      else { localStorage.removeItem(AUTH_KEY); }
-    })
-    .catch(function() { initApp(); });
+  // Verify token — only enter app on success
+  apiRequest("/auth/verify", {}, {
+    onAuthExpired: function() {
+      clearAuth();
+      toast("登录已过期，请重新登录");
+    }
+  }).then(function() {
+    initApp();
+  }).catch(function(e) {
+    clearAuth();
+    // Network error — show toast on landing
+    toast("后端不可用: " + e.message);
+  });
 }
 
 function showLanding() {
@@ -84,6 +79,7 @@ function initApp() {
   };
 
   function qs(sel) { return document.querySelector(sel); }
+  var creditMobile = document.getElementById("creditDisplayMobile");
 
   var chatState = readJson(CHAT_KEY, defaultChats());
   var awards = [
@@ -98,24 +94,20 @@ function initApp() {
   var ctxTargetId = null;
   var signedToday = false;
 
+  function readJson(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch (e) { return fallback; }
+  }
+
   function defaultChats() {
     var id = crypto.randomUUID();
     return { activeId: id, conversations: [{ id: id, title: "新的对话", messages: [] }] };
   }
   function saveChats() { localStorage.setItem(CHAT_KEY, JSON.stringify(chatState)); }
 
-  // ---- API ----
-  function request(path, opts) {
-    opts = opts || {};
-    var headers = Object.assign({"Content-Type": "application/json"}, opts.headers || {});
-    if (auth.token) headers.Authorization = auth.token;
-    return fetch(API_BASE + path, Object.assign({}, opts, {headers: headers}))
-      .then(function(r) { return r.json().then(function(d) { if (!r.ok) throw new Error(d.info||"HTTP "+r.status); return d; }); });
-  }
-
-  // ---- Health ----
+  // ---- Health (via gateway) ----
   function healthCheck() {
-    fetch("http://127.0.0.1:8098/actuator/health")
+    fetch(CONFIG.API_BASE.replace("/api/v1", "") + "/actuator/health")
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var up = data.status === "UP";
@@ -136,7 +128,7 @@ function initApp() {
 
   // ---- Logout ----
   function logout() {
-    localStorage.removeItem(AUTH_KEY);
+    clearAuth();
     location.reload();
   }
 
@@ -156,12 +148,25 @@ function initApp() {
     });
   }
 
+  /** Update connection status indicator */
+  function setConnStatus(ok, msg) {
+    d.apiStatusDot.className = "status-dot" + (ok ? " online" : "");
+    d.apiStatusText.textContent = msg || (ok ? "已连接" : "未连接");
+  }
+
+  /** Returns a Promise that resolves when all campaign data has been refreshed. */
   function loadCampaign() {
-    request("/raffle/activity/armory?activityId="+ACTIVITY_ID, {method:"GET"}).catch(function(){});
-    request("/raffle/activity/query_user_activity_account_by_token", {
-      method:"POST", body: JSON.stringify({activityId:ACTIVITY_ID})
-    }).then(function(r) {
-      if (r.code==="0000") {
+    var proms = [];
+
+    // Armory (fire-and-forget, may fail silently)
+    apiRequest("/raffle/activity/armory?activityId=" + CONFIG.ACTIVITY_ID, {method:"GET"}).catch(function(){});
+
+    // User activity account
+    proms.push(
+      apiRequest("/raffle/activity/query_user_activity_account_by_token", {
+        method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
+      }).then(function(r) {
+        setConnStatus(true);
         d.surplusMetric.textContent = r.data?.totalCountSurplus ?? 0;
         d.dayMetric.textContent = r.data?.dayCountSurplus ?? 0;
         d.ucSurplus.textContent = r.data?.totalCountSurplus ?? 0;
@@ -169,44 +174,59 @@ function initApp() {
           d.drawResult.textContent = (Number(r.data?.totalCountSurplus||0)>0)
             ? "准备好了，点击 GO 开始抽奖" : "暂无可用抽奖次数";
         }
-      }
-    }).catch(function(){});
-    request("/raffle/activity/query_user_credit_account_by_token", {method:"POST"}).then(function(r) {
-      if (r.code==="0000") {
+      }).catch(function() { setConnStatus(false, "加载数据失败"); })
+    );
+
+    // User credit account
+    proms.push(
+      apiRequest("/raffle/activity/query_user_credit_account_by_token", {method:"POST"}).then(function(r) {
+        setConnStatus(true);
         d.creditMetric.textContent = r.data ?? 0;
         d.ucCredit.textContent = r.data ?? 0;
         d.creditDisplay.textContent = "积分: " + (r.data ?? 0);
-      }
-    }).catch(function(){});
-    request("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
-      if (r.code==="0000" && r.data===true) {
-        signedToday = true;
-        if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
-        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
-        if (d.ucSigned) d.ucSigned.textContent = "是";
-        if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
-      } else {
-        signedToday = false;
-        if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到"; d.ucSignInBtn.classList.remove("done"); }
-        if (d.ucSigned) d.ucSigned.textContent = "否";
-        if (d.signInStatus) d.signInStatus.textContent = "";
-      }
-    }).catch(function(){});
-    request("/raffle/strategy/query_raffle_award_list_by_token", {
-      method:"POST", body: JSON.stringify({activityId:ACTIVITY_ID})
-    }).then(function(r) {
-      if (r.code==="0000" && r.data?.length) { awards = r.data; renderWheel(); }
-    }).catch(function(){});
+        if (creditMobile) creditMobile.textContent = "积分: " + (r.data ?? 0);
+      }).catch(function() { setConnStatus(false, "加载积分失败"); })
+    );
+
+    // Sign-in status
+    proms.push(
+      apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+        setConnStatus(true);
+        if (r.data === true) {
+          signedToday = true;
+          if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
+          if (d.ucSigned) d.ucSigned.textContent = "是";
+          if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
+        } else {
+          signedToday = false;
+          if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到"; d.ucSignInBtn.classList.remove("done"); }
+          if (d.ucSigned) d.ucSigned.textContent = "否";
+          if (d.signInStatus) d.signInStatus.textContent = "";
+        }
+      }).catch(function() { setConnStatus(false, "加载签到状态失败"); })
+    );
+
+    // Award list
+    proms.push(
+      apiRequest("/raffle/strategy/query_raffle_award_list_by_token", {
+        method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
+      }).then(function(r) {
+        setConnStatus(true);
+        if (r.data?.length) { awards = r.data; renderWheel(); }
+      }).catch(function() { setConnStatus(false, "加载奖品列表失败"); })
+    );
+
+    return Promise.all(proms);
   }
 
   // ---- Draw ----
   function draw() {
     busy(d.drawBtn, true);
-    request("/raffle/activity/draw_by_token", {
-      method:"POST", body: JSON.stringify({activityId:ACTIVITY_ID})
+    apiRequest("/raffle/activity/draw_by_token", {
+      method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
     }).then(function(r) {
-      if (r.code!=="0000") throw new Error(r.info||"抽奖失败");
       var idx = Math.max(0, awards.findIndex(function(a){return a.awardId===r.data?.awardId;}));
       var seg = 360 / awards.length;
       rotation += 1440 + (360 - idx*seg - seg/2);
@@ -223,20 +243,42 @@ function initApp() {
   function signIn() {
     if (signedToday) { toast("今日已签到"); return; }
     busy(d.signInBtn, true); busy(d.ucSignInBtn, true);
-    try {
-      request("/raffle/activity/calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
-        if (r.code==="0000"||r.code==="0003") {
-          signedToday = true;
-          if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
-          if (d.signInStatus) d.signInStatus.textContent = "签到成功！";
-          if (d.ucSigned) d.ucSigned.textContent = "是";
-          toast(r.code==="0003"?"今日已签到":"签到成功！");
-          loadCampaign().catch(function(){});
-        } else { toast(r.info||"签到失败"); }
-      }).catch(function(e) { toast(e.message||"请求失败"); })
-      .finally(function() { busy(d.signInBtn, false); busy(d.ucSignInBtn, false); });
-    } catch(e) { toast("签到异常: "+e.message); busy(d.signInBtn, false); busy(d.ucSignInBtn, false); }
+    apiRequest("/raffle/activity/calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+      signedToday = true;
+      if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
+      if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
+      if (d.signInStatus) d.signInStatus.textContent = "签到成功！";
+      if (d.ucSigned) d.ucSigned.textContent = "是";
+      toast("签到成功！");
+      loadCampaign().catch(function(){});
+    }).catch(function(e) {
+      if (e.code === "0003") {
+        treatSignedIn(); toast("今日已签到");
+      } else {
+        // Sign-in might have failed because already signed in today
+        // (loadCampaign may not have refreshed signedToday). Check status.
+        apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+          if (r.data === true) {
+            treatSignedIn(); toast("今日已签到");
+          } else {
+            toast(e.message || "签到失败");
+          }
+        }).catch(function() {
+          toast(e.message || "签到失败");
+        });
+      }
+    }).finally(function() {
+      busy(d.signInBtn, false);
+      busy(d.ucSignInBtn, false);
+    });
+  }
+
+  function treatSignedIn() {
+    signedToday = true;
+    if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
+    if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
+    if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
+    if (d.ucSigned) d.ucSigned.textContent = "是";
   }
 
   // ---- Chat ----
@@ -308,9 +350,9 @@ function initApp() {
     addMsg("user", text);
     d.msgInput.value = ""; d.msgInput.style.height = "auto";
     busy(d.sendBtn, true);
-    request("/chatbot/ask", {
+    apiRequest("/chatbot/ask", {
       method:"POST",
-      body: JSON.stringify({token:auth.token||"", activityId:ACTIVITY_ID, message:text})
+      body: JSON.stringify({token:auth.token||"", activityId:CONFIG.ACTIVITY_ID, message:text})
     }).then(function(r) {
       addMsg("assistant", (r.data&&r.data.answer)||r.info||"已处理。");
     }).catch(function(e) {
@@ -350,21 +392,23 @@ function initApp() {
   function closeAll() { closeDrawer(d.lotteryDrawer); closeDrawer(d.userCenterDrawr); }
   function openLottery() { openDrawer(d.lotteryDrawer); loadCampaign().catch(function(){}); }
   function closeLottery() { closeDrawer(d.lotteryDrawer); }
-  function openUserCenter() { console.log("openUserCenter called"); openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); }
+  function openUserCenter() { openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); }
   function closeUserCenter() { closeDrawer(d.userCenterDrawr); }
 
   // ---- Utility ----
   function busy(el, v) { if (el) { el.disabled = v; el.style.opacity = v?"0.5":""; } }
-  function toast(msg) {
-    if (!d.toast) return;
-    d.toast.textContent = msg; d.toast.classList.add("show");
-    clearTimeout(d.toast._t); d.toast._t = setTimeout(function(){d.toast.classList.remove("show");},2200);
-  }
-  function esc(v) { return String(v).replace(/[&<>"']/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 
   // Expose to inline onclick handlers
   window._uc = openUserCenter;
   window._lottery = openLottery;
+
+  // Mobile nav button bindings
+  var mNewChat = document.getElementById("mNewChatBtn");
+  var mUc = document.getElementById("mUserCenterBtn");
+  var mLottery = document.getElementById("mOpenLotteryBtn");
+  if (mNewChat) mNewChat.onclick = newChat;
+  if (mUc) mUc.onclick = openUserCenter;
+  if (mLottery) mLottery.onclick = openLottery;
 
   // ===== EVENT BINDINGS =====
   d.userMenuBtn.onclick = openUserCenter;

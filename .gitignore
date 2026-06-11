@@ -42,3 +42,5 @@ build/
 /docs/evidence/generated/
 /big-market-app/data/
 /push_all_branches.sh
+/logs/*.log
+/logs/*.pid

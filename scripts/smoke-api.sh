@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API="${API:-http://127.0.0.1:8098/api/v1}"
+API="${API:-http://127.0.0.1:8080/api/v1}"
 BASE_URL="${API%/api/v1}"
 
 echo "Actuator health"

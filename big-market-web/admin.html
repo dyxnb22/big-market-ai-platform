@@ -4,18 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>运营管理端 - Lucky Draw AI</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=4" />
 </head>
 <body data-page="admin">
 <div class="admin-shell">
   <aside class="admin-sidebar">
     <a class="logo" href="./index.html">Lucky Draw AI</a>
+    <div class="admin-user-badge" id="adminUserBadge">未登录</div>
     <nav>
-      <a href="#activity">活动配置</a>
-      <a href="#awards">奖品配置</a>
-      <a href="#assistant">AI 配置</a>
-      <a href="./index.html">返回用户端</a>
+      <a href="#activity">📋 活动配置</a>
+      <a href="#awards">🏆 奖品配置</a>
+      <a href="#assistant">🤖 AI 配置</a>
     </nav>
+    <div class="admin-footer">
+      <a href="./admin-login.html" id="adminLoginLink">🔑 登录 / 切换账号</a>
+      <a href="./index.html">← 返回用户端</a>
+    </div>
   </aside>
 
   <main class="admin-main">
@@ -74,6 +78,8 @@
   </main>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="./admin.js"></script>
+<script src="./config.js?v=4"></script>
+<script src="./api-client.js?v=4"></script>
+<script src="./admin.js?v=4"></script>
 </body>
 </html>

@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# =============================================================================
+# DEPRECATED — Legacy monolith stop on :8098.
+#
+# The project has migrated to microservices. Use the following instead:
+#
+#   docker compose down          # Stop all microservice containers
+#   docker compose stop <svc>    # Stop a specific service
+# =============================================================================
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
