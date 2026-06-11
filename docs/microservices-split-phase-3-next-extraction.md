@@ -92,7 +92,7 @@ Why:
 - Consistent pattern: mirrors account-service and fulfillment-service dark-launch modules.
 - Repo-only validation: module wiring, provider package, mapper resources, forbidden trigger dependency, and dangerous flag safety are statically checkable.
 
-## 9. Code-Level Step Implemented
+## 9. Code-Level Step Implemented (Batch 1: rebate-service module boundary)
 
 This batch adds `big-market-rebate-service` as a Maven module:
 
@@ -102,12 +102,60 @@ This batch adds `big-market-rebate-service` as a Maven module:
 - The module does not depend on `big-market-trigger`, does not scan `trigger.http`, `trigger.listener`, `trigger.job`, or `trigger.rpc`, and does not change any caller.
 - No Docker service, gateway route, Nacos traffic, DB connection, MQ execution, or dangerous flag enablement is introduced.
 
-## 10. Validation
+## 10. Code-Level Step Implemented (Batch 2: rebate adapter boundary)
+
+This batch introduces an HTTP caller isolation boundary between `RaffleActivityController` and the rebate domain:
+
+### New adapter interface (`big-market-trigger`)
+
+`com.dyx.market.trigger.adapter.IRebateOrderAdapter` — single method `createOrder(BehaviorEntity)`.
+
+### Local adapter (`big-market-trigger`)
+
+`com.dyx.market.trigger.adapter.LocalRebateOrderAdapter`:
+- Annotated `@ConditionalOnMissingBean(IRebateOrderAdapter.class)`.
+- Delegates directly to `IBehaviorRebateService.createOrder(...)`.
+- Active by default in all launchers that do not provide a remote adapter bean.
+- Preserves all existing business semantics, idempotency key (`userId + SIGN + outBusinessNo = date`), and response behavior.
+
+### Remote-capable adapter (`big-market-market-service`)
+
+`com.dyx.market.market.config.RebateRemoteCreateOrderAdapter`:
+- Annotated `@Component` — overrides the local adapter in market-service (same pattern as `AccountRemoteCreditWriteAdapter`).
+- Guarded by `rebate.service.remote-create-order.enabled` (default `false`, env `REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED`).
+- Supplies the existing `IRebateService` credential contract with `rebate.service.remote-create-order.app-id` (default `chatgpt-data`) and resolves `appToken` from `appTokenMap`.
+- When flag=false: falls through to `IBehaviorRebateService.createOrder` (unchanged behavior).
+- When flag=true: calls `IRebateService.rebate(...)` via `@DubboReference(version="1.0", check=false)`.
+- On remote failure: logs the error and falls back to local domain service.
+- Returns empty list on remote success (`IRebateService.rebate` returns `Boolean`; callers only log the list size).
+
+### Controller wiring (`RaffleActivityController`)
+
+`calendarSignRebate` now injects `IRebateOrderAdapter rebateOrderAdapter` and calls `rebateOrderAdapter.createOrder(behaviorEntity)` instead of `behaviorRebateService.createOrder(...)` directly.
+`isCalendarSignRebate` continues to use `IBehaviorRebateService.queryOrderByOutBusinessNo` directly (read-only, not in scope for this batch).
+
+### Flag defaults
+
+`rebate.service.remote-create-order.enabled=false` set in:
+- `big-market-market-service/src/main/resources/application.yml`
+- `docker-compose.yml` (`REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-false`)
+
+### Remaining cutover blockers before enabling the remote flag
+
+1. **Duplicate provider risk**: both `market-service` (legacy `trigger.rpc.RebateServiceRPC`) and `big-market-rebate-service` export `IRebateService` version 1.0 to Nacos. The legacy provider must be disabled or the Nacos service name must be disambiguated before enabling `rebate.service.remote-create-order.enabled=true`.
+2. **Shared task outbox ownership**: rebate order creation writes to the generic `task` table also used by award and activity flows. Ownership must be clarified before the rebate domain is fully extracted.
+3. **No DB/schema ownership enforcement**: `user_behavior_rebate_order` and `daily_behavior_rebate` tables are not yet behind a separate datasource or access control.
+4. **RebateMessageConsumer unchanged**: MQ-driven rebate result processing remains in `message-job-service` and is not in scope for this batch.
+
+## 11. Validation
 
 Run:
 
 ```bash
 bash scripts/validate-microservices-phase-3-next-extraction.sh
+bash scripts/validate-microservices-phase-3-rebate-adapter.sh
 ```
 
-The validator checks Maven wiring, expected files, forbidden dependencies, package scans, mapper presence, provider contract, dangerous flag defaults, generated evidence status, and this document.
+`validate-microservices-phase-3-next-extraction.sh` checks Maven wiring, expected files, forbidden dependencies, package scans, mapper presence, provider contract, dangerous flag defaults, generated evidence status, and this document.
+
+`validate-microservices-phase-3-rebate-adapter.sh` checks the adapter boundary: interface, local adapter, controller wiring, remote adapter, flag defaults, and cutover blocker documentation.

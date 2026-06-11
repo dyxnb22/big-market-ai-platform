@@ -185,6 +185,17 @@ account:
       # provider is fully implemented, and end-to-end staging validation passes.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
+rebate:
+  service:
+    remote-create-order:
+      # Phase 3 rebate adapter boundary. Default false — local IBehaviorRebateService is used.
+      # Do not enable until: legacy trigger.rpc IRebateService provider in market-service is
+      # disabled (duplicate provider risk), shared task outbox ownership is clarified, and
+      # staging validation for big-market-rebate-service passes.
+      enabled: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:false}
+      # IRebateService requires appId/appToken. Token value is resolved from appTokenMap.
+      app-id: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_APP_ID:chatgpt-data}
+
 management:
   endpoints:
     web:

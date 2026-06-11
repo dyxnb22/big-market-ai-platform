@@ -20,6 +20,7 @@ import com.dyx.market.domain.rebate.model.entity.BehaviorEntity;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
+import com.dyx.market.trigger.adapter.IRebateOrderAdapter;
 import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
 import com.dyx.market.domain.rebate.model.valobj.BehaviorTypeVO;
 import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
@@ -82,6 +83,9 @@ public class RaffleActivityController implements IRaffleActivityService {
     private RaffleApplicationService raffleApplicationService;
     @Resource
     private IBehaviorRebateService behaviorRebateService;
+    // Phase 3: routes calendarSignRebate createOrder; local adapter active by default (flag=false).
+    @Resource
+    private IRebateOrderAdapter rebateOrderAdapter;
     @Resource
     private IAuthService authService;
     @Resource
@@ -321,7 +325,8 @@ public class RaffleActivityController implements IRaffleActivityService {
             behaviorEntity.setUserId(userId);
             behaviorEntity.setBehaviorTypeVO(BehaviorTypeVO.SIGN);
             behaviorEntity.setOutBusinessNo(LocalDate.now().format(DATE_FORMAT_DAY));
-            List<String> orderIds = behaviorRebateService.createOrder(behaviorEntity);
+            // Phase 3: routed through IRebateOrderAdapter (local by default, remote when flag=true).
+            List<String> orderIds = rebateOrderAdapter.createOrder(behaviorEntity);
             log.info("日历签到返利完成 userId:{} orderIds: {}", userId, JSON.toJSONString(orderIds));
             return Response.<Boolean>builder()
                     .code(ResponseCode.SUCCESS.getCode())
