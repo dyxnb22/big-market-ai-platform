@@ -1,0 +1,132 @@
+server:
+  port: ${SERVER_PORT:8089}
+
+spring:
+  application:
+    name: big-market-strategy-service
+  cloud:
+    zookeeper:
+      enabled: false
+
+thread:
+  pool:
+    executor:
+      config:
+        core-pool-size: 20
+        max-pool-size: 50
+        keep-alive-time: 5000
+        block-queue-size: 5000
+        policy: CallerRunsPolicy
+
+mini-db-router:
+  jdbc:
+    datasource:
+      dbCount: 2
+      tbCount: 4
+      default: db00
+      routerKey: userId
+      list: db01,db02
+      db00:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USER:root}
+        password: ${MYSQL_PASS:123456}
+        type-class-name: com.zaxxer.hikari.HikariDataSource
+        pool:
+          pool-name: Retail_HikariCP
+          minimum-idle: 5
+          idle-timeout: 180000
+          maximum-pool-size: 10
+          auto-commit: true
+          max-lifetime: 1800000
+          connection-timeout: 30000
+          connection-test-query: SELECT 1
+      db01:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_01?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USER:root}
+        password: ${MYSQL_PASS:123456}
+        type-class-name: com.zaxxer.hikari.HikariDataSource
+        pool:
+          pool-name: Retail_HikariCP
+          minimum-idle: 5
+          idle-timeout: 180000
+          maximum-pool-size: 10
+          auto-commit: true
+          max-lifetime: 1800000
+          connection-timeout: 30000
+          connection-test-query: SELECT 1
+      db02:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_02?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USER:root}
+        password: ${MYSQL_PASS:123456}
+        type-class-name: com.zaxxer.hikari.HikariDataSource
+        pool:
+          pool-name: Retail_HikariCP
+          minimum-idle: 5
+          idle-timeout: 180000
+          maximum-pool-size: 10
+          auto-commit: true
+          max-lifetime: 1800000
+          connection-timeout: 30000
+          connection-test-query: SELECT 1
+
+mybatis:
+  mapper-locations: classpath:/mybatis/mapper/mysql/*.xml
+  config-location: classpath:/mybatis/config/mybatis-config.xml
+
+redis:
+  sdk:
+    config:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+      pool-size: 10
+      min-idle-size: 5
+      idle-timeout: 30000
+      connect-timeout: 5000
+      retry-attempts: 3
+      retry-interval: 1000
+      ping-interval: 60000
+      keep-alive: true
+
+dubbo:
+  application:
+    name: big-market-strategy
+    version: 1.0
+  registry:
+    id: nacos-registry
+    address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
+    check: false
+  protocol:
+    name: dubbo
+    port: 20884
+  scan:
+    base-packages: com.dyx.market.strategy.provider
+
+# Phase 4-C dark-launch: no traffic flags enabled; remote flag must remain false
+strategy:
+  service:
+    remote-read:
+      enabled: ${STRATEGY_SERVICE_REMOTE_READ_ENABLED:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  prometheus:
+    enabled: true
+
+logging:
+  level:
+    root: info
+    com.dyx.market: info
+  config: classpath:logback-spring.xml

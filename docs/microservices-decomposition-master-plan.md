@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 3 repo-ready (tag `phase-3-rebate-decomposition-readiness`). All Phase 3 sub-batches (3-A through 3-E) complete. Cutover is Phase 8 work.
+Status anchor: Phase 4-A/B/C repo-ready (tag `phase-4-strategy-service-read-boundary`). Phase 3 complete. Phase 4-A/B/C complete. Phase 4-D (adapter wiring) and cutover remain future work.
 
 ---
 
@@ -158,18 +158,23 @@ Read-first because the draw path writes are owned by `RaffleApplicationService`
 orchestration; pulling the strategy reads out first is safe and de-risks the
 later activity/draw split.
 
-| Sub-batch | Title | Type | Notes |
-|-----------|-------|------|-------|
-| 4-A | Strategy boundary assessment doc | docs | Map `domain.strategy` services, callers, and read vs decision write paths |
-| 4-B | Strategy read-only API contract in `big-market-api` | API | `IStrategyReadService` with `queryRaffleAwardList`, `queryRaffleStrategyRuleWeight`, `queryRaffleStrategyArmory`, `queryStrategyAwardEntity` |
-| 4-C | `big-market-strategy-service` dark-launch module | module | New launcher (port `8089`), provider for `IStrategyReadService` only |
-| 4-D | Market-service read adapters (`IStrategyReadAdapter` + local + remote) | adapter | `strategy.service.remote-read.enabled=false` |
-| 4-E | Strategy scan / mapper / dependency narrowing validator | validator | Restrict mapper XMLs to `strategy*`, `rule_tree*`, `strategy_rule*` |
-| 4-F | Strategy table ownership mapping (`strategy`, `strategy_award`, `strategy_rule`, `rule_tree*`) | docs | Feeds Phase 7 |
+| Sub-batch | Title | Type | Status |
+|-----------|-------|------|--------|
+| 4-A | Strategy boundary assessment doc | docs | **Done** — `docs/microservices-split-phase-4-strategy-service.md` |
+| 4-B | Strategy read-only API contract in `big-market-api` | API | **Done** — `IStrategyReadService` with `queryRaffleAwardList` + `queryRaffleStrategyRuleWeight` |
+| 4-C | `big-market-strategy-service` dark-launch module | module | **Done** — port 8089, Dubbo port 20884, `StrategyReadServiceRPC` provider; `strategy.service.remote-read.enabled=false` |
+| 4-D | Market-service read adapters (`IStrategyReadAdapter` + local + remote) | adapter | Pending — `strategy.service.remote-read.enabled=false` |
+| 4-E | Strategy scan / mapper / dependency narrowing validator | validator | Pending — restrict mapper XMLs to `strategy*`, `rule_tree*`, `strategy_rule*` |
+| 4-F | Strategy table ownership mapping (`strategy`, `strategy_award`, `strategy_rule`, `rule_tree*`) | docs | Pending — feeds Phase 7 |
 
 **Non-goal in Phase 4:** moving the draw *decision* call. The draw decision
 writes participation orders and triggers award fulfillment; that flow stays
 in market-service until Phase 5.
+
+**Phase 4-A/B/C exit criteria met:** read-only API contract and dark-launch module
+in place; `strategy.service.remote-read.enabled` defaults false; no trigger dependency;
+provider scans only `com.dyx.market.strategy.provider`; validator script green;
+boundary assessment documents read-first rationale and explicit non-goals.
 
 ### 4.3 Phase 5 — Activity / Draw Orchestration Decomposition
 
