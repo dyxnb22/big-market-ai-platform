@@ -33,6 +33,8 @@
         <module>big-market-fulfillment-service</module>
         <module>big-market-rebate-service</module>
         <module>big-market-strategy-service</module>
+        <!-- Phase 5-F: activity-service dark-launch scaffold (no traffic; no RPC provider) -->
+        <module>big-market-activity-service</module>
     </modules>
 
     <properties>

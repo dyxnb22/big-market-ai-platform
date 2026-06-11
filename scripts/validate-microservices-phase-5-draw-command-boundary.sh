@@ -110,8 +110,16 @@ check_contains "P5B-DOC-5 Phase 5-G referenced" "$BOUNDARY_DOC" "5-G"
 
 # -----------------------------------------------------------------------
 echo ""
-echo "-- [6] No big-market-activity-service module"
-check_not_dir "P5B-MOD-1 activity-service absent" "big-market-activity-service"
+echo "-- [6] activity-service scaffold boundary (Phase 5-F introduced it)"
+# Phase 5-F created big-market-activity-service as a dark-launch scaffold.
+# Verify that no draw execution or provider leaked into the scaffold.
+ACT_SVC_DUBBO=$(find "$ROOT/big-market-activity-service/src" -type f -name "*.java" \
+  -exec grep -l "@DubboService" {} + 2>/dev/null | wc -l | tr -d ' ')
+if [ "$ACT_SVC_DUBBO" = "0" ]; then
+  pass "P5B-MOD-1 activity-service scaffold has no @DubboService (Phase 5-F boundary holds)"
+else
+  fail "P5B-MOD-1 activity-service scaffold has unexpected @DubboService ($ACT_SVC_DUBBO file(s))"
+fi
 
 # -----------------------------------------------------------------------
 echo ""

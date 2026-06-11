@@ -165,11 +165,23 @@ check_contains "P5E-SVC-8 createOrder unchanged" "$RAFFLE_SVC" "raffleActivityPa
 
 # -----------------------------------------------------------------------
 echo ""
-echo "-- [9] No big-market-activity-service module"
-check_not_dir "P5E-MOD-1 activity-service absent" "big-market-activity-service"
-if [ -f "$ROOT/pom.xml" ]; then
-  check_not_contains "P5E-MOD-2 root pom does not register activity-service" \
-    "pom.xml" "<module>big-market-activity-service</module>"
+echo "-- [9] activity-service scaffold (Phase 5-F introduced it; scaffold-only checks)"
+# Phase 5-F created big-market-activity-service as a dark-launch scaffold.
+# No draw execution, no RPC provider, no HTTP controller were added in Phase 5-F.
+# Verify that no @DubboService or controller leaked in.
+ACT_SVC_DUBBO=$(find "$ROOT/big-market-activity-service/src" -type f -name "*.java" \
+  -exec grep -l "@DubboService" {} + 2>/dev/null | wc -l | tr -d ' ')
+if [ "$ACT_SVC_DUBBO" = "0" ]; then
+  pass "P5E-MOD-1 activity-service scaffold has no @DubboService (Phase 5-F boundary holds)"
+else
+  fail "P5E-MOD-1 activity-service scaffold has unexpected @DubboService ($ACT_SVC_DUBBO file(s))"
+fi
+ACT_SVC_CTRL=$(find "$ROOT/big-market-activity-service/src" -type f -name "*.java" \
+  -exec grep -l "@RestController" {} + 2>/dev/null | wc -l | tr -d ' ')
+if [ "$ACT_SVC_CTRL" = "0" ]; then
+  pass "P5E-MOD-2 activity-service scaffold has no @RestController (Phase 5-F boundary holds)"
+else
+  fail "P5E-MOD-2 activity-service scaffold has unexpected @RestController ($ACT_SVC_CTRL file(s))"
 fi
 
 # -----------------------------------------------------------------------

@@ -125,18 +125,22 @@ check_contains "P5A-DOC-5c no remote draw command non-goal" \
 
 # -----------------------------------------------------------------------
 echo ""
-echo "-- [6] No big-market-activity-service module added in this batch"
-check_not_file "P5A-MOD-1 no activity-service module" \
-  "big-market-activity-service"
-
-# Confirm root pom does not register activity-service yet
-ROOT_POM="pom.xml"
-if [ -f "$ROOT/$ROOT_POM" ]; then
-  if grep -qE "<module>big-market-activity-service</module>" "$ROOT/$ROOT_POM"; then
-    fail "P5A-MOD-2 root pom registers activity-service (should not exist yet)"
-  else
-    pass "P5A-MOD-2 root pom does not register activity-service"
-  fi
+echo "-- [6] activity-service scaffold boundary (Phase 5-F introduced dark-launch scaffold)"
+# Phase 5-F created big-market-activity-service as a scaffold. Verify that the scaffold
+# boundary holds: no draw execution, no @DubboService provider, no @RestController added.
+ACT_SVC_DUBBO=$(find "$ROOT/big-market-activity-service/src" -type f -name "*.java" \
+  -exec grep -l "@DubboService" {} + 2>/dev/null | wc -l | tr -d ' ')
+if [ "$ACT_SVC_DUBBO" = "0" ]; then
+  pass "P5A-MOD-1 activity-service scaffold has no @DubboService (Phase 5-F boundary holds)"
+else
+  fail "P5A-MOD-1 activity-service scaffold has unexpected @DubboService ($ACT_SVC_DUBBO file(s))"
+fi
+ACT_SVC_CTRL=$(find "$ROOT/big-market-activity-service/src" -type f -name "*.java" \
+  -exec grep -l "@RestController" {} + 2>/dev/null | wc -l | tr -d ' ')
+if [ "$ACT_SVC_CTRL" = "0" ]; then
+  pass "P5A-MOD-2 activity-service scaffold has no @RestController (Phase 5-F boundary holds)"
+else
+  fail "P5A-MOD-2 activity-service scaffold has unexpected @RestController ($ACT_SVC_CTRL file(s))"
 fi
 
 # -----------------------------------------------------------------------

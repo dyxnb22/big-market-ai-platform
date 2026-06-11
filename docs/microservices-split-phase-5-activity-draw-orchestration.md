@@ -12,9 +12,13 @@
 > Status anchor: Phase 4-D/E/F complete. Phase 5-A docs-only. Phase 5-B draw-command
 > boundary design doc complete. Phase 5-C account/quota port re-verification doc complete.
 > Phase 5-D local strategy decision port introduced. Phase 5-E local award fulfillment
-> port introduced. RaffleApplicationService now uses both ports. All draw execution
-> remains in-process. Remote strategy decision and remote award fulfillment are future
-> work; no new remote draw/award flags were introduced.
+> port introduced. RaffleApplicationService now uses both ports. Phase 5-F
+> big-market-activity-service dark-launch scaffold introduced at port 8090 (tag
+> phase-5-activity-service-dark-launch-scaffold): scan boundary enforced; no draw
+> execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added.
+> All draw execution remains in-process. Remote strategy decision and remote award
+> fulfillment are future work; no new remote draw/award flags were introduced.
+> Phase 5-G saga/outbox design is the next blocker.
 
 ---
 
