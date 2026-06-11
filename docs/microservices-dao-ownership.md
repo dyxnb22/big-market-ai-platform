@@ -85,10 +85,10 @@ Target service: `big-market-account-service` (dark-launch; cutover gate B18).
 |---------------|----|-----------------|---------------------|----------------|-------------------|----------------|----------------|-------|------|----------|
 | `IUserCreditAccountDao` | `UserCreditAccount` | `user_credit_account_mapper.xml` | account-service, market-service, message-job-service | `user_credit_account` | `CreditRepository`, `ActivityRepository`†, `AwardRepository`† | market-service (credit exchange), fulfillment, activity† | account-service | 7-A | Critical | ActivityRepository and AwardRepository cross-access must be removed; B18 cutover |
 | `IUserCreditOrderDao` | `UserCreditOrder` | `user_credit_order_mapper.xml` | account-service, market-service, message-job-service | `user_credit_order` | `CreditRepository` | market-service | account-service | 7-A | Medium | B18 cutover |
-| `ICreditAwardTaskDao` | `CreditAwardTask` | `credit_award_task_mapper.xml` | account-service, message-job-service | `credit_award_task` | `AwardRepository`, `DispatchCreditAwardTaskJob`†‡ | fulfillment-service†, message-job-service†‡ | account-service | 7-A | High | DispatchCreditAwardTaskJob must route via account-service API (currently flag-gated at `account.award-credit-outbox.enabled=false`); B18 cutover |
+| `ICreditAwardTaskDao` | `CreditAwardTask` | `credit_award_task_mapper.xml` | account-service, message-job-service | `credit_award_task` | `AwardRepository`, `LocalCreditAwardTaskDispatchPort`†‡ | fulfillment-service†, message-job-service†‡ | account-service | 7-A | High | AL-7 resolved via local dispatch port; AwardRepository credit outbox write cleanup remains open (AL-11); B18 cutover |
 
 † denotes a cross-boundary caller.
-‡ `DispatchCreditAwardTaskJob` in `big-market-message-job-service` directly imports `ICreditAwardTaskDao` from `big-market-infrastructure` — a hard cross-module DAO coupling (see §5.3).
+‡ `DispatchCreditAwardTaskJob` in `big-market-message-job-service` no longer imports `ICreditAwardTaskDao` directly. It routes credit-award task reads/state transitions through `ICreditAwardTaskDispatchPort`; `LocalCreditAwardTaskDispatchPort` owns the local DAO delegation during the dark-launch phase (see §4.4).
 
 ---
 
@@ -222,11 +222,13 @@ Risk level: **HIGH** — AL-5 is resolved. AL-6 still blocks account-service tab
 
 | Cross-boundary call | From context | Foreign context | Foreign DAO | Caller class | Flag gate |
 |--------------------|--------------|-----------------|-------------|--------------|-----------|
-| `DispatchCreditAwardTaskJob` → `ICreditAwardTaskDao` | message-job-service | credit | `ICreditAwardTaskDao` | `big-market-message-job-service/…/DispatchCreditAwardTaskJob.java` | `account.award-credit-outbox.enabled=false` (default) |
+| `DispatchCreditAwardTaskJob` → `ICreditAwardTaskDispatchPort` → `LocalCreditAwardTaskDispatchPort` → `ICreditAwardTaskDao` | message-job-service | credit | `ICreditAwardTaskDao` | `big-market-message-job-service/…/DispatchCreditAwardTaskJob.java` | `account.award-credit-outbox.enabled=false` (default) |
 
-**Required remediation before Phase 7-A:** `DispatchCreditAwardTaskJob` must route credit award dispatch via `account-service` Dubbo provider API instead of directly reading `credit_award_task` table. Currently mitigated by `@ConditionalOnProperty(…, havingValue = "true")` flag default false — the bean is never instantiated in production. Must be fixed before the flag is turned on (Phase 8-A).
+**AL-7 resolution (Phase 7-A prep):** `ICreditAwardTaskDispatchPort` added with the exact job operations: `queryPendingTasks`, `updateDispatched`, and `updateRetryFailed`. `DispatchCreditAwardTaskJob` now depends on this port instead of importing `ICreditAwardTaskDao`; `LocalCreditAwardTaskDispatchPort` delegates to the same DAO methods and maps between the infra PO and the domain task entity.
 
-Risk level: **HIGH** (flag currently guards it; becomes critical at Phase 8-A).
+Behavior is unchanged: the pending-task query, dispatched update, retry/failure update, shard routing loop, dispatch logging, and `@ConditionalOnProperty(name = "account.award-credit-outbox.enabled", havingValue = "true")` gate remain the same. The flag still defaults false, and no remote account-service traffic is enabled.
+
+Risk level: **MEDIUM** — AL-7 direct job DAO coupling is resolved. The local adapter still delegates to the account-owned DAO until the credit-award outbox dispatch ownership is moved behind an account-service runtime boundary in a later Phase 8 cutover.
 
 ---
 
@@ -264,7 +266,7 @@ domain stops writing the shared `task` table.
 | 2 | `ActivityRepository` reads credit DAO | activity | credit | `user_credit_account` | ~~Before Phase 7-A~~ **RESOLVED Phase 7-A prep** | ~~High~~ Resolved |
 | 3 | `AwardRepository` reads/updates activity DAO | fulfillment | activity | `user_raffle_order` | ~~Before Phase 7-A fulfillment + activity isolation~~ **RESOLVED Phase 7-A prep (AL-5)** | ~~High~~ Resolved |
 | 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account` | Before Phase 8-B (outbox already gating this) | High |
-| 5 | `DispatchCreditAwardTaskJob` imports credit infra DAO | message-job | credit | `credit_award_task` | Before Phase 8-A (flag guards currently) | High |
+| 5 | `DispatchCreditAwardTaskJob` imports credit infra DAO | message-job | credit | `credit_award_task` | ~~Before Phase 8-A~~ **RESOLVED Phase 7-A prep (AL-7)** | ~~High~~ Resolved |
 | 6 | `BehaviorRebateRepository` / `CreditRepository` / `AwardRepository` share `task` table | rebate + credit + fulfillment | shared | `task` | Phase 7-B decision complete; runtime fix before Phase 8-A/B/C | Medium |
 
 ---
@@ -302,7 +304,11 @@ The following conditions must be true before Phase 7-A can isolate any table gro
 
 4. **AwardRepository local credit write removed** (§4.3): `saveGiveOutPrizesAggregate` must no longer write `user_credit_account` directly. The `credit_award_task` outbox path must be the sole credit-write channel. Estimated effort: medium; requires Phase 8-B flag enabled + staging evidence.
 
-5. **DispatchCreditAwardTaskJob decoupled** (§4.4): message-job-service must not directly import credit infra DAO. Must be moved before Phase 8-A flag is set. Estimated effort: small; route via account-service Dubbo API.
+5. **DispatchCreditAwardTaskJob decoupled** (§4.4): Done —
+   `ICreditAwardTaskDispatchPort` introduced; `LocalCreditAwardTaskDispatchPort`
+   holds the DAO call; `DispatchCreditAwardTaskJob` no longer imports
+   `ICreditAwardTaskDao`. The existing `account.award-credit-outbox.enabled`
+   flag remains default false.
 
 6. **Phase 7-B task outbox decision** (§4.5): Done —
    `docs/microservices-split-phase-7-task-outbox-ownership.md` chooses
@@ -325,8 +331,8 @@ Based on this inventory the lowest-risk next phases are:
 | **Phase 7-B**: generic `task` table strategy decision doc | Done — tag `phase-7-task-outbox-ownership`; AL-8/AL-9/AL-10 decision complete but runtime still allowlisted |
 | **Phase 7-C**: proposed DDL for per-domain task outbox tables | Next data-ownership docs batch if prioritizing rebate/account/fulfillment outbox isolation |
 | **Phase 7-A prep (AL-5)**: AwardRepository raffle-order boundary | Done — tag `phase-7-award-activity-order-boundary`; `AwardRepository` no longer imports `IUserRaffleOrderDao`; state transition routes through `IAwardActivityOrderPort` |
+| **Phase 7-A prep (AL-7)**: DispatchCreditAwardTaskJob credit DAO boundary | Done — tag `phase-7-credit-award-task-job-boundary`; job no longer imports `ICreditAwardTaskDao`; reads/state transitions route through `ICreditAwardTaskDispatchPort` |
 | **Phase 7-A prep (AL-6/AL-11)**: AwardRepository credit outbox write cleanup | Recommended next code-boundary batch if prioritizing account/fulfillment isolation |
-| **Phase 7-A prep (AL-7)**: DispatchCreditAwardTaskJob credit DAO boundary | Recommended next job-boundary batch before any credit-award outbox flag enablement |
 
 The highest-risk work requiring dedicated design is **§4.1** (StrategyRepository → activity/quota): it touches the raffle rule-evaluation hot path and requires either an API call in the draw critical path or a redesign where the orchestration layer injects the mapping. This is the primary blocker for strategy-service and account-service table isolation and should be scoped as a dedicated design doc before any code change.
 

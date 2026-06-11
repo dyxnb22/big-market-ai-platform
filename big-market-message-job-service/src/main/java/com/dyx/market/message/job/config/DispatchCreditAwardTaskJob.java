@@ -1,10 +1,10 @@
 package com.dyx.market.message.job.config;
 
+import com.dyx.market.domain.credit.adapter.port.ICreditAwardTaskDispatchPort;
+import com.dyx.market.domain.credit.model.entity.CreditAwardTaskEntity;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
-import com.dyx.market.infrastructure.dao.ICreditAwardTaskDao;
-import com.dyx.market.infrastructure.dao.po.CreditAwardTask;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class DispatchCreditAwardTaskJob {
 
     @Resource
-    private ICreditAwardTaskDao creditAwardTaskDao;
+    private ICreditAwardTaskDispatchPort creditAwardTaskDispatchPort;
     @Resource
     private IAccountCreditWriteAdapter accountCreditWriteAdapter;
     @Resource
@@ -64,8 +64,8 @@ public class DispatchCreditAwardTaskJob {
             for (int tbIdx = 0; tbIdx < 4; tbIdx++) {
                 dbRouter.setDBKey(dbIdx);
                 dbRouter.setTBKey(tbIdx);
-                List<CreditAwardTask> tasks = creditAwardTaskDao.queryPendingTasks();
-                for (CreditAwardTask task : tasks) {
+                List<CreditAwardTaskEntity> tasks = creditAwardTaskDispatchPort.queryPendingTasks();
+                for (CreditAwardTaskEntity task : tasks) {
                     dispatchTask(task);
                 }
             }
@@ -79,7 +79,7 @@ public class DispatchCreditAwardTaskJob {
         }
     }
 
-    private void dispatchTask(CreditAwardTask task) {
+    private void dispatchTask(CreditAwardTaskEntity task) {
         try {
             TradeEntity trade = TradeEntity.builder()
                     .userId(task.getUserId())
@@ -91,14 +91,14 @@ public class DispatchCreditAwardTaskJob {
             accountCreditWriteAdapter.createOrder(trade);
             // Mark dispatched; duplicate-credit on account-service is guarded by outBusinessNo idempotency.
             dbRouter.doRouter(task.getUserId());
-            creditAwardTaskDao.updateDispatched(task);
+            creditAwardTaskDispatchPort.updateDispatched(task);
             log.info("[DispatchCreditAwardTaskJob] dispatched userId:{} awardOrderId:{}", task.getUserId(), task.getAwardOrderId());
         } catch (Exception e) {
             log.error("[DispatchCreditAwardTaskJob] dispatch failed userId:{} awardOrderId:{}, incrementing retry",
                     task.getUserId(), task.getAwardOrderId(), e);
             try {
                 dbRouter.doRouter(task.getUserId());
-                creditAwardTaskDao.updateRetryFailed(task);
+                creditAwardTaskDispatchPort.updateRetryFailed(task);
             } catch (Exception ex) {
                 log.error("[DispatchCreditAwardTaskJob] failed to update retry count userId:{}", task.getUserId(), ex);
             }

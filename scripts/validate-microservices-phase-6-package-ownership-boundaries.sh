@@ -44,8 +44,12 @@
 #                      AwardRepository no longer imports IUserRaffleOrderDao directly.
 #   [AL-6] AwardRepository -> IUserCreditAccountDao
 #          context: fulfillment local-tx credit write (flag-gated outbox path)
-#   [AL-7] DispatchCreditAwardTaskJob -> ICreditAwardTaskDao
+#   [AL-7] DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  *** RESOLVED — Phase 7-A prep (AL-7) ***
 #          context: message-job-service reads credit_award_task directly (flag false)
+#          resolution: routed through ICreditAwardTaskDispatchPort.queryPendingTasks /
+#                      updateDispatched / updateRetryFailed; LocalCreditAwardTaskDispatchPort
+#                      delegates to ICreditAwardTaskDao; DispatchCreditAwardTaskJob no longer
+#                      imports ICreditAwardTaskDao directly.
 #   [AL-8] BehaviorRebateRepository -> ITaskDao  (shared task outbox)
 #          context: rebate writes to shared task outbox table
 #          Phase 7-B decision complete: future owner is rebate_task_outbox.
@@ -109,7 +113,7 @@ check_violation_in_doc "AL-3 StrategyRepository->IRaffleActivityAccountDayDao" "
 check_violation_in_doc "AL-4 ActivityRepository->IUserCreditAccountDao (resolved Phase 7-A prep)" "ActivityRepository" "IUserCreditAccountDao"
 check_violation_in_doc "AL-5 AwardRepository->IUserRaffleOrderDao (resolved Phase 7-A prep)" "AwardRepository" "IUserRaffleOrderDao"
 check_violation_in_doc "AL-6 AwardRepository->IUserCreditAccountDao"        "AwardRepository"           "IUserCreditAccountDao"
-check_violation_in_doc "AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao" "DispatchCreditAwardTaskJob" "ICreditAwardTaskDao"
+check_violation_in_doc "AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao (resolved Phase 7-A prep)" "DispatchCreditAwardTaskJob" "ICreditAwardTaskDao"
 check_violation_in_doc "AL-8 BehaviorRebateRepository->ITaskDao"            "BehaviorRebateRepository"  "ITaskDao"
 check_violation_in_doc "AL-9 CreditRepository->ITaskDao"                    "CreditRepository"          "ITaskDao"
 check_violation_in_doc "AL-10 AwardRepository->ITaskDao"                    "AwardRepository"           "ITaskDao"
@@ -174,10 +178,11 @@ check_field_present \
 
 DISPATCH_JOB=$(find "$REPO_ROOT/big-market-message-job-service/src" \
   -name "DispatchCreditAwardTaskJob.java" ! -path "*/target/*" 2>/dev/null | head -1)
-check_field_present \
-  "AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao" \
-  "${DISPATCH_JOB:-/dev/null}" \
-  "ICreditAwardTaskDao"
+# AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao — RESOLVED in Phase 7-A prep (AL-7).
+# DispatchCreditAwardTaskJob now routes credit_award_task reads and state transitions
+# through ICreditAwardTaskDispatchPort (LocalCreditAwardTaskDispatchPort delegates to
+# ICreditAwardTaskDao). The job-level forbidden-DAO check below enforces that the
+# direct coupling does not regress.
 
 check_field_present \
   "AL-8 BehaviorRebateRepository->ITaskDao" \
@@ -368,6 +373,23 @@ check_no_forbidden_dao \
   "IUserAwardRecordDao" \
   "IDailyBehaviorRebateDao" \
   "IUserBehaviorRebateOrderDao"
+
+# DispatchCreditAwardTaskJob must not import credit infra DAO directly.
+if [[ -z "${DISPATCH_JOB:-}" || ! -f "$DISPATCH_JOB" ]]; then
+  fail "DispatchCreditAwardTaskJob.java not found"
+else
+  if grep -q "ICreditAwardTaskDao" "$DISPATCH_JOB" 2>/dev/null; then
+    fail "DispatchCreditAwardTaskJob forbidden DAO — ICreditAwardTaskDao direct import regressed"
+  else
+    pass "DispatchCreditAwardTaskJob forbidden DAO — no ICreditAwardTaskDao direct import"
+  fi
+
+  if grep -q "ICreditAwardTaskDispatchPort" "$DISPATCH_JOB" 2>/dev/null; then
+    pass "DispatchCreditAwardTaskJob uses ICreditAwardTaskDispatchPort"
+  else
+    fail "DispatchCreditAwardTaskJob does not use ICreditAwardTaskDispatchPort"
+  fi
+fi
 
 # ── 4. No new mapper XML ownership movement ───────────────────────────────────
 echo ""
@@ -564,7 +586,7 @@ echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao  [RESOLVED Phas
 echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep]"
 echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao  [RESOLVED Phase 7-A prep AL-5]"
 echo "  AL-6  AwardRepository    -> IUserCreditAccountDao"
-echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  (flag false)"
+echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  [RESOLVED Phase 7-A prep AL-7]"
 echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
 echo "  AL-9  CreditRepository          -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
 echo "  AL-10 AwardRepository           -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
