@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 3 boundary scaffold complete (tag `phase-3-rebate-provider-ownership-gate`, commit `b5b5d6d`).
+Status anchor: Phase 3 repo-ready (tag `phase-3-rebate-decomposition-readiness`). All Phase 3 sub-batches (3-A through 3-E) complete. Cutover is Phase 8 work.
 
 ---
 
@@ -125,22 +125,32 @@ Tracked as a checklist. Each item is independently verifiable.
 ## 4. Phase Plan
 
 Phases below cover **remaining** work. Phase 1, Phase 2.1, Phase 2.2 (up to
-B21), Phase 2.3 (up to B23-D / E scaffolds), and Phase 3 batches 1–3 are
+B21), Phase 2.3 (up to B23-D / E scaffolds), and Phase 3 batches 1–5 are
 already done — see `docs/microservices-roadmap.md` for that history.
 
-### 4.1 Phase 3 — Rebate-Service Completion
+### 4.1 Phase 3 — Rebate-Service Completion (REPO-READY)
 
-| Sub-batch | Title | Type | Default flag behavior | Risk |
-|-----------|-------|------|------------------------|------|
-| 3-A | Rebate read adapter boundary (`isCalendarSignRebate`) | adapter | `rebate.service.remote-read.enabled=false` | Low |
-| 3-B | Rebate read contract in `big-market-api` (`IRebateService.queryOrderByOutBusinessNo`) | API | n/a (interface) | Low |
-| 3-C | Rebate-service mapper / scan / dependency narrowing audit | validator | n/a | Low |
-| 3-D | Rebate task/outbox ownership decision document | docs | n/a | Low |
-| 3-E | Rebate cutover-readiness rehearsal script (dry-run; no DDL, no traffic) | validator | flags remain false | Low |
+All Phase 3 repo-only sub-batches are complete. Traffic cutover is Phase 8 work.
 
-Exit criteria for Phase 3: read + write adapter contracts complete, both
-remote flags still default false, legacy provider gate present, validators
-green, outbox ownership decision recorded. Cutover itself is **Phase 8 work**.
+| Sub-batch | Title | Type | Default flag behavior | Status |
+|-----------|-------|------|------------------------|--------|
+| 3-A | Rebate read adapter boundary (`isCalendarSignRebate`) | adapter | `rebate.service.remote-read.enabled=false` | **Done** — tag `phase-3-rebate-read-adapter-boundary` |
+| 3-B | Rebate read contract in `big-market-api` (`IRebateService.isCalendarSignRebate`) | API | n/a (interface) | **Done** — included in 3-A batch |
+| 3-C | Rebate dependency narrowing audit | validator | n/a | **Done** — `scripts/validate-microservices-phase-3-rebate-dependency-narrowing.sh` |
+| 3-D | Rebate task/outbox ownership decision document | docs | n/a | **Done** — `docs/microservices-split-phase-3-rebate-outbox-ownership.md` |
+| 3-E | Rebate cutover-readiness rehearsal script (dry-run; no DDL, no traffic) | validator | flags remain false | **Done** — `scripts/validate-microservices-phase-3-rebate-cutover-readiness.sh` |
+
+Exit criteria met: read + write adapter contracts complete, both remote flags default false,
+legacy provider gate present (`matchIfMissing=true`), all validators green, outbox ownership
+decision recorded (Option A for Phase 3; Phase 7-C tracks the `rebate_task_outbox` DDL proposal).
+
+**Remaining blockers before Phase 8-C rebate traffic cutover:**
+1. Staging provider verification (Nacos, external).
+2. Legacy provider disablement (`REBATE_LEGACY_RPC_PROVIDER_ENABLED=false` on market-service).
+3. Shared `task` outbox replaced by `rebate_task_outbox` (Phase 7-C, DBA window required).
+4. `RebateMessageConsumer` ownership decision (Phase 7-B/8-C).
+5. Per-service datasource enforcement (Phase 7-E/F).
+6. DBA + Ops + Engineering + Oncall sign-off (Phase 8 approval gate).
 
 ### 4.2 Phase 4 — Strategy-Service Read-First Extraction
 
@@ -417,7 +427,7 @@ default flag, validation, risk, dependencies, completion criteria.
 | account / credit | account-service | `big-market-domain.credit`, `big-market-infrastructure.dao.IUserCreditAccountDao`, `IUserCreditOrderDao` | `big-market-account-service` provider + owned infra | `RaffleActivityController.creditPayExchangeSku` (adapter), `RebateMessageConsumer` (adapter), `AwardRepository.saveGiveOutPrizesAggregate` (outbox path) | `user_credit_account`, `user_credit_order` | `credit_adjust_success` MQ; `credit_award_task` outbox | Cutover gate B18 (Phase 8-A) | account-service owns all credit writes; legacy provider off |
 | account / quota | account-service | `big-market-domain.activity.service.quota`, `IRaffleActivityAccountDao` family | `big-market-account-service` provider | `RaffleActivityPartakeService` (port, flag false), `RebateMessageConsumer` (adapter) | `raffle_activity_account`, `raffle_activity_account_day`, `raffle_activity_account_month`, `raffle_quota_decrement_ledger` | none direct | Cutover gate B18 (Phase 8-A) | account-service owns quota; saga via `IActivityAccountPort` |
 | fulfillment / award | fulfillment-service | `big-market-domain.award`, `IAwardDao`, `IUserAwardRecordDao` | `big-market-fulfillment-service` provider | `SendAwardConsumer` (in message-job-service) | `award`, `user_award_record` | `send_award` MQ; `credit_award_task` outbox | Cutover gate B23-E (Phase 8-B) | fulfillment owns award writes; outbox-mediated credit |
-| rebate | rebate-service | `big-market-domain.rebate`, `IDailyBehaviorRebateDao`, `IUserBehaviorRebateOrderDao` | `big-market-rebate-service` provider | `RaffleActivityController.calendarSignRebate` (write adapter; read adapter pending Phase 3-A) | `daily_behavior_rebate`, `user_behavior_rebate_order` | `rebate_message` MQ (consumed by message-job) | Phase 3-A (read adapter) → Phase 3-E rehearsal → Phase 8-C cutover | rebate-service owns rebate domain; legacy provider off |
+| rebate | rebate-service | `big-market-domain.rebate`, `IDailyBehaviorRebateDao`, `IUserBehaviorRebateOrderDao` | `big-market-rebate-service` provider | `RaffleActivityController.calendarSignRebate` and `isCalendarSignRebate` (write/read adapters complete; remote flags default false) | `daily_behavior_rebate`, `user_behavior_rebate_order` | `rebate_message` MQ (consumed by message-job) | Phase 8-C cutover after staging provider verification and legacy provider disablement | rebate-service owns rebate domain; legacy provider off |
 | strategy | strategy-service (not created) | `big-market-domain.strategy`, `IStrategyDao`, `IStrategyAwardDao`, `IStrategyRuleDao`, `IRuleTreeDao` family | `big-market-strategy-service` (Phase 4-C) | `RaffleStrategyController` (HTTP), `RaffleApplicationService` (draw decision) | `strategy`, `strategy_award`, `strategy_rule`, `rule_tree`, `rule_tree_node`, `rule_tree_node_line` | none | Phase 4-A boundary assessment | strategy-service owns rule + strategy reads; decision moves only if Phase 5-D wires the adapter |
 | activity / draw | activity-service (not created) | `big-market-domain.activity` (partake, armory, stage, application orchestration), `IRaffleActivityDao` family, `IUserRaffleOrderDao` | `big-market-activity-service` (Phase 5-F) | `RaffleActivityController` (HTTP), `ActivitySkuStockZeroConsumer` (message-job) | `raffle_activity`, `raffle_activity_count`, `raffle_activity_sku`, `raffle_activity_stage`, `raffle_activity_order`, `user_raffle_order` | `activity_sku_stock_zero` MQ; XXL-Job stock sync | Phase 5-A orchestration map (NO move yet) | activity-service owns participation + orchestration via saga |
 | task / outbox | shared today; decision in Phase 7-B | `big-market-domain.task`, `ITaskDao` | one of: per-domain outbox tables OR new `big-market-message-outbox-service` | `BehaviorRebateRepository`, `award` flows, MQ publish path | `task` (shared) | `SendMessageTaskJob` XXL-Job (in message-job-service) | Phase 7-B decision doc | each domain owns its `*_task_outbox`; legacy `task` retained for back-compat until migrated |

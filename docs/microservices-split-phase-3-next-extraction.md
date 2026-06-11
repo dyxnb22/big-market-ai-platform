@@ -198,6 +198,8 @@ bash scripts/validate-microservices-phase-3-next-extraction.sh
 bash scripts/validate-microservices-phase-3-rebate-adapter.sh
 bash scripts/validate-microservices-phase-3-rebate-provider-ownership.sh
 bash scripts/validate-microservices-phase-3-rebate-read-adapter.sh
+bash scripts/validate-microservices-phase-3-rebate-dependency-narrowing.sh
+bash scripts/validate-microservices-phase-3-rebate-cutover-readiness.sh
 ```
 
 `validate-microservices-phase-3-next-extraction.sh` checks Maven wiring, expected files, forbidden dependencies, package scans, mapper presence, provider contract, dangerous flag defaults, generated evidence status, and this document.
@@ -207,6 +209,65 @@ bash scripts/validate-microservices-phase-3-rebate-read-adapter.sh
 `validate-microservices-phase-3-rebate-provider-ownership.sh` checks the legacy provider ownership gate: `@ConditionalOnProperty` presence, correct property name, `matchIfMissing=true`, config defaults, docker-compose env wiring, remote-create-order still false, and docs mention of duplicate provider risk and cutover order.
 
 `validate-microservices-phase-3-rebate-read-adapter.sh` checks the read adapter boundary: `IRebateReadAdapter`, `LocalRebateReadAdapter`, `RebateRemoteReadAdapter`, `IRebateService.isCalendarSignRebate`, `RebateOrderQueryRequestDTO`, both RPC provider implementations, controller wiring (adapter injected, direct domain call removed), flag defaults, and remaining blocker documentation.
+
+`validate-microservices-phase-3-rebate-dependency-narrowing.sh` (Phase 3-C) checks the structural dependency narrowing audit: module wiring, forbidden scan packages, forbidden provider imports, adapter gating, flag safety, mapper allow-list, and generated evidence tracking.
+
+`validate-microservices-phase-3-rebate-cutover-readiness.sh` (Phase 3-E) is a dry-run only cutover rehearsal: verifies provider existence, both methods implemented, legacy gate in place with default true, both remote adapters defaulting false, safety gate rejects any live flag deviation, and outbox ownership doc present. Prints the ordered cutover steps but enables nothing.
+
+## 14. Code-Level Step Implemented (Batch 5: Phase 3-C/D/E — dependency narrowing, outbox ownership, cutover rehearsal)
+
+### Phase 3-C — Rebate dependency narrowing audit
+
+`scripts/validate-microservices-phase-3-rebate-dependency-narrowing.sh` provides a deterministic
+repo-only structural audit of the rebate-service boundary. Checks verified:
+
+- `big-market-rebate-service` module exists and is wired in root `pom.xml`.
+- `big-market-rebate-service` does not declare `big-market-trigger` as a dependency.
+- `RebateServiceApplication` does not scan `trigger.http`, `trigger.listener`, `trigger.job`, or `message.job`.
+- `RebateServiceApplication` scans only `com.dyx.market.rebate` and `com.dyx.market.domain.rebate` (plus shared infrastructure).
+- Rebate provider does not import `activity`, `strategy`, `award`, `account`, `credit`, `fulfillment`, `auth`, `admin`, or `chatbot` domain packages.
+- `RaffleActivityController` wires `IRebateOrderAdapter` for the write path and `IRebateReadAdapter` for the read path; no direct `IBehaviorRebateService` import.
+- Both remote adapters have `@DubboReference(check=false)` and default false.
+- Legacy provider is gated by `rebate.legacy-rpc-provider.enabled` with `matchIfMissing=true`.
+- All three rebate flags are correctly wired in `docker-compose.yml` and `application.yml`.
+- No dangerous Phase 2/3 remote flag is hardcoded true.
+- Rebate mapper XMLs are limited to `daily_behavior_rebate`, `user_behavior_rebate_order`, and `task` (accepted coupling).
+- No forbidden mapper XMLs from other bounded contexts are present in rebate-service.
+- `docs/evidence/generated` is not tracked.
+
+### Phase 3-D — Rebate task / outbox ownership decision
+
+`docs/microservices-split-phase-3-rebate-outbox-ownership.md` documents:
+
+- Current rebate write path from HTTP controller through adapter to `BehaviorRebateRepository`.
+- Tables logically owned by rebate-service: `daily_behavior_rebate`, `user_behavior_rebate_order`.
+- Why `task` remains a shared coupling point and what that means for rebate extraction.
+- **Decision: Option A** — keep shared `task` table with explicit ownership rules for Phase 3. Rationale: low traffic volume, no DDL scope in this batch, `credit_award_task` precedent already established.
+- **Proposed DDL (not applied): Option B** — `rebate_task_outbox_{000..003}` for Phase 7-C, clearly marked as proposed-only.
+- `RebateMessageConsumer` and `SendMessageTaskJob` ownership concerns.
+- Explicit list of conditions that must be met before rebate-service is independently data-owned.
+
+### Phase 3-E — Rebate dry-run cutover rehearsal
+
+`scripts/validate-microservices-phase-3-rebate-cutover-readiness.sh` is a repo-only dry-run script:
+
+- Verifies rebate-service module and provider exist.
+- Verifies `IRebateService` exposes both `rebate(...)` and `isCalendarSignRebate(...)`.
+- Verifies both legacy and rebate-service providers implement both methods.
+- Verifies legacy provider gate is present with `matchIfMissing=true` (can be disabled, default remains true).
+- Verifies both remote adapters have `@DubboReference(check=false)` and default false.
+- **Safety gate:** fails if any rebate remote flag deviates from safe defaults in any config file.
+- Verifies outbox ownership decision doc is present.
+- On pass: prints the six-step ordered cutover procedure (deploy → verify → disable legacy → enable read → enable create-order → monitor/rollback) without enabling anything.
+
+### Remaining blockers before actual rebate-service traffic cutover
+
+1. **Staging provider verification** (external): `big-market-rebate-service` must be deployed to staging Nacos and both `rebate(...)` and `isCalendarSignRebate(...)` RPCs verified end-to-end before any remote flag is enabled.
+2. **Legacy provider disablement**: `REBATE_LEGACY_RPC_PROVIDER_ENABLED=false` must be set on `big-market-market-service` before remote flags are enabled, to avoid Dubbo load-balancing across the legacy and new providers.
+3. **Shared task outbox coupling**: `BehaviorRebateRepository` still writes to the generic `task` table; this remains an accepted coupling until Phase 7-C introduces `rebate_task_outbox`.
+4. **RebateMessageConsumer ownership**: MQ-driven rebate result processing remains in `message-job-service`; consumer ownership decision is Phase 7-B/8-C work.
+5. **Datasource/table ownership enforcement**: `user_behavior_rebate_order` and `daily_behavior_rebate` are not yet behind a separate DB user or schema; this is Phase 7-E/F work.
+6. **Phase 8 approval gate**: actual traffic cutover requires DBA + Ops + Engineering + Oncall sign-off as described in `docs/microservices-decomposition-master-plan.md` §4.6.
 
 ## 13. Code-Level Step Implemented (Batch 4: rebate read adapter boundary — Phase 3-A/B)
 
