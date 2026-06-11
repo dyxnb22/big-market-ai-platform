@@ -153,7 +153,9 @@ if git -C "$REPO_ROOT" rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
     printf '%s\n' "$non_proposed_sql"
   fi
 
-  # Only flag modifications to existing mapper files; additions of new service-module mapper copies are expected.
+  # Only flag modifications to existing mapper files; additions of new service-module mapper copies
+  # are expected for dark-launch service modules and are covered by
+  # scripts/validate-microservices-service-module-ownership.sh (per-service mapper whitelists).
   mapper_modifications=$(git -C "$REPO_ROOT" diff --name-only --diff-filter=M "$BASE_REF"...HEAD 2>/dev/null \
     | grep -E 'mapper.*\.xml$|_mapper\.xml$' || true)
   if [[ -z "$mapper_modifications" ]]; then

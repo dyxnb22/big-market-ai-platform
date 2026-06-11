@@ -47,6 +47,25 @@ Product-equivalent learning acceptance: accepted for local learning mode only.
 The acceptance is based on local validation and smoke-test behavior, not on a
 real customer-facing canary or production monitoring window.
 
+## Tag and Validator-Clean Tip
+
+The tag `microservices-learning-mode-complete` captures the closure intent
+at commit `b15b458` (`docs: complete learning-mode microservices closure`).
+The validator-clean tip is `cfc3208` (`docs: polish learning-mode closure`),
+which fixes two validator hygiene issues introduced by `b15b458`:
+
+- replaces an SQL-style DDL comment in
+  `big-market-fulfillment-service/.../task_mapper.xml` with an XML comment so
+  the phase-7-B DDL grep no longer matches it;
+- tightens the phase-7-B mapper change guard to
+  `git diff --diff-filter=M` so first-time mapper additions in newly added
+  service modules are not flagged as modifications.
+
+Consumers running `scripts/validate-microservices-split-all-gates.sh` should
+check out `cfc3208` or later to see the aggregate gate report green. The tag
+is intentionally left at `b15b458` to preserve the original closure history;
+no tag rewrite is performed by this closure pass.
+
 ## Remaining Real-World Gates
 
 Real production readiness remains not applicable / not proven for this project:

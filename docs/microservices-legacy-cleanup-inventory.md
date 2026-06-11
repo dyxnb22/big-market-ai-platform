@@ -67,13 +67,19 @@ cutover evidence, 7-day stability evidence, and 30-day removal evidence exist.
 
 Explicit exemptions:
 - `big-market-activity-service` intentionally has no mapper XML in Phase 8; it is dark-launch only.
-- `big-market-fulfillment-service` award mapper files are service-owned and
-  protected by service ownership validators.
-- `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/user_credit_account_mapper.xml`
-  and `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/credit_award_task_mapper.xml`
+- `big-market-fulfillment-service` award mapper files (`award_mapper.xml`, `user_award_record_mapper.xml`) are service-owned and protected by service ownership validators.
+- `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/user_credit_account_mapper.xml`,
+  `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/credit_award_task_mapper.xml`,
+  `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml`,
+  `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql/user_raffle_order_mapper.xml`,
+  and `big-market-fulfillment-service/src/main/resources/mybatis/mapper/elasticsearch/user_raffle_order_mapper.xml`
   are local learning-mode compatibility copies required for the dark-launch
-  stack to start with shared infrastructure scanning. They are not evidence of
-  account table ownership transfer and remain cleanup-gated.
+  stack to start with shared infrastructure scanning
+  (`com.dyx.market.infrastructure` transitively requires `ITaskDao`,
+  `IUserCreditAccountDao`, `ICreditAwardTaskDao`, and `IUserRaffleOrderDao`
+  mapper resolution). They are not evidence of account/activity/task table
+  ownership transfer and remain cleanup-gated under the per-domain external
+  evidence and 30-day removal gate.
 
 ## Generic Task and Outbox Fallbacks
 
