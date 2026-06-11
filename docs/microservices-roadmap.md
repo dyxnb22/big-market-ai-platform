@@ -1,5 +1,9 @@
 # big-market Microservices Evolution Roadmap
 
+> **End-to-end plan (Phase 3 through Phase 8):**
+> see [`docs/microservices-decomposition-master-plan.md`](microservices-decomposition-master-plan.md).
+> This roadmap remains the historical phase log (Phase 1 → Phase 3 batch 3).
+
 ## 1. Current State (as of 2026-06-10, Phase 3 rebate-service boundary scaffold complete)
 
 The project has completed Phase 1 (runtime split), Phase 2.1 (message-job extraction), Phase 2.2 account-service readiness batches, Phase 2.3 fulfillment-service readiness batches, and the first Phase 3 repo-only decomposition batch: `big-market-rebate-service` dark-launch provider scaffold. The new rebate-service module hosts `IRebateService` under its own launcher boundary but does not receive traffic yet; market-service keeps the existing provider until a later adapter/cutover batch. Phase 2.2 and Phase 2.3 traffic cutovers remain blocked by their existing staging/DDL/XXL-Job gates. Re-run the smoke test in the current local environment before treating runtime state as current.
