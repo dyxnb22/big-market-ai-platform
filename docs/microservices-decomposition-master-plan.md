@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced (tag `phase-5-award-fulfillment-port-boundary`). Phase 5-F activity-service dark-launch scaffold introduced (tag `phase-5-activity-service-dark-launch-scaffold`): big-market-activity-service module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added; no remote flag introduced. Phase 5-G draw saga/outbox design complete (tag `phase-5-activity-draw-saga-outbox-scaffold`): orchestration saga pattern chosen; IDrawOutboxPort + DrawOutboxEvent + LocalDrawOutboxPort scaffold contracts introduced; design doc committed; IDrawOutboxPort NOT wired into draw hot-path (requires Phase 7-D DDL + Phase 8-E approval); no remote flags introduced. Phase 5 complete. Recommended next batch: Phase 6-A (DAO ownership matrix).
+Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced (tag `phase-5-award-fulfillment-port-boundary`). Phase 5-F activity-service dark-launch scaffold introduced (tag `phase-5-activity-service-dark-launch-scaffold`): big-market-activity-service module at port 8090; scan boundary enforced; no draw execution moved; no RPC provider, HTTP controller, MQ consumer, or job handler added; no remote flag introduced. Phase 5-G draw saga/outbox design complete (tag `phase-5-activity-draw-saga-outbox-scaffold`): orchestration saga pattern chosen; IDrawOutboxPort + DrawOutboxEvent + LocalDrawOutboxPort scaffold contracts introduced; design doc committed; IDrawOutboxPort NOT wired into draw hot-path (requires Phase 7-D DDL + Phase 8-E approval); no remote flags introduced. Phase 5 complete. Phase 6-A DAO ownership matrix complete (tag `phase-6-dao-ownership-matrix`): full inventory of 24 DAO interfaces, 23 physical tables, 7 repositories, and 6 cross-boundary access violations documented in `docs/microservices-dao-ownership.md`; no Java files changed; highest-risk violation is StrategyRepository reading activity + quota tables (CRITICAL blocker for Phase 7-A). Recommended next batch: Phase 6-B (package-ownership validator) or Phase 7-A (account table ownership gate, requires §4.2 and §4.4 cross-boundary removals first).
 
 ---
 
@@ -383,7 +383,7 @@ default flag, validation, risk, dependencies, completion criteria.
 
 ### 5.4 Phase 6 — Shared Infrastructure / Domain Split
 
-**6-A** DAO ownership matrix — `docs/microservices-dao-ownership.md`. Type: docs. Risk: Low.
+**6-A** DAO ownership matrix — `docs/microservices-dao-ownership.md`. Type: docs. Risk: Low. **Done** — full inventory of 24 DAO interfaces, 23 physical tables, 7 repositories; 6 cross-boundary access violations documented (highest risk: `StrategyRepository` reads activity + quota tables); validator at `scripts/validate-microservices-phase-6-dao-ownership-matrix.sh`. Tag: `phase-6-dao-ownership-matrix`.
 
 **6-B** Package-ownership validator — `scripts/validate-microservices-package-ownership.sh`. Type: validator. Risk: Low.
 
@@ -549,3 +549,5 @@ following hard rules. Violating any is a revert criterion.
 - `docs/microservices-split-phase-3-next-extraction.md` — Phase 3 batches 1–3 implementation detail; future Phase 3-D / 3-E updates land here.
 - `scripts/validate-microservices-phase-3-*.sh` — existing Phase 3 validators.
 - `scripts/validate-microservices-master-plan.sh` — this plan's structural validator (added by this batch).
+- `docs/microservices-dao-ownership.md` — Phase 6-A DAO ownership matrix: full DAO/table/repository inventory and cross-boundary access violations.
+- `scripts/validate-microservices-phase-6-dao-ownership-matrix.sh` — Phase 6-A validator.
