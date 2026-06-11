@@ -6,7 +6,7 @@
 #   1.  Phase 5 orchestration doc exists
 #   2.  Doc mentions RaffleApplicationService
 #   3.  Doc mentions the four draw-flow domains: strategy, activity/account quota, award, fulfillment/outbox
-#   4.  Candidate adapters are documented: IStrategyDecisionAdapter, IActivityAccountPort,
+#   4.  Candidate adapters/ports are documented: IStrategyDecisionPort, IActivityAccountPort,
 #       IAwardFulfillmentPort, IDrawOutboxPort
 #   5.  Non-goals are documented (no draw migration, no remote draw command, no activity-service now)
 #   6.  No new big-market-activity-service module is added in this batch
@@ -104,8 +104,8 @@ check_contains "P5A-DOC-3d outbox/task mentioned" \
 # -----------------------------------------------------------------------
 echo ""
 echo "-- [4] Candidate adapters documented"
-check_contains "P5A-DOC-4a IStrategyDecisionAdapter documented" \
-  "$ORCH_DOC" "IStrategyDecisionAdapter"
+check_contains "P5A-DOC-4a IStrategyDecisionPort documented" \
+  "$ORCH_DOC" "IStrategyDecisionPort"
 check_contains "P5A-DOC-4b IActivityAccountPort documented" \
   "$ORCH_DOC" "IActivityAccountPort"
 check_contains "P5A-DOC-4c IAwardFulfillmentPort documented" \

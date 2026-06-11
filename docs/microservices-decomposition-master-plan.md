@@ -6,7 +6,7 @@
 > It is planning-only. No Java behavior changes, no DDL, no traffic enablement.
 
 Last revised: 2026-06-11.
-Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Remote strategy decision remains future work — strategy.service.remote-decision.enabled not introduced. Phase 5-E award fulfillment port extension is next.
+Status anchor: Phase 4-D/E/F complete (tag `phase-4-strategy-read-adapter-boundary`). Phase 3 complete. Phase 4 complete. Phase 5-A orchestration map complete (tag `phase-5-activity-draw-orchestration-map`). Phase 5-B draw-command boundary design doc complete. Phase 5-C account/quota port re-verification complete. Phase 5-D local strategy decision port introduced (tag `phase-5-strategy-decision-port-boundary`). Phase 5-E local award fulfillment port introduced. Remote strategy decision and remote award fulfillment remain future work; no new remote draw/award flags were introduced. Phase 5-F activity-service scaffold decision/prep and Phase 5-G saga/outbox design are next.
 
 ---
 
@@ -187,10 +187,10 @@ from Phase 4 are stable.
 | 5-A | Map `RaffleApplicationService` orchestration | docs | **Done** — `docs/microservices-split-phase-5-activity-draw-orchestration.md`; validator `scripts/validate-microservices-phase-5-activity-draw-orchestration.sh`; tag `phase-5-activity-draw-orchestration-map` |
 | 5-B | Define draw-command boundary | docs | Decide: orchestration adapter inside market-service vs new `activity-service` application boundary |
 | 5-C | Isolate account-quota call behind `IActivityAccountPort` (already done — re-verify post Phase 4) | validator | Confirms B11–B14 still hold |
-| 5-D | Isolate strategy-decision call behind a `IStrategyDecisionAdapter` | adapter | flag false; local delegates to in-process service |
-| 5-E | Isolate award-fulfillment call behind `IAwardDispatchAdapter` (already exists — extend coverage for raffle path) | adapter | flag false |
-| 5-F | Activity-service module scaffold (dark launch, no orchestration moved) | module | Only after 5-D, 5-E adapters are stable |
-| 5-G | Activity-service orchestration target design (saga or workflow) | docs | Document chosen approach before any synchronous write moves |
+| 5-D | Isolate strategy-decision call behind `IStrategyDecisionPort` | adapter | **Done** — local delegates to in-process `IRaffleStrategy`; no remote flag |
+| 5-E | Isolate award-fulfillment call behind `IAwardFulfillmentPort` | adapter | **Done** — local delegates to in-process `IAwardService`; no remote flag |
+| 5-F | Activity-service scaffold decision/prep (dark launch only if approved, no orchestration moved) | module/docs | Only after 5-D, 5-E adapters are stable |
+| 5-G | Activity-service orchestration target and saga/outbox design | docs | Must be approved before any synchronous write moves or any remote award fulfillment path exists |
 
 **Hard rule for Phase 5:** no synchronous write call moves out of
 market-service until 5-G is signed off and a saga / idempotency design is
@@ -375,11 +375,11 @@ default flag, validation, risk, dependencies, completion criteria.
 
 **5-D** Strategy decision port (`IStrategyDecisionPort`, local default `LocalStrategyDecisionPort`; `RaffleApplicationService` updated). Type: adapter. Risk: Medium. **Done** — local port introduced; all draw execution in-process; no remote-decision flag introduced. Remote strategy decision is future Phase 5-G work. Tag: `phase-5-strategy-decision-port-boundary`.
 
-**5-E** Extend `IAwardDispatchAdapter` coverage for the raffle path (currently used by message-job for credit-award outbox). Type: adapter. Risk: Medium.
+**5-E** Award fulfillment port (`IAwardFulfillmentPort`, local default `LocalAwardFulfillmentPort`; `RaffleApplicationService` updated). Type: adapter. Risk: Medium. **Done** — local port introduced; award persistence and task outbox remain in-process; no remote award fulfillment flag introduced.
 
-**5-F** `big-market-activity-service` dark-launch scaffold (NO orchestration moved). Type: module. Risk: Medium.
+**5-F** Activity-service scaffold decision/prep (NO orchestration moved). Type: module/docs. Risk: Medium.
 
-**5-G** Activity orchestration target design (saga vs workflow). Type: docs. Risk: High — gates any synchronous write move.
+**5-G** Activity orchestration target and saga/outbox design. Type: docs. Risk: High — gates any synchronous write move and any remote award fulfillment write path.
 
 ### 5.4 Phase 6 — Shared Infrastructure / Domain Split
 

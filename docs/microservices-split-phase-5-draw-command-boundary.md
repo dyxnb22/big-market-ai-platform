@@ -10,7 +10,8 @@
 > fulfillment port), 5-F (activity-service scaffold), and 5-G (saga design).
 >
 > Last revised: 2026-06-11.
-> Status anchor: Phase 5-A complete. Phase 5-B design doc only.
+> Status anchor: Phase 5-A complete. Phase 5-B design doc complete. Phase 5-D
+> strategy decision port complete. Phase 5-E award fulfillment port complete.
 
 ---
 
@@ -52,7 +53,8 @@ big-market-domain/src/main/java/com/dyx/market/domain/activity/application/
 
 1. `IRaffleActivityPartakeService.createOrder` — participation record + quota decrement.
 2. `IRaffleStrategy.performRaffle` — strategy rule-chain/tree evaluation → award id.
-3. `IAwardService.saveUserAwardRecord` — award record + task outbox row in one transaction.
+3. `IAwardFulfillmentPort.saveUserAwardRecord` — local port to `IAwardService`;
+   award record + task outbox row remain in one transaction.
 
 ---
 
@@ -68,9 +70,9 @@ in a port adapter interface:
 - `IAwardFulfillmentPort` (Phase 5-E) — wraps `IAwardService.saveUserAwardRecord`.
 - `IActivityPartakePort` (future) — wraps `IRaffleActivityPartakeService.createOrder`.
 
-Remote implementations of each port are introduced behind feature flags
-(`strategy.service.remote-decision.enabled`, `award.service.remote-fulfillment.enabled`,
-etc.) and default false. The orchestrator itself never moves.
+Remote implementations of these ports are future work behind separately
+approved flags. Phase 5-E deliberately does not introduce an award fulfillment
+remote flag or implementation. The orchestrator itself never moves in this option.
 
 **Advantages:**
 - Smallest incremental risk: each adapter is independently switchable.
@@ -199,6 +201,11 @@ row in a single local transaction (sharded by userId). This is the primary
 consistency invariant. It must not be broken until Phase 5-G provides a
 cross-service outbox design.
 
+Phase 5-E adds only `IAwardFulfillmentPort` and `LocalAwardFulfillmentPort`.
+The local implementation delegates to `IAwardService.saveUserAwardRecord`, so
+the transaction boundary and outbox behavior are unchanged.
+Remote award fulfillment remains blocked until Phase 5-G defines the saga/outbox design.
+
 ### 5.4 Future saga compensation points
 
 If any step is ever moved cross-service, the following compensation must be designed:
@@ -254,6 +261,6 @@ or any equivalent remote draw flag is set to true:
 | Sub-batch | Dependency on this design |
 |-----------|--------------------------|
 | 5-D | Introduces `IStrategyDecisionPort` as the local seam for Option A; local impl delegates to `IRaffleStrategy.performRaffle` |
-| 5-E | Extends `IAwardFulfillmentPort` to the raffle award path; uses `orderId` from §4.3 as the correlation key |
-| 5-F | `big-market-activity-service` scaffold can be defined once Option A adapter pattern is stable; no orchestration moves yet |
-| 5-G | Saga design takes the compensation table from §5.4 as its starting requirements; `DrawCommand` contract from §4 informs the async command shape |
+| 5-E | Adds `IAwardFulfillmentPort` to the raffle award path; local impl delegates to `IAwardService.saveUserAwardRecord`; no remote flag |
+| 5-F | `big-market-activity-service` scaffold decision/prep can be defined once Option A adapter pattern is stable; no orchestration moves yet |
+| 5-G | Saga/outbox design gates any remote write path, including award fulfillment |

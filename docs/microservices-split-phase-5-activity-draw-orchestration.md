@@ -11,9 +11,10 @@
 > Last revised: 2026-06-11.
 > Status anchor: Phase 4-D/E/F complete. Phase 5-A docs-only. Phase 5-B draw-command
 > boundary design doc complete. Phase 5-C account/quota port re-verification doc complete.
-> Phase 5-D local strategy decision port introduced (IStrategyDecisionPort + LocalStrategyDecisionPort);
-> RaffleApplicationService now uses the port. All draw execution remains in-process.
-> Remote strategy decision is future work; strategy.service.remote-decision.enabled not introduced.
+> Phase 5-D local strategy decision port introduced. Phase 5-E local award fulfillment
+> port introduced. RaffleApplicationService now uses both ports. All draw execution
+> remains in-process. Remote strategy decision and remote award fulfillment are future
+> work; no new remote draw/award flags were introduced.
 
 ---
 
@@ -49,7 +50,8 @@ executeDraw(userId, activityId)
 │     → Writes user_raffle_order (participation record)
 │     → Returns UserRaffleOrderEntity (includes strategyId, endDateTime)
 │
-├── [Step 2] IRaffleStrategy.performRaffle(RaffleFactorEntity)
+├── [Step 2] IStrategyDecisionPort.performRaffle(RaffleFactorEntity)
+│     → LocalStrategyDecisionPort → IRaffleStrategy.performRaffle
 │     → DefaultRaffleStrategy → AbstractRaffleStrategy
 │     → rule-chain evaluation (domain.strategy.service.rule.chain.impl.*)
 │       reads strategy_rule, strategy, strategy_award (Redis armory lookup)
@@ -60,7 +62,8 @@ executeDraw(userId, activityId)
 │     → enqueues stock decrement key for UpdateAwardStockJob
 │     → Returns RaffleAwardEntity (awardId, awardTitle, awardConfig, sort)
 │
-└── [Step 3] IAwardService.saveUserAwardRecord(UserAwardRecordEntity)
+└── [Step 3] IAwardFulfillmentPort.saveUserAwardRecord(UserAwardRecordEntity)
+      → LocalAwardFulfillmentPort → IAwardService.saveUserAwardRecord
       → AwardService → AwardRepository.saveUserAwardRecord
       → Writes user_award_record (award state = create)
       → Writes task outbox row (topic = send_award) in shared `task` table
@@ -81,7 +84,7 @@ step 3 out of process.
 |--------|------------------|----------------|----------------|
 | `activity` / partake | Creates participation record; decrements quota | `IRaffleActivityPartakeService` → `AbstractRaffleActivityPartake` | `raffle_activity`, `raffle_activity_account`, `raffle_activity_account_day`, `raffle_activity_account_month`, `raffle_activity_count`, `raffle_activity_sku`, `user_raffle_order` |
 | `strategy` / raffle | Full draw decision: rule-chain, rule-tree, random award | `IRaffleStrategy` → `DefaultRaffleStrategy` | `strategy_rule`, `rule_tree`, `rule_tree_node`, `rule_tree_node_line`, `strategy_award` (stock decrement async) — plus Redis probability tables |
-| `award` | Persists award record and outbox message | `IAwardService` → `AwardService` → `AwardRepository` | `user_award_record`, `task` (shared outbox) |
+| `award` | Persists award record and outbox message | `IAwardFulfillmentPort` → `LocalAwardFulfillmentPort` → `IAwardService` → `AwardService` → `AwardRepository` | `user_award_record`, `task` (shared outbox) |
 | `task` / outbox | Async MQ publish gate | `ITaskService` → `SendMessageTaskJob` | `task` (shared; sharded by userId) |
 | `credit` / account | Quota decrement ledger (gated, Phase 2.2) | `IActivityAccountPort` | `raffle_quota_decrement_ledger` (when flag=true) |
 
@@ -93,7 +96,8 @@ step 3 out of process.
 |------------|----------------------|-----------------|
 | Participation order + quota decrement are atomic | `AbstractRaffleActivityPartake.createOrder` uses `@Transactional`; writes `user_raffle_order` + account rows together | Moving quota decrement to account-service requires saga coordination (B11–B14 already done; Phase 5-C re-verifies) |
 | Award record + outbox are atomic | `AwardRepository.saveUserAwardRecord` writes `user_award_record` + `task` in one transaction | Moving award persistence to fulfillment-service requires the outbox row to move too; credit-award outbox path already handles credit; general award path does not yet have a cross-service outbox |
-| Draw decision is in-process | `IRaffleStrategy.performRaffle` is called directly on the local bean; no network hop | Phase 5-D introduces `IStrategyDecisionAdapter` with a local default; remote only when `strategy.service.remote-decision.enabled=true` (not introduced in this batch) |
+| Draw decision is in-process | `IStrategyDecisionPort.performRaffle` delegates to the local `IRaffleStrategy` bean; no network hop | Remote decision remains blocked; `strategy.service.remote-decision.enabled` is not introduced |
+| Award persistence is in-process | `IAwardFulfillmentPort.saveUserAwardRecord` delegates to local `IAwardService`; no network hop | Remote award fulfillment remains blocked until Phase 5-G saga/outbox design |
 | Stock decrement is Redis-only + async DB sync | `subtractionAwardStock` writes to Redis; `UpdateAwardStockJob` flushes to `strategy_award` table | Stock sync job must remain co-located with strategy tables until datasource isolation (Phase 7) |
 
 ---
@@ -170,12 +174,12 @@ Already exists from Phase 2.2 (B11–B14):
 `LocalActivityAccountPort` in `big-market-infrastructure/adapter/port/`.
 Phase 5-C validates these invariants still hold after Phase 4 ordering.
 
-### 7.3 IAwardFulfillmentPort (Phase 5-E extension)
+### 7.3 IAwardFulfillmentPort (Phase 5-E) — DONE
 
-`IAwardDispatchAdapter` currently handles the `send_award` consumer path.
-Phase 5-E extends it to also cover the raffle draw result path so that
-award persistence and outbox publication can be moved behind the same adapter
-boundary used by `SendAwardConsumer`.
+Replaces the direct `IAwardService.saveUserAwardRecord` call in
+`RaffleApplicationService` with a domain-side port. This keeps award record
+persistence and the existing `task` outbox write in-process while isolating
+the future fulfillment boundary.
 
 ```
 interface IAwardFulfillmentPort {
@@ -184,7 +188,9 @@ interface IAwardFulfillmentPort {
 ```
 
 - `LocalAwardFulfillmentPort`: delegates to `IAwardService.saveUserAwardRecord`.
-- Remote implementation gates behind `award.service.remote-fulfillment.enabled=false`.
+- No remote implementation and no remote award fulfillment flag are introduced
+  in this batch.
+- Gate: remote award fulfillment must wait for Phase 5-G saga/outbox design.
 
 ### 7.4 IDrawOutboxPort (Phase 5-G)
 
@@ -200,9 +206,9 @@ Only introduced after Phase 5-G saga design is approved.
 |-----------|-------|------------|------|
 | 5-B | Draw-command boundary design doc | This doc (5-A) | Medium — decision shapes all subsequent batches |
 | 5-C | Re-verify `IActivityAccountPort` (B11–B14) still holds after Phase 4 | Phase 4 complete | Low — validator-only |
-| 5-D | `IStrategyDecisionAdapter` (local default; remote flag=false) | 5-B decided; 5-C green | Medium — new adapter in draw hot path |
-| 5-E | Extend `IAwardDispatchAdapter` coverage for raffle path | 5-D stable | Medium |
-| 5-F | `big-market-activity-service` dark-launch scaffold (NO orchestration moved) | 5-D + 5-E stable | Medium |
+| 5-D | `IStrategyDecisionPort` (local default; no remote flag) | 5-B decided; 5-C green | Medium — new adapter in draw hot path |
+| 5-E | Add `IAwardFulfillmentPort` coverage for raffle award persistence | 5-D stable | Done |
+| 5-F | `big-market-activity-service` scaffold decision/prep (NO orchestration moved) | 5-D + 5-E stable | Medium |
 | 5-G | Activity orchestration target design (saga vs workflow) | 5-F dark-launch stable | High — gates any synchronous write move |
 
 **Hard rule:** no synchronous write call moves out of market-service until 5-G

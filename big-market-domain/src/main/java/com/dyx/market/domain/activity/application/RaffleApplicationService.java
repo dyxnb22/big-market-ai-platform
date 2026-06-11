@@ -1,11 +1,11 @@
 package com.dyx.market.domain.activity.application;
 
+import com.dyx.market.domain.activity.adapter.port.IAwardFulfillmentPort;
+import com.dyx.market.domain.activity.adapter.port.IStrategyDecisionPort;
 import com.dyx.market.domain.activity.model.entity.UserRaffleOrderEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivityPartakeService;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.valobj.AwardStateVO;
-import com.dyx.market.domain.award.service.IAwardService;
-import com.dyx.market.domain.activity.adapter.port.IStrategyDecisionPort;
 import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
 import com.dyx.market.types.enums.ResponseCode;
@@ -26,7 +26,7 @@ public class RaffleApplicationService {
     @Resource
     private IStrategyDecisionPort strategyDecisionPort;
     @Resource
-    private IAwardService awardService;
+    private IAwardFulfillmentPort awardFulfillmentPort;
 
     public ActivityDrawResponseEntity executeDraw(ActivityDrawRequestEntity request) {
         String userId = request.getUserId();
@@ -63,7 +63,7 @@ public class RaffleApplicationService {
                 .awardConfig(raffleAwardEntity.getAwardConfig())
                 .build();
 
-        awardService.saveUserAwardRecord(userAwardRecord);
+        awardFulfillmentPort.saveUserAwardRecord(userAwardRecord);
 
         return ActivityDrawResponseEntity.builder()
                 .awardId(raffleAwardEntity.getAwardId())
