@@ -53,18 +53,18 @@
 #                      updateDispatched / updateRetryFailed; LocalCreditAwardTaskDispatchPort
 #                      delegates to ICreditAwardTaskDao; DispatchCreditAwardTaskJob no longer
 #                      imports ICreditAwardTaskDao directly.
-#   [AL-8] BehaviorRebateRepository -> ITaskDao  (shared task outbox)
+#   [AL-8] BehaviorRebateRepository -> ITaskDao  *** RESOLVED — Phase 7-C ***
 #          context: rebate writes to shared task outbox table
-#          Phase 7-B decision complete: future owner is rebate_task_outbox.
-#          Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
-#   [AL-9]  CreditRepository -> ITaskDao  (shared task outbox)
+#          resolution: routed through IRebateTaskOutboxPort; LocalRebateTaskOutboxPort
+#                      delegates to ITaskDao until Phase 8 physical table cutover.
+#   [AL-9]  CreditRepository -> ITaskDao  *** RESOLVED — Phase 7-C ***
 #           context: credit writes to shared task outbox table
-#           Phase 7-B decision complete: future owner is credit_trade_task_outbox.
-#           Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
-#   [AL-10] AwardRepository -> ITaskDao  (shared task outbox)
+#           resolution: routed through ICreditTradeTaskOutboxPort; LocalCreditTradeTaskOutboxPort
+#                       delegates to ITaskDao until Phase 8 physical table cutover.
+#   [AL-10] AwardRepository -> ITaskDao  *** RESOLVED — Phase 7-C ***
 #           context: fulfillment writes to shared task outbox (e.g. send_award outbox)
-#           Phase 7-B decision complete: future owner is award_dispatch_task_outbox.
-#           Runtime coupling remains allowlisted until Phase 7-C+/Phase 8 migration.
+#           resolution: routed through IAwardDispatchTaskOutboxPort; LocalAwardDispatchTaskOutboxPort
+#                       delegates to ITaskDao until Phase 8 physical table cutover.
 #   [AL-11] AwardRepository -> ICreditAwardTaskDao  *** RESOLVED — Phase 7-A prep (AL-6/AL-11) ***
 #           context: fulfillment writes credit_award_task outbox row in saveGiveOutPrizesAggregate
 #           resolution: routed through IAwardCreditWritePort.insertCreditAwardTask;
@@ -191,20 +191,10 @@ DISPATCH_JOB=$(find "$REPO_ROOT/big-market-message-job-service/src" \
 # ICreditAwardTaskDao). The job-level forbidden-DAO check below enforces that the
 # direct coupling does not regress.
 
-check_field_present \
-  "AL-8 BehaviorRebateRepository->ITaskDao" \
-  "$INFRA_REPO/BehaviorRebateRepository.java" \
-  "ITaskDao"
-
-check_field_present \
-  "AL-9 CreditRepository->ITaskDao" \
-  "$INFRA_REPO/CreditRepository.java" \
-  "ITaskDao"
-
-check_field_present \
-  "AL-10 AwardRepository->ITaskDao" \
-  "$INFRA_REPO/AwardRepository.java" \
-  "ITaskDao"
+# AL-8/AL-9/AL-10 repository->ITaskDao — RESOLVED in Phase 7-C.
+# The repositories now route task outbox writes through domain ports. Local
+# infrastructure adapters deliberately preserve ITaskDao delegation until DBA
+# DDL and Phase 8 cutover gates are complete.
 
 # AL-11 AwardRepository->ICreditAwardTaskDao — RESOLVED in Phase 7-A prep (AL-6/AL-11).
 # AwardRepository now routes credit_award_task inserts through
@@ -308,11 +298,10 @@ check_no_forbidden_dao \
   "IUserBehaviorRebateOrderDao" \
   "ITaskDao"
 
-# AwardRepository must not import DAOs outside its context or AL-10.
+# AwardRepository must not import DAOs outside its context.
 # AL-5 (IUserRaffleOrderDao) was resolved in Phase 7-A prep — now explicitly forbidden.
 # AL-6 (IUserCreditAccountDao) and AL-11 (ICreditAwardTaskDao) were resolved in
 # Phase 7-A prep — now explicitly forbidden.
-# Allowed foreign: ITaskDao (AL-10; Phase 7-B decision complete, runtime unresolved)
 check_no_forbidden_dao \
   "AwardRepository forbidden DAOs" \
   "$INFRA_REPO/AwardRepository.java" \
@@ -336,9 +325,10 @@ check_no_forbidden_dao \
   "IUserCreditOrderDao" \
   "ICreditAwardTaskDao" \
   "IDailyBehaviorRebateDao" \
-  "IUserBehaviorRebateOrderDao"
+  "IUserBehaviorRebateOrderDao" \
+  "ITaskDao"
 
-# BehaviorRebateRepository must not import DAOs outside its context or AL-8.
+# BehaviorRebateRepository must not import DAOs outside its context.
 check_no_forbidden_dao \
   "BehaviorRebateRepository forbidden DAOs" \
   "$INFRA_REPO/BehaviorRebateRepository.java" \
@@ -360,9 +350,10 @@ check_no_forbidden_dao \
   "IUserCreditOrderDao" \
   "ICreditAwardTaskDao" \
   "IAwardDao" \
-  "IUserAwardRecordDao"
+  "IUserAwardRecordDao" \
+  "ITaskDao"
 
-# CreditRepository must not import DAOs outside its context or AL-9.
+# CreditRepository must not import DAOs outside its context.
 check_no_forbidden_dao \
   "CreditRepository forbidden DAOs" \
   "$INFRA_REPO/CreditRepository.java" \
@@ -383,7 +374,27 @@ check_no_forbidden_dao \
   "IAwardDao" \
   "IUserAwardRecordDao" \
   "IDailyBehaviorRebateDao" \
-  "IUserBehaviorRebateOrderDao"
+  "IUserBehaviorRebateOrderDao" \
+  "ITaskDao"
+
+check_port_boundary() {
+  local label="$1" repo_file="$2" port_name="$3" adapter_file="$4"
+  if grep -q "$port_name" "$repo_file" 2>/dev/null; then
+    pass "$label repository uses $port_name"
+  else
+    fail "$label repository does not use $port_name"
+  fi
+  if [[ -f "$adapter_file" ]] && grep -q "ITaskDao" "$adapter_file" 2>/dev/null; then
+    pass "$label local adapter preserves ITaskDao fallback"
+  else
+    fail "$label local adapter missing ITaskDao fallback"
+  fi
+}
+
+INFRA_PORT="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port"
+check_port_boundary "AL-8" "$INFRA_REPO/BehaviorRebateRepository.java" "IRebateTaskOutboxPort" "$INFRA_PORT/LocalRebateTaskOutboxPort.java"
+check_port_boundary "AL-9" "$INFRA_REPO/CreditRepository.java" "ICreditTradeTaskOutboxPort" "$INFRA_PORT/LocalCreditTradeTaskOutboxPort.java"
+check_port_boundary "AL-10" "$INFRA_REPO/AwardRepository.java" "IAwardDispatchTaskOutboxPort" "$INFRA_PORT/LocalAwardDispatchTaskOutboxPort.java"
 
 # DispatchCreditAwardTaskJob must not import credit infra DAO directly.
 if [[ -z "${DISPATCH_JOB:-}" || ! -f "$DISPATCH_JOB" ]]; then
@@ -598,9 +609,9 @@ echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A p
 echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao  [RESOLVED Phase 7-A prep AL-5]"
 echo "  AL-6  AwardRepository    -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep AL-6/AL-11]"
 echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  [RESOLVED Phase 7-A prep AL-7]"
-echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
-echo "  AL-9  CreditRepository          -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
-echo "  AL-10 AwardRepository           -> ITaskDao  (Phase 7-B decision complete; runtime shared outbox)"
+echo "  AL-8  BehaviorRebateRepository  -> ITaskDao  [RESOLVED Phase 7-C; local adapter fallback]"
+echo "  AL-9  CreditRepository          -> ITaskDao  [RESOLVED Phase 7-C; local adapter fallback]"
+echo "  AL-10 AwardRepository           -> ITaskDao  [RESOLVED Phase 7-C; local adapter fallback]"
 echo "  AL-11 AwardRepository           -> ICreditAwardTaskDao  [RESOLVED Phase 7-A prep AL-6/AL-11]"
 echo ""
 

@@ -62,7 +62,7 @@ check_doc_keyword "migration order" "Migration Order"
 check_doc_keyword "compatibility strategy" "Compatibility Strategy"
 check_doc_keyword "rollback strategy" "Rollback Strategy"
 check_doc_keyword "validation gates" "Validation Gates"
-check_doc_keyword "decision complete not runtime resolved" "decision-complete but not runtime-resolved|decision complete.*not runtime"
+check_doc_keyword "decision complete not runtime resolved" "decision-complete but not runtime-resolved|decision complete.*not runtime|direct DAO coupling resolved.*external-gated"
 
 # ── 2. DAO ownership and master plan updated ─────────────────────────────────
 echo ""
@@ -94,9 +94,22 @@ else
   fail "Master plan does not recommend AL-5 or Phase 7-C as a next batch"
 fi
 
-# ── 3. Existing ITaskDao runtime couplings remain allowlisted ────────────────
+# ── 3. Repository direct DAO coupling resolved; local fallback retained ──────
 echo ""
-echo "── 3. Runtime coupling status unchanged ──"
+echo "── 3. Runtime compatibility through ports ──"
+
+check_source_absent() {
+  local label="$1" file="$2" pattern="$3"
+  if [[ ! -f "$file" ]]; then
+    fail "$label — file missing: $file"
+    return
+  fi
+  if grep -q "$pattern" "$file" 2>/dev/null; then
+    fail "$label still has direct $pattern coupling"
+  else
+    pass "$label direct $pattern coupling removed"
+  fi
+}
 
 check_source_reference() {
   local label="$1" file="$2" pattern="$3"
@@ -105,16 +118,23 @@ check_source_reference() {
     return
   fi
   if grep -q "$pattern" "$file" 2>/dev/null; then
-    pass "$label still present and allowlisted"
+    pass "$label references $pattern"
   else
-    fail "$label missing unexpectedly — this batch should not change runtime task behavior"
+    fail "$label missing $pattern"
   fi
 }
 
 INFRA_REPO="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository"
-check_source_reference "AL-8 BehaviorRebateRepository -> ITaskDao" "$INFRA_REPO/BehaviorRebateRepository.java" "ITaskDao"
-check_source_reference "AL-9 CreditRepository -> ITaskDao" "$INFRA_REPO/CreditRepository.java" "ITaskDao"
-check_source_reference "AL-10 AwardRepository -> ITaskDao" "$INFRA_REPO/AwardRepository.java" "ITaskDao"
+INFRA_PORT="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port"
+check_source_absent "AL-8 BehaviorRebateRepository -> ITaskDao" "$INFRA_REPO/BehaviorRebateRepository.java" "ITaskDao"
+check_source_absent "AL-9 CreditRepository -> ITaskDao" "$INFRA_REPO/CreditRepository.java" "ITaskDao"
+check_source_absent "AL-10 AwardRepository -> ITaskDao" "$INFRA_REPO/AwardRepository.java" "ITaskDao"
+check_source_reference "AL-8 BehaviorRebateRepository port" "$INFRA_REPO/BehaviorRebateRepository.java" "IRebateTaskOutboxPort"
+check_source_reference "AL-9 CreditRepository port" "$INFRA_REPO/CreditRepository.java" "ICreditTradeTaskOutboxPort"
+check_source_reference "AL-10 AwardRepository port" "$INFRA_REPO/AwardRepository.java" "IAwardDispatchTaskOutboxPort"
+check_source_reference "AL-8 local fallback" "$INFRA_PORT/LocalRebateTaskOutboxPort.java" "ITaskDao"
+check_source_reference "AL-9 local fallback" "$INFRA_PORT/LocalCreditTradeTaskOutboxPort.java" "ITaskDao"
+check_source_reference "AL-10 local fallback" "$INFRA_PORT/LocalAwardDispatchTaskOutboxPort.java" "ITaskDao"
 
 # ── 4. No DDL applied outside proposed docs ──────────────────────────────────
 echo ""
@@ -253,7 +273,8 @@ echo ""
 
 if [[ "$FAIL" -eq 0 ]]; then
   echo "RESULT: ALL CHECKS PASSED — Phase 7-B task outbox ownership decision complete"
-  echo "        AL-8/AL-9/AL-10 are decision-complete but remain runtime allowlisted."
+  echo "        AL-8/AL-9/AL-10 direct repository DAO couplings are resolved."
+  echo "        Local adapters preserve legacy shared task fallback until Phase 8."
   echo "        Chosen path: per-domain outbox/task tables, following credit_award_task."
   exit 0
 else

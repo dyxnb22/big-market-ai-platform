@@ -1,16 +1,15 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.domain.award.model.valobj.AccountStatusVO;
+import com.dyx.market.domain.credit.adapter.port.ICreditTradeTaskOutboxPort;
 import com.dyx.market.domain.credit.model.aggregate.TradeAggregate;
 import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
 import com.dyx.market.domain.credit.model.entity.CreditOrderEntity;
 import com.dyx.market.domain.credit.model.entity.TaskEntity;
 import com.dyx.market.domain.credit.repository.ICreditRepository;
 import com.dyx.market.infrastructure.event.EventPublisher;
-import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.infrastructure.dao.IUserCreditAccountDao;
 import com.dyx.market.infrastructure.dao.IUserCreditOrderDao;
-import com.dyx.market.infrastructure.dao.po.Task;
 import com.dyx.market.infrastructure.dao.po.UserCreditAccount;
 import com.dyx.market.infrastructure.dao.po.UserCreditOrder;
 import com.dyx.market.infrastructure.redis.IRedisService;
@@ -18,7 +17,6 @@ import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.common.Constants;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.springframework.dao.DuplicateKeyException;
@@ -45,7 +43,7 @@ public class CreditRepository implements ICreditRepository {
     @Resource
     private IUserCreditOrderDao userCreditOrderDao;
     @Resource
-    private ITaskDao taskDao;
+    private ICreditTradeTaskOutboxPort creditTradeTaskOutboxPort;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -77,13 +75,6 @@ public class CreditRepository implements ICreditRepository {
         userCreditOrderReq.setTradeAmount(creditOrderEntity.getTradeAmount());
         userCreditOrderReq.setOutBusinessNo(creditOrderEntity.getOutBusinessNo());
 
-        Task task = new Task();
-        task.setUserId(taskEntity.getUserId());
-        task.setTopic(taskEntity.getTopic());
-        task.setMessageId(taskEntity.getMessageId());
-        task.setMessage(JSON.toJSONString(taskEntity.getMessage()));
-        task.setState(taskEntity.getState().getCode());
-
         RLock lock = redisService.getLock(Constants.RedisKey.USER_CREDIT_ACCOUNT_LOCK + userId + Constants.UNDERLINE + creditOrderEntity.getOutBusinessNo());
         try {
             lock.lock(3, TimeUnit.SECONDS);
@@ -110,7 +101,7 @@ public class CreditRepository implements ICreditRepository {
                     // 2. 保存账户订单
                     userCreditOrderDao.insert(userCreditOrderReq);
                     // 3. 写入任务
-                    taskDao.insert(task);
+                    creditTradeTaskOutboxPort.insert(taskEntity);
                 } catch (DuplicateKeyException e) {
                     status.setRollbackOnly();
                     log.error("调整账户积分额度异常，唯一索引冲突 userId:{} orderId:{}", userId, creditOrderEntity.getOrderId(), e);
@@ -129,15 +120,15 @@ public class CreditRepository implements ICreditRepository {
 
         try {
             // 发送消息【在事务外执行，如果失败还有任务补偿】
-            eventPublisher.publish(task.getTopic(), task.getMessage());
+            eventPublisher.publish(taskEntity.getTopic(), taskEntity.getMessage());
             // 更新数据库记录，task 任务表
             dbRouter.doRouter(userId);
-            taskDao.updateTaskSendMessageCompleted(task);
-            log.info("调整账户积分记录，发送MQ消息完成 userId: {} orderId:{} topic: {}", userId, creditOrderEntity.getOrderId(), task.getTopic());
+            creditTradeTaskOutboxPort.markSendMessageCompleted(taskEntity);
+            log.info("调整账户积分记录，发送MQ消息完成 userId: {} orderId:{} topic: {}", userId, creditOrderEntity.getOrderId(), taskEntity.getTopic());
         } catch (Exception e) {
-            log.error("调整账户积分记录，发送MQ消息失败 userId: {} topic: {}", userId, task.getTopic());
+            log.error("调整账户积分记录，发送MQ消息失败 userId: {} topic: {}", userId, taskEntity.getTopic());
             dbRouter.doRouter(userId);
-            taskDao.updateTaskSendMessageFail(task);
+            creditTradeTaskOutboxPort.markSendMessageFail(taskEntity);
         } finally {
             dbRouter.clear();
         }

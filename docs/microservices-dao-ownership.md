@@ -134,12 +134,17 @@ Target service: `big-market-strategy-service` (not yet created; Phase 4-C scaffo
 
 Status: shared across multiple bounded contexts at runtime. Phase 7-B decision
 complete: replace the generic `task` table with per-domain outbox/task tables,
-following the existing `credit_award_task` precedent. Runtime writes still use
-`ITaskDao` until proposed DDL, staging evidence, and traffic cutover batches land.
+following the existing `credit_award_task` precedent. AL-8/AL-9/AL-10 direct
+repository DAO coupling resolved: repositories no longer import `ITaskDao`
+directly and instead use domain task-outbox ports. Physical runtime table
+isolation remains Phase 8 external-gated until DBA-applied DDL, staging
+evidence, and traffic cutover batches land.
+
+Direct DAO coupling resolved; physical runtime table isolation remains Phase 8 external-gated.
 
 | DAO interface | PO | Mapper XML (app) | Mapper XML (service) | Physical table | Current repository | Caller modules | Target service | Phase | Risk | Blockers |
 |---------------|----|-----------------|---------------------|----------------|-------------------|----------------|----------------|-------|------|----------|
-| `ITaskDao` | `Task` | `task_mapper.xml` | rebate-service, market-service, message-job-service | `task` | `TaskRepository`, `BehaviorRebateRepository`†, `CreditRepository`†, `AwardRepository`† | message-job-service (SendMessageTaskJob), rebate writes, credit writes, award dispatch writes | per-domain outbox tables: `rebate_task_outbox`, `credit_trade_task_outbox`, `award_dispatch_task_outbox` | 7-B decision complete; runtime unresolved | Medium | `docs/microservices-split-phase-7-task-outbox-ownership.md`; Phase 7-C+ proposed DDL; `task` sharded across DB1/DB2 |
+| `ITaskDao` | `Task` | `task_mapper.xml` | rebate-service, market-service, message-job-service | `task` | `TaskRepository`, `LocalRebateTaskOutboxPort`, `LocalCreditTradeTaskOutboxPort`, `LocalAwardDispatchTaskOutboxPort` | message-job-service (SendMessageTaskJob), compatibility fallback for rebate/credit/award dispatch writes | per-domain outbox tables: `rebate_task_outbox`, `credit_trade_task_outbox`, `award_dispatch_task_outbox` | direct DAO coupling resolved; runtime table isolation external-gated | Medium | `docs/microservices-split-phase-7-task-outbox-ownership.md`; proposed DDL; Phase 8 cutover |
 
 ---
 
@@ -243,12 +248,14 @@ Risk level: **MEDIUM** — AL-7 direct job DAO coupling is resolved. The local a
 
 | Cross-boundary call | From context | Shared resource | Notes |
 |--------------------|--------------|----------------|-------|
-| `BehaviorRebateRepository` → `ITaskDao` | rebate | `task` (shared) | Outbox publish for rebate order events |
-| `CreditRepository` → `ITaskDao` | credit | `task` (shared) | Outbox publish for credit order events |
-| `AwardRepository` → `ITaskDao` | fulfillment | `task` (shared) | Outbox publish for award dispatch events |
+| `BehaviorRebateRepository` → `IRebateTaskOutboxPort` → `LocalRebateTaskOutboxPort` → `ITaskDao` | rebate | `task` compatibility fallback | **AL-8 resolved** — direct repository DAO coupling removed; physical table cutover still external-gated |
+| `CreditRepository` → `ICreditTradeTaskOutboxPort` → `LocalCreditTradeTaskOutboxPort` → `ITaskDao` | credit | `task` compatibility fallback | **AL-9 resolved** — direct repository DAO coupling removed; physical table cutover still external-gated |
+| `AwardRepository` → `IAwardDispatchTaskOutboxPort` → `LocalAwardDispatchTaskOutboxPort` → `ITaskDao` | fulfillment | `task` compatibility fallback | **AL-10 resolved** — direct repository DAO coupling removed; physical table cutover still external-gated |
 
-**Phase 7-B decision complete:** adopt per-domain outbox/task tables and keep
-the current `ITaskDao` paths allowlisted until runtime migration batches land.
+**Phase 7-B/C decision and boundary complete:** adopt per-domain outbox/task
+tables and keep only local infrastructure adapter `ITaskDao` delegation until
+runtime migration batches land. Direct repository DAO coupling resolved; physical
+runtime table isolation remains Phase 8 external-gated.
 Chosen future tables:
 
 - `rebate_task_outbox_{000..003}` for AL-8 (`BehaviorRebateRepository`).
@@ -257,11 +264,12 @@ Chosen future tables:
 
 `credit_award_task_{000..003}` remains the precedent for account-owned credit
 award dispatch. See `docs/microservices-split-phase-7-task-outbox-ownership.md`.
-No runtime behavior changed in Phase 7-B.
+No physical table switch is made in Phase 7-C; local adapters preserve legacy
+`ITaskDao` insert/update behavior by default.
 
-Risk level: **MEDIUM** — decision complete, runtime unresolved. Not a blocker
-for Phase 7-A docs/prep; still blocks Phase 8-A/B/C table isolation until each
-domain stops writing the shared `task` table.
+Risk level: **MEDIUM** — direct DAO coupling resolved, runtime physical table
+isolation unresolved. Still blocks Phase 8-A/B/C table isolation until each
+domain stops writing the shared `task` table after external DBA/cutover gates.
 
 ---
 
@@ -274,7 +282,7 @@ domain stops writing the shared `task` table.
 | 3 | `AwardRepository` reads/updates activity DAO | fulfillment | activity | `user_raffle_order` | ~~Before Phase 7-A fulfillment + activity isolation~~ **RESOLVED Phase 7-A prep (AL-5)** | ~~High~~ Resolved |
 | 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account`, `credit_award_task` | ~~Before Phase 8-B~~ **RESOLVED Phase 7-A prep (AL-6/AL-11)** | ~~High~~ Resolved |
 | 5 | `DispatchCreditAwardTaskJob` imports credit infra DAO | message-job | credit | `credit_award_task` | ~~Before Phase 8-A~~ **RESOLVED Phase 7-A prep (AL-7)** | ~~High~~ Resolved |
-| 6 | `BehaviorRebateRepository` / `CreditRepository` / `AwardRepository` share `task` table | rebate + credit + fulfillment | shared | `task` | Phase 7-B decision complete; runtime fix before Phase 8-A/B/C | Medium |
+| 6 | `BehaviorRebateRepository` / `CreditRepository` / `AwardRepository` direct `ITaskDao` imports | rebate + credit + fulfillment | shared | `task` | **RESOLVED Phase 7-C ports**; runtime table cutover before Phase 8-A/B/C remains external-gated | Medium |
 
 ---
 
@@ -317,10 +325,11 @@ The following conditions must be true before Phase 7-A can isolate any table gro
    `ICreditAwardTaskDao`. The existing `account.award-credit-outbox.enabled`
    flag remains default false.
 
-6. **Phase 7-B task outbox decision** (§4.5): Done —
+6. **Phase 7-B/C task outbox decision and direct boundary** (§4.5): Done —
    `docs/microservices-split-phase-7-task-outbox-ownership.md` chooses
-   per-domain outbox/task tables. Runtime migration remains open until Phase
-   7-C+ proposed DDL and Phase 8 cutover gates.
+   per-domain outbox/task tables, proposed DDL exists under `docs/sql/`, and
+   AL-8/AL-9/AL-10 repository writes route through task-outbox ports. Runtime
+   migration remains open until Phase 8 cutover gates.
 
 ---
 
@@ -336,7 +345,7 @@ Based on this inventory the lowest-risk next phases are:
 | **Phase 7-A (AL-1)**: StrategyRepository activity mapping boundary | Done — tag `phase-7-strategy-activity-mapping-port`; `StrategyRepository` no longer imports `IRaffleActivityDao`; reads route through `IStrategyActivityMappingPort` (`LocalStrategyActivityMappingPort`) |
 | **Phase 7-A**: account table ownership gate | B18 cutover; StrategyRepository direct cross-boundary couplings removed (AL-1/2/3 resolved) and AwardRepository direct credit DAO couplings removed (AL-6/AL-11 resolved); runtime cutover evidence still required before enabling credit-award outbox traffic |
 | **Phase 7-B**: generic `task` table strategy decision doc | Done — tag `phase-7-task-outbox-ownership`; AL-8/AL-9/AL-10 decision complete but runtime still allowlisted |
-| **Phase 7-C**: proposed DDL for per-domain task outbox tables | Next data-ownership docs batch if prioritizing rebate/account/fulfillment outbox isolation |
+| **Phase 7-C**: proposed DDL for per-domain task outbox tables and AL-8/AL-9/AL-10 port boundaries | Done — direct repository DAO coupling resolved; runtime physical table isolation remains Phase 8 external-gated |
 | **Phase 7-A prep (AL-5)**: AwardRepository raffle-order boundary | Done — tag `phase-7-award-activity-order-boundary`; `AwardRepository` no longer imports `IUserRaffleOrderDao`; state transition routes through `IAwardActivityOrderPort` |
 | **Phase 7-A prep (AL-7)**: DispatchCreditAwardTaskJob credit DAO boundary | Done — tag `phase-7-credit-award-task-job-boundary`; job no longer imports `ICreditAwardTaskDao`; reads/state transitions route through `ICreditAwardTaskDispatchPort` |
 | **Phase 7-A prep (AL-6/AL-11)**: AwardRepository credit outbox write cleanup | Done — tag `phase-7-award-credit-outbox-boundary`; `AwardRepository` no longer imports `IUserCreditAccountDao` or `ICreditAwardTaskDao`; writes route through `IAwardCreditWritePort` |

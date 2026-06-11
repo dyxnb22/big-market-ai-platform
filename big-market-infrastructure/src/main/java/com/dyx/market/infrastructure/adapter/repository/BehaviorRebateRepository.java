@@ -1,5 +1,6 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
+import com.dyx.market.domain.rebate.adapter.port.IRebateTaskOutboxPort;
 import com.dyx.market.domain.rebate.model.aggregate.BehaviorRebateAggregate;
 import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
 import com.dyx.market.domain.rebate.model.entity.TaskEntity;
@@ -8,15 +9,12 @@ import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
 import com.dyx.market.domain.rebate.repository.IBehaviorRebateRepository;
 import com.dyx.market.infrastructure.event.EventPublisher;
 import com.dyx.market.infrastructure.dao.IDailyBehaviorRebateDao;
-import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.infrastructure.dao.IUserBehaviorRebateOrderDao;
 import com.dyx.market.infrastructure.dao.po.DailyBehaviorRebate;
-import com.dyx.market.infrastructure.dao.po.Task;
 import com.dyx.market.infrastructure.dao.po.UserBehaviorRebateOrder;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -40,7 +38,7 @@ public class BehaviorRebateRepository implements IBehaviorRebateRepository {
     @Resource
     private IUserBehaviorRebateOrderDao userBehaviorRebateOrderDao;
     @Resource
-    private ITaskDao taskDao;
+    private IRebateTaskOutboxPort rebateTaskOutboxPort;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -83,15 +81,7 @@ public class BehaviorRebateRepository implements IBehaviorRebateRepository {
                         userBehaviorRebateOrder.setBizId(behaviorRebateOrderEntity.getBizId());
                         userBehaviorRebateOrderDao.insert(userBehaviorRebateOrder);
 
-                        // 任务对象
-                        TaskEntity taskEntity = behaviorRebateAggregate.getTaskEntity();
-                        Task task = new Task();
-                        task.setUserId(taskEntity.getUserId());
-                        task.setTopic(taskEntity.getTopic());
-                        task.setMessageId(taskEntity.getMessageId());
-                        task.setMessage(JSON.toJSONString(taskEntity.getMessage()));
-                        task.setState(taskEntity.getState().getCode());
-                        taskDao.insert(task);
+                        rebateTaskOutboxPort.insert(behaviorRebateAggregate.getTaskEntity());
                     }
                     return 1;
                 } catch (DuplicateKeyException e) {
@@ -107,17 +97,14 @@ public class BehaviorRebateRepository implements IBehaviorRebateRepository {
         // 同步发送MQ消息
         for (BehaviorRebateAggregate behaviorRebateAggregate : behaviorRebateAggregates) {
             TaskEntity taskEntity = behaviorRebateAggregate.getTaskEntity();
-            Task task = new Task();
-            task.setUserId(taskEntity.getUserId());
-            task.setMessageId(taskEntity.getMessageId());
             try {
                 // 发送消息【在事务外执行，如果失败还有任务补偿】
                 eventPublisher.publish(taskEntity.getTopic(), taskEntity.getMessage());
                 // 更新数据库记录，task 任务表
-                taskDao.updateTaskSendMessageCompleted(task);
+                rebateTaskOutboxPort.markSendMessageCompleted(taskEntity);
             } catch (Exception e) {
-                log.error("写入返利记录，发送MQ消息失败 userId: {} topic: {}", userId, task.getTopic());
-                taskDao.updateTaskSendMessageFail(task);
+                log.error("写入返利记录，发送MQ消息失败 userId: {} topic: {}", userId, taskEntity.getTopic());
+                rebateTaskOutboxPort.markSendMessageFail(taskEntity);
             }
         }
 

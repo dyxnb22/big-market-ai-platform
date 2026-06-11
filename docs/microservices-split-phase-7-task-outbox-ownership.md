@@ -191,9 +191,9 @@ Before any DDL or traffic change for AL-8, AL-9, or AL-10:
 
 | Coupling | Status after Phase 7-B | Runtime state |
 |----------|------------------------|---------------|
-| AL-8 `BehaviorRebateRepository -> ITaskDao` | decision complete | still allowlisted; still writes `task` |
-| AL-9 `CreditRepository -> ITaskDao` | decision complete | still allowlisted; still writes `task` |
-| AL-10 `AwardRepository -> ITaskDao` | decision complete | still allowlisted; still writes `task` |
+| AL-8 `BehaviorRebateRepository -> ITaskDao` | direct DAO coupling resolved | repository uses `IRebateTaskOutboxPort`; local adapter still delegates to `ITaskDao` until DBA DDL + Phase 8 cutover |
+| AL-9 `CreditRepository -> ITaskDao` | direct DAO coupling resolved | repository uses `ICreditTradeTaskOutboxPort`; local adapter still delegates to `ITaskDao` until DBA DDL + Phase 8 cutover |
+| AL-10 `AwardRepository -> ITaskDao` | direct DAO coupling resolved | repository uses `IAwardDispatchTaskOutboxPort`; local adapter still delegates to `ITaskDao` until DBA DDL + Phase 8 cutover |
 
 Recommended next batch: either Phase 7-C proposed DDL for
 `rebate_task_outbox_{000..003}` or AL-5 `AwardRepository -> IUserRaffleOrderDao`

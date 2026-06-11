@@ -2,6 +2,7 @@ package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.domain.award.adapter.port.IAwardActivityOrderPort;
 import com.dyx.market.domain.award.adapter.port.IAwardCreditWritePort;
+import com.dyx.market.domain.award.adapter.port.IAwardDispatchTaskOutboxPort;
 import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.domain.award.model.aggregate.GiveOutPrizesAggregate;
 import com.dyx.market.domain.award.model.aggregate.UserAwardRecordAggregate;
@@ -9,10 +10,8 @@ import com.dyx.market.domain.award.model.entity.TaskEntity;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.entity.UserCreditAwardEntity;
 import com.dyx.market.infrastructure.dao.IAwardDao;
-import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.infrastructure.dao.IUserAwardRecordDao;
 import com.dyx.market.infrastructure.event.EventPublisher;
-import com.dyx.market.infrastructure.dao.po.Task;
 import com.dyx.market.infrastructure.dao.po.UserAwardRecord;
 import com.dyx.market.infrastructure.redis.IRedisService;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
@@ -42,13 +41,13 @@ public class AwardRepository implements IAwardRepository {
     @Resource
     private IAwardDao awardDao;
     @Resource
-    private ITaskDao taskDao;
-    @Resource
     private IUserAwardRecordDao userAwardRecordDao;
     @Resource
     private IAwardActivityOrderPort awardActivityOrderPort;
     @Resource
     private IAwardCreditWritePort awardCreditWritePort;
+    @Resource
+    private IAwardDispatchTaskOutboxPort awardDispatchTaskOutboxPort;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -88,13 +87,6 @@ public class AwardRepository implements IAwardRepository {
         userAwardRecord.setAwardTime(userAwardRecordEntity.getAwardTime());
         userAwardRecord.setAwardState(userAwardRecordEntity.getAwardState().getCode());
 
-        Task task = new Task();
-        task.setUserId(taskEntity.getUserId());
-        task.setTopic(taskEntity.getTopic());
-        task.setMessageId(taskEntity.getMessageId());
-        task.setMessage(JSON.toJSONString(taskEntity.getMessage()));
-        task.setState(taskEntity.getState().getCode());
-
         try {
             dbRouter.doRouter(userId);
             transactionTemplate.execute(status -> {
@@ -102,7 +94,7 @@ public class AwardRepository implements IAwardRepository {
                     // 写入记录
                     userAwardRecordDao.insert(userAwardRecord);
                     // 写入任务
-                    taskDao.insert(task);
+                    awardDispatchTaskOutboxPort.insert(taskEntity);
                     // 更新抽奖单
                     int count = awardActivityOrderPort.markUserRaffleOrderUsed(
                             userAwardRecordEntity.getUserId(),
@@ -125,15 +117,15 @@ public class AwardRepository implements IAwardRepository {
 
         try {
             // 发送消息【在事务外执行，如果失败还有任务补偿】
-            eventPublisher.publish(task.getTopic(), task.getMessage());
+            eventPublisher.publish(taskEntity.getTopic(), taskEntity.getMessage());
             // 更新数据库记录，task 任务表
             dbRouter.doRouter(userId);
-            taskDao.updateTaskSendMessageCompleted(task);
-            log.info("写入中奖记录，发送MQ消息完成 userId: {} orderId:{} topic: {}", userId, userAwardRecordEntity.getOrderId(), task.getTopic());
+            awardDispatchTaskOutboxPort.markSendMessageCompleted(taskEntity);
+            log.info("写入中奖记录，发送MQ消息完成 userId: {} orderId:{} topic: {}", userId, userAwardRecordEntity.getOrderId(), taskEntity.getTopic());
         } catch (Exception e) {
-            log.error("写入中奖记录，发送MQ消息失败 userId: {} topic: {}", userId, task.getTopic());
+            log.error("写入中奖记录，发送MQ消息失败 userId: {} topic: {}", userId, taskEntity.getTopic());
             dbRouter.doRouter(userId);
-            taskDao.updateTaskSendMessageFail(task);
+            awardDispatchTaskOutboxPort.markSendMessageFail(taskEntity);
         } finally {
             dbRouter.clear();
         }
