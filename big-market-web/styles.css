@@ -1029,6 +1029,29 @@ th { color: var(--muted); font-weight: 700; }
 .config-item strong, .config-item span { display: block; }
 .config-item span { margin-top: 4px; color: var(--muted); font-size: 13px; }
 
+/* ===== Ops Monitoring ===== */
+.ops-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 8px; }
+.ops-card { padding: 14px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--sidebar-bg); text-align: center; }
+.ops-label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.ops-value { display: block; font-size: 18px; font-weight: 700; }
+.ops-value.small { font-size: 12px; word-break: break-all; }
+.ops-ok { color: var(--green); }
+.ops-fail { color: var(--danger); }
+.ops-unknown { color: var(--muted); }
+.ops-diagnostics { display: grid; gap: 6px; }
+.diag-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+.diag-item.diag-ok { background: #ecfdf5; border-color: #a7f3d0; }
+.diag-item.diag-fail { background: #fef2f2; border-color: #fecaca; }
+.diag-label { font-weight: 500; }
+.diag-result { font-size: 12px; color: var(--muted); }
+.diag-ok .diag-result { color: var(--green); }
+.diag-fail .diag-result { color: var(--danger); }
+.ops-log-query { margin-top: 8px; }
+.log-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; align-items: end; }
+.log-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.log-grid select, .log-grid input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; background: var(--surface); }
+.log-output { background: #1f2937; color: #e5e7eb; padding: 16px; border-radius: var(--radius-sm); font-size: 12px; font-family: monospace; min-height: 80px; white-space: pre-wrap; overflow-x: auto; }
+
 /* ===== Mobile Navigation Bar ===== */
 .mobile-nav {
   display: none;

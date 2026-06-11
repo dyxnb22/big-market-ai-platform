@@ -73,7 +73,6 @@ function initApp() {
     ucCredit:        qs("#ucCredit"),
     ucSurplus:       qs("#ucSurplus"),
     ucSigned:        qs("#ucSigned"),
-    ucSignInBtn:     qs("#ucSignInBtn"),
     logoutBtn:       qs("#logoutBtn"),
     toast:           qs("#toast")
   };
@@ -195,13 +194,11 @@ function initApp() {
         if (r.data === true) {
           signedToday = true;
           if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "是";
           if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
         } else {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
         }
@@ -242,11 +239,10 @@ function initApp() {
   // ---- Sign In ----
   function signIn() {
     if (signedToday) { toast("今日已签到"); return; }
-    busy(d.signInBtn, true); busy(d.ucSignInBtn, true);
+    busy(d.signInBtn, true);
     apiRequest("/raffle/activity/calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
       signedToday = true;
       if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
-      if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
       if (d.signInStatus) d.signInStatus.textContent = "签到成功！";
       if (d.ucSigned) d.ucSigned.textContent = "是";
       toast("签到成功！");
@@ -269,14 +265,12 @@ function initApp() {
       }
     }).finally(function() {
       busy(d.signInBtn, false);
-      busy(d.ucSignInBtn, false);
     });
   }
 
   function treatSignedIn() {
     signedToday = true;
     if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
-    if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
     if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
     if (d.ucSigned) d.ucSigned.textContent = "是";
   }
@@ -419,7 +413,6 @@ function initApp() {
   d.drawerOverlay.onclick = closeAll;
   d.drawBtn.onclick = draw;
   d.signInBtn.onclick = signIn;
-  d.ucSignInBtn.onclick = signIn;
   d.refreshCampaign.onclick = function() { loadCampaign().then(function(){toast("已刷新");}).catch(function(e){toast(e.message);}); };
   d.logoutBtn.onclick = logout;
 

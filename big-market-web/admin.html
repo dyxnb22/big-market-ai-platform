@@ -15,6 +15,7 @@
       <a href="#activity">📋 活动配置</a>
       <a href="#awards">🏆 奖品配置</a>
       <a href="#assistant">🤖 AI 配置</a>
+      <a href="#ops" style="border-top:1px solid #374151;padding-top:16px;margin-top:8px;">🔍 运维监控</a>
     </nav>
     <div class="admin-footer">
       <a href="./admin-login.html" id="adminLoginLink">🔑 登录 / 切换账号</a>
@@ -74,6 +75,73 @@
         </div>
       </div>
       <div id="configList" class="config-list"></div>
+    </section>
+
+    <!-- ===== Ops Monitoring ===== -->
+    <section id="ops" class="admin-panel">
+      <div class="panel-title">
+        <h2>🔍 运维监控</h2>
+        <button id="refreshOpsBtn" class="solid-button" type="button">刷新状态</button>
+      </div>
+
+      <!-- Metrics Cards -->
+      <div class="ops-metrics" id="opsMetrics">
+        <div class="ops-card"><span class="ops-label">Gateway</span><strong class="ops-value ops-unknown" id="opsGatewayStatus">检测中</strong></div>
+        <div class="ops-card"><span class="ops-label">API 登录</span><strong class="ops-value ops-unknown" id="opsLoginStatus">检测中</strong></div>
+        <div class="ops-card"><span class="ops-label">API 地址</span><span class="ops-value small" id="opsApiBase">-</span></div>
+        <div class="ops-card"><span class="ops-label">登录用户</span><span class="ops-value small" id="opsUser">-</span></div>
+        <div class="ops-card"><span class="ops-label">刷新时间</span><span class="ops-value small" id="opsRefreshTime">-</span></div>
+      </div>
+
+      <!-- Service Health Table -->
+      <h3 style="font-size:14px;margin:16px 0 8px;">服务健康状态</h3>
+      <div class="data-table" id="opsHealthTable">
+        <table><thead><tr><th>服务</th><th>状态</th><th>响应</th></tr></thead><tbody id="opsHealthBody"></tbody></table>
+      </div>
+
+      <!-- Service Diagnostics -->
+      <h3 style="font-size:14px;margin:16px 0 8px;">服务诊断</h3>
+      <div id="opsDiagnostics" class="ops-diagnostics">
+        <div class="diag-item" id="diagGateway"><span class="diag-label">Gateway /actuator/health</span><span class="diag-result">检测中...</span></div>
+        <div class="diag-item" id="diagLogin"><span class="diag-label">Auth /api/v1/auth/login (OPTIONS)</span><span class="diag-result">检测中...</span></div>
+        <div class="diag-item" id="diagAdmin"><span class="diag-label">Admin /api/v1/admin/config/list</span><span class="diag-result">检测中...</span></div>
+        <div class="diag-item" id="diagChatbot"><span class="diag-label">Chatbot /api/v1/chatbot/ask</span><span class="diag-result">检测中...</span></div>
+      </div>
+
+      <!-- Log Query (placeholder) -->
+      <h3 style="font-size:14px;margin:16px 0 8px;">日志采集</h3>
+      <div class="ops-log-query">
+        <div class="log-grid">
+          <label>服务
+            <select id="logService">
+              <option value="gateway">gateway</option>
+              <option value="auth-service">auth-service</option>
+              <option value="admin-service">admin-service</option>
+              <option value="market-service">market-service</option>
+              <option value="chatbot-service">chatbot-service</option>
+              <option value="message-job-service">message-job-service</option>
+              <option value="account-service">account-service</option>
+            </select>
+          </label>
+          <label>级别
+            <select id="logLevel">
+              <option value="">ALL</option>
+              <option value="ERROR">ERROR</option>
+              <option value="WARN">WARN</option>
+              <option value="INFO">INFO</option>
+              <option value="DEBUG">DEBUG</option>
+            </select>
+          </label>
+          <label>关键词
+            <input id="logKeyword" placeholder="过滤关键词" />
+          </label>
+          <label>行数
+            <input id="logLines" value="50" style="width:70px;" />
+          </label>
+          <button id="logQueryBtn" class="soft-button" type="button" style="align-self:flex-end;">查询</button>
+        </div>
+        <pre id="logOutput" class="log-output">后端日志接口未接入。预留端点：GET /admin/ops/logs?service=&amp;level=&amp;keyword=&amp;lines=</pre>
+      </div>
     </section>
   </main>
 </div>

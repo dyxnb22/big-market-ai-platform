@@ -24,8 +24,16 @@ var auth = readAuth();
 
 function requireLogin() {
   if (auth.token) return true;
-  location.href = "./admin-login.html?redirect=" + encodeURIComponent("./admin.html");
+  location.href = adminLoginUrl();
   return false;
+}
+
+function adminLoginUrl() {
+  return "./admin-login.html?redirect=" + encodeURIComponent("./admin.html" + location.search + location.hash);
+}
+
+if (!auth.token) {
+  location.replace(adminLoginUrl());
 }
 
 // Wrap apiRequest to add auth-expired guard
@@ -195,8 +203,136 @@ dom.chatbotSwitch.addEventListener("click", function(event) {
   saveChatbotEnabled(button.dataset.value === "true").catch(function(error) { toast(error.message); });
 });
 
+// ===== Ops Monitoring =====
+var opsDom = {
+  gatewayStatus: document.getElementById("opsGatewayStatus"),
+  loginStatus: document.getElementById("opsLoginStatus"),
+  apiBase: document.getElementById("opsApiBase"),
+  opsUser: document.getElementById("opsUser"),
+  refreshTime: document.getElementById("opsRefreshTime"),
+  healthBody: document.getElementById("opsHealthBody"),
+  refreshBtn: document.getElementById("refreshOpsBtn"),
+  diagGateway: document.getElementById("diagGateway"),
+  diagLogin: document.getElementById("diagLogin"),
+  diagAdmin: document.getElementById("diagAdmin"),
+  diagChatbot: document.getElementById("diagChatbot"),
+  logQueryBtn: document.getElementById("logQueryBtn"),
+  logService: document.getElementById("logService"),
+  logLevel: document.getElementById("logLevel"),
+  logKeyword: document.getElementById("logKeyword"),
+  logLines: document.getElementById("logLines"),
+  logOutput: document.getElementById("logOutput"),
+};
+
+function setDiag(el, ok, msg) {
+  if (!el) return;
+  el.className = "diag-item";
+  el.classList.add(ok ? "diag-ok" : "diag-fail");
+  el.querySelector(".diag-result").textContent = msg;
+}
+
+async function refreshOps() {
+  var now = new Date();
+  var gatewayBase = CONFIG.API_BASE.replace(/\/api\/v1$/, "");
+  opsDom.refreshTime.textContent = now.toLocaleTimeString();
+  opsDom.apiBase.textContent = CONFIG.API_BASE;
+  opsDom.opsUser.textContent = auth.userId || "-";
+
+  // 1. Gateway health
+  var gwOk = false;
+  try {
+    var res = await fetch(gatewayBase + "/actuator/health");
+    var data = await res.json();
+    gwOk = data.status === "UP";
+    opsDom.gatewayStatus.textContent = gwOk ? "正常" : "异常";
+    opsDom.gatewayStatus.className = "ops-value " + (gwOk ? "ops-ok" : "ops-fail");
+    setDiag(opsDom.diagGateway, gwOk, gwOk ? "UP (" + data.status + ")" : (data.status || "DOWN"));
+  } catch (e) {
+    opsDom.gatewayStatus.textContent = "不可达";
+    opsDom.gatewayStatus.className = "ops-value ops-fail";
+    setDiag(opsDom.diagGateway, false, "请求失败: " + e.message);
+  }
+
+  // 2. Login API availability (OPTIONS preflight)
+  var loginOk = false;
+  try {
+    var optRes = await fetch(CONFIG.API_BASE + "/auth/login", {method: "OPTIONS"});
+    loginOk = optRes.ok || optRes.status === 200;
+    opsDom.loginStatus.textContent = loginOk ? "可达" : "异常";
+    opsDom.loginStatus.className = "ops-value " + (loginOk ? "ops-ok" : "ops-fail");
+    setDiag(opsDom.diagLogin, loginOk, "OPTIONS " + optRes.status + " " + (optRes.ok ? "OK" : ""));
+  } catch (e) {
+    opsDom.loginStatus.textContent = "不可达";
+    opsDom.loginStatus.className = "ops-value ops-fail";
+    setDiag(opsDom.diagLogin, false, "请求失败: " + e.message);
+  }
+
+  // 3. Admin config/list
+  try {
+    var adminRes = await adminRequest("/admin/config/list", {method: "GET"});
+    if (adminRes.code === "0000") {
+      setDiag(opsDom.diagAdmin, true, "OK (" + (adminRes.data?.length || 0) + " items)");
+    } else {
+      setDiag(opsDom.diagAdmin, false, adminRes.info || "业务错误");
+    }
+  } catch (e) {
+    setDiag(opsDom.diagAdmin, false, e.message);
+  }
+
+  // 4. Chatbot API availability
+  try {
+    var cbRes = await fetch(CONFIG.API_BASE + "/chatbot/ask", {method: "OPTIONS"});
+    setDiag(opsDom.diagChatbot, cbRes.ok, "OPTIONS " + cbRes.status + (cbRes.ok ? " OK" : ""));
+  } catch (e) {
+    setDiag(opsDom.diagChatbot, false, "不可达: " + e.message);
+  }
+
+  // 5. Health table (gateway-routed API checks — no side effects)
+  var services = [
+    {name: "gateway", url: gatewayBase + "/actuator/health", method: "GET"},
+    {name: "auth-service", path: "/auth/login", method: "OPTIONS"},
+    {name: "market-service", path: "/raffle/activity/query_user_credit_account_by_token", method: "OPTIONS"},
+    {name: "admin-service", path: "/admin/config/list", method: "OPTIONS"},
+    {name: "chatbot-service", path: "/chatbot/ask", method: "OPTIONS"},
+  ];
+  var rows = "";
+  for (var i = 0; i < services.length; i++) {
+    var svc = services[i];
+    try {
+      var opts = {method: svc.method || "GET"};
+      var sr = await fetch(svc.url || (CONFIG.API_BASE + svc.path), opts);
+      var status = sr.ok ? "UP" : "DOWN";
+      var detail = sr.status;
+      if (sr.headers.get("content-type") && sr.headers.get("content-type").includes("json")) {
+        try { var sj = await sr.clone().json(); status = sj.status === "UP" ? "UP" : (sj.code === "0000" ? "UP" : "ERR"); detail = sj.status || sj.code || sr.status; } catch(e2) { /* ignore */ }
+      }
+      rows += "<tr><td>" + esc(svc.name) + "</td><td class='" + (status === "UP" ? "ops-ok" : "ops-fail") + "'>" + status + "</td><td>" + esc(detail) + "</td></tr>";
+    } catch (e) {
+      rows += "<tr><td>" + esc(svc.name) + "</td><td class='ops-fail'>DOWN</td><td>" + esc(e.message) + "</td></tr>";
+    }
+  }
+  opsDom.healthBody.innerHTML = rows;
+}
+
+// Log query (placeholder — backend endpoint not yet implemented)
+function queryLogs() {
+  var service = opsDom.logService ? opsDom.logService.value : "";
+  var level = opsDom.logLevel ? opsDom.logLevel.value : "";
+  var keyword = opsDom.logKeyword ? opsDom.logKeyword.value : "";
+  var lines = opsDom.logLines ? opsDom.logLines.value : "50";
+  var params = "?service=" + encodeURIComponent(service) + "&level=" + encodeURIComponent(level) + "&keyword=" + encodeURIComponent(keyword) + "&lines=" + encodeURIComponent(lines);
+  var msg = "后端日志接口未接入。预留端点：GET /admin/ops/logs" + params.replace("&", "&amp;");
+  if (opsDom.logOutput) opsDom.logOutput.textContent = msg;
+}
+
+if (opsDom.refreshBtn) opsDom.refreshBtn.addEventListener("click", function() {
+  refreshOps().catch(function(e) { toast("运维监控刷新失败: " + e.message); });
+});
+if (opsDom.logQueryBtn) opsDom.logQueryBtn.addEventListener("click", queryLogs);
+
 if (auth.token) {
   loadConfigs().catch(function() {});
   loadActivity().catch(function() {});
   loadAwards().catch(function() {});
+  refreshOps().catch(function() {});
 }
