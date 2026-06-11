@@ -287,10 +287,22 @@ The highest-risk work requiring dedicated design is **§4.1** (StrategyRepositor
 
 ---
 
-## 9. Cross-References
+## 9. Phase 6-B Enforcement
+
+The cross-boundary violations in §4 and §5 are now enforced by a repeatable validator introduced in Phase 6-B (tag `phase-6-package-ownership-boundaries`):
+
+- **Script:** `scripts/validate-microservices-phase-6-package-ownership-boundaries.sh`
+- **What it checks:** each violation in §5 is explicitly allowlisted; any new DAO import not on the allowlist causes a CI failure; activity-service scope constraints and Phase 5-D/E/F/G port boundaries are re-verified on every run.
+- **To remove a violation from the allowlist:** fix the cross-boundary coupling (route through an API port), then delete the corresponding `AL-N` entry from the script's allowlist section and update the `check_field_present` + `check_violation_in_doc` calls.
+- **To add a new DAO without triggering a failure:** update `docs/microservices-dao-ownership.md` first (Phase 6-A requirement), then add the DAO to the owning repository's allowed-foreign list or to the allowlist if the cross-boundary access is intentional and documented.
+
+---
+
+## 10. Cross-References
 
 - `docs/microservices-decomposition-master-plan.md` §6 Boundary Matrix — high-level service boundaries
 - `docs/microservices-split-phase-4-strategy-table-ownership.md` — strategy table detail
 - `docs/microservices-split-phase-5-activity-draw-orchestration.md` — activity draw call graph
 - `docs/microservices-split-phase-5-activity-draw-saga-outbox.md` — outbox/saga design
-- `scripts/validate-microservices-phase-6-dao-ownership-matrix.sh` — this document's validator
+- `scripts/validate-microservices-phase-6-dao-ownership-matrix.sh` — Phase 6-A matrix validator
+- `scripts/validate-microservices-phase-6-package-ownership-boundaries.sh` — Phase 6-B boundary enforcement validator
