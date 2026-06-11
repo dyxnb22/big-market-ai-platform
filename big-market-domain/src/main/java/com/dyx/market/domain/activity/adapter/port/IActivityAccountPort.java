@@ -1,5 +1,7 @@
 package com.dyx.market.domain.activity.adapter.port;
 
+import java.math.BigDecimal;
+
 /**
  * Domain port for synchronous, idempotent quota decrement on activity accounts.
  *
@@ -50,5 +52,17 @@ public interface IActivityAccountPort {
      * @param outBusinessNo idempotency key — same value used in decrementQuota
      */
     void rollbackQuota(String userId, Long activityId, String outBusinessNo);
+
+    /**
+     * Read the available credit balance for a user (credit-purchase partake validation).
+     *
+     * Phase 7-A prep: ActivityRepository must not directly import IUserCreditAccountDao.
+     * Local implementation delegates to IUserCreditAccountDao; remote implementation
+     * is deferred until the account-service credit-read API is wired (post Phase 8-B).
+     *
+     * @param userId user identifier (used as shard key)
+     * @return available credit amount; BigDecimal.ZERO if no account exists
+     */
+    BigDecimal queryUserCreditAccountAmount(String userId);
 
 }

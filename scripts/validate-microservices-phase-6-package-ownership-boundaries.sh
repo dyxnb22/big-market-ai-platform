@@ -23,8 +23,11 @@
 #          context: strategy reads quota for totalRaffleCount rule
 #   [AL-3] StrategyRepository -> IRaffleActivityAccountDayDao
 #          context: strategy reads day-quota for dayRaffleCount rule
-#   [AL-4] ActivityRepository -> IUserCreditAccountDao
+#   [AL-4] ActivityRepository -> IUserCreditAccountDao  *** RESOLVED — Phase 7-A prep ***
 #          context: activity reads credit balance for SKU credit-purchase partake
+#          resolution: routed through IActivityAccountPort.queryUserCreditAccountAmount;
+#                      LocalActivityAccountPort delegates to IUserCreditAccountDao;
+#                      ActivityRepository no longer imports IUserCreditAccountDao directly.
 #   [AL-5] AwardRepository -> IUserRaffleOrderDao
 #          context: fulfillment reads raffle order status before writing award record
 #   [AL-6] AwardRepository -> IUserCreditAccountDao
@@ -85,7 +88,7 @@ check_violation_in_doc() {
 check_violation_in_doc "AL-1 StrategyRepository->IRaffleActivityDao"        "StrategyRepository"        "IRaffleActivityDao"
 check_violation_in_doc "AL-2 StrategyRepository->IRaffleActivityAccountDao" "StrategyRepository"        "IRaffleActivityAccountDao"
 check_violation_in_doc "AL-3 StrategyRepository->IRaffleActivityAccountDayDao" "StrategyRepository"     "IRaffleActivityAccountDayDao"
-check_violation_in_doc "AL-4 ActivityRepository->IUserCreditAccountDao"     "ActivityRepository"        "IUserCreditAccountDao"
+check_violation_in_doc "AL-4 ActivityRepository->IUserCreditAccountDao (resolved Phase 7-A prep)" "ActivityRepository" "IUserCreditAccountDao"
 check_violation_in_doc "AL-5 AwardRepository->IUserRaffleOrderDao"          "AwardRepository"           "IUserRaffleOrderDao"
 check_violation_in_doc "AL-6 AwardRepository->IUserCreditAccountDao"        "AwardRepository"           "IUserCreditAccountDao"
 check_violation_in_doc "AL-7 DispatchCreditAwardTaskJob->ICreditAwardTaskDao" "DispatchCreditAwardTaskJob" "ICreditAwardTaskDao"
@@ -131,10 +134,11 @@ check_field_present \
   "$INFRA_REPO/StrategyRepository.java" \
   "IRaffleActivityAccountDayDao"
 
-check_field_present \
-  "AL-4 ActivityRepository->IUserCreditAccountDao" \
-  "$INFRA_REPO/ActivityRepository.java" \
-  "IUserCreditAccountDao"
+# AL-4 ActivityRepository->IUserCreditAccountDao — RESOLVED in Phase 7-A prep.
+# The violation has been removed; ActivityRepository now routes credit-account reads
+# through IActivityAccountPort.queryUserCreditAccountAmount (LocalActivityAccountPort
+# delegates to IUserCreditAccountDao). The forbidden-DAO check below enforces
+# that the direct coupling does not regress.
 
 check_field_present \
   "AL-5 AwardRepository->IUserRaffleOrderDao" \
@@ -241,8 +245,8 @@ check_no_forbidden_dao \
   "IUserBehaviorRebateOrderDao" \
   "ITaskDao"
 
-# ActivityRepository must not import DAOs outside its context or the one
-# allowlisted (AL-4). Forbidden: award, fulfillment, rebate, strategy, task.
+# ActivityRepository must not import DAOs outside its context.
+# AL-4 (IUserCreditAccountDao) was resolved in Phase 7-A prep — now explicitly forbidden.
 check_no_forbidden_dao \
   "ActivityRepository forbidden DAOs" \
   "$INFRA_REPO/ActivityRepository.java" \
@@ -254,6 +258,7 @@ check_no_forbidden_dao \
   "IRuleTreeNodeLineDao" \
   "IAwardDao" \
   "IUserAwardRecordDao" \
+  "IUserCreditAccountDao" \
   "IUserCreditOrderDao" \
   "ICreditAwardTaskDao" \
   "IDailyBehaviorRebateDao" \
@@ -507,16 +512,10 @@ else
   fail "docs/microservices-dao-ownership.md does not reference Phase 6-B enforcement"
 fi
 
-# ── 10. No Java behavior change in this batch ────────────────────────────────
-echo ""
-echo "── 10. Docs-and-scripts-only batch ──"
-JAVA_STAGED=$(git -C "$REPO_ROOT" diff --cached --name-only -- '*.java' 2>/dev/null | wc -l | tr -d ' ')
-JAVA_UNSTAGED=$(git -C "$REPO_ROOT" diff --name-only -- '*.java' 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$JAVA_STAGED" -eq 0 && "$JAVA_UNSTAGED" -eq 0 ]]; then
-  pass "No Java files in working tree or staging area (scripts/docs only)"
-else
-  fail "Java files changed — this must be a scripts/docs-only batch (staged: $JAVA_STAGED, unstaged: $JAVA_UNSTAGED)"
-fi
+# ── 10. (retired) Docs-and-scripts-only batch constraint ─────────────────────
+# This check was a one-time constraint for the Phase 6-B commit. Phase 7+
+# batches legitimately change Java files, so the check is retired here.
+# Java boundary safety is enforced by the forbidden-DAO checks in §3 above.
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo ""
@@ -530,7 +529,7 @@ echo "Allowlisted violations (not new failures — must be fixed before Phase 7-
 echo "  AL-1  StrategyRepository -> IRaffleActivityDao"
 echo "  AL-2  StrategyRepository -> IRaffleActivityAccountDao"
 echo "  AL-3  StrategyRepository -> IRaffleActivityAccountDayDao"
-echo "  AL-4  ActivityRepository -> IUserCreditAccountDao"
+echo "  AL-4  ActivityRepository -> IUserCreditAccountDao  [RESOLVED Phase 7-A prep]"
 echo "  AL-5  AwardRepository    -> IUserRaffleOrderDao"
 echo "  AL-6  AwardRepository    -> IUserCreditAccountDao"
 echo "  AL-7  DispatchCreditAwardTaskJob -> ICreditAwardTaskDao  (flag false)"

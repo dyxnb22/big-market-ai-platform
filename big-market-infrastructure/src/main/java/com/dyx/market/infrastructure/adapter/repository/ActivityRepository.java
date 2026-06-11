@@ -1,6 +1,7 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.domain.activity.adapter.event.ActivitySkuStockZeroMessageEvent;
+import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.model.aggregate.CreatePartakeOrderAggregate;
 import com.dyx.market.domain.activity.model.aggregate.CreateQuotaOrderAggregate;
 import com.dyx.market.domain.activity.model.entity.*;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RLock;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -56,8 +58,9 @@ public class ActivityRepository implements IActivityRepository {
     private IRaffleActivityAccountMonthDao raffleActivityAccountMonthDao;
     @Resource
     private IRaffleActivityAccountDayDao raffleActivityAccountDayDao;
+    @Lazy
     @Resource
-    private IUserCreditAccountDao userCreditAccountDao;
+    private IActivityAccountPort activityAccountPort;
     @Resource
     private TransactionTemplate transactionTemplate;
     @Resource
@@ -799,16 +802,7 @@ public class ActivityRepository implements IActivityRepository {
 
     @Override
     public BigDecimal queryUserCreditAccountAmount(String userId) {
-        try {
-            dbRouter.doRouter(userId);
-            UserCreditAccount userCreditAccountReq = new UserCreditAccount();
-            userCreditAccountReq.setUserId(userId);
-            UserCreditAccount userCreditAccount = userCreditAccountDao.queryUserCreditAccount(userCreditAccountReq);
-            if (null == userCreditAccount) return BigDecimal.ZERO;
-            return userCreditAccount.getAvailableAmount();
-        } finally {
-            dbRouter.clear();
-        }
+        return activityAccountPort.queryUserCreditAccountAmount(userId);
     }
 
     @Override

@@ -2,11 +2,15 @@ package com.dyx.market.infrastructure.adapter.port;
 
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
+import com.dyx.market.infrastructure.dao.IUserCreditAccountDao;
+import com.dyx.market.infrastructure.dao.po.UserCreditAccount;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 
 /**
  * Local (in-process) implementation of IActivityAccountPort.
@@ -31,6 +35,10 @@ public class LocalActivityAccountPort implements IActivityAccountPort {
 
     @Resource
     private IActivityRepository activityRepository;
+    @Resource
+    private IUserCreditAccountDao userCreditAccountDao;
+    @Resource
+    private IDBRouterStrategy dbRouter;
 
     @Override
     public boolean decrementQuota(String userId, Long activityId, String outBusinessNo) {
@@ -47,6 +55,20 @@ public class LocalActivityAccountPort implements IActivityAccountPort {
         if (!ok) {
             log.warn("[LocalActivityAccountPort] rollbackQuotaWithLedger returned false userId:{} activityId:{} outBusinessNo:{}",
                     userId, activityId, outBusinessNo);
+        }
+    }
+
+    @Override
+    public BigDecimal queryUserCreditAccountAmount(String userId) {
+        try {
+            dbRouter.doRouter(userId);
+            UserCreditAccount req = new UserCreditAccount();
+            req.setUserId(userId);
+            UserCreditAccount account = userCreditAccountDao.queryUserCreditAccount(req);
+            if (account == null) return BigDecimal.ZERO;
+            return account.getAvailableAmount();
+        } finally {
+            dbRouter.clear();
         }
     }
 

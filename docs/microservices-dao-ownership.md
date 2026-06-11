@@ -174,15 +174,17 @@ Risk level: **CRITICAL** — blocks both strategy-service table isolation and ac
 
 ---
 
-### 4.2 ActivityRepository → Credit tables (HIGH)
+### 4.2 ActivityRepository → Credit tables — **RESOLVED (Phase 7-A prep)**
 
-| Cross-boundary call | From context | Foreign context | Foreign table(s) | Method | Impact |
-|--------------------|--------------|-----------------|-----------------|--------|--------|
-| `ActivityRepository` → `IUserCreditAccountDao` | activity | credit | `user_credit_account` | credit balance check during SKU credit purchase flow | Activity partition reads credit account balance to validate credit-exchange partake |
+| Cross-boundary call | From context | Foreign context | Foreign table(s) | Method | Impact | Status |
+|--------------------|--------------|-----------------|-----------------|--------|--------|--------|
+| `ActivityRepository` → `IUserCreditAccountDao` | activity | credit | `user_credit_account` | credit balance check during SKU credit purchase flow | Activity partition reads credit account balance to validate credit-exchange partake | **Resolved** — Phase 7-A prep |
 
-**Required remediation before Phase 7-A:** Replace direct DAO call with a credit-service API call (Dubbo or internal port). The `IActivityAccountPort` already provides a boundary seam; the credit-read adapter should follow the same pattern.
+**Resolution (Phase 7-A prep):** `IActivityAccountPort.queryUserCreditAccountAmount(String userId)` added. `ActivityRepository.queryUserCreditAccountAmount` now delegates to the port rather than calling `IUserCreditAccountDao` directly. `LocalActivityAccountPort` holds the DAO injection and performs the shard-routed query. Behavior is identical: same inputs, same `BigDecimal.ZERO` default, same shard routing via `IDBRouterStrategy`. No remote flags enabled. `AccountRemoteActivityAccountPort` carries a non-functional stub (remote credit-balance read deferred to Phase 8-B account-service API work).
 
-Risk level: **HIGH** — blocks both activity-service and account-service table isolation.
+New boundary path: `ActivityRepository` → `IActivityAccountPort` → `LocalActivityAccountPort` → `IUserCreditAccountDao` (`user_credit_account`)
+
+Risk level: ~~HIGH~~ → **Resolved**. `user_credit_account` table isolation no longer blocked by this coupling.
 
 ---
 
@@ -229,7 +231,7 @@ Risk level: **MEDIUM** — not a blocker for Phase 7-A; becomes a blocker for Ph
 | # | Violation | From | To | Tables | Must fix by | Risk |
 |---|-----------|------|-----|--------|-------------|------|
 | 1 | `StrategyRepository` reads activity + quota DAOs | strategy | activity + quota | `raffle_activity`, `raffle_activity_account`, `raffle_activity_account_day` | Before Phase 7-A strategy isolation | Critical |
-| 2 | `ActivityRepository` reads credit DAO | activity | credit | `user_credit_account` | Before Phase 7-A account/credit isolation | High |
+| 2 | `ActivityRepository` reads credit DAO | activity | credit | `user_credit_account` | ~~Before Phase 7-A~~ **RESOLVED Phase 7-A prep** | ~~High~~ Resolved |
 | 3 | `AwardRepository` reads activity DAO | fulfillment | activity | `user_raffle_order` | Before Phase 7-A fulfillment + activity isolation | High |
 | 4 | `AwardRepository` directly writes credit DAO | fulfillment | credit | `user_credit_account` | Before Phase 8-B (outbox already gating this) | High |
 | 5 | `DispatchCreditAwardTaskJob` imports credit infra DAO | message-job | credit | `credit_award_task` | Before Phase 8-A (flag guards currently) | High |
@@ -261,7 +263,7 @@ The following conditions must be true before Phase 7-A can isolate any table gro
 
 1. **Strategy cross-access removed** (§4.1): `StrategyRepository` must not import activity or quota DAOs. Estimated effort: small; add activity-service read API for ID mapping + pass day-count through orchestration layer.
 
-2. **ActivityRepository credit read removed** (§4.2): Replace `IUserCreditAccountDao` call in `ActivityRepository` with a credit-service read port. Estimated effort: small; mirrors pattern from `IActivityAccountPort`.
+2. **ActivityRepository credit read removed** (§4.2): ~~Replace `IUserCreditAccountDao` call in `ActivityRepository` with a credit-service read port.~~ **Done — Phase 7-A prep.** `IActivityAccountPort.queryUserCreditAccountAmount` introduced; `LocalActivityAccountPort` holds the DAO call; `ActivityRepository` no longer imports `IUserCreditAccountDao`.
 
 3. **AwardRepository activity read removed** (§4.3): Replace `IUserRaffleOrderDao` call in `AwardRepository` with an activity-service read port. Estimated effort: small.
 
@@ -279,8 +281,10 @@ Based on this inventory the lowest-risk next phases are:
 
 | Recommended batch | Rationale |
 |------------------|-----------|
-| **Phase 6-B**: package-ownership validator script | Codifies §3 + §4 findings into CI assertions; prevents regression |
-| **Phase 7-A** (preceded by cross-boundary removals): account table ownership gate | B18 cutover is already staged; cross-boundary removals §4.2 and §4.4 are small; unblocks account-service isolation |
+| **Phase 6-B**: package-ownership validator script | Done — tag `phase-6-package-ownership-boundaries` |
+| **Phase 7-A prep (AL-4)**: ActivityRepository credit-account boundary | Done — tag `phase-7-account-boundary-prep-activity-credit-port`; `ActivityRepository` no longer imports `IUserCreditAccountDao` |
+| **Phase 7-A prep (AL-2/AL-3)**: StrategyRepository account DAO removal | Next recommended batch; remove `StrategyRepository` → `IRaffleActivityAccountDao` + `IRaffleActivityAccountDayDao`; route through strategy-context ports |
+| **Phase 7-A**: account table ownership gate | B18 cutover; all activity/strategy cross-boundary couplings must be removed first |
 | **Phase 7-B**: generic `task` table strategy decision doc | Required before rebate or credit Phase 8 cutover windows |
 
 The highest-risk work requiring dedicated design is **§4.1** (StrategyRepository → activity/quota): it touches the raffle rule-evaluation hot path and requires either an API call in the draw critical path or a redesign where the orchestration layer injects the mapping. This is the primary blocker for strategy-service and account-service table isolation and should be scoped as a dedicated design doc before any code change.

@@ -1,6 +1,7 @@
 package com.dyx.market.market.config;
 
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
+import java.math.BigDecimal;
 import com.dyx.market.trigger.api.IAccountQuotaService;
 import com.dyx.market.trigger.api.dto.AccountQuotaDecrementRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaRollbackRequestDTO;
@@ -62,6 +63,15 @@ public class AccountRemoteActivityAccountPort implements IActivityAccountPort {
                     userId, outBusinessNo, e);
             return false;
         }
+    }
+
+    @Override
+    public BigDecimal queryUserCreditAccountAmount(String userId) {
+        // Remote credit-balance read is deferred to Phase 7-A account-service API work.
+        // This bean is only active when account.service.remote-quota-decrement.enabled=true,
+        // which is not enabled — the local path handles credit reads exclusively until then.
+        log.warn("[AccountRemoteActivityAccountPort] queryUserCreditAccountAmount not yet wired for remote path; userId:{}", userId);
+        return BigDecimal.ZERO;
     }
 
     @Override
