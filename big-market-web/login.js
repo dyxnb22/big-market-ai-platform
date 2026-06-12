@@ -2,11 +2,16 @@ var userIdInput = document.getElementById("userIdInput");
 var passwordInput = document.getElementById("passwordInput");
 var loginBtn = document.getElementById("loginBtn");
 
-// Read redirect from URL query
+// Read redirect from URL query; only allow same-origin destinations.
 var redirectUrl = (function() {
   var p = new URLSearchParams(location.search);
   var r = p.get("redirect");
-  if (r && (r.startsWith("./") || r.startsWith("/"))) return r;
+  if (r) {
+    try {
+      var url = new URL(r, location.href);
+      if (url.origin === location.origin) return url.pathname + url.search + url.hash;
+    } catch (e) {}
+  }
   return "./index.html";
 })();
 

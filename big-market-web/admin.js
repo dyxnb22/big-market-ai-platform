@@ -37,7 +37,7 @@ if (!auth.token) {
   location.replace(adminLoginUrl());
 }
 
-function redirectToAdminLogin(message) {
+function redirectExpiredLogin(message) {
   if (redirectingToLogin) return;
   redirectingToLogin = true;
   clearAuth();
@@ -46,17 +46,25 @@ function redirectToAdminLogin(message) {
   setTimeout(function() { location.replace(adminLoginUrl()); }, message ? 500 : 0);
 }
 
+function redirectUnauthorized(message) {
+  if (redirectingToLogin) return;
+  redirectingToLogin = true;
+  // Do NOT clearAuth — user still has a valid token, just not admin role
+  if (message) toast(message);
+  setTimeout(function() { location.href = "./index.html"; }, 800);
+}
+
 // Wrap apiRequest to add auth-expired guard
 function adminRequest(path, opts) {
   return apiRequest(path, opts, {
     onAuthExpired: function() {
-      redirectToAdminLogin("登录已过期，请重新登录");
+      redirectExpiredLogin("登录已过期，请重新登录");
     }
   }).catch(function(error) {
     if (error.code === "0008") {
-      redirectToAdminLogin("当前账号无管理员权限");
+      redirectUnauthorized("当前账号无管理员权限");
     } else if (error.code === "0009") {
-      redirectToAdminLogin("登录已过期，请重新登录");
+      redirectExpiredLogin("登录已过期，请重新登录");
     }
     throw error;
   });
@@ -94,7 +102,6 @@ async function loadActivity() {
   toast("已读取活动 " + activityId + "，SKU 数量：" + (skuRes.data?.length || 0));
 }
 
-// Fixed: use query_raffle_award_list_by_token (authenticated, only needs activityId)
 async function loadAwards() {
   if (!requireLogin()) return;
   var activityId = Number(dom.activityIdInput.value || 100301);
@@ -107,20 +114,11 @@ async function loadAwards() {
       renderAwardTable(res.data);
       return;
     }
+    throw new Error(res.info || "奖品接口返回异常");
   } catch (e) {
-    // fall through to SKU-based fallback
+    toast("奖品接口加载失败: " + e.message);
+    dom.awardTable.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">奖品接口加载失败，请稍后重试。</div>';
   }
-  // Sku fallback
-  var skuRes = await adminRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST"});
-  var skuAwards = (skuRes.data || []).map(function(item) {
-    return {
-      awardId: item.sku,
-      awardTitle: "抽奖权益包 " + item.sku,
-      awardSubtitle: "售价 " + item.productAmount + " 积分，含 " + (item.activityCount?.totalCount || 0) + " 次总抽奖次数",
-      isAwardUnlock: item.stockCountSurplus > 0
-    };
-  });
-  renderAwardTable(skuAwards);
 }
 
 function renderSkuTable(items) {

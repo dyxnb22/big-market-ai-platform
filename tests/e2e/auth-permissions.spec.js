@@ -80,15 +80,25 @@ test("admin access is isolated from normal users", async ({ page }) => {
   const errors = collectClientErrors(page);
 
   await loginUser(page);
+  await expect(page.locator("#appView")).toBeVisible();
+
+  // Navigate to admin — user is redirected back to index with token preserved
   await page.goto("/admin.html");
+  await expect(page).toHaveURL(/\/index\.html/);
+  await expect(page.locator("#appView")).toBeVisible();
+  await expect(page.locator("#userNameBadge")).toContainText("xiaofuge");
+
+  // User can still access user pages after the admin redirect
+  await page.locator("#userMenuBtn").click();
+  await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
+
+  // Admin-login page with user token shows toast but stays on page (token not cleared)
+  await page.goto("/admin-login.html");
+  await expect(page.locator("#toast")).toContainText("当前账号不是管理员");
+  // Should still be on admin-login page
   await expect(page).toHaveURL(/\/admin-login\.html/);
 
-  await page.locator("#adminUserIdInput").fill("xiaofuge");
-  await page.locator("#adminPasswordInput").fill("demo");
-  await page.locator("#adminLoginBtn").click();
-  await expect(page.locator("#toast")).toContainText("当前账号无管理员权限");
-  await expect(page).toHaveURL(/\/admin-login\.html/);
-
+  // Admin login still works
   await loginAdmin(page);
   await expect(page.locator("#configList")).toContainText("chatbot");
 
@@ -96,6 +106,7 @@ test("admin access is isolated from normal users", async ({ page }) => {
   await expect(page.locator("#adminUserBadge")).toContainText("admin");
   await expect(page.locator("#opsGatewayStatus")).toContainText("正常");
 
+  // Logout — cannot go back
   await page.locator("#adminLoginBtn").click();
   await expect(page).toHaveURL(/\/admin-login\.html/);
   await page.goBack();
@@ -127,6 +138,50 @@ test("desktop and narrow layouts do not horizontally overflow", async ({ page })
   await page.reload();
   await expect(page.locator("#adminUserBadge")).toContainText("admin");
   await expectNoHorizontalOverflow(page);
+  await expectNoClientErrors(errors);
+});
+
+test("draw button shows 抽奖中... while drawing and restores GO", async ({ page }) => {
+  const errors = collectClientErrors(page);
+
+  await loginUser(page);
+  await page.locator("#openLotteryBtn").click();
+  await expect(page.locator("#lotteryDrawer")).toHaveClass(/open/);
+
+  // Button text changes on click
+  await page.locator("#drawBtn").click();
+  await expect(page.locator("#drawBtn")).toHaveText("抽奖中...");
+  await expect(page.locator("#drawBtn")).toBeDisabled();
+
+  // After the draw completes the button restores to GO
+  await expect(page.locator("#drawBtn")).toHaveText("GO", { timeout: 15000 });
+  await expect(page.locator("#drawBtn")).not.toBeDisabled();
+  await expectNoClientErrors(errors);
+});
+
+test("login redirect param only allows same-origin destinations", async ({ page }) => {
+  const errors = collectClientErrors(page);
+
+  // Relative same-origin path is honored.
+  await page.goto("/login.html?redirect=./index.html?from=login");
+  await page.locator("#userIdInput").fill("xiaofuge");
+  await page.locator("#passwordInput").fill("demo");
+  await page.locator("#loginBtn").click();
+  await expect(page).toHaveURL(/\/index\.html\?from=login/);
+
+  // Logout to reset state for next test
+  await page.evaluate(() => { localStorage.clear(); location.reload(); });
+  await page.waitForLoadState("networkidle");
+
+  await page.goto("/index.html");
+  await expect(page.locator("#landingView")).toBeVisible();
+
+  // External URL param is ignored — falls back to index.html
+  await page.goto("/login.html?redirect=http://evil.com");
+  await page.locator("#userIdInput").fill("xiaofuge");
+  await page.locator("#passwordInput").fill("demo");
+  await page.locator("#loginBtn").click();
+  await expect(page).toHaveURL(/\/index\.html/);
   await expectNoClientErrors(errors);
 });
 

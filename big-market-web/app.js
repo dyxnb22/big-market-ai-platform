@@ -104,18 +104,29 @@ function initApp() {
   }
   function saveChats() { localStorage.setItem(CHAT_KEY, JSON.stringify(chatState)); }
 
-  // ---- Health (via gateway) ----
+  // ---- Health (via gateway) — only updates when loadCampaign hasn't set a
+  // business-level status.  loadCampaign calls setConnStatus which writes both
+  // class and text, so if the last API response was an error the business error
+  // message will not be overwritten by a green dot from this lightweight check.
   function healthCheck() {
     fetch(CONFIG.API_BASE.replace("/api/v1", "") + "/actuator/health")
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var up = data.status === "UP";
-        d.apiStatusDot.className = "status-dot" + (up ? " online" : "");
-        d.apiStatusText.textContent = up ? "已连接" : "未连接";
+        // Only update if the current text is still the default — business
+        // errors set by loadCampaign (e.g. "加载积分失败") take precedence.
+        var cur = d.apiStatusText.textContent;
+        if (cur === "已连接" || cur === "未连接" || cur === "连接中") {
+          d.apiStatusDot.className = "status-dot" + (up ? " online" : "");
+          d.apiStatusText.textContent = up ? "已连接" : "未连接";
+        }
       })
       .catch(function() {
-        d.apiStatusDot.className = "status-dot";
-        d.apiStatusText.textContent = "未连接";
+        var cur = d.apiStatusText.textContent;
+        if (cur === "已连接" || cur === "未连接" || cur === "连接中") {
+          d.apiStatusDot.className = "status-dot";
+          d.apiStatusText.textContent = "未连接";
+        }
       });
   }
 
@@ -230,6 +241,7 @@ function initApp() {
   // ---- Draw ----
   function draw() {
     busy(d.drawBtn, true);
+    if (d.drawBtn) d.drawBtn.textContent = "抽奖中...";
     apiRequest("/raffle/activity/draw_by_token", {
       method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
     }).then(function(r) {
@@ -242,7 +254,7 @@ function initApp() {
       setTimeout(function(){ loadCampaign().catch(function(){}); }, 1200);
     }).catch(function(e) {
       toast(e.message);
-    }).finally(function() { busy(d.drawBtn, false); });
+    }).finally(function() { busy(d.drawBtn, false); if (d.drawBtn) d.drawBtn.textContent = "GO"; });
   }
 
   // ---- Sign In ----

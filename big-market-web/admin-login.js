@@ -19,8 +19,15 @@ var existingAuth = readAuth();
 if (existingAuth.token) {
   verifyAdminToken(existingAuth.token).then(function() {
     location.replace(redirectUrl);
-  }).catch(function() {
-    clearAuth();
+  }).catch(function(err) {
+    // 0008 = valid token but not admin — do NOT clearAuth, just stay on login page
+    var msg = err && err.message;
+    if (msg && msg.indexOf("无管理员权限") >= 0) {
+      toast("当前账号不是管理员，请使用管理员账号登录");
+    } else {
+      // 0009 or network error — token is unusable, clean up
+      clearAuth();
+    }
   });
 }
 
