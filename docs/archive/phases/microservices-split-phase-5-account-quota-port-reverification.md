@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 5-C — Account / Quota Port Re-Verification
 
 > This document is the Phase 5-C deliverable: a re-verification that the

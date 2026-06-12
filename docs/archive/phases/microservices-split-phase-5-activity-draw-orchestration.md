@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 5-A — Activity / Draw Orchestration Map
 
 > This document is the Phase 5-A deliverable: a complete map of the draw

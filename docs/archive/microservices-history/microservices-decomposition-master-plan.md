@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** superseded by `docs/MICROSERVICES.md`. Kept for historical traceability only.
+
 # big-market Microservices Decomposition Master Plan
 
 > Scope: end-to-end repo plan covering remaining Phase 3 work through final

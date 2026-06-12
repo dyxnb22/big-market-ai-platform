@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 3 Next Extraction: Rebate-Service Boundary
 
 ## 1. Current Service and Module Shape

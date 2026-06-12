@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 7-B - Generic Task Outbox Ownership
 
 > Decision artifact for the shared generic `task` table. This batch is

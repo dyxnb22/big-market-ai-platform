@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 5-G — Activity Draw Saga / Outbox Design
 
 > This document is the Phase 5-G deliverable: the saga/outbox design for the

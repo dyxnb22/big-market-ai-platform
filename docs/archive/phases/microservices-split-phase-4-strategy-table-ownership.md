@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 4-F — Strategy Table Ownership Mapping
 
 > This document feeds Phase 7 (data ownership and outbox boundary work).

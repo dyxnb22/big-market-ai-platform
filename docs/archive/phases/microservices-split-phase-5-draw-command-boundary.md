@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 5-B — Draw-Command Boundary Design
 
 > This document is the Phase 5-B deliverable: an architectural design for the

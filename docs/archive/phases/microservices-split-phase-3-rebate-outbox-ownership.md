@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 3-D: Rebate Task / Outbox Ownership Decision
 
 > Scope: decomposition-only analysis. No DDL is executed. All proposed schema

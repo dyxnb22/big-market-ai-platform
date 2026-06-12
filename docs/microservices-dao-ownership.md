@@ -373,10 +373,10 @@ The cross-boundary violations in §4 and §5 are now enforced by a repeatable va
 
 ## 10. Cross-References
 
-- `docs/microservices-decomposition-master-plan.md` §6 Boundary Matrix — high-level service boundaries
+- `docs/MICROSERVICES.md` §2.2 Bounded Context Cutover Status — authoritative service boundaries; historical boundary matrix at `docs/archive/microservices-history/microservices-decomposition-master-plan.md` §6
 - `docs/microservices-split-phase-4-strategy-table-ownership.md` — strategy table detail
 - `docs/microservices-split-phase-5-activity-draw-orchestration.md` — activity draw call graph
 - `docs/microservices-split-phase-5-activity-draw-saga-outbox.md` — outbox/saga design
 - `scripts/validate-microservices-phase-6-dao-ownership-matrix.sh` — Phase 6-A matrix validator
 - `scripts/validate-microservices-phase-6-package-ownership-boundaries.sh` — Phase 6-B boundary enforcement validator
-- `docs/microservices-split-completion-index.md` — current completion and Phase 8 external gate index
+- `docs/MICROSERVICES.md` — authoritative current completion and Phase 8 external gate index

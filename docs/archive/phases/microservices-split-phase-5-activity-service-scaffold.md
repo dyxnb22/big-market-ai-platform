@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 5-F — Activity-Service Dark-Launch Scaffold
 
 > This document is the Phase 5-F deliverable: a minimal Maven module scaffold

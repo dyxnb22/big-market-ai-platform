@@ -7,7 +7,7 @@ and Product evidence is EXTERNAL-GATED. This index does not prove staging or
 production cutover completion and does not authorize DDL, traffic, outbox, or
 legacy cleanup changes.
 
-Local learning-mode note: `docs/microservices-learning-mode-closure.md` and
+Local learning-mode note: `docs/MICROSERVICES.md` §4.2 and `docs/archive/microservices-history/microservices-learning-mode-closure.md` and
 `docs/evidence/phase-8-local-learning-cutover-evidence.md` mark the local
 learning project as LEARNING-MODE-COMPLETE using LOCAL-LEARNING-EVIDENCE and
 SIMULATED-CUTOVER-EVIDENCE. That local path does not replace any external gate

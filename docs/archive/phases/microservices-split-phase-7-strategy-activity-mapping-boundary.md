@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 7-A: Strategy–Activity Mapping Boundary (AL-1)
 
 > Design doc for the final Phase 7-A StrategyRepository cross-boundary removal.

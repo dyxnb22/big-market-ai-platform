@@ -56,7 +56,7 @@ present and still gated. They do not prove that any external cutover occurred.
 ## Local Learning-Mode Note
 
 The local learning project has a separate LEARNING-MODE-COMPLETE path documented
-in `docs/microservices-learning-mode-closure.md` and
+in `docs/MICROSERVICES.md` §4.2 (authoritative) and `docs/archive/microservices-history/microservices-learning-mode-closure.md` and
 `docs/evidence/phase-8-local-learning-cutover-evidence.md`.
 
 That path uses LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE only. It

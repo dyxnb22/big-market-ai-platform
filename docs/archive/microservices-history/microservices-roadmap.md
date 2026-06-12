@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** superseded by `docs/MICROSERVICES.md`. Kept for historical traceability only.
+
 # big-market Microservices Evolution Roadmap
 
 > **End-to-end plan (Phase 3 through Phase 8):**

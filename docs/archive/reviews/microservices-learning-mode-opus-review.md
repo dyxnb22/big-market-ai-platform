@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** historical review, kept for traceability. See `docs/MICROSERVICES.md` for current status.
+
 # Microservices Learning-Mode Closure — Opus Review
 
 Review date: 2026-06-11.

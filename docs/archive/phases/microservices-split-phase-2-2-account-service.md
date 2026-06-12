@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 2.2 — account-service Extraction Readiness Document
 
 **Status: Phase 2.2-B21 evidence consistency hardening complete. B21 adds `scripts/validate-b17-evidence-consistency.sh`, corrects the dated 2026-06-10 B17 evidence file to match the B17 dry-run summary (`6/6 PASS`, `0 FAIL`), and updates B18 staging-evidence validation to guard against future B17 PASS-count drift. B17/B18/B20 remain local gate/runbook packages only. remote-quota-decrement.enabled=false. Remaining manual blockers: staging ledger DDL, staging credit-award outbox DDL, XXL-Job handler registration (DispatchCreditAwardTaskJob_DB1/DB2).**

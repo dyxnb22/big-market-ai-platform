@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** this document describes the pre-microservices rebuild plan and is no longer authoritative. See `docs/MICROSERVICES.md` for the current status.
+
 # Big Market AI Platform Rebuild Roadmap
 
 ## 当前完成状态

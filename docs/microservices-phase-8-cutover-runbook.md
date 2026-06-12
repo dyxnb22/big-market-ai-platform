@@ -5,7 +5,7 @@ complete. All staging DDL, production canaries, approvals, and live evidence are
 EXTERNAL-GATED.
 
 Local learning-mode note: the local learning project is LEARNING-MODE-COMPLETE
-when `docs/microservices-learning-mode-closure.md`,
+when `docs/MICROSERVICES.md` §4.2 (learning-mode closure),
 `docs/evidence/phase-8-local-learning-cutover-evidence.md`, and
 `scripts/validate-microservices-learning-mode-closure.sh` pass. That path uses
 LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE only; it does not claim
@@ -20,7 +20,7 @@ this local learning-mode closure.
   `scripts/validate-microservices-service-module-ownership.sh`,
   `scripts/validate-microservices-production-flag-matrix.sh`, and
   `scripts/validate-microservices-split-all-gates.sh`.
-- Completion index: `docs/microservices-split-completion-index.md`.
+- Completion index: `docs/MICROSERVICES.md` (authoritative; historical record at `docs/archive/microservices-history/microservices-split-completion-index.md`).
 - External evidence intake index:
   `docs/microservices-phase-8-external-evidence-intake.md`.
 - Legacy cleanup inventory:

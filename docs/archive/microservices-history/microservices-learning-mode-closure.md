@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** superseded by `docs/MICROSERVICES.md`. Kept for historical traceability only.
+
 # Microservices Learning Mode Closure
 
 Last revised: 2026-06-11.

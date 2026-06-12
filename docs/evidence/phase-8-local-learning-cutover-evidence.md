@@ -32,7 +32,7 @@ changed to true.
 | Ops-equivalent | `docker compose ps` and `./scripts/validate-microservices-stack.sh --skip-build` | PASS: 8 local application services healthy after rebuild |
 | Engineering-equivalent | `mvn clean package -DskipTests`, aggregate validators, smoke test | PASS: Maven reactor success; stack smoke 18/18 |
 | Oncall-equivalent | local Docker health/status and logs during failed and passing runs | PASS after local wiring fixes; no real oncall window exists |
-| Product-equivalent | learning-project acceptance statement in `docs/microservices-learning-mode-closure.md` | Accepted for local learning mode only |
+| Product-equivalent | learning-project acceptance statement in `docs/MICROSERVICES.md` §4.2 and `docs/archive/microservices-history/microservices-learning-mode-closure.md` | Accepted for local learning mode only |
 
 ## Commands Executed
 

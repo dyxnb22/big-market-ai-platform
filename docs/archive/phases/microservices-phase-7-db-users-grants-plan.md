@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 7-E DB Users And Grants Plan
 
 Status: repo artifact complete; execution is EXTERNAL-GATED. This file is a

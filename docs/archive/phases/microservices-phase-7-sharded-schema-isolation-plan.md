@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 7-F Sharded Schema Isolation Plan
 
 Status: repo artifact complete; runtime isolation is EXTERNAL-GATED. This file

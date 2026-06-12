@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # Phase 4 Strategy-Service Read-First Extraction
 
 ## 1. Current Strategy Module / Package Ownership

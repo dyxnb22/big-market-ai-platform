@@ -1,3 +1,5 @@
+> **Archived (2026-06-12):** Phase 1-7 historical implementation record. See `docs/MICROSERVICES.md` for current status.
+
 # big-market Phase 1 Microservices Split
 
 ## 1. Background: Current Modular Monolith
