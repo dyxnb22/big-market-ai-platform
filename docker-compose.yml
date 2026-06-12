@@ -149,7 +149,7 @@ services:
       - XXL_JOB_HOST=xxl-job-admin
       - XXL_JOB_PORT=9090
       - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
-      - GATEWAY_API_HOST=127.0.0.1
+      - GATEWAY_API_HOST=big-market-gateway
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -194,7 +194,7 @@ services:
       - XXL_JOB_HOST=xxl-job-admin
       - XXL_JOB_PORT=9090
       - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
-      - GATEWAY_API_HOST=127.0.0.1
+      - GATEWAY_API_HOST=big-market-gateway
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -232,7 +232,7 @@ services:
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
-      - GATEWAY_API_HOST=127.0.0.1
+      - GATEWAY_API_HOST=big-market-gateway
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -271,7 +271,7 @@ services:
       - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-false}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
-      - GATEWAY_API_HOST=127.0.0.1
+      - GATEWAY_API_HOST=big-market-gateway
     networks:
       - dev-ops_my-network
     healthcheck:

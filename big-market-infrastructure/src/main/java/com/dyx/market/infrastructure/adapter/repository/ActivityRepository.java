@@ -81,8 +81,10 @@ public class ActivityRepository implements IActivityRepository {
         RaffleActivitySku raffleActivitySku = raffleActivitySkuDao.queryActivitySku(sku);
         String cacheKey = Constants.RedisKey.ACTIVITY_SKU_STOCK_COUNT_KEY + sku;
         Long cacheSkuStock = redisService.getAtomicLong(cacheKey);
-        if (null == cacheSkuStock || 0 == cacheSkuStock) {
-            cacheSkuStock = 0L;
+        if (null == cacheSkuStock) {
+            // Redis key was evicted or not yet initialized — restore from DB surplus
+            redisService.setAtomicLong(cacheKey, raffleActivitySku.getStockCountSurplus());
+            cacheSkuStock = (long) raffleActivitySku.getStockCountSurplus();
         }
         return ActivitySkuEntity.builder()
                 .sku(raffleActivitySku.getSku())
@@ -682,6 +684,7 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public void updateOrder(DeliveryOrderEntity deliveryOrderEntity) {
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_UPDATE_LOCK + deliveryOrderEntity.getUserId() + Constants.UNDERLINE + deliveryOrderEntity.getOutBusinessNo());
+        lock.lock(3, TimeUnit.SECONDS);
         try {
             dbRouter.doRouter(deliveryOrderEntity.getUserId());
             // 查询订单
@@ -694,7 +697,6 @@ public class ActivityRepository implements IActivityRepository {
                 return;
             }
 
-            lock.lock(3, TimeUnit.SECONDS);
 
             // 账户对象 - 总
             RaffleActivityAccount raffleActivityAccount = new RaffleActivityAccount();

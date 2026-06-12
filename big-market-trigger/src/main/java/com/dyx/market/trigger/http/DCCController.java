@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -26,8 +27,16 @@ public class DCCController implements IDCCService {
     @Autowired(required = false)
     private CuratorFramework client;
 
+    @Value("${dcc.admin.token:${app.admin.token:admin-dev-token}}")
+    private String adminToken;
+
     private static final String BASE_CONFIG_PATH = "/big-market-dcc";
     private static final String BASE_CONFIG_PATH_CONFIG = BASE_CONFIG_PATH + "/config";
+
+    @Override
+    public Response<Boolean> updateConfig(String key, String value) {
+        return updateConfig(key, value, null);
+    }
 
     /**
      * 更新配置
@@ -37,8 +46,16 @@ public class DCCController implements IDCCService {
      */
     @RequestMapping(value = "update_config", method = RequestMethod.GET)
     @Override
-    public Response<Boolean> updateConfig(@RequestParam String key, @RequestParam String value) {
+    public Response<Boolean> updateConfig(@RequestParam String key, @RequestParam String value,
+                                          @RequestHeader(value = "X-Admin-Token", required = false) String token) {
         try {
+            if (!adminToken.equals(token)) {
+                log.warn("DCC 动态配置值变更拒绝，非法token key:{} value:{}", key, value);
+                return Response.<Boolean>builder()
+                        .code(ResponseCode.APP_TOKEN_ERROR.getCode())
+                        .info(ResponseCode.APP_TOKEN_ERROR.getInfo())
+                        .build();
+            }
             log.info("DCC 动态配置值变更开始 key:{} value:{}", key, value);
             if (null == client){
                 log.warn("DCC 动态配置值变更拒绝，CuratorFramework 未初始化启动「配置未开启」 key:{} value:{}", key, value);

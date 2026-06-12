@@ -5,14 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.zookeeper.KeeperException;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Replaces fields annotated with {@link DCCValue} from Zookeeper and updates
@@ -25,7 +26,7 @@ public class DccValueBeanPostProcessor implements BeanPostProcessor {
     private static final String BASE_CONFIG_PATH_CONFIG = BASE_CONFIG_PATH + "/config";
 
     private final CuratorFramework client;
-    private final Map<String, Object> dccObjectGroup = new HashMap<>();
+    private final Map<String, Object> dccObjectGroup = new ConcurrentHashMap<>();
 
     public DccValueBeanPostProcessor(CuratorFramework client) throws Exception {
         this.client = client;
@@ -34,9 +35,11 @@ public class DccValueBeanPostProcessor implements BeanPostProcessor {
     }
 
     private void ensureConfigRootExists() throws Exception {
-        if (null == client.checkExists().forPath(BASE_CONFIG_PATH_CONFIG)) {
+        try {
             client.create().creatingParentsIfNeeded().forPath(BASE_CONFIG_PATH_CONFIG);
             log.info("DCC config root created: {}", BASE_CONFIG_PATH_CONFIG);
+        } catch (KeeperException.NodeExistsException e) {
+            log.debug("DCC config root already exists: {}", BASE_CONFIG_PATH_CONFIG);
         }
     }
 
@@ -98,10 +101,17 @@ public class DccValueBeanPostProcessor implements BeanPostProcessor {
         String keyPath = BASE_CONFIG_PATH_CONFIG + "/" + key;
 
         try {
-            if (null == client.checkExists().forPath(keyPath)) {
+            boolean created = false;
+            try {
                 client.create().creatingParentsIfNeeded().forPath(keyPath);
-                setFieldValue(targetBeanObject, field, defaultValue);
+                created = true;
                 log.info("DCC config node created: {}", keyPath);
+            } catch (KeeperException.NodeExistsException e) {
+                log.debug("DCC config node already exists: {}", keyPath);
+            }
+
+            if (created) {
+                setFieldValue(targetBeanObject, field, defaultValue);
             } else {
                 String configValue = new String(client.getData().forPath(keyPath));
                 if (StringUtils.isNotBlank(configValue)) {

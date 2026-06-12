@@ -89,8 +89,8 @@ function toast(msg) {
 
 // ===== Escape HTML =====
 function esc(v) {
-  return String(v).replace(/[&<>"']/g, function(c) {
-    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  return String(v).replace(/[&<>"'`]/g, function(c) {
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&#96;"}[c];
   });
 }
 

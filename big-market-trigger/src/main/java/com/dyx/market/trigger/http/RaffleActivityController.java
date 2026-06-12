@@ -511,7 +511,7 @@ public class RaffleActivityController implements IRaffleActivityService {
 
     @RequestMapping(value = "query_sku_product_list_by_activity_id", method = RequestMethod.POST)
     @Override
-    public Response<List<SkuProductResponseDTO>> querySkuProductListByActivityId(Long activityId) {
+    public Response<List<SkuProductResponseDTO>> querySkuProductListByActivityId(@RequestParam("activityId") Long activityId) {
         try {
             log.info("查询sku商品集合开始 activityId:{}", activityId);
             // 1. 参数校验
@@ -579,7 +579,7 @@ public class RaffleActivityController implements IRaffleActivityService {
 
     @RequestMapping(value = "query_user_credit_account", method = RequestMethod.POST)
     @Override
-    public Response<BigDecimal> queryUserCreditAccount(String userId) {
+    public Response<BigDecimal> queryUserCreditAccount(@RequestParam("userId") String userId) {
         try {
             log.info("查询用户积分值开始 userId:{}", userId);
             if (StringUtils.isBlank(userId)) {
@@ -668,12 +668,18 @@ public class RaffleActivityController implements IRaffleActivityService {
             // Synchronously complete the quota order so the user sees the new
             // draw count immediately. The async MQ consumer may retry later;
             // updateOrder is state-gated and will no-op once completed.
-            accountQuotaWriteAdapter.updateOrder(DeliveryOrderEntity.builder()
-                    .userId(unpaidActivityOrder.getUserId())
-                    .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
-                    .build());
-            log.info("积分兑换商品，发货完成 userId:{} sku:{} outBusinessNo:{}",
-                    request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
+            try {
+                accountQuotaWriteAdapter.updateOrder(DeliveryOrderEntity.builder()
+                        .userId(unpaidActivityOrder.getUserId())
+                        .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
+                        .build());
+                log.info("积分兑换商品，发货完成 userId:{} sku:{} outBusinessNo:{}",
+                        request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
+            } catch (Exception deliveryEx) {
+                log.error("积分兑换商品，发货失败（MQ异步补偿将重试） userId:{} sku:{} outBusinessNo:{}",
+                        request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo(), deliveryEx);
+                // 发货失败不阻塞流程，MQ消费者会重新处理
+            }
 
             return Response.<Boolean>builder()
                     .code(ResponseCode.SUCCESS.getCode())
@@ -702,6 +708,7 @@ public class RaffleActivityController implements IRaffleActivityService {
      * idempotency key for one chat ask.
      */
     @RequestMapping(value = "chat_credit_deduct_by_token", method = RequestMethod.POST)
+    @Override
     public Response<BigDecimal> chatCreditDeductByToken(@RequestHeader("Authorization") String token,
                                                         @RequestParam(defaultValue = "1") int amount,
                                                         @RequestParam String requestId) {

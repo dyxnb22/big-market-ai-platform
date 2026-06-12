@@ -95,6 +95,7 @@ function initApp() {
     {awardTitle: "加赠奖励", awardId: 106}
   ];
   var rotation = 0;
+  var loadCampaignSeq = 0; // monotonic counter to guard stale responses
   var ctxTargetId = null;
   var signedToday = false;
 
@@ -114,7 +115,7 @@ function initApp() {
   // class and text, so if the last API response was an error the business error
   // message will not be overwritten by a green dot from this lightweight check.
   function healthCheck() {
-    fetch(CONFIG.API_BASE.replace("/api/v1", "") + "/actuator/health")
+    fetch(CONFIG.API_BASE.replace(/\/api\/v1\/?$/, "") + "/actuator/health")
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var up = data.status === "UP";
@@ -177,6 +178,7 @@ function initApp() {
 
   /** Returns a Promise that resolves when all campaign data has been refreshed. */
   function loadCampaign() {
+    var seq = ++loadCampaignSeq;
     var proms = [];
 
     // Armory (fire-and-forget, may fail silently)
@@ -187,6 +189,7 @@ function initApp() {
       apiRequest("/raffle/activity/query_user_activity_account_by_token", {
         method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
       }).then(function(r) {
+        if (seq !== loadCampaignSeq) return;
         setConnStatus(true);
         d.surplusMetric.textContent = r.data?.totalCountSurplus ?? 0;
         d.dayMetric.textContent = r.data?.dayCountSurplus ?? 0;
@@ -201,6 +204,7 @@ function initApp() {
     // User credit account
     proms.push(
       apiRequest("/raffle/activity/query_user_credit_account_by_token", {method:"POST"}).then(function(r) {
+        if (seq !== loadCampaignSeq) return;
         setConnStatus(true);
         d.creditMetric.textContent = r.data ?? 0;
         d.ucCredit.textContent = r.data ?? 0;
@@ -212,6 +216,7 @@ function initApp() {
     // Sign-in status
     proms.push(
       apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+        if (seq !== loadCampaignSeq) return;
         setConnStatus(true);
         if (r.data === true) {
           signedToday = true;
@@ -244,6 +249,7 @@ function initApp() {
       apiRequest("/raffle/strategy/query_raffle_award_list_by_token", {
         method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
       }).then(function(r) {
+        if (seq !== loadCampaignSeq) return;
         setConnStatus(true);
         if (r.data?.length) { awards = r.data; renderWheel(); }
       }).catch(function() { setConnStatus(false, "加载奖品列表失败"); })
@@ -261,7 +267,7 @@ function initApp() {
     }).then(function(r) {
       var idx = Math.max(0, awards.findIndex(function(a){return a.awardId===r.data?.awardId;}));
       var seg = 360 / awards.length;
-      rotation += 1440 + (360 - idx*seg - seg/2);
+      rotation = (rotation + 1440 + (360 - idx*seg - seg/2)) % 5760;
       if (d.wheel) d.wheel.style.transform = "rotate("+rotation+"deg)";
       if (d.drawResult) d.drawResult.textContent = "恭喜获得：" + (r.data?.awardTitle||"奖品");
       addMsg("assistant", "抽奖完成，你获得了：" + (r.data?.awardTitle||"奖品"));
@@ -319,6 +325,11 @@ function initApp() {
 
   // ---- Chat ----
   function activeConv() {
+    if (!chatState.conversations.length) {
+      var id = crypto.randomUUID();
+      chatState.conversations.push({id:id, title:"新的对话", messages:[]});
+      chatState.activeId = id;
+    }
     return chatState.conversations.find(function(c){return c.id===chatState.activeId;}) || chatState.conversations[0];
   }
 
@@ -334,7 +345,7 @@ function initApp() {
       el.querySelector(".conv-content").onclick = function() { chatState.activeId=c.id; saveChats(); renderChats(); };
       el.querySelector(".conv-menu-btn").onclick = function(e) {
         e.stopPropagation(); ctxTargetId = c.id;
-        var r = e.target.getBoundingClientRect();
+        var r = e.currentTarget.getBoundingClientRect();
         d.contextMenu.style.display = "block";
         d.contextMenu.style.left = Math.min(r.left, window.innerWidth-150)+"px";
         d.contextMenu.style.top = (r.bottom+4)+"px";

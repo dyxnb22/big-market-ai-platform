@@ -11,4 +11,6 @@ public interface IDCCService {
 
     Response<Boolean> updateConfig(String key, String value);
 
+    Response<Boolean> updateConfig(String key, String value, String token);
+
 }

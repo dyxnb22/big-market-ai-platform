@@ -14,5 +14,7 @@ public class RaffleStrategyRequestDTO implements Serializable {
 
     // 抽奖策略ID
     private Long strategyId;
+    // 用户ID（选填，缺省时使用 "system"）
+    private String userId;
 
 }

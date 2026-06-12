@@ -16,6 +16,8 @@ public interface IErpOperateService {
 
     Response<List<ESUserRaffleOrderResponseDTO>> queryUserRaffleOrder();
 
+    Response<List<ESUserRaffleOrderResponseDTO>> queryUserRaffleOrder(String token);
+
     /**
      * 上架活动，上架后驱动装配
      *

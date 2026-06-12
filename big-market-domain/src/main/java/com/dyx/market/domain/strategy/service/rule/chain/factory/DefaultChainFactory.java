@@ -7,7 +7,6 @@ import lombok.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,18 +37,16 @@ public class DefaultChainFactory {
      * @return LogicChain
      */
     public ILogicChain openLogicChain(Long strategyId) {
-        ILogicChain cacheLogicChain = strategyChainGroup.get(strategyId);
-        if (null != cacheLogicChain) return cacheLogicChain;
+        return strategyChainGroup.computeIfAbsent(strategyId, this::buildChain);
+    }
 
+    private ILogicChain buildChain(Long strategyId) {
         StrategyEntity strategy = repository.queryStrategyEntityByStrategyId(strategyId);
         String[] ruleModels = strategy.ruleModels();
 
         // 如果未配置策略规则，则只装填一个默认责任链
         if (null == ruleModels || 0 == ruleModels.length) {
-            ILogicChain ruleDefaultLogicChain = applicationContext.getBean(LogicModel.RULE_DEFAULT.getCode(), ILogicChain.class);
-            // 写入缓存
-            strategyChainGroup.put(strategyId, ruleDefaultLogicChain);
-            return ruleDefaultLogicChain;
+            return applicationContext.getBean(LogicModel.RULE_DEFAULT.getCode(), ILogicChain.class);
         }
 
         // 按照配置顺序装填用户配置的责任链；rule_blacklist、rule_weight 「注意此数据从Redis缓存中获取，如果更新库表，记得在测试阶段手动处理缓存」
@@ -62,8 +59,6 @@ public class DefaultChainFactory {
 
         // 责任链的最后装填默认责任链
         current.appendNext(applicationContext.getBean(LogicModel.RULE_DEFAULT.getCode(), ILogicChain.class));
-        // 写入缓存
-        strategyChainGroup.put(strategyId, logicChain);
 
         return logicChain;
     }

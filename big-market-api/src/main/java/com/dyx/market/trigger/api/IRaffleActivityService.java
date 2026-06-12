@@ -123,4 +123,14 @@ public interface IRaffleActivityService {
      */
     Response<Boolean> creditPayExchangeSku(SkuProductShopCartRequestDTO request);
 
+    /**
+     * AI Chat 积分扣减（由 chatbot-service 通过网关调用）
+     *
+     * @param token    用户Token
+     * @param amount   扣减积分数量
+     * @param requestId 幂等请求ID
+     * @return 剩余积分
+     */
+    Response<BigDecimal> chatCreditDeductByToken(String token, int amount, String requestId);
+
 }

@@ -56,57 +56,60 @@ public class OLogNAlgorithm extends AbstractAlgorithm {
     @Override
     public Integer dispatchAlgorithm(String key) {
         int rateRange = repository.getRateRange(key);
-        Map<Map<String, Integer>, Integer> table = repository.getMap(key);
+        if (rateRange <= 0) {
+            log.warn("抽奖算法 OLog(n) rateRange<=0, 无可抽奖 key:{} rateRange:{}", key, rateRange);
+            return null;
+        }
+        Map<Map<Integer, Integer>, Integer> table = repository.getMap(key);
+        if (table == null || table.isEmpty()) {
+            log.warn("抽奖算法 OLog(n) table为空 key:{}", key);
+            return null;
+        }
+        // 随机值范围 [1, rateRange]，与 armoryAlgorithm 中的 [from, to] 区间一致
+        int hitKey = secureRandom.nextInt(rateRange) + 1;
         // 小于等于8 for循环、小于等于16 二分查找、更多检索走多线程
         if (table.size() <= 8) {
             log.info("抽奖算法 OLog(n) 抽奖计算（循环） key:{}", key);
-            return forSearch(secureRandom.nextInt(rateRange), table);
+            return forSearch(hitKey, table);
         } else if (table.size() <= 16) {
             log.info("抽奖算法 OLog(n) 抽奖计算（二分） key:{}", key);
-            return binarySearch(secureRandom.nextInt(rateRange), table);
+            return binarySearch(hitKey, table);
         } else {
             log.info("抽奖算法 OLog(n) 抽奖计算（多线程） key:{}", key);
-            return threadSearch(secureRandom.nextInt(rateRange), table);
+            return threadSearch(hitKey, table);
         }
     }
 
-    private Integer forSearch(int rateKey, Map<Map<String, Integer>, Integer> table) {
-        Integer awardId = null;
-        for (Map.Entry<Map<String, Integer>, Integer> entry : table.entrySet()) {
-            Map<String, Integer> rangeMap = entry.getKey();
+    private Integer forSearch(int rateKey, Map<Map<Integer, Integer>, Integer> table) {
+        for (Map.Entry<Map<Integer, Integer>, Integer> entry : table.entrySet()) {
+            Map<Integer, Integer> rangeMap = entry.getKey();
 
-            for (Map.Entry<String, Integer> range : rangeMap.entrySet()) {
-                int start = Integer.parseInt(range.getKey());
+            for (Map.Entry<Integer, Integer> range : rangeMap.entrySet()) {
+                int start = range.getKey();
                 int end = range.getValue();
 
                 if (rateKey >= start && rateKey <= end) {
-                    awardId = entry.getValue();
-                    break;
+                    return entry.getValue();
                 }
             }
-
-            if (awardId != null) {
-                break;
-            }
         }
-
-        return awardId;
+        return null;
     }
 
-    private Integer binarySearch(int rateKey, Map<Map<String, Integer>, Integer> table) {
-        List<Map.Entry<Map<String, Integer>, Integer>> entries = new ArrayList<>(table.entrySet());
-        entries.sort(Comparator.comparingInt(e -> Integer.parseInt(e.getKey().keySet().iterator().next())));
+    private Integer binarySearch(int rateKey, Map<Map<Integer, Integer>, Integer> table) {
+        List<Map.Entry<Map<Integer, Integer>, Integer>> entries = new ArrayList<>(table.entrySet());
+        entries.sort(Comparator.comparingInt(e -> e.getKey().keySet().iterator().next()));
 
         int left = 0;
         int right = entries.size() - 1;
 
         while (left <= right) {
             int mid = left + (right - left) / 2;
-            Map.Entry<Map<String, Integer>, Integer> entry = entries.get(mid);
-            Map<String, Integer> rangeMap = entry.getKey();
-            Map.Entry<String, Integer> range = rangeMap.entrySet().iterator().next();
+            Map.Entry<Map<Integer, Integer>, Integer> entry = entries.get(mid);
+            Map<Integer, Integer> rangeMap = entry.getKey();
+            Map.Entry<Integer, Integer> range = rangeMap.entrySet().iterator().next();
 
-            int start = Integer.parseInt(range.getKey());
+            int start = range.getKey();
             int end = range.getValue();
 
             if (rateKey < start) {
@@ -121,12 +124,12 @@ public class OLogNAlgorithm extends AbstractAlgorithm {
         return null;
     }
 
-    private Integer threadSearch(int rateKey, Map<Map<String, Integer>, Integer> table) {
-        List<CompletableFuture<Map.Entry<Map<String, Integer>, Integer>>> futures = table.entrySet().stream()
+    private Integer threadSearch(int rateKey, Map<Map<Integer, Integer>, Integer> table) {
+        List<CompletableFuture<Map.Entry<Map<Integer, Integer>, Integer>>> futures = table.entrySet().stream()
                 .map(entry -> CompletableFuture.supplyAsync(() -> {
-                    Map<String, Integer> rangeMap = entry.getKey();
-                    for (Map.Entry<String, Integer> rangeEntry : rangeMap.entrySet()) {
-                        int start = Integer.parseInt(rangeEntry.getKey());
+                    Map<Integer, Integer> rangeMap = entry.getKey();
+                    for (Map.Entry<Integer, Integer> rangeEntry : rangeMap.entrySet()) {
+                        int start = rangeEntry.getKey();
                         int end = rangeEntry.getValue();
                         if (rateKey >= start && rateKey <= end) {
                             return entry;
@@ -139,16 +142,15 @@ public class OLogNAlgorithm extends AbstractAlgorithm {
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         try {
-            // 等待所有异步任务完成，同时返回第一个匹配的结果
             allFutures.join();
-            for (CompletableFuture<Map.Entry<Map<String, Integer>, Integer>> future : futures) {
-                Map.Entry<Map<String, Integer>, Integer> result = future.getNow(null);
+            for (CompletableFuture<Map.Entry<Map<Integer, Integer>, Integer>> future : futures) {
+                Map.Entry<Map<Integer, Integer>, Integer> result = future.getNow(null);
                 if (result != null) {
                     return result.getValue();
                 }
             }
         } catch (CompletionException e) {
-            e.printStackTrace();
+            log.error("抽奖算法 OLog(n) 多线程检索异常 key:{}", rateKey, e);
         }
 
         return null;

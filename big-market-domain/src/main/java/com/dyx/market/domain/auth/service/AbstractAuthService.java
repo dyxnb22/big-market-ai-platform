@@ -1,8 +1,5 @@
 package com.dyx.market.domain.auth.service;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
@@ -24,19 +21,17 @@ import java.util.UUID;
 public abstract class AbstractAuthService implements IAuthService {
 
     private final String base64EncodedSecretKey;
-    private final Algorithm algorithm;
 
     protected AbstractAuthService(String jwtSecret) {
         this.base64EncodedSecretKey = Base64.encodeBase64String(jwtSecret.getBytes());
-        this.algorithm = Algorithm.HMAC256(Base64.decodeBase64(this.base64EncodedSecretKey));
     }
 
     /**
      * 这里就是产生jwt字符串的地方
      * jwt字符串包括三个部分
      * 1. header
-     * -当前字符串的类型，一般都是“JWT”
-     * -哪种算法加密，“HS256”或者其他的加密算法
+     * -当前字符串的类型，一般都是"JWT"
+     * -哪种算法加密，"HS256"或者其他的加密算法
      * 所以一般都是固定的，没有什么变化
      * 2. payload
      * 一般有四个最常见的标准字段（下面有）
@@ -82,19 +77,15 @@ public abstract class AbstractAuthService implements IAuthService {
                 .getBody();
     }
 
-    // 判断jwtToken是否合法
+    // 判断jwtToken是否合法（使用 jjwt 统一实现，替代 auth0）
     protected boolean isVerify(String jwtToken) {
         try {
-            JWTVerifier verifier = JWT.require(algorithm).build();
-            verifier.verify(jwtToken);
-            // 校验不通过会抛出异常
-            // 判断合法的标准：1. 头部和荷载部分没有篡改过。2. 没有过期
+            decode(jwtToken);
             return true;
         } catch (Exception e) {
             log.error("jwt isVerify Err", e);
             return false;
         }
-
     }
 
 }

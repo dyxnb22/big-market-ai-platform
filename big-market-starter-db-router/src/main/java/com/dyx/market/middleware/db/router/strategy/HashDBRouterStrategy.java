@@ -16,7 +16,7 @@ public class HashDBRouterStrategy implements IDBRouterStrategy {
 
     @Override
     public void doRouter(String routeKey) {
-        int hash = Math.abs(routeKey.hashCode());
+        int hash = routeKey.hashCode() & Integer.MAX_VALUE;
         int dbIdx = hash % properties.getDbCount() + 1;
         int tbIdx = (hash / properties.getDbCount()) % properties.getTbCount();
         setDBKey(dbIdx);

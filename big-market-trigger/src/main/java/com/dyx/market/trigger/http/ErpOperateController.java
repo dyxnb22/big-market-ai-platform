@@ -14,6 +14,7 @@ import com.dyx.market.types.enums.ResponseCode;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -32,6 +33,11 @@ import java.util.List;
 @DubboService(version = "1.0")
 public class ErpOperateController implements IErpOperateService {
 
+    @Value("${erp.admin.token:${app.admin.token:admin-dev-token}}")
+    private String adminToken;
+
+    private static final int MAX_RESULT_LIMIT = 100;
+
     @Resource
     private IESUserRaffleOrderRepository userRaffleOrderRepository;
     @Resource
@@ -39,14 +45,27 @@ public class ErpOperateController implements IErpOperateService {
     @Resource
     private IActivityArmory activityArmory;
 
+    @Override
+    public Response<List<ESUserRaffleOrderResponseDTO>> queryUserRaffleOrder() {
+        return queryUserRaffleOrder(null);
+    }
+
     /**
      * 查询运营数据，用户抽奖单列表
      * curl --request GET --url 'http://localhost:8098/api/v1/raffle/erp/query_user_raffle_order'
      */
     @RequestMapping(value = "query_user_raffle_order", method = RequestMethod.GET)
     @Override
-    public Response<List<ESUserRaffleOrderResponseDTO>> queryUserRaffleOrder() {
+    public Response<List<ESUserRaffleOrderResponseDTO>> queryUserRaffleOrder(
+            @RequestHeader(value = "X-Admin-Token", required = false) String token) {
         try {
+            if (!adminToken.equals(token)) {
+                log.warn("ERP 查询非法token");
+                return Response.<List<ESUserRaffleOrderResponseDTO>>builder()
+                        .code(ResponseCode.APP_TOKEN_ERROR.getCode())
+                        .info(ResponseCode.APP_TOKEN_ERROR.getInfo())
+                        .build();
+            }
             log.info("查询运营数据，用户抽奖单列表");
             List<ESUserRaffleOrderVO> userRaffleOrderVOList = userRaffleOrderRepository.queryESUserRaffleOrderVOList();
 
@@ -63,6 +82,10 @@ public class ErpOperateController implements IErpOperateService {
                 esUserRaffleOrderResponseDTO.setCreateTime(esUserRaffleOrderVO.getCreateTime());
                 esUserRaffleOrderResponseDTO.setUpdateTime(esUserRaffleOrderVO.getUpdateTime());
                 userRaffleOrderResponseDTOS.add(esUserRaffleOrderResponseDTO);
+                if (userRaffleOrderResponseDTOS.size() >= MAX_RESULT_LIMIT) {
+                    log.info("ERP查询结果超出限制，截取前{}条", MAX_RESULT_LIMIT);
+                    break;
+                }
             }
 
             return Response.<List<ESUserRaffleOrderResponseDTO>>builder()
