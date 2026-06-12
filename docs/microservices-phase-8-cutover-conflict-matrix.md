@@ -27,13 +27,13 @@ This document is the authoritative conflict reference for
 | Field | Value |
 |-------|-------|
 | **Legacy path** | `LocalAccountCreditWriteAdapter` (`big-market-trigger/src/main/java/.../trigger/adapter/LocalAccountCreditWriteAdapter.java`) |
-| **Future path** | Account-service Dubbo provider via `IAccountCreditWriteAdapter` (`big-market-account-service`) |
+| **Future path** | Account-service Dubbo provider via `IAccountCreditWriteAdapter`; market-service uses an always-registered wrapper that falls back locally when the flag is false, while message-job-service uses a flag-conditional remote bean |
 | **Owning service** | `big-market-account-service` |
 | **Flag that enables new path** | `account.service.remote-credit-write.enabled` / `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED` |
-| **Flag that disables old path** | Same flag — when `true`, the remote adapter bean activates and the local adapter is excluded via `@ConditionalOnProperty` |
+| **Flag that disables old path** | Same flag — message-job-service activates the remote bean when `true` and suppresses the local bean via `@ConditionalOnMissingBean`; market-service keeps a wrapper bean and switches the remote branch internally |
 | **Tables affected** | `user_credit_account`, `user_credit_order`, future `credit_trade_task_outbox` |
 | **Why both must not run simultaneously** | Double credit issuance — each path would independently call `createOrder`, duplicating credit transactions. The account-service idempotency guard (`outBusinessNo`) mitigates but does not eliminate the risk of duplicate DB writes. |
-| **Current safe default** | `account.service.remote-credit-write.enabled=false` — local adapter active, remote adapter not instantiated |
+| **Current safe default** | `account.service.remote-credit-write.enabled=false` — local write semantics remain active; any wrapper bean falls through to `ICreditAdjustService` |
 | **Evidence required before enabling remote** | EXTERNAL-GATED: account credit write staging/prod evidence, no credit drift, rollback rehearsal |
 | **7-day stable gate** | EXTERNAL-GATED: 7 clean days with remote credit write enabled |
 | **30-day removal gate** | EXTERNAL-GATED: 30 clean days plus cleanup signoff before removing local adapter |
@@ -43,10 +43,10 @@ This document is the authoritative conflict reference for
 | Field | Value |
 |-------|-------|
 | **Legacy path** | `LocalAccountQuotaWriteAdapter` (`big-market-trigger/src/main/java/.../trigger/adapter/LocalAccountQuotaWriteAdapter.java`) |
-| **Future path** | Account-service Dubbo provider for quota write operations |
+| **Future path** | Account-service Dubbo provider for quota write operations; market-service uses an always-registered wrapper with local fallback, while message-job-service uses a flag-conditional remote bean |
 | **Owning service** | `big-market-account-service` |
 | **Flag that enables new path** | `account.service.remote-quota-write.enabled` / `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED` |
-| **Flag that disables old path** | Same flag — `@ConditionalOnProperty` gating |
+| **Flag that disables old path** | Same flag — message-job-service uses remote `@ConditionalOnProperty` plus local `@ConditionalOnMissingBean`; market-service switches the remote branch inside the wrapper |
 | **Tables affected** | `raffle_activity_account`, `raffle_activity_account_day`, `raffle_activity_account_month` |
 | **Why both must not run simultaneously** | Double quota allocation — both local and remote paths would update the same account rows, causing quota inflation. |
 | **Current safe default** | `account.service.remote-quota-write.enabled=false` |
@@ -62,9 +62,9 @@ This document is the authoritative conflict reference for
 | **Future path** | `AccountRemoteActivityAccountPort` (`big-market-market-service/src/main/java/.../market/config/AccountRemoteActivityAccountPort.java`) — `@ConditionalOnProperty(havingValue="true")` |
 | **Owning service** | `big-market-account-service` |
 | **Flag that enables new path** | `account.service.remote-quota-decrement.enabled` / `ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED` |
-| **Flag that disables old path** | Same flag — when `true`, the remote port activates; the local port is excluded (matchIfMissing=false effectively) |
+| **Flag that disables old path** | Same flag — when `true`, the remote port activates and the local port's `havingValue="false", matchIfMissing=true` condition no longer matches |
 | **Tables affected** | `raffle_activity_account`, `raffle_activity_account_day`, `raffle_activity_account_month`, `raffle_quota_decrement_ledger` |
-| **Idempotency key** | `raffle_quota_decrement_ledger.uk_user_activity_biz (user_id, activity_id, out_business_no)` |
+| **Idempotency key** | `raffle_quota_decrement_ledger.uq_user_activity_biz (user_id, activity_id, out_business_no)` |
 | **Why both must not run simultaneously** | Double quota decrement in the draw hot path — each path would independently decrement the quota, potentially allowing a user to exceed their raffle entry limit. The ledger UNIQUE key prevents double-decrement within a single path but does not protect against dual-path execution. |
 | **Current safe default** | `account.service.remote-quota-decrement.enabled=false` — local port active, remote port not instantiated |
 | **Evidence required before enabling remote** | EXTERNAL-GATED: quota decrement ledger DDL applied, staging/prod idempotency evidence, no quota exhaustion drift |
@@ -79,7 +79,7 @@ This document is the authoritative conflict reference for
 | **Future path** | Fulfillment-service Dubbo provider for award fulfillment |
 | **Owning service** | `big-market-fulfillment-service` |
 | **Flag that enables new path** | `account.fulfillment.remote-award.enabled` / `ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED` |
-| **Flag that disables old path** | Same flag — `@ConditionalOnProperty` gating |
+| **Flag that disables old path** | Same flag — `WriteAdapterLocalConfig` registers the remote bean when `true`; the local `@ConditionalOnMissingBean` path is suppressed when that remote bean exists |
 | **Tables affected** | `award`, `user_award_record`, `award_dispatch_task_outbox` |
 | **Why both must not run simultaneously** | Duplicate award records — the user could receive the same award twice if both local and remote dispatch paths execute. The award_dispatch_task_outbox UNIQUE key mitigates within a single path. |
 | **Current safe default** | `account.fulfillment.remote-award.enabled=false` |
@@ -125,10 +125,10 @@ This document is the authoritative conflict reference for
 | Field | Value |
 |-------|-------|
 | **Legacy path** | `LocalRebateReadAdapter` (`big-market-trigger/src/main/java/.../trigger/adapter/LocalRebateReadAdapter.java`) |
-| **Future path** | Rebate-service Dubbo provider for read operations |
+| **Future path** | Rebate-service Dubbo provider for read operations via an always-registered adapter wrapper |
 | **Owning service** | `big-market-rebate-service` |
 | **Flag that enables new path** | `rebate.service.remote-read.enabled` / `REBATE_SERVICE_REMOTE_READ_ENABLED` |
-| **Flag that disables old path** | Same flag — `@ConditionalOnProperty` gating |
+| **Flag that disables old path** | Same flag controls the wrapper's remote branch; when `false`, the wrapper falls through to local `IBehaviorRebateService` |
 | **Tables affected** | `daily_behavior_rebate`, `user_behavior_rebate_order` |
 | **Why both must not run simultaneously** | Read inconsistency — callers would receive different results depending on which path the RPC framework routes to. |
 | **Current safe default** | `rebate.service.remote-read.enabled=false` |
@@ -142,7 +142,7 @@ This document is the authoritative conflict reference for
 |-------|-------|
 | **Legacy path (provider)** | `RaffleStrategyServiceRPC` (`big-market-trigger/src/main/java/.../trigger/rpc/RaffleStrategyServiceRPC.java`) — legacy Dubbo provider, `@ConditionalOnProperty(matchIfMissing=true)` |
 | **Legacy path (adapter)** | `LocalStrategyReadAdapter` (`big-market-trigger/src/main/java/.../trigger/adapter/LocalStrategyReadAdapter.java`) |
-| **Future path** | Strategy-service Dubbo provider for read operations |
+| **Future path** | Strategy-service Dubbo provider for read operations via an always-registered adapter wrapper |
 | **Owning service** | `big-market-strategy-service` |
 | **Flag that enables new path** | `strategy.service.remote-read.enabled` / `STRATEGY_SERVICE_REMOTE_READ_ENABLED` |
 | **Flag that disables old path (provider)** | `strategy.legacy-rpc-provider.enabled` / `STRATEGY_LEGACY_RPC_PROVIDER_ENABLED` |
@@ -169,7 +169,7 @@ This document is the authoritative conflict reference for
 | **Tables affected** | `task` (shared legacy), `credit_award_task` (per-domain outbox), future `rebate_task_outbox`, `credit_trade_task_outbox`, `award_dispatch_task_outbox` |
 | **Dual-dispatch risk** | When `account.award-credit-outbox.enabled=true` AND `job.shared-task-fallback.credit-award-disabled=false`, both `DispatchCreditAwardTaskJob` (per-domain) and `SendMessageTaskJob` (shared) could process the same credit-award work item from two different tables/paths, causing duplicate credit issuance. |
 | **Idempotency key (credit-award)** | `credit_award_task.uq_award_order_id (user_id, award_order_id)` — ensures a given award order produces at most one outbox row; the INSERT fails with DuplicateKeyException on retry, which the caller treats as an already-processed event. |
-| **Idempotency key (quota decrement)** | `raffle_quota_decrement_ledger.uk_user_activity_biz (user_id, activity_id, out_business_no)` — ensures one ledger row per (user, activity, business operation); the INSERT inside the transaction fails with DuplicateKeyException on retry, and the caller returns true immediately. |
+| **Idempotency key (quota decrement)** | `raffle_quota_decrement_ledger.uq_user_activity_biz (user_id, activity_id, out_business_no)` — ensures one ledger row per (user, activity, business operation); the INSERT inside the transaction fails with DuplicateKeyException on retry, and the caller returns true immediately. |
 | **Current safe default** | `account.award-credit-outbox.enabled=false` — `DispatchCreditAwardTaskJob` is not instantiated (bean conditional). Shared `SendMessageTaskJob` and local fallback ports are active for all domains. |
 | **Evidence required before enabling per-domain outbox** | EXTERNAL-GATED: per-domain outbox DDL applied, dispatch evidence, no duplicate/pending drain, all legacy fallback ports for that domain explicitly disabled |
 | **7-day stable gate** | EXTERNAL-GATED: 7 clean days with per-domain outbox active |

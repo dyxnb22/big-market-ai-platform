@@ -46,6 +46,15 @@ assert_matrix_contains() {
   fi
 }
 
+assert_file_contains() {
+  local label="$1" path="$2" pattern="$3"
+  if grep -qE "$pattern" "$REPO_ROOT/$path" 2>/dev/null; then
+    pass "$label"
+  else
+    fail "$label — pattern not found in $path: $pattern"
+  fi
+}
+
 assert_flag_default_false() {
   local label="$1" flag_prop="$2" search_dir="$3"
   local matches
@@ -151,11 +160,87 @@ echo "── 2.2 Future path file presence ──"
 FUTURE_FILES=(
   "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java"
   "big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteActivityAccountPort.java"
+  "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/AccountRemoteCreditWriteAdapter.java"
+  "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/AccountRemoteQuotaWriteAdapter.java"
+  "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/RemoteAwardDispatchAdapter.java"
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteCreditWriteAdapter.java"
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteQuotaWriteAdapter.java"
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteCreateOrderAdapter.java"
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteReadAdapter.java"
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/StrategyRemoteReadAdapter.java"
 )
 
 for f in "${FUTURE_FILES[@]}"; do
   assert_file "$(basename "$f")" "$f"
 done
+
+echo ""
+echo "── 2.3 Adapter activation topology ──"
+
+assert_file_contains \
+  "LocalAccountCreditWriteAdapter is missing-bean fallback" \
+  "big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalAccountCreditWriteAdapter.java" \
+  '@ConditionalOnMissingBean\(IAccountCreditWriteAdapter\.class\)'
+
+assert_file_contains \
+  "Message-job credit remote adapter is flag-conditional" \
+  "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/AccountRemoteCreditWriteAdapter.java" \
+  'account\.service\.remote-credit-write\.enabled.*havingValue = "true"'
+
+assert_file_contains \
+  "Market credit wrapper uses internal remote flag" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteCreditWriteAdapter.java" \
+  '@Value\("\$\{account\.service\.remote-credit-write\.enabled:false\}"\)'
+
+assert_file_contains \
+  "LocalAccountQuotaWriteAdapter is missing-bean fallback" \
+  "big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalAccountQuotaWriteAdapter.java" \
+  '@ConditionalOnMissingBean\(IAccountQuotaWriteAdapter\.class\)'
+
+assert_file_contains \
+  "Message-job quota remote adapter is flag-conditional" \
+  "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/AccountRemoteQuotaWriteAdapter.java" \
+  'account\.service\.remote-quota-write\.enabled.*havingValue = "true"'
+
+assert_file_contains \
+  "Market quota wrapper uses internal remote flag" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteQuotaWriteAdapter.java" \
+  '@Value\("\$\{account\.service\.remote-quota-write\.enabled:false\}"\)'
+
+assert_file_contains \
+  "LocalActivityAccountPort is disabled when remote quota decrement is true" \
+  "big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port/LocalActivityAccountPort.java" \
+  'remote-quota-decrement\.enabled.*havingValue = "false".*matchIfMissing = true'
+
+assert_file_contains \
+  "Remote activity account port is flag-conditional" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteActivityAccountPort.java" \
+  'remote-quota-decrement\.enabled.*havingValue = "true"'
+
+assert_file_contains \
+  "WriteAdapterLocalConfig registers remote award only when enabled" \
+  "big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/WriteAdapterLocalConfig.java" \
+  'account\.fulfillment\.remote-award\.enabled.*havingValue = "true"'
+
+assert_file_contains \
+  "Local award dispatch adapter is missing-bean fallback" \
+  "big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalAwardDispatchAdapter.java" \
+  '@ConditionalOnMissingBean\(IAwardDispatchAdapter\.class\)'
+
+assert_file_contains \
+  "Rebate create adapter uses internal remote flag" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteCreateOrderAdapter.java" \
+  '@Value\("\$\{rebate\.service\.remote-create-order\.enabled:false\}"\)'
+
+assert_file_contains \
+  "Rebate read adapter uses internal remote flag" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteReadAdapter.java" \
+  '@Value\("\$\{rebate\.service\.remote-read\.enabled:false\}"\)'
+
+assert_file_contains \
+  "Strategy read adapter uses internal remote flag" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/StrategyRemoteReadAdapter.java" \
+  '@Value\("\$\{strategy\.service\.remote-read\.enabled:false\}"\)'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 3: Flag default verification — remote flags must be default false
@@ -281,6 +366,8 @@ echo ""
 echo "── 6. Proposed DDL coverage for outbox tables ──"
 
 PROPOSED_DDL_DIR="$REPO_ROOT/docs/sql"
+CREDIT_AWARD_DDL="docs/sql/proposed-credit-award-task-outbox.sql"
+QUOTA_LEDGER_DDL="docs/sql/proposed-quota-decrement-ledger.sql"
 
 OUTBOX_TABLES=(
   "credit_award_task"
@@ -297,6 +384,16 @@ for table in "${OUTBOX_TABLES[@]}"; do
     fail "Outbox table '$table' NOT found in proposed DDL — missing schema spec"
   fi
 done
+
+assert_file_contains \
+  "Credit-award DDL has exact uq_award_order_id key" \
+  "$CREDIT_AWARD_DDL" \
+  'UNIQUE KEY `?uq_award_order_id`?.*`?user_id`?.*`?award_order_id`?'
+
+assert_file_contains \
+  "Quota ledger DDL has exact uq_user_activity_biz key" \
+  "$QUOTA_LEDGER_DDL" \
+  'UNIQUE KEY `?uq_user_activity_biz`?.*`?user_id`?.*`?activity_id`?.*`?out_business_no`?'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 7: Matrix cross-references with legacy cleanup inventory
@@ -339,9 +436,15 @@ done
 echo ""
 echo "── 8. Idempotency key documentation ──"
 
-assert_matrix_contains "Matrix documents credit_award_task idempotency key" 'award_order_id|uq_award_order_id'
-assert_matrix_contains "Matrix documents quota decrement ledger idempotency key" 'out_business_no|uk_user_activity_biz'
+assert_matrix_contains "Matrix documents credit_award_task idempotency key" 'uq_award_order_id.*user_id.*award_order_id|award_order_id.*uq_award_order_id'
+assert_matrix_contains "Matrix documents quota decrement ledger idempotency key" 'uq_user_activity_biz.*user_id.*activity_id.*out_business_no|out_business_no.*uq_user_activity_biz'
 assert_matrix_contains "Matrix documents dual-path idempotency gap" 'dual-path|dual.*path|both.*path'
+
+if grep -q 'uk_user_activity_biz' "$MATRIX" 2>/dev/null; then
+  fail "Matrix must not use stale quota key name uk_user_activity_biz"
+else
+  pass "Matrix does not use stale quota key name uk_user_activity_biz"
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Summary
