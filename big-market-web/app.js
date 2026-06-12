@@ -74,7 +74,12 @@ function initApp() {
     ucSurplus:       qs("#ucSurplus"),
     ucSigned:        qs("#ucSigned"),
     logoutBtn:       qs("#logoutBtn"),
-    toast:           qs("#toast")
+    toast:           qs("#toast"),
+    exchangeInfo:    qs("#exchangeInfo"),
+    exchangeBtn:     qs("#exchangeBtn"),
+    ucSignInBtn:     qs("#ucSignInBtn"),
+    ucExchangeBtn:   qs("#ucExchangeBtn"),
+    ucExchangeHint:  qs("#ucExchangeHint")
   };
 
   function qs(sel) { return document.querySelector(sel); }
@@ -149,10 +154,16 @@ function initApp() {
     var grad = awards.map(function(a,i) { return colors[i%colors.length]+" "+(i*seg)+"deg "+((i+1)*seg)+"deg"; }).join(", ");
     d.wheel.style.background = "conic-gradient(" + grad + ")";
     d.wheel.innerHTML = "";
+    // Scale font size based on number of awards (more awards = smaller text)
+    var fontSize = awards.length > 8 ? 9 : awards.length > 6 ? 10 : 12;
+    var radius = 110; // distance from center to label
     awards.forEach(function(award, i) {
       var el = document.createElement("span");
       el.className = "wheel-label";
-      el.style.transform = "rotate(" + (i*seg+seg/2) + "deg) translateY(-118px) rotate(90deg)";
+      el.style.fontSize = fontSize + "px";
+      el.style.width = (awards.length > 6 ? 70 : 90) + "px";
+      el.style.marginLeft = (awards.length > 6 ? "-35px" : "-45px");
+      el.style.transform = "rotate(" + (i*seg+seg/2) + "deg) translateY(-" + radius + "px) rotate(90deg)";
       el.textContent = award.awardTitle || ("奖品"+(i+1));
       d.wheel.appendChild(el);
     });
@@ -205,11 +216,13 @@ function initApp() {
         if (r.data === true) {
           signedToday = true;
           if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "是";
           if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
         } else {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
         }
@@ -217,6 +230,7 @@ function initApp() {
         if (e.raw && e.raw.data === false) {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
           return;
@@ -259,39 +273,46 @@ function initApp() {
 
   // ---- Sign In ----
   function signIn() {
-    if (signedToday) { toast("今日已签到"); return; }
-    busy(d.signInBtn, true);
+    if (signedToday) { toast("今日已签到，明天再来"); return; }
+    busy(d.signInBtn, true); busy(d.ucSignInBtn, true);
+    if (d.signInBtn) d.signInBtn.textContent = "签到中...";
+    if (d.ucSignInBtn) d.ucSignInBtn.textContent = "签到中...";
     apiRequest("/raffle/activity/calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+      var data = r.data || {};
       signedToday = true;
       if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
-      if (d.signInStatus) d.signInStatus.textContent = "签到成功！";
+      if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
+      if (d.signInStatus) d.signInStatus.textContent = data.message || "签到成功！";
       if (d.ucSigned) d.ucSigned.textContent = "是";
-      toast("签到成功！");
+      toast(data.message || "签到成功，+10 积分");
+      // Refresh credit display from response
+      if (data.creditBalance !== undefined && data.creditBalance !== null) {
+        var bal = data.creditBalance;
+        d.creditMetric.textContent = bal;
+        d.ucCredit.textContent = bal;
+        d.creditDisplay.textContent = "积分: " + bal;
+        if (creditMobile) creditMobile.textContent = "积分: " + bal;
+      }
       loadCampaign().catch(function(){});
     }).catch(function(e) {
-      if (e.code === "0003") {
-        treatSignedIn(); toast("今日已签到");
+      if (e.code === "0003" || e.code === "0004" || (e.message && e.message.indexOf("已签到") >= 0)) {
+        treatSignedIn();
+        toast("今日已签到，明天再来");
+        loadCampaign().catch(function(){});
       } else {
-        // Sign-in might have failed because already signed in today
-        // (loadCampaign may not have refreshed signedToday). Check status.
-        apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
-          if (r.data === true) {
-            treatSignedIn(); toast("今日已签到");
-          } else {
-            toast(e.message || "签到失败");
-          }
-        }).catch(function() {
-          toast(e.message || "签到失败");
-        });
+        if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
+        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+        toast(e.message || "签到失败，请稍后重试");
       }
     }).finally(function() {
-      busy(d.signInBtn, false);
+      busy(d.signInBtn, false); busy(d.ucSignInBtn, false);
     });
   }
 
   function treatSignedIn() {
     signedToday = true;
     if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
+    if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
     if (d.signInStatus) d.signInStatus.textContent = "今日已完成签到";
     if (d.ucSigned) d.ucSigned.textContent = "是";
   }
@@ -365,14 +386,37 @@ function initApp() {
     addMsg("user", text);
     d.msgInput.value = ""; d.msgInput.style.height = "auto";
     busy(d.sendBtn, true);
+    d.sendBtn.textContent = "...";
+    var requestId = crypto.randomUUID();
     apiRequest("/chatbot/ask", {
       method:"POST",
-      body: JSON.stringify({token:auth.token||"", activityId:CONFIG.ACTIVITY_ID, message:text})
+      body: JSON.stringify({token:auth.token||"", requestId: requestId, activityId:CONFIG.ACTIVITY_ID, message:text})
     }).then(function(r) {
-      addMsg("assistant", (r.data&&r.data.answer)||r.info||"已处理。");
+      var data = r.data || {};
+      var answer = data.answer || r.info || "已处理。";
+      // Append credit info to response if credit was deducted
+      if (data.creditDeducted && data.creditDeducted > 0) {
+        answer += "\n\n---\n本次消耗 " + data.creditDeducted + " 积分";
+      }
+      addMsg("assistant", answer, data);
+      // Update credit display
+      if (data.creditBalance !== undefined && data.creditBalance !== null) {
+        var bal = data.creditBalance;
+        d.creditDisplay.textContent = "积分: " + bal;
+        d.creditMetric.textContent = bal;
+        d.ucCredit.textContent = bal;
+        if (creditMobile) creditMobile.textContent = "积分: " + bal;
+      }
     }).catch(function(e) {
-      addMsg("assistant", "请求失败："+e.message);
-    }).finally(function() { busy(d.sendBtn, false); });
+      if (e.code === "0003" || (e.message && e.message.indexOf("积分不足") >= 0)) {
+        addMsg("assistant", "积分不足，无法发送消息。请先签到赚取积分或兑换后再试。\n\n你可以：\n1. 打开轮盘抽奖抽屉 → 点击“每日签到”获取积分\n2. 在用户中心查看积分余额");
+      } else {
+        addMsg("assistant", "请求失败："+e.message);
+      }
+    }).finally(function() {
+      busy(d.sendBtn, false);
+      d.sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+    });
   }
 
   function newChat() {
@@ -405,10 +449,75 @@ function initApp() {
   function openDrawer(drawer) { drawer.classList.add("open"); d.drawerOverlay.classList.add("open"); }
   function closeDrawer(drawer) { drawer.classList.remove("open"); d.drawerOverlay.classList.remove("open"); }
   function closeAll() { closeDrawer(d.lotteryDrawer); closeDrawer(d.userCenterDrawr); }
-  function openLottery() { openDrawer(d.lotteryDrawer); loadCampaign().catch(function(){}); }
+  function openLottery() { openDrawer(d.lotteryDrawer); loadCampaign().catch(function(){}); loadExchangeSku(); }
   function closeLottery() { closeDrawer(d.lotteryDrawer); }
-  function openUserCenter() { openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); }
+  function openUserCenter() { openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); loadExchangeSku(); }
   function closeUserCenter() { closeDrawer(d.userCenterDrawr); }
+
+  // ---- Credit Exchange ----
+  var exchangeSku = null; // cached SKU info from server
+  function loadExchangeSku() {
+    apiRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + CONFIG.ACTIVITY_ID, {
+      method: "POST"
+    }).then(function(r) {
+      var list = r.data || [];
+      exchangeSku = list.length > 0 ? list[0] : null;
+      if (exchangeSku) {
+        var cost = exchangeSku.productAmount || 0;
+        var surplus = exchangeSku.stockCountSurplus || 0;
+        var info = cost + " 积分 = 1 次抽奖机会";
+        if (surplus > 0) info += "（剩余库存: " + surplus + "）";
+        else info += "（库存不足）";
+        if (d.exchangeInfo) d.exchangeInfo.textContent = info;
+        updateExchangeBtn();
+      } else {
+        if (d.exchangeInfo) d.exchangeInfo.textContent = "暂无可兑换商品";
+      }
+    }).catch(function() {
+      if (d.exchangeInfo) d.exchangeInfo.textContent = "加载兑换信息失败";
+    });
+  }
+
+  function updateExchangeBtn() {
+    if (!exchangeSku) { disableExchange("暂无可兑换商品"); return; }
+    var cost = exchangeSku.productAmount || 0;
+    var surplus = exchangeSku.stockCountSurplus || 0;
+    var currentCredit = parseFloat(d.creditMetric.textContent) || 0;
+    if (surplus <= 0) { disableExchange("库存不足"); return; }
+    if (currentCredit < cost) { disableExchange("积分不足，需要 " + cost + " 积分"); return; }
+    // Enable exchange
+    if (d.exchangeBtn) { d.exchangeBtn.disabled = false; d.exchangeBtn.textContent = "兑换 1 次抽奖机会（消耗 " + cost + " 积分）"; }
+    if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = false; d.ucExchangeBtn.textContent = "兑换 1 次抽奖机会（消耗 " + cost + " 积分）"; }
+    if (d.ucExchangeHint) { d.ucExchangeHint.style.display = "none"; }
+  }
+
+  function disableExchange(msg) {
+    if (d.exchangeBtn) { d.exchangeBtn.disabled = true; d.exchangeBtn.textContent = msg || "无法兑换"; }
+    if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = true; d.ucExchangeBtn.textContent = msg || "无法兑换"; }
+    if (d.ucExchangeHint && msg) { d.ucExchangeHint.style.display = ""; d.ucExchangeHint.textContent = msg; }
+  }
+
+  function doExchange() {
+    if (!exchangeSku) { toast("暂无可兑换商品"); return; }
+    var cost = exchangeSku.productAmount || 0;
+    var currentCredit = parseFloat(d.creditMetric.textContent) || 0;
+    if (currentCredit < cost) { toast("积分不足，先签到赚积分"); return; }
+    busy(d.exchangeBtn, true);
+    if (d.exchangeBtn) d.exchangeBtn.textContent = "兑换中...";
+    if (d.ucExchangeBtn) { busy(d.ucExchangeBtn, true); d.ucExchangeBtn.textContent = "兑换中..."; }
+    apiRequest("/raffle/activity/credit_pay_exchange_sku_by_token", {
+      method: "POST",
+      body: JSON.stringify({ sku: exchangeSku.sku })
+    }).then(function() {
+      toast("兑换成功，获得 1 次抽奖机会");
+      loadCampaign().catch(function(){});
+    }).catch(function(e) {
+      toast(e.message || "兑换失败");
+    }).finally(function() {
+      busy(d.exchangeBtn, false); updateExchangeBtn();
+      if (d.ucExchangeBtn) { busy(d.ucExchangeBtn, false); updateExchangeBtn(); }
+    });
+  }
 
   // ---- Utility ----
   function busy(el, v) { if (el) { el.disabled = v; el.style.opacity = v?"0.5":""; } }
@@ -436,6 +545,9 @@ function initApp() {
   d.signInBtn.onclick = signIn;
   d.refreshCampaign.onclick = function() { loadCampaign().then(function(){toast("已刷新");}).catch(function(e){toast(e.message);}); };
   d.logoutBtn.onclick = logout;
+  if (d.exchangeBtn) d.exchangeBtn.onclick = doExchange;
+  if (d.ucSignInBtn) d.ucSignInBtn.onclick = signIn;
+  if (d.ucExchangeBtn) d.ucExchangeBtn.onclick = doExchange;
 
   // Context menu
   document.addEventListener("click", function() { d.contextMenu.style.display = "none"; });

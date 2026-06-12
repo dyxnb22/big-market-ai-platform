@@ -111,7 +111,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
         </button>
       </div>
-      <p class="composer-hint">AI 助手仅提供通用对话，业务操作请使用功能按钮。</p>
+      <p class="composer-hint">每次提问消耗 1 积分 | AI 助手提供通用对话，业务操作请使用功能按钮</p>
     </form>
   </main>
 
@@ -143,6 +143,11 @@
       </div>
       <button id="signInBtn" class="action-btn primary" type="button">每日签到</button>
       <p id="signInStatus" class="sign-status"></p>
+      <div style="margin-top:12px; padding:10px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--sidebar-bg)">
+        <div style="font-size:13px; font-weight:600; margin-bottom:8px;">积分兑换抽奖次数</div>
+        <div id="exchangeInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">加载中...</div>
+        <button id="exchangeBtn" class="action-btn" type="button" disabled>兑换 1 次抽奖机会</button>
+      </div>
     </div>
   </aside>
 
@@ -166,6 +171,20 @@
         <div class="stat-item"><span>积分余额</span><strong id="ucCredit">-</strong></div>
         <div class="stat-item"><span>剩余次数</span><strong id="ucSurplus">-</strong></div>
         <div class="stat-item"><span>今日签到</span><strong id="ucSigned">-</strong></div>
+      </div>
+      <div class="user-actions">
+        <button id="ucSignInBtn" class="action-btn primary" type="button">每日签到 +10 积分</button>
+        <button id="ucExchangeBtn" class="action-btn" type="button">积分兑换抽奖次数</button>
+        <p id="ucExchangeHint" style="font-size:11px;color:var(--muted);text-align:center;display:none;"></p>
+      </div>
+      <div style="margin-top:16px; padding:10px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--sidebar-bg)">
+        <div style="font-size:13px; font-weight:600; margin-bottom:6px;">积分规则</div>
+        <div style="font-size:12px; color:var(--muted); line-height:1.8;">
+          每日签到 +10 积分<br>
+          AI 对话每次消耗 1 积分<br>
+          抽奖消耗 1 次机会<br>
+          积分可兑换抽奖次数
+        </div>
       </div>
       <div class="user-footer">
         <button id="logoutBtn" class="logout-btn" type="button">退出登录</button>

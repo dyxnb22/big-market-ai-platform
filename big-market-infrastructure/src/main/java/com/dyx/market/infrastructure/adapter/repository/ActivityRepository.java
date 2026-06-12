@@ -683,6 +683,7 @@ public class ActivityRepository implements IActivityRepository {
     public void updateOrder(DeliveryOrderEntity deliveryOrderEntity) {
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_UPDATE_LOCK + deliveryOrderEntity.getUserId() + Constants.UNDERLINE + deliveryOrderEntity.getOutBusinessNo());
         try {
+            dbRouter.doRouter(deliveryOrderEntity.getUserId());
             // 查询订单
             RaffleActivityOrder raffleActivityOrderReq = new RaffleActivityOrder();
             raffleActivityOrderReq.setUserId(deliveryOrderEntity.getUserId());
@@ -723,7 +724,6 @@ public class ActivityRepository implements IActivityRepository {
             raffleActivityAccountDay.setDayCountSurplus(raffleActivityOrderRes.getDayCount());
 
 
-            dbRouter.doRouter(deliveryOrderEntity.getUserId());
             // 编程式事务
             transactionTemplate.execute(status -> {
                 try {
@@ -764,14 +764,19 @@ public class ActivityRepository implements IActivityRepository {
         RaffleActivityOrder raffleActivityOrderReq = new RaffleActivityOrder();
         raffleActivityOrderReq.setUserId(skuRechargeEntity.getUserId());
         raffleActivityOrderReq.setSku(skuRechargeEntity.getSku());
-        RaffleActivityOrder raffleActivityOrderRes = raffleActivityOrderDao.queryUnpaidActivityOrder(raffleActivityOrderReq);
-        if (null == raffleActivityOrderRes) return null;
-        return UnpaidActivityOrderEntity.builder()
-                .userId(raffleActivityOrderRes.getUserId())
-                .orderId(raffleActivityOrderRes.getOrderId())
-                .outBusinessNo(raffleActivityOrderRes.getOutBusinessNo())
-                .payAmount(raffleActivityOrderRes.getPayAmount())
-                .build();
+        try {
+            dbRouter.doRouter(skuRechargeEntity.getUserId());
+            RaffleActivityOrder raffleActivityOrderRes = raffleActivityOrderDao.queryUnpaidActivityOrder(raffleActivityOrderReq);
+            if (null == raffleActivityOrderRes) return null;
+            return UnpaidActivityOrderEntity.builder()
+                    .userId(raffleActivityOrderRes.getUserId())
+                    .orderId(raffleActivityOrderRes.getOrderId())
+                    .outBusinessNo(raffleActivityOrderRes.getOutBusinessNo())
+                    .payAmount(raffleActivityOrderRes.getPayAmount())
+                    .build();
+        } finally {
+            dbRouter.clear();
+        }
     }
 
     @Override

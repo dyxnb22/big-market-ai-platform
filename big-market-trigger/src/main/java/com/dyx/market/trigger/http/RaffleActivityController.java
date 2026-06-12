@@ -282,11 +282,11 @@ public class RaffleActivityController implements IRaffleActivityService {
 
     @RequestMapping(value = "calendar_sign_rebate_by_token", method = RequestMethod.POST)
     @Override
-    public Response<Boolean> calendarSignRebateByToken(@RequestHeader("Authorization") String token) {
+    public Response<SignInResponseDTO> calendarSignRebateByToken(@RequestHeader("Authorization") String token) {
         try {
             String openid = (String) httpServletRequest.getAttribute("userId");
             if (StringUtils.isBlank(openid)) {
-                return Response.<Boolean>builder()
+                return Response.<SignInResponseDTO>builder()
                         .code(ResponseCode.Login.TOKEN_ERROR.getCode())
                         .info(ResponseCode.Login.TOKEN_ERROR.getInfo())
                         .build();
@@ -295,7 +295,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             return calendarSignRebate(openid);
         } catch (Exception e) {
             log.error("执行签到失败", e);
-            return Response.<Boolean>builder()
+            return Response.<SignInResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .build();
@@ -303,48 +303,86 @@ public class RaffleActivityController implements IRaffleActivityService {
     }
 
     /**
-     * 日历签到返利接口
+     * 日历签到返利接口 — 强幂等，返回签到结果和积分余额。
      *
      * @param userId 用户ID
-     * @return 签到返利结果
-     * <p>
-     * 接口：<a href="http://localhost:8091/api/v1/raffle/activity/calendar_sign_rebate">/api/v1/raffle/activity/calendar_sign_rebate</a>
-     * 入参：xiaofuge
-     * <p>
-     * curl -X POST http://localhost:8091/api/v1/raffle/activity/calendar_sign_rebate -d "userId=xiaofuge" -H "Content-Type: application/x-www-form-urlencoded"
+     * @return 签到返利结果（signedToday, rewardCredit, creditBalance, message）
      */
     @RequestMapping(value = "calendar_sign_rebate", method = RequestMethod.POST)
     @Override
-    public Response<Boolean> calendarSignRebate(@RequestParam String userId) {
+    public Response<SignInResponseDTO> calendarSignRebate(@RequestParam String userId) {
         try {
             log.info("日历签到返利开始 userId:{}", userId);
             if (StringUtils.isBlank(userId)) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
+
+            String outBusinessNo = LocalDate.now().format(DATE_FORMAT_DAY);
+
+            // 幂等检查：今日已签到直接返回，避免重复创建订单
+            boolean alreadySigned = rebateReadAdapter.isCalendarSignRebate(userId, outBusinessNo);
+            if (alreadySigned) {
+                BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+                log.info("日历签到返利-今日已签到 userId:{}", userId);
+                return Response.<SignInResponseDTO>builder()
+                        .code(ResponseCode.SUCCESS.getCode())
+                        .info(ResponseCode.SUCCESS.getInfo())
+                        .data(SignInResponseDTO.builder()
+                                .signedToday(true)
+                                .rewardCredit(BigDecimal.ZERO)
+                                .creditBalance(balance)
+                                .message("今日已签到，明天再来")
+                                .build())
+                        .build();
+            }
+
             BehaviorEntity behaviorEntity = new BehaviorEntity();
             behaviorEntity.setUserId(userId);
             behaviorEntity.setBehaviorTypeVO(BehaviorTypeVO.SIGN);
-            behaviorEntity.setOutBusinessNo(LocalDate.now().format(DATE_FORMAT_DAY));
+            behaviorEntity.setOutBusinessNo(outBusinessNo);
             // Phase 3: routed through IRebateOrderAdapter (local by default, remote when flag=true).
             List<String> orderIds = rebateOrderAdapter.createOrder(behaviorEntity);
             log.info("日历签到返利完成 userId:{} orderIds: {}", userId, JSON.toJSONString(orderIds));
-            return Response.<Boolean>builder()
+
+            // 查询签到后的积分余额
+            BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+
+            return Response.<SignInResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
-                    .data(true)
+                    .data(SignInResponseDTO.builder()
+                            .signedToday(true)
+                            .rewardCredit(BigDecimal.TEN)
+                            .creditBalance(balance)
+                            .message("签到成功，+10 积分")
+                            .build())
                     .build();
         } catch (AppException e) {
             log.error("日历签到返利异常 userId:{} ", userId, e);
-            return Response.<Boolean>builder()
+            // INDEX_DUP → 并发重复签到，返回已签到
+            if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                BigDecimal balance = BigDecimal.ZERO;
+                try { balance = accountRemoteReadAdapter.queryUserCreditAccount(userId); } catch (Exception ignored) {}
+                return Response.<SignInResponseDTO>builder()
+                        .code(ResponseCode.SUCCESS.getCode())
+                        .info(ResponseCode.SUCCESS.getInfo())
+                        .data(SignInResponseDTO.builder()
+                                .signedToday(true)
+                                .rewardCredit(BigDecimal.ZERO)
+                                .creditBalance(balance)
+                                .message("今日已签到，明天再来")
+                                .build())
+                        .build();
+            }
+            return Response.<SignInResponseDTO>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
             log.error("日历签到返利失败 userId:{}", userId, e);
-            return Response.<Boolean>builder()
+            return Response.<SignInResponseDTO>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
-                    .data(false)
                     .build();
         }
     }
@@ -610,14 +648,32 @@ public class RaffleActivityController implements IRaffleActivityService {
 
             // 2.支付兑换商品
             // Phase 2.2-B3: routed through IAccountCreditWriteAdapter (local by default, remote when flag=true).
-            String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
+            try {
+                String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
+                        .userId(unpaidActivityOrder.getUserId())
+                        .tradeName(TradeNameVO.CONVERT_SKU)
+                        .tradeType(TradeTypeVO.REVERSE)
+                        .amount(unpaidActivityOrder.getPayAmount().negate())
+                        .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
+                        .build());
+                log.info("积分兑换商品，支付订单完成 userId:{} sku:{} orderId:{}", request.getUserId(), request.getSku(), orderId);
+            } catch (AppException e) {
+                if (!ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                    throw e;
+                }
+                log.warn("积分兑换商品，支付订单已存在，继续补偿发货 userId:{} sku:{} outBusinessNo:{}",
+                        request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
+            }
+
+            // Synchronously complete the quota order so the user sees the new
+            // draw count immediately. The async MQ consumer may retry later;
+            // updateOrder is state-gated and will no-op once completed.
+            accountQuotaWriteAdapter.updateOrder(DeliveryOrderEntity.builder()
                     .userId(unpaidActivityOrder.getUserId())
-                    .tradeName(TradeNameVO.CONVERT_SKU)
-                    .tradeType(TradeTypeVO.REVERSE)
-                    .amount(unpaidActivityOrder.getPayAmount().negate())
                     .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
                     .build());
-            log.info("积分兑换商品，支付订单完成  userId:{} sku:{} orderId:{}", request.getUserId(), request.getSku(), orderId);
+            log.info("积分兑换商品，发货完成 userId:{} sku:{} outBusinessNo:{}",
+                    request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
 
             return Response.<Boolean>builder()
                     .code(ResponseCode.SUCCESS.getCode())
@@ -636,6 +692,60 @@ public class RaffleActivityController implements IRaffleActivityService {
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .data(false)
+                    .build();
+        }
+    }
+
+    /**
+     * AI Chat credit deduction — called by chatbot-service via gateway.
+     * User identity is resolved by TokenAuthInterceptor; requestId is the
+     * idempotency key for one chat ask.
+     */
+    @RequestMapping(value = "chat_credit_deduct_by_token", method = RequestMethod.POST)
+    public Response<BigDecimal> chatCreditDeductByToken(@RequestHeader("Authorization") String token,
+                                                        @RequestParam(defaultValue = "1") int amount,
+                                                        @RequestParam String requestId) {
+        String userId = (String) httpServletRequest.getAttribute("userId");
+        try {
+            log.info("AI Chat积分扣减开始 userId:{} amount:{} requestId:{}", userId, amount, requestId);
+            if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
+                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+            }
+            String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
+                    .userId(userId)
+                    .tradeName(TradeNameVO.OPENAI_PAY)
+                    .tradeType(TradeTypeVO.REVERSE)
+                    .amount(BigDecimal.valueOf(amount).negate())
+                    .outBusinessNo("chat_" + requestId)
+                    .build());
+            log.info("AI Chat积分扣减完成 userId:{} amount:{} orderId:{}", userId, amount, orderId);
+            BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+            return Response.<BigDecimal>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .info(ResponseCode.SUCCESS.getInfo())
+                    .data(balance)
+                    .build();
+        } catch (AppException e) {
+            if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                log.warn("AI Chat积分扣减重复 userId:{} requestId:{}", userId, requestId);
+                BigDecimal balance = BigDecimal.ZERO;
+                try { balance = accountRemoteReadAdapter.queryUserCreditAccount(userId); } catch (Exception ignored) {}
+                return Response.<BigDecimal>builder()
+                        .code(ResponseCode.SUCCESS.getCode())
+                        .info(ResponseCode.SUCCESS.getInfo())
+                        .data(balance)
+                        .build();
+            }
+            log.error("AI Chat积分扣减异常 userId:{}", userId, e);
+            return Response.<BigDecimal>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .build();
+        } catch (Exception e) {
+            log.error("AI Chat积分扣减失败 userId:{}", userId, e);
+            return Response.<BigDecimal>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
                     .build();
         }
     }

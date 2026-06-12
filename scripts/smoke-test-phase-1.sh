@@ -95,8 +95,9 @@ check "gateway → admin/config/list (with auth)" "0000" "$GW_ADMIN"
 
 GW_CHATBOT=$(curl -sf -X POST "$GW/api/v1/chatbot/ask" \
   -H "Content-Type: application/json" \
-  -d '{"message":"hello smoke test"}' 2>/dev/null || echo '{"code":"FAIL"}')
-check "gateway → chatbot/ask" "0000" "$GW_CHATBOT"
+  -H "Authorization: $GW_TOKEN" \
+  -d "{\"requestId\":\"smoke-chat-$(date +%s)\",\"activityId\":100301,\"message\":\"hello smoke test\"}" 2>/dev/null || echo '{"code":"FAIL"}')
+check "gateway → chatbot/ask (with auth, credit charged)" "0000" "$GW_CHATBOT"
 
 GW_MARKET=$(curl -sf "$GW/api/v1/raffle/activity/query_stage_activity_id?channel=default&source=web" 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → market/query_stage_activity_id" "0000" "$GW_MARKET"

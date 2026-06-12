@@ -44,6 +44,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/*/raffle/activity/query_user_activity_account_by_token",
                         "/api/*/raffle/activity/query_user_credit_account_by_token",
                         "/api/*/raffle/activity/credit_pay_exchange_sku_by_token",
+                        "/api/*/raffle/activity/chat_credit_deduct_by_token",
                         "/api/*/raffle/strategy/query_raffle_award_list_by_token")
                 .excludePathPatterns("/api/*/auth/**");
     }

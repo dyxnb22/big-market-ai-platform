@@ -23,6 +23,7 @@ app:
     user-ids: ${ADMIN_USER_IDS:}
 chatbot:
   provider: ${CHATBOT_PROVIDER:local}
+  cost-per-ask: ${CHATBOT_COST_PER_ASK:1}
   deepseek:
     api-key: ${DEEPSEEK_API_KEY:}
     base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}

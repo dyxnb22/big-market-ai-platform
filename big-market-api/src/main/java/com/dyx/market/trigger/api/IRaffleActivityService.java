@@ -47,20 +47,20 @@ public interface IRaffleActivityService {
     Response<ActivityDrawResponseDTO> draw(ActivityDrawRequestDTO request);
 
     /**
-     * 日历签到返利接口
+     * 日历签到返利接口（含积分余额和签到奖励）
      *
      * @param token 登录Token
-     * @return 签到结果
+     * @return 签到结果（signedToday, rewardCredit, creditBalance, message）
      */
-    Response<Boolean> calendarSignRebateByToken(String token);
+    Response<SignInResponseDTO> calendarSignRebateByToken(String token);
 
     /**
-     * 日历签到返利接口
+     * 日历签到返利接口（含积分余额和签到奖励）
      *
      * @param userId 用户ID
-     * @return 签到结果
+     * @return 签到结果（signedToday, rewardCredit, creditBalance, message）
      */
-    Response<Boolean> calendarSignRebate(String userId);
+    Response<SignInResponseDTO> calendarSignRebate(String userId);
 
     /**
      * 判断是否完成日历签到返利接口

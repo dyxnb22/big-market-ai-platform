@@ -15,4 +15,9 @@ public class ChatbotAskRequestDTO implements Serializable {
 
     private String message;
 
+    /**
+     * Client generated idempotency key for one ask request.
+     */
+    private String requestId;
+
 }

@@ -104,10 +104,12 @@ public class CreditRepository implements ICreditRepository {
                     creditTradeTaskOutboxPort.insert(taskEntity);
                 } catch (DuplicateKeyException e) {
                     status.setRollbackOnly();
-                    log.error("调整账户积分额度异常，唯一索引冲突 userId:{} orderId:{}", userId, creditOrderEntity.getOrderId(), e);
+                    log.warn("调整账户积分额度唯一索引冲突，幂等返回 userId:{} orderId:{} outBusinessNo:{}", userId, creditOrderEntity.getOrderId(), creditOrderEntity.getOutBusinessNo());
+                    throw new AppException(ResponseCode.INDEX_DUP.getCode(), ResponseCode.INDEX_DUP.getInfo());
                 } catch (Exception e) {
                     status.setRollbackOnly();
                     log.error("调整账户积分额度失败 userId:{} orderId:{}", userId, creditOrderEntity.getOrderId(), e);
+                    throw e;
                 }
                 return 1;
             });
