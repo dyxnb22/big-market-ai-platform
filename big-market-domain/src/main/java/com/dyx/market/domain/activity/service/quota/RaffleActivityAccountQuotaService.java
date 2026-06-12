@@ -7,7 +7,7 @@ import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.service.IRaffleActivitySkuStockService;
 import com.dyx.market.domain.activity.service.quota.policy.ITradePolicy;
 import com.dyx.market.domain.activity.service.quota.rule.factory.DefaultActivityChainFactory;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.dyx.market.types.common.OrderIdGenerator;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -36,7 +36,7 @@ public class RaffleActivityAccountQuotaService extends AbstractRaffleActivityAcc
         activityOrderEntity.setActivityName(activityEntity.getActivityName());
         activityOrderEntity.setStrategyId(activityEntity.getStrategyId());
         // 公司里一般会有专门的雪花算法UUID服务，我们这里直接生成个12位就可以了。
-        activityOrderEntity.setOrderId(RandomStringUtils.randomNumeric(12));
+        activityOrderEntity.setOrderId(OrderIdGenerator.generate(12));
         activityOrderEntity.setOrderTime(new Date());
         activityOrderEntity.setTotalCount(activityCountEntity.getTotalCount());
         activityOrderEntity.setDayCount(activityCountEntity.getDayCount());

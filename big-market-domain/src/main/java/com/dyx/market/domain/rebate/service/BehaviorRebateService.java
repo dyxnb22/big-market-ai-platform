@@ -9,8 +9,8 @@ import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
 import com.dyx.market.domain.rebate.model.valobj.TaskStateVO;
 import com.dyx.market.domain.rebate.repository.IBehaviorRebateRepository;
 import com.dyx.market.types.common.Constants;
+import com.dyx.market.types.common.OrderIdGenerator;
 import com.dyx.market.types.event.BaseEvent;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -44,7 +44,7 @@ public class BehaviorRebateService implements IBehaviorRebateService {
             String bizId = behaviorEntity.getUserId() + Constants.UNDERLINE + dailyBehaviorRebateVO.getRebateType() + Constants.UNDERLINE + behaviorEntity.getOutBusinessNo();
             BehaviorRebateOrderEntity behaviorRebateOrderEntity = BehaviorRebateOrderEntity.builder()
                     .userId(behaviorEntity.getUserId())
-                    .orderId(RandomStringUtils.randomNumeric(12))
+                    .orderId(OrderIdGenerator.generate(12))
                     .behaviorType(dailyBehaviorRebateVO.getBehaviorType())
                     .rebateDesc(dailyBehaviorRebateVO.getRebateDesc())
                     .rebateType(dailyBehaviorRebateVO.getRebateType())

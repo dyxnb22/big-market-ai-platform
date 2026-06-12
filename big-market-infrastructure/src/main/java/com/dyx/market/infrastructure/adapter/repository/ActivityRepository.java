@@ -349,6 +349,13 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
+    public void restoreActivitySkuStock(Long sku) {
+        String cacheKey = Constants.RedisKey.ACTIVITY_SKU_STOCK_COUNT_KEY + sku;
+        redisService.incr(cacheKey);
+        log.info("SKU库存补偿恢复 sku:{} cacheKey:{}", sku, cacheKey);
+    }
+
+    @Override
     public List<Long> querySkuList() {
         return raffleActivitySkuDao.querySkuList();
     }

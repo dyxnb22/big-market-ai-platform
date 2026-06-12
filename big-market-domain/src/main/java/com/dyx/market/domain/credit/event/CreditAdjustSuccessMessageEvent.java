@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.dyx.market.types.common.OrderIdGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +26,7 @@ public class CreditAdjustSuccessMessageEvent extends BaseEvent<CreditAdjustSucce
     @Override
     public EventMessage<CreditAdjustSuccessMessage> buildEventMessage(CreditAdjustSuccessMessage data) {
         return EventMessage.<CreditAdjustSuccessMessageEvent.CreditAdjustSuccessMessage>builder()
-                .id(RandomStringUtils.randomNumeric(11))
+                .id(OrderIdGenerator.generate(11))
                 .timestamp(new Date())
                 .data(data)
                 .build();

@@ -1,7 +1,7 @@
 package com.dyx.market.domain.activity.adapter.event;
 
 import com.dyx.market.types.event.BaseEvent;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.dyx.market.types.common.OrderIdGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class ActivitySkuStockZeroMessageEvent extends BaseEvent<Long> {
     @Override
     public EventMessage<Long> buildEventMessage(Long sku) {
         return EventMessage.<Long>builder()
-                .id(RandomStringUtils.randomNumeric(11))
+                .id(OrderIdGenerator.generate(11))
                 .timestamp(new Date())
                 .data(sku)
                 .build();

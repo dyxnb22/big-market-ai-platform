@@ -115,30 +115,23 @@ public class ChatbotController {
             }
 
             String message = request.getMessage();
-            String answer;
+            String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
 
-            if ("deepseek".equalsIgnoreCase(provider) && StringUtils.isNotBlank(deepseekApiKey)) {
-                answer = callDeepSeek(message);
-            } else {
-                answer = localFallback(message);
-            }
-
-            // Deduct credit after successful AI response
+            // Deduct credit BEFORE AI call, so the user is charged before we incur AI compute cost
             BigDecimal deducted = BigDecimal.ZERO;
             BigDecimal newBalance = BigDecimal.ZERO;
             if (effectiveCost > 0) {
                 try {
-                    String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
                     newBalance = deductCredit(token, effectiveCost, requestId);
                     deducted = BigDecimal.valueOf(effectiveCost);
                 } catch (Exception e) {
                     log.warn("AI Chat credit deduction failed", e);
                     return Response.<ChatbotAskResponseDTO>builder()
                             .code(ResponseCode.UN_ERROR.getCode())
-                            .info("AI 对话扣费失败，请稍后重试")
+                            .info("积分扣减失败，无法进行 AI 对话")
                             .data(ChatbotAskResponseDTO.builder()
                                     .success(false)
-                                    .answer("AI 对话扣费失败，请稍后重试。")
+                                    .answer("积分扣减失败，无法进行 AI 对话。请确认积分充足后重试。")
                                     .creditDeducted(BigDecimal.ZERO)
                                     .creditBalance(fetchCreditBalance(token))
                                     .build())
@@ -146,6 +139,30 @@ public class ChatbotController {
                 }
             } else if (StringUtils.isNotBlank(token)) {
                 newBalance = fetchCreditBalance(token);
+            }
+
+            String answer;
+            try {
+                if ("deepseek".equalsIgnoreCase(provider) && StringUtils.isNotBlank(deepseekApiKey)) {
+                    answer = callDeepSeek(message);
+                } else {
+                    answer = localFallback(message);
+                }
+            } catch (Exception e) {
+                log.error("AI call failed after credit deduction, refunding requestId:{}", requestId, e);
+                if (effectiveCost > 0) {
+                    refundCredit(token, effectiveCost, requestId);
+                }
+                return Response.<ChatbotAskResponseDTO>builder()
+                        .code(ResponseCode.UN_ERROR.getCode())
+                        .info("AI 服务暂时不可用")
+                        .data(ChatbotAskResponseDTO.builder()
+                                .success(false)
+                                .answer("AI 服务暂时不可用，已退还本次扣减的积分。请稍后再试。")
+                                .creditDeducted(BigDecimal.ZERO)
+                                .creditBalance(fetchCreditBalance(token))
+                                .build())
+                        .build();
             }
 
             return Response.<ChatbotAskResponseDTO>builder()
@@ -197,6 +214,22 @@ public class ChatbotController {
             log.warn("Failed to fetch credit balance", e);
         }
         throw new IllegalStateException("查询积分失败");
+    }
+
+    /** Refund credit for a failed AI chat call. Best-effort — logs failures but doesn't throw. */
+    private void refundCredit(String token, int amount, String originalRequestId) {
+        String url = gatewayUrl.replaceAll("/$", "")
+                + "/api/v1/raffle/activity/chat_credit_refund_by_token?amount=" + amount
+                + "&originalRequestId=" + urlEncode(originalRequestId);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", token);
+            restTemplate.postForEntity(url, new HttpEntity<>("{}", headers), String.class);
+        } catch (Exception e) {
+            log.warn("Failed to refund credit for requestId:{} amount:{} — manual recovery may be needed",
+                    originalRequestId, amount, e);
+        }
     }
 
     /** Deduct credit for AI chat via market-service gateway. Returns new balance. */

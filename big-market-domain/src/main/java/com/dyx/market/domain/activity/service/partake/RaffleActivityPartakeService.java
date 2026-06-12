@@ -8,7 +8,7 @@ import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.dyx.market.types.common.OrderIdGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -110,7 +110,7 @@ public class RaffleActivityPartakeService extends AbstractRaffleActivityPartake 
         userRaffleOrder.setActivityId(activityId);
         userRaffleOrder.setActivityName(activityEntity.getActivityName());
         userRaffleOrder.setStrategyId(activityEntity.getStrategyId());
-        userRaffleOrder.setOrderId(RandomStringUtils.randomNumeric(12));
+        userRaffleOrder.setOrderId(OrderIdGenerator.generate(12));
         userRaffleOrder.setOrderTime(currentDate);
         userRaffleOrder.setOrderState(UserRaffleOrderStateVO.create);
         userRaffleOrder.setEndDateTime(activityEntity.getEndDateTime());

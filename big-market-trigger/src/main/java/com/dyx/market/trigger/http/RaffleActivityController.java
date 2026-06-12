@@ -1,5 +1,6 @@
 package com.dyx.market.trigger.http;
 
+import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.application.ActivityDrawRequestEntity;
 import com.dyx.market.domain.activity.application.ActivityDrawResponseEntity;
 import com.dyx.market.domain.activity.application.RaffleApplicationService;
@@ -35,7 +36,7 @@ import com.dyx.market.types.exception.AppException;
 import com.dyx.market.trigger.api.response.Response;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.dyx.market.types.common.OrderIdGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.web.bind.annotation.*;
@@ -97,6 +98,10 @@ public class RaffleActivityController implements IRaffleActivityService {
     private IAccountQuotaWriteAdapter accountQuotaWriteAdapter;
     @Resource
     private IAccountCreditWriteAdapter accountCreditWriteAdapter;
+
+    // Phase 2.2-B infrastructure repository — used for SKU stock restore on exchange failure
+    @Resource
+    private IActivityRepository activityRepository;
 
     // dcc 统一配置中心动态配置降级开关
     @DCCValue("degradeSwitch:close")
@@ -602,23 +607,27 @@ public class RaffleActivityController implements IRaffleActivityService {
      */
     @Override
     public Response<Boolean> creditPayExchangeSku(@RequestBody SkuProductShopCartRequestDTO request) {
+        Long sku = request.getSku();
         try {
-            log.info("积分兑换商品开始 userId:{} sku:{}", request.getUserId(), request.getSku());
+            log.info("积分兑换商品开始 userId:{} sku:{}", request.getUserId(), sku);
             // 0. 参数校验
-            if (StringUtils.isBlank(request.getUserId())) {
+            if (StringUtils.isBlank(request.getUserId()) || null == sku) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // 1. 创建兑换商品sku订单，outBusinessNo 每次创建出一个单号。
+            // Deterministic outBusinessNo (userId + sku + date) makes retries idempotent
+            String outBusinessNo = request.getUserId() + "_" + sku + "_" + LocalDate.now().format(DATE_FORMAT_DAY);
+
+            // 1. 创建兑换商品sku订单（含库存校验和扣减）
             // Phase 2.2-B3: routed through IAccountQuotaWriteAdapter (local by default, remote when flag=true).
             UnpaidActivityOrderEntity unpaidActivityOrder = accountQuotaWriteAdapter.createOrder(SkuRechargeEntity.builder()
                     .userId(request.getUserId())
-                    .sku(request.getSku())
-                    .outBusinessNo(RandomStringUtils.randomNumeric(12))
+                    .sku(sku)
+                    .outBusinessNo(outBusinessNo)
                     .orderTradeType(OrderTradeTypeVO.credit_pay_trade)
                     .build());
-            log.info("积分兑换商品，创建订单完成 userId:{} sku:{} outBusinessNo:{}", request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
+            log.info("积分兑换商品，创建订单完成 userId:{} sku:{} outBusinessNo:{}", request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
 
-            // 2.支付兑换商品
+            // 2.支付兑换商品 — 扣减积分
             // Phase 2.2-B3: routed through IAccountCreditWriteAdapter (local by default, remote when flag=true).
             try {
                 String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
@@ -628,13 +637,17 @@ public class RaffleActivityController implements IRaffleActivityService {
                         .amount(unpaidActivityOrder.getPayAmount().negate())
                         .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
                         .build());
-                log.info("积分兑换商品，支付订单完成 userId:{} sku:{} orderId:{}", request.getUserId(), request.getSku(), orderId);
+                log.info("积分兑换商品，支付订单完成 userId:{} sku:{} orderId:{}", request.getUserId(), sku, orderId);
             } catch (AppException e) {
                 if (!ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                    // Credit deduction failed (e.g. insufficient balance) — restore SKU stock
+                    log.warn("积分兑换商品，支付扣积分失败，恢复SKU库存 userId:{} sku:{} outBusinessNo:{}",
+                            request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
+                    restoreActivitySkuStock(sku);
                     throw e;
                 }
                 log.warn("积分兑换商品，支付订单已存在，继续补偿发货 userId:{} sku:{} outBusinessNo:{}",
-                        request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
+                        request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
             }
 
             // Synchronously complete the quota order so the user sees the new
@@ -646,10 +659,10 @@ public class RaffleActivityController implements IRaffleActivityService {
                         .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
                         .build());
                 log.info("积分兑换商品，发货完成 userId:{} sku:{} outBusinessNo:{}",
-                        request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo());
+                        request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
             } catch (Exception deliveryEx) {
                 log.error("积分兑换商品，发货失败（MQ异步补偿将重试） userId:{} sku:{} outBusinessNo:{}",
-                        request.getUserId(), request.getSku(), unpaidActivityOrder.getOutBusinessNo(), deliveryEx);
+                        request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo(), deliveryEx);
                 // 发货失败不阻塞流程，MQ消费者会重新处理
             }
 
@@ -659,13 +672,13 @@ public class RaffleActivityController implements IRaffleActivityService {
                     .data(true)
                     .build();
         } catch (AppException e) {
-            log.error("积分兑换商品失败 userId:{} activityId:{}", request.getUserId(), request.getSku(), e);
+            log.error("积分兑换商品失败 userId:{} sku:{}", request.getUserId(), sku, e);
             return Response.<Boolean>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .build();
         } catch (Exception e) {
-            log.error("积分兑换商品失败 userId:{} sku:{}", request.getUserId(), request.getSku(), e);
+            log.error("积分兑换商品失败 userId:{} sku:{}", request.getUserId(), sku, e);
             return Response.<Boolean>builder()
                     .code(ResponseCode.UN_ERROR.getCode())
                     .info(ResponseCode.UN_ERROR.getInfo())
@@ -674,11 +687,75 @@ public class RaffleActivityController implements IRaffleActivityService {
         }
     }
 
+    private void restoreActivitySkuStock(Long sku) {
+        try {
+            activityRepository.restoreActivitySkuStock(sku);
+        } catch (Exception e) {
+            log.error("恢复SKU库存失败 sku:{}", sku, e);
+        }
+    }
+
     /**
      * AI Chat credit deduction — called by chatbot-service via gateway.
      * User identity is resolved by TokenAuthInterceptor; requestId is the
      * idempotency key for one chat ask.
      */
+    /**
+     * AI Chat credit refund — reverse of chat_credit_deduct_by_token.
+     * Called by chatbot-service when AI call fails after a successful deduction.
+     * Uses "chat_refund_" + originalRequestId as idempotency key so a retry of
+     * the refund itself won't double-refund.
+     */
+    @RequestMapping(value = "chat_credit_refund_by_token", method = RequestMethod.POST)
+    @Override
+    public Response<BigDecimal> chatCreditRefundByToken(@RequestHeader("Authorization") String token,
+                                                        @RequestParam(defaultValue = "1") int amount,
+                                                        @RequestParam String originalRequestId) {
+        String userId = (String) httpServletRequest.getAttribute("userId");
+        try {
+            log.info("AI Chat积分退还开始 userId:{} amount:{} requestId:{}", userId, amount, originalRequestId);
+            if (StringUtils.isBlank(userId) || StringUtils.isBlank(originalRequestId) || amount <= 0) {
+                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+            }
+            String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
+                    .userId(userId)
+                    .tradeName(TradeNameVO.OPENAI_PAY)
+                    .tradeType(TradeTypeVO.FORWARD)
+                    .amount(BigDecimal.valueOf(amount))
+                    .outBusinessNo("chat_refund_" + originalRequestId)
+                    .build());
+            log.info("AI Chat积分退还完成 userId:{} amount:{} orderId:{}", userId, amount, orderId);
+            BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+            return Response.<BigDecimal>builder()
+                    .code(ResponseCode.SUCCESS.getCode())
+                    .info(ResponseCode.SUCCESS.getInfo())
+                    .data(balance)
+                    .build();
+        } catch (AppException e) {
+            if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                log.warn("AI Chat积分退还重复 userId:{} requestId:{}", userId, originalRequestId);
+                BigDecimal balance = BigDecimal.ZERO;
+                try { balance = accountRemoteReadAdapter.queryUserCreditAccount(userId); } catch (Exception ignored) {}
+                return Response.<BigDecimal>builder()
+                        .code(ResponseCode.SUCCESS.getCode())
+                        .info(ResponseCode.SUCCESS.getInfo())
+                        .data(balance)
+                        .build();
+            }
+            log.error("AI Chat积分退还异常 userId:{}", userId, e);
+            return Response.<BigDecimal>builder()
+                    .code(e.getCode())
+                    .info(e.getInfo())
+                    .build();
+        } catch (Exception e) {
+            log.error("AI Chat积分退还失败 userId:{}", userId, e);
+            return Response.<BigDecimal>builder()
+                    .code(ResponseCode.UN_ERROR.getCode())
+                    .info(ResponseCode.UN_ERROR.getInfo())
+                    .build();
+        }
+    }
+
     @RequestMapping(value = "chat_credit_deduct_by_token", method = RequestMethod.POST)
     @Override
     public Response<BigDecimal> chatCreditDeductByToken(@RequestHeader("Authorization") String token,

@@ -1,5 +1,6 @@
 package com.dyx.market.admin.service.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -9,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
@@ -16,10 +18,19 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Resource
     private AdminAuthInterceptor adminAuthInterceptor;
 
+    @Value("${app.cors.allowed-origins:*}")
+    private String allowedOrigins;
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOriginPattern("*");
+        if ("*".equals(allowedOrigins)) {
+            config.addAllowedOriginPattern("*");
+        } else {
+            Arrays.stream(allowedOrigins.split(","))
+                    .map(String::trim)
+                    .forEach(config::addAllowedOrigin);
+        }
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setAllowCredentials(false);

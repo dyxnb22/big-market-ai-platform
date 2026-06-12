@@ -44,6 +44,13 @@ public interface IActivityRepository {
 
     void clearActivitySkuStock(Long sku);
 
+    /**
+     * Restore (increment) the Redis SKU stock by 1.
+     * Used when a SKU exchange fails after the initial stock decrement,
+     * so the slot is returned to the available pool.
+     */
+    void restoreActivitySkuStock(Long sku);
+
     List<Long> querySkuList();
 
     UserRaffleOrderEntity queryNoUsedRaffleOrder(PartakeRaffleActivityEntity partakeRaffleActivityEntity);

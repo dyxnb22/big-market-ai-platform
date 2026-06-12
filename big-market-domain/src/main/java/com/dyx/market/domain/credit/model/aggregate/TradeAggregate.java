@@ -12,7 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.dyx.market.types.common.OrderIdGenerator;
 
 import java.math.BigDecimal;
 
@@ -47,7 +47,7 @@ public class TradeAggregate {
                                                             String outBusinessNo) {
         return CreditOrderEntity.builder()
                 .userId(userId)
-                .orderId(RandomStringUtils.randomNumeric(12))
+                .orderId(OrderIdGenerator.generate(12))
                 .tradeName(tradeName)
                 .tradeType(tradeType)
                 .tradeAmount(tradeAmount)
