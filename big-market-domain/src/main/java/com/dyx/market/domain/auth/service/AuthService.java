@@ -2,6 +2,7 @@ package com.dyx.market.domain.auth.service;
 
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,10 @@ public class AuthService extends AbstractAuthService {
 
     private static final long TOKEN_TTL_MILLIS = 24 * 60 * 60 * 1000L;
 
+    /** Optional — only present when auth-service provides a revocation bean. */
+    @Autowired(required = false)
+    private ITokenRevocationService tokenRevocationService;
+
     public AuthService(@Value("${app.jwt.secret:change-me-in-dev-only}") String jwtSecret) {
         super(jwtSecret);
     }
@@ -29,7 +34,18 @@ public class AuthService extends AbstractAuthService {
 
     @Override
     public boolean checkToken(String token) {
-        return isVerify(token);
+        if (!isVerify(token)) {
+            return false;
+        }
+        // Phase 8-B: check revocation blacklist if service is available
+        if (tokenRevocationService != null) {
+            String jti = extractJti(token);
+            if (jti != null && tokenRevocationService.isRevoked(jti)) {
+                log.warn("[AuthService] token rejected — jti:{} is revoked", jti);
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -38,4 +54,13 @@ public class AuthService extends AbstractAuthService {
         return claims.get("openId").toString();
     }
 
+    @Override
+    public String extractJti(String token) {
+        return extractJtiFromToken(token);
+    }
+
+    @Override
+    public long extractExpiration(String token) {
+        return extractExpirationFromToken(token);
+    }
 }

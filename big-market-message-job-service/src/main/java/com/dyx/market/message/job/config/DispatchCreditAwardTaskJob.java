@@ -8,6 +8,7 @@ import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.xxl.job.core.handler.annotation.XxlJob;
+import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -45,11 +46,13 @@ public class DispatchCreditAwardTaskJob {
     @Resource
     private RedissonClient redissonClient;
 
+    @Timed(value = "DispatchCreditAwardTaskJob_DB1", description = "Award credit outbox dispatch DB1")
     @XxlJob("DispatchCreditAwardTaskJob_DB1")
     public void execDb01() {
         scanDb(1, "big-market-DispatchCreditAwardTaskJob_DB1");
     }
 
+    @Timed(value = "DispatchCreditAwardTaskJob_DB2", description = "Award credit outbox dispatch DB2")
     @XxlJob("DispatchCreditAwardTaskJob_DB2")
     public void execDb02() {
         scanDb(2, "big-market-DispatchCreditAwardTaskJob_DB2");

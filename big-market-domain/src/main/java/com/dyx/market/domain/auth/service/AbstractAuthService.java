@@ -88,4 +88,25 @@ public abstract class AbstractAuthService implements IAuthService {
         }
     }
 
+    protected String extractJtiFromToken(String jwtToken) {
+        try {
+            Claims claims = decode(jwtToken);
+            return claims.getId();
+        } catch (Exception e) {
+            log.error("Failed to extract jti from token", e);
+            return null;
+        }
+    }
+
+    protected long extractExpirationFromToken(String jwtToken) {
+        try {
+            Claims claims = decode(jwtToken);
+            Date exp = claims.getExpiration();
+            return exp != null ? exp.getTime() : 0L;
+        } catch (Exception e) {
+            log.error("Failed to extract expiration from token", e);
+            return 0L;
+        }
+    }
+
 }

@@ -28,7 +28,7 @@ services:
       - "8081:8081"
     environment:
       - SERVER_PORT=8081
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-prod}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
       - APP_AUTH_DEV_USERS=${APP_AUTH_DEV_USERS:-xiaofuge:demo,admin:admin}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
@@ -54,7 +54,7 @@ services:
       - "8082:8082"
     environment:
       - SERVER_PORT=8082
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-prod}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
       - ADMIN_TOKEN=${ADMIN_TOKEN:-admin-dev-token}
       - ADMIN_USER_IDS=${ADMIN_USER_IDS:-admin}
       - API_VERSION=v1
@@ -119,7 +119,7 @@ services:
       - "8083:8083"
     environment:
       - SERVER_PORT=8083
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-prod}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
       - ADMIN_TOKEN=${ADMIN_TOKEN:-admin-dev-token}
       - API_VERSION=v1
       - CROSS_ORIGIN=*

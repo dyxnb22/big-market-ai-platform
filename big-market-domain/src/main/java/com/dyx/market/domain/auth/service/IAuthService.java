@@ -13,4 +13,15 @@ public interface IAuthService {
 
     String openid(String token);
 
+    /**
+     * Extract the jti (JWT ID) claim from a token. Returns null if the token
+     * is invalid or the jti claim is absent.
+     */
+    String extractJti(String token);
+
+    /**
+     * Extract the expiration time from a token in epoch millis.
+     * Returns 0 if the token is invalid or has no expiration.
+     */
+    long extractExpiration(String token);
 }

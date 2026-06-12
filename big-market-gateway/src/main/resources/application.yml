@@ -7,6 +7,14 @@ spring:
 logging:
   config: classpath:logback-spring.xml
 
+# ── Rate limiter defaults (in-memory token bucket) ──
+# Dev: effectively open. Prod/docker: tighten via env or profile override.
+gateway:
+  rate-limiter:
+    enabled: ${GATEWAY_RATE_LIMITER_ENABLED:false}
+    replenish-rate: ${GATEWAY_RATE_LIMITER_REPLENISH:100}
+    burst-capacity: ${GATEWAY_RATE_LIMITER_BURST:200}
+
 ---
 spring:
   config:
@@ -104,6 +112,10 @@ spring:
               args:
                 name: auth-cb
                 fallbackUri: forward:/fallback/auth-service
+            - name: IpPathRateLimit
+              args:
+                replenishRate: ${GATEWAY_RATE_LIMITER_REPLENISH:20}
+                burstCapacity: ${GATEWAY_RATE_LIMITER_BURST:40}
         - id: admin-service
           uri: http://${ADMIN_SERVICE_HOST:big-market-admin-service}:${ADMIN_SERVICE_PORT:8082}
           predicates:
@@ -131,6 +143,10 @@ spring:
               args:
                 name: market-cb
                 fallbackUri: forward:/fallback/market-service
+            - name: IpPathRateLimit
+              args:
+                replenishRate: ${GATEWAY_RATE_LIMITER_REPLENISH:20}
+                burstCapacity: ${GATEWAY_RATE_LIMITER_BURST:40}
 
 server:
   port: ${SERVER_PORT:8080}
