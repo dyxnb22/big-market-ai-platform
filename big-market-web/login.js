@@ -10,6 +10,17 @@ var redirectUrl = (function() {
   return "./index.html";
 })();
 
+var existingAuth = readAuth();
+if (existingAuth.token) {
+  apiRequest("/auth/verify", {}, {
+    onAuthExpired: function() { clearAuth(); }
+  }).then(function() {
+    location.replace(redirectUrl);
+  }).catch(function() {
+    clearAuth();
+  });
+}
+
 function withCacheBuster(url) {
   var sep = url.indexOf("?") >= 0 ? "&" : "?";
   return url + sep + "t=" + Date.now();
@@ -18,6 +29,7 @@ function withCacheBuster(url) {
 async function login() {
   var userId = userIdInput.value.trim();
   if (!userId) { toast("请输入用户 ID"); return; }
+  if (!passwordInput.value) { toast("请输入密码"); passwordInput.focus(); return; }
 
   loginBtn.disabled = true;
   loginBtn.textContent = "登录中...";

@@ -202,7 +202,16 @@ function initApp() {
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
         }
-      }).catch(function() { setConnStatus(false, "加载签到状态失败"); })
+      }).catch(function(e) {
+        if (e.raw && e.raw.data === false) {
+          signedToday = false;
+          if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
+          if (d.ucSigned) d.ucSigned.textContent = "否";
+          if (d.signInStatus) d.signInStatus.textContent = "";
+          return;
+        }
+        setConnStatus(false, "加载签到状态失败");
+      })
     );
 
     // Award list

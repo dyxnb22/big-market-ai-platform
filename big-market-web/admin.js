@@ -21,6 +21,7 @@ var dom = {
 };
 
 var auth = readAuth();
+var redirectingToLogin = false;
 
 function requireLogin() {
   if (auth.token) return true;
@@ -36,14 +37,28 @@ if (!auth.token) {
   location.replace(adminLoginUrl());
 }
 
+function redirectToAdminLogin(message) {
+  if (redirectingToLogin) return;
+  redirectingToLogin = true;
+  clearAuth();
+  auth = {token: "", userId: ""};
+  if (message) toast(message);
+  setTimeout(function() { location.replace(adminLoginUrl()); }, message ? 500 : 0);
+}
+
 // Wrap apiRequest to add auth-expired guard
 function adminRequest(path, opts) {
   return apiRequest(path, opts, {
     onAuthExpired: function() {
-      clearAuth();
-      auth = {token: "", userId: ""};
-      toast("登录已过期，请重新登录");
+      redirectToAdminLogin("登录已过期，请重新登录");
     }
+  }).catch(function(error) {
+    if (error.code === "0008") {
+      redirectToAdminLogin("当前账号无管理员权限");
+    } else if (error.code === "0009") {
+      redirectToAdminLogin("登录已过期，请重新登录");
+    }
+    throw error;
   });
 }
 
@@ -189,6 +204,7 @@ dom.adminLoginBtn.addEventListener("click", function() {
     dom.adminLoginLink.textContent = "🔑 登录";
     dom.adminLoginBtn.textContent = "登录";
     toast("已退出");
+    setTimeout(function() { location.replace(adminLoginUrl()); }, 300);
   }
 });
 bind(dom.loadActivityBtn, loadActivity);
@@ -287,19 +303,24 @@ async function refreshOps() {
     setDiag(opsDom.diagChatbot, false, "不可达: " + e.message);
   }
 
-  // 5. Health table (gateway-routed API checks — no side effects)
+  // 5. Health table (gateway-routed API checks — no side effects).
+  // Auth-required endpoints send the stored token; public endpoints
+  // (actuator, OPTIONS) check gateway-level reachability.
   var services = [
-    {name: "gateway", url: gatewayBase + "/actuator/health", method: "GET"},
+    {name: "gateway", url: gatewayBase + "/actuator/health"},
     {name: "auth-service", path: "/auth/login", method: "OPTIONS"},
-    {name: "market-service", path: "/raffle/activity/query_user_credit_account_by_token", method: "OPTIONS"},
-    {name: "admin-service", path: "/admin/config/list", method: "OPTIONS"},
+    {name: "market-service", path: "/raffle/activity/query_user_credit_account_by_token", method: "POST", needsAuth: true},
+    {name: "admin-service", path: "/admin/config/list", needsAuth: true},
     {name: "chatbot-service", path: "/chatbot/ask", method: "OPTIONS"},
   ];
   var rows = "";
   for (var i = 0; i < services.length; i++) {
     var svc = services[i];
     try {
-      var opts = {method: svc.method || "GET"};
+      var reqHeaders = {"Content-Type": "application/json"};
+      if (svc.needsAuth && auth.token) reqHeaders.Authorization = auth.token;
+      var opts = {method: svc.method || "GET", headers: reqHeaders};
+      if (svc.method === "POST") opts.body = JSON.stringify({activityId: CONFIG.ACTIVITY_ID});
       var sr = await fetch(svc.url || (CONFIG.API_BASE + svc.path), opts);
       var status = sr.ok ? "UP" : "DOWN";
       var detail = sr.status;
@@ -330,9 +351,18 @@ if (opsDom.refreshBtn) opsDom.refreshBtn.addEventListener("click", function() {
 });
 if (opsDom.logQueryBtn) opsDom.logQueryBtn.addEventListener("click", queryLogs);
 
-if (auth.token) {
-  loadConfigs().catch(function() {});
-  loadActivity().catch(function() {});
-  loadAwards().catch(function() {});
-  refreshOps().catch(function() {});
+async function initializeAdmin() {
+  if (!auth.token) return;
+  await loadConfigs();
+  await Promise.all([
+    loadActivity().catch(function() {}),
+    loadAwards().catch(function() {}),
+    refreshOps().catch(function() {})
+  ]);
 }
+
+initializeAdmin().catch(function(error) {
+  if (error.code !== "0008" && error.code !== "0009") {
+    toast(error.message || "管理后台初始化失败");
+  }
+});

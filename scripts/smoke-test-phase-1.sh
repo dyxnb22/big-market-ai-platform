@@ -28,7 +28,6 @@ CHATBOT="http://$HOST:8084"
 MSGJ="http://$HOST:8085"
 ACCOUNT="http://$HOST:8086"
 FULFILLMENT="http://$HOST:8087"
-ADMIN_TOKEN="${ADMIN_TOKEN:-admin-dev-token}"
 
 PASS=0
 FAIL=0
@@ -64,7 +63,7 @@ echo ""
 echo "--- Auth service (direct) ---"
 LOGIN=$(curl -sf -X POST "$AUTH/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"smoke-test-user"}' 2>/dev/null || echo '{"code":"FAIL"}')
+  -d '{"userId":"xiaofuge","password":"demo"}' 2>/dev/null || echo '{"code":"FAIL"}')
 check "auth/login (direct)" "0000" "$LOGIN"
 TOKEN=$(echo "$LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || echo "")
 
@@ -75,7 +74,7 @@ echo ""
 echo "--- Gateway routing ---"
 GW_LOGIN=$(curl -sf -X POST "$GW/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"smoke-test-user"}' 2>/dev/null || echo '{"code":"FAIL"}')
+  -d '{"userId":"xiaofuge","password":"demo"}' 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → auth/login" "0000" "$GW_LOGIN"
 GW_TOKEN=$(echo "$GW_LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || echo "")
 
@@ -85,9 +84,13 @@ check "gateway → auth/verify" "0000" "$GW_VERIFY"
 GW_ADMIN_NO_AUTH=$(curl -sf "$GW/api/v1/admin/config/list" 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → admin/config/list (no auth, expect 0009)" "0009" "$GW_ADMIN_NO_AUTH"
 
+GW_ADMIN_LOGIN=$(curl -sf -X POST "$GW/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"admin","password":"admin"}' 2>/dev/null || echo '{"code":"FAIL"}')
+GW_ADMIN_TOKEN=$(echo "$GW_ADMIN_LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || echo "")
+
 GW_ADMIN=$(curl -sf "$GW/api/v1/admin/config/list" \
-  -H "Authorization: $GW_TOKEN" \
-  -H "Admin-Token: $ADMIN_TOKEN" 2>/dev/null || echo '{"code":"FAIL"}')
+  -H "Authorization: $GW_ADMIN_TOKEN" 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → admin/config/list (with auth)" "0000" "$GW_ADMIN"
 
 GW_CHATBOT=$(curl -sf -X POST "$GW/api/v1/chatbot/ask" \

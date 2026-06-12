@@ -9,7 +9,7 @@ app:
     secret: ${JWT_SECRET:change-me-in-dev-only}
   admin:
     token: ${ADMIN_TOKEN:admin-dev-token}
-    user-ids: ${ADMIN_USER_IDS:}
+    user-ids: ${ADMIN_USER_IDS:admin}
 
 management:
   endpoints:

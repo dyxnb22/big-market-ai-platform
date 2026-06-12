@@ -15,9 +15,36 @@ var redirectUrl = (function() {
   return "./admin.html";
 })();
 
+var existingAuth = readAuth();
+if (existingAuth.token) {
+  verifyAdminToken(existingAuth.token).then(function() {
+    location.replace(redirectUrl);
+  }).catch(function() {
+    clearAuth();
+  });
+}
+
+function verifyAdminToken(token) {
+  return fetch(CONFIG.API_BASE + "/admin/config/list", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": token
+    }
+  }).then(function(response) {
+    return response.json().catch(function() { return {code: String(response.status), info: "管理员权限校验失败"}; });
+  }).then(function(data) {
+    if (data.code !== "0000") {
+      throw new Error(data.code === "0008" ? "当前账号无管理员权限" : (data.info || "管理员权限校验失败"));
+    }
+    return data;
+  });
+}
+
 async function login() {
   var userId = userIdInput.value.trim();
   if (!userId) { toast("请输入管理员 ID"); return; }
+  if (!passwordInput.value) { toast("请输入密码"); passwordInput.focus(); return; }
 
   loginBtn.disabled = true;
   loginBtn.textContent = "登录中...";
@@ -28,6 +55,8 @@ async function login() {
       body: JSON.stringify({userId: userId, password: passwordInput.value})
     });
     if (!data.data?.token) throw new Error(data.info || "登录失败");
+
+    await verifyAdminToken(data.data.token);
 
     saveAuth(data.data.token, data.data.userId);
     toast("登录成功，正在跳转...");

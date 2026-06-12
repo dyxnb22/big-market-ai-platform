@@ -44,3 +44,8 @@ build/
 /push_all_branches.sh
 /logs/*.log
 /logs/*.pid
+
+### Node / Playwright ###
+node_modules/
+test-results/
+playwright-report/

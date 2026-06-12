@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>管理端登录 - Lucky Draw AI</title>
-  <link rel="stylesheet" href="./styles.css?v=4" />
+  <link rel="stylesheet" href="./styles.css?v=__APP_VERSION__" />
 </head>
 <body data-page="admin-login">
 <div class="admin-login-page">
@@ -18,23 +18,24 @@
 
     <div class="field">
       <label for="adminUserIdInput">管理员 ID</label>
-      <input id="adminUserIdInput" value="xiaofuge" autocomplete="username" placeholder="输入管理员ID" />
+      <input id="adminUserIdInput" value="admin" autocomplete="username" placeholder="输入管理员ID" />
     </div>
 
     <div class="field">
       <label for="adminPasswordInput">密码</label>
-      <input id="adminPasswordInput" type="password" value="demo" autocomplete="current-password" placeholder="输入密码" />
+      <input id="adminPasswordInput" type="password" value="admin" autocomplete="current-password" placeholder="输入密码" />
     </div>
 
     <button id="adminLoginBtn" class="submit-btn" type="button">登 录</button>
 
+    <p class="admin-hint">演示管理员：admin / admin</p>
     <a class="back-link" href="./index.html">← 返回用户端</a>
   </div>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="./config.js?v=4"></script>
-<script src="./api-client.js?v=4"></script>
-<script src="./admin-login.js?v=4"></script>
+<script src="./config.js?v=__APP_VERSION__"></script>
+<script src="./api-client.js?v=__APP_VERSION__"></script>
+<script src="./admin-login.js?v=__APP_VERSION__"></script>
 </body>
 </html>

@@ -72,7 +72,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             List<String> ids = Arrays.asList(adminUserIds.split(","));
             return ids.contains(openid);
         }
-        return true;
+        return false;
     }
 
     private void writeError(HttpServletResponse response, String code, String info) throws IOException {

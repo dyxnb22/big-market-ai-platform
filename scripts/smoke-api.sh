@@ -13,9 +13,15 @@ LOGIN_RESPONSE="$(curl -fsS "$API/auth/login" \
   -H 'Content-Type: application/json' \
   -d '{"userId":"xiaofuge","password":"demo"}')"
 TOKEN="$(printf '%s' "$LOGIN_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
+ADMIN_LOGIN_RESPONSE="$(curl -fsS "$API/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"admin","password":"admin"}')"
+ADMIN_TOKEN="$(printf '%s' "$ADMIN_LOGIN_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
 
 echo "Token length: ${#TOKEN}"
 test -n "$TOKEN"
+echo "Admin token length: ${#ADMIN_TOKEN}"
+test -n "$ADMIN_TOKEN"
 echo
 
 echo "Verify token"
@@ -34,7 +40,8 @@ curl -fsS "$API/raffle/activity/query_user_activity_account_by_token" \
 echo
 
 echo "Admin config list"
-curl -fsS "$API/admin/config/list" | sed 's/,/,\n/g'
+curl -fsS "$API/admin/config/list" \
+  -H "Authorization: $ADMIN_TOKEN" | sed 's/,/,\n/g'
 
 echo
 echo "Chatbot"

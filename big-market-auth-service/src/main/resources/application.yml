@@ -7,6 +7,10 @@ app:
     cross-origin: ${CROSS_ORIGIN:'*'}
   jwt:
     secret: ${JWT_SECRET:change-me-in-dev-only}
+  auth:
+    # Local dev/test credential seed for the demo frontend only.
+    # Override APP_AUTH_DEV_USERS in real deployments.
+    dev-users: ${APP_AUTH_DEV_USERS:xiaofuge:demo,admin:admin}
 
 management:
   endpoints:
