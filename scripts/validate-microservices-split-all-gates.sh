@@ -36,6 +36,7 @@ GATES=(
   "scripts/validate-microservices-learning-mode-closure.sh"
   "scripts/validate-microservices-phase-8-runtime-safety.sh"
   "scripts/validate-microservices-phase-8-cutover-conflict-matrix.sh"
+  "scripts/validate-microservices-phase-8-idempotency-rollback-matrix.sh"
 )
 
 echo ""

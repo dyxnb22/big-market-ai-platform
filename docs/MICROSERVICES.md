@@ -224,6 +224,7 @@ target. Kept for traceability.
 
 - Active Phase 8 runbook: `docs/microservices-phase-8-cutover-runbook.md`
 - Cutover conflict matrix: `docs/microservices-phase-8-cutover-conflict-matrix.md`
+- Idempotency & rollback matrix: `docs/microservices-phase-8-idempotency-rollback-matrix.md`
 - Active external evidence intake: `docs/microservices-phase-8-external-evidence-intake.md`
 - DAO ownership matrix: `docs/microservices-dao-ownership.md`
 - Legacy cleanup inventory: `docs/microservices-legacy-cleanup-inventory.md`
