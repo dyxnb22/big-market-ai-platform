@@ -100,14 +100,9 @@ public class RaffleStrategyController implements IRaffleStrategyService {
     }
 
     /**
-     * 查询奖品列表
-     * <a href="http://localhost:8091/api/v1/raffle/strategy/query_raffle_award_list">/api/v1/raffle/strategy/query_raffle_award_list</a>
-     * 请求参数 raw json
-     *
-     * @param request {"activityId":100301,"userId":"xiaofuge"}
-     * @return 奖品列表
+     * INTERNAL — only called by query_raffle_award_list_by_token.
+     * Removed @RequestMapping to prevent userId impersonation.
      */
-    @RequestMapping(value = "query_raffle_award_list", method = RequestMethod.POST)
     @Override
     public Response<List<RaffleAwardListResponseDTO>> queryRaffleAwardList(@RequestBody RaffleAwardListRequestDTO request) {
         try {
@@ -135,17 +130,10 @@ public class RaffleStrategyController implements IRaffleStrategyService {
     }
 
     /**
-     * 查询策略抽奖权重规则
-     * curl --request POST \
-     * --url http://localhost:8091/api/v1/raffle/strategy/query_raffle_strategy_rule_weight \
-     * --header 'content-type: application/json' \
-     * --data '{
-     * "userId":"xiaofuge",
-     * "activityId": 100301
-     * }'
+     * INTERNAL — only called by query_raffle_strategy_rule_weight_by_token equivalent.
+     * Removed @RequestMapping to prevent exposing user weight data without auth.
+     * Phase 4-D: routed through IStrategyReadAdapter.
      */
-
-    @RequestMapping(value = "query_raffle_strategy_rule_weight", method = RequestMethod.POST)
     @Override
     public Response<List<RaffleStrategyRuleWeightResponseDTO>> queryRaffleStrategyRuleWeight(@RequestBody RaffleStrategyRuleWeightRequestDTO request) {
         try {
@@ -179,15 +167,14 @@ public class RaffleStrategyController implements IRaffleStrategyService {
      * @param requestDTO 请求参数 {"strategyId":1000001}
      * @return 抽奖结果
      */
-    @RequestMapping(value = "random_raffle", method = RequestMethod.POST)
     @Override
     public Response<RaffleStrategyResponseDTO> randomRaffle(@RequestBody RaffleStrategyRequestDTO requestDTO) {
         try {
             log.info("随机抽奖开始 strategyId: {}", requestDTO.getStrategyId());
-            // 调用抽奖接口；尝试从请求体获取 userId，缺省时使用 "system"
+            // Require an explicit userId — no default "system" to prevent resource spoofing
             String userId = requestDTO.getUserId();
             if (StringUtils.isBlank(userId)) {
-                userId = "system";
+                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
             RaffleAwardEntity raffleAwardEntity = raffleStrategy.performRaffle(RaffleFactorEntity.builder()
                     .userId(userId)

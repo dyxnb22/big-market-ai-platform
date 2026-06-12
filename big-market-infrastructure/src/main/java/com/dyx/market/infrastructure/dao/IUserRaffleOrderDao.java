@@ -21,4 +21,6 @@ public interface IUserRaffleOrderDao {
 
     int updateUserRaffleOrderStateUsed(UserRaffleOrder userRaffleOrderReq);
 
+    int updateUserRaffleOrderStateFailed(UserRaffleOrder userRaffleOrderReq);
+
 }

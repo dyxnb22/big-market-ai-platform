@@ -9,6 +9,9 @@ import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +52,7 @@ public class DCCController implements IDCCService {
     public Response<Boolean> updateConfig(@RequestParam String key, @RequestParam String value,
                                           @RequestHeader(value = "X-Admin-Token", required = false) String token) {
         try {
-            if (!adminToken.equals(token)) {
+            if (!hasAdminAccess(token)) {
                 log.warn("DCC 动态配置值变更拒绝，非法token key:{} value:{}", key, value);
                 return Response.<Boolean>builder()
                         .code(ResponseCode.APP_TOKEN_ERROR.getCode())
@@ -82,6 +85,15 @@ public class DCCController implements IDCCService {
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .build();
         }
+    }
+
+    private boolean hasAdminAccess(String token) {
+        if (adminToken.equals(token)) {
+            return true;
+        }
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        return attributes instanceof ServletRequestAttributes
+                && ((ServletRequestAttributes) attributes).getRequest().getAttribute("userId") != null;
     }
 
 }

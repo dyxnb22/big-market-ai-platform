@@ -38,4 +38,10 @@
         where user_id = #{userId} and order_id = #{orderId} and order_state = 'create'
     </update>
 
+    <update id="updateUserRaffleOrderStateFailed" parameterType="com.dyx.market.infrastructure.dao.po.UserRaffleOrder">
+        update user_raffle_order
+        set order_state = 'failed', update_time = now()
+        where user_id = #{userId} and order_id = #{orderId} and order_state = 'create'
+    </update>
+
 </mapper>

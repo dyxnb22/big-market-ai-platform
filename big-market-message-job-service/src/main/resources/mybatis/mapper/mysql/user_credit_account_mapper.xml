@@ -22,7 +22,17 @@
     <update id="updateSubtractionAmount" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditAccount">
         update user_credit_account set
         available_amount = available_amount + #{availableAmount}
-        where user_id = #{userId} and available_amount > 0
+        where user_id = #{userId}
+          and #{availableAmount} &lt; 0
+          and available_amount + #{availableAmount} &gt;= 0
+    </update>
+
+    <update id="updateDeductAvailableAmount" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditAccount">
+        update user_credit_account set
+        available_amount = available_amount + #{availableAmount}
+        where user_id = #{userId}
+          and #{availableAmount} &lt; 0
+          and available_amount + #{availableAmount} &gt;= 0
     </update>
 
     <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditAccount">

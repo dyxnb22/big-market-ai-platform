@@ -30,13 +30,10 @@ import com.dyx.market.domain.strategy.service.armory.IStrategyArmory;
 import com.dyx.market.trigger.api.IRaffleActivityService;
 import com.dyx.market.trigger.api.dto.*;
 import com.dyx.market.types.annotations.DCCValue;
-import com.dyx.market.types.annotations.RateLimiterAccessInterceptor;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import com.dyx.market.trigger.api.response.Response;
 import com.alibaba.fastjson.JSON;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -214,12 +211,10 @@ public class RaffleActivityController implements IRaffleActivityService {
      * permitsPerSecond：每秒的访问频次限制
      * blacklistCount：超过多少次都被限制了，还访问的，扔到黑名单里24小时
      */
-    @RateLimiterAccessInterceptor(key = "userId", fallbackMethod = "drawRateLimiterError", permitsPerSecond = 1.0d, blacklistCount = 1)
-    @HystrixCommand(commandProperties = {
-            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "150")
-    }, fallbackMethod = "drawHystrixError"
-    )
-    @RequestMapping(value = "draw", method = RequestMethod.POST)
+    /**
+     * INTERNAL — not exposed as HTTP endpoint. Only called by draw_by_token.
+     * Removed @RequestMapping to prevent userId impersonation via direct POST /draw.
+     */
     @Override
     public Response<ActivityDrawResponseDTO> draw(@RequestBody ActivityDrawRequestDTO request) {
         try {
@@ -264,22 +259,6 @@ public class RaffleActivityController implements IRaffleActivityService {
         }
     }
 
-    public Response<ActivityDrawResponseDTO> drawRateLimiterError(@RequestBody ActivityDrawRequestDTO request) {
-        log.info("活动抽奖限流 userId:{} activityId:{}", request.getUserId(), request.getActivityId());
-        return Response.<ActivityDrawResponseDTO>builder()
-                .code(ResponseCode.RATE_LIMITER.getCode())
-                .info(ResponseCode.RATE_LIMITER.getInfo())
-                .build();
-    }
-
-    public Response<ActivityDrawResponseDTO> drawHystrixError(@RequestBody ActivityDrawRequestDTO request) {
-        log.info("活动抽奖熔断 userId:{} activityId:{}", request.getUserId(), request.getActivityId());
-        return Response.<ActivityDrawResponseDTO>builder()
-                .code(ResponseCode.HYSTRIX.getCode())
-                .info(ResponseCode.HYSTRIX.getInfo())
-                .build();
-    }
-
     @RequestMapping(value = "calendar_sign_rebate_by_token", method = RequestMethod.POST)
     @Override
     public Response<SignInResponseDTO> calendarSignRebateByToken(@RequestHeader("Authorization") String token) {
@@ -303,14 +282,11 @@ public class RaffleActivityController implements IRaffleActivityService {
     }
 
     /**
-     * 日历签到返利接口 — 强幂等，返回签到结果和积分余额。
-     *
-     * @param userId 用户ID
-     * @return 签到返利结果（signedToday, rewardCredit, creditBalance, message）
+     * INTERNAL — only called by calendar_sign_rebate_by_token.
+     * Removed @RequestMapping to prevent userId impersonation via direct POST /calendar_sign_rebate.
      */
-    @RequestMapping(value = "calendar_sign_rebate", method = RequestMethod.POST)
     @Override
-    public Response<SignInResponseDTO> calendarSignRebate(@RequestParam String userId) {
+    public Response<SignInResponseDTO> calendarSignRebate(String userId) {
         try {
             log.info("日历签到返利开始 userId:{}", userId);
             if (StringUtils.isBlank(userId)) {
@@ -410,13 +386,11 @@ public class RaffleActivityController implements IRaffleActivityService {
     }
 
     /**
-     * 判断是否签到接口
-     * <p>
-     * curl -X POST http://localhost:8091/api/v1/raffle/activity/is_calendar_sign_rebate -d "userId=xiaofuge" -H "Content-Type: application/x-www-form-urlencoded"
+     * INTERNAL — only called by is_calendar_sign_rebate_by_token.
+     * Removed @RequestMapping to prevent exposing user sign-in status without auth.
      */
-    @RequestMapping(value = "is_calendar_sign_rebate", method = RequestMethod.POST)
     @Override
-    public Response<Boolean> isCalendarSignRebate(@RequestParam String userId) {
+    public Response<Boolean> isCalendarSignRebate(String userId) {
         try {
             log.info("查询用户是否完成日历签到返利开始 userId:{}", userId);
             if (StringUtils.isBlank(userId)) {
@@ -465,17 +439,9 @@ public class RaffleActivityController implements IRaffleActivityService {
     }
 
     /**
-     * 查询账户额度
-     * <p>
-     * curl --request POST \
-     * --url http://localhost:8091/api/v1/raffle/activity/query_user_activity_account \
-     * --header 'content-type: application/json' \
-     * --data '{
-     * "userId":"xiaofuge",
-     * "activityId": 100301
-     * }'
+     * INTERNAL — only called by query_user_activity_account_by_token.
+     * Removed @RequestMapping to prevent exposing other users' account data without auth.
      */
-    @RequestMapping(value = "query_user_activity_account", method = RequestMethod.POST)
     @Override
     public Response<UserActivityAccountResponseDTO> queryUserActivityAccount(@RequestBody UserActivityAccountRequestDTO request) {
         try {
@@ -577,9 +543,12 @@ public class RaffleActivityController implements IRaffleActivityService {
         }
     }
 
-    @RequestMapping(value = "query_user_credit_account", method = RequestMethod.POST)
+    /**
+     * INTERNAL — only called by query_user_credit_account_by_token.
+     * Removed @RequestMapping to prevent exposing other users' credit balance without auth.
+     */
     @Override
-    public Response<BigDecimal> queryUserCreditAccount(@RequestParam("userId") String userId) {
+    public Response<BigDecimal> queryUserCreditAccount(String userId) {
         try {
             log.info("查询用户积分值开始 userId:{}", userId);
             if (StringUtils.isBlank(userId)) {
@@ -627,7 +596,10 @@ public class RaffleActivityController implements IRaffleActivityService {
     }
 
 
-    @RequestMapping(value = "credit_pay_exchange_sku", method = RequestMethod.POST)
+    /**
+     * INTERNAL — only called by credit_pay_exchange_sku_by_token.
+     * Removed @RequestMapping to prevent spending other users' credits without auth.
+     */
     @Override
     public Response<Boolean> creditPayExchangeSku(@RequestBody SkuProductShopCartRequestDTO request) {
         try {

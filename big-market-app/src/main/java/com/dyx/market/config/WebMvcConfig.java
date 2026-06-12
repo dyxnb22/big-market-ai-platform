@@ -35,6 +35,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(adminAuthInterceptor)
                 .addPathPatterns("/api/*/admin/**")
+                .addPathPatterns("/api/*/raffle/erp/**")
+                .addPathPatterns("/api/*/raffle/dcc/**")
                 .excludePathPatterns("/api/*/auth/**");
 
         registry.addInterceptor(tokenAuthInterceptor)

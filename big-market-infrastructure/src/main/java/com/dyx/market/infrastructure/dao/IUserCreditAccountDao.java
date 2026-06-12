@@ -17,6 +17,15 @@ public interface IUserCreditAccountDao {
 
     UserCreditAccount queryUserCreditAccount(UserCreditAccount userCreditAccountReq);
 
+    /**
+     * Deduct available_amount by a negative value.
+     * Guards: #{availableAmount} &lt; 0 AND available_amount + #{availableAmount} &gt;= 0
+     */
     int updateSubtractionAmount(UserCreditAccount userCreditAccountReq);
+
+    /**
+     * Semantic alias for updateSubtractionAmount — guards enforce negative amount.
+     */
+    int updateDeductAvailableAmount(UserCreditAccount userCreditAccountReq);
 
 }

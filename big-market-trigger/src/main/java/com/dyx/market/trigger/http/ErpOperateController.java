@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -59,7 +62,7 @@ public class ErpOperateController implements IErpOperateService {
     public Response<List<ESUserRaffleOrderResponseDTO>> queryUserRaffleOrder(
             @RequestHeader(value = "X-Admin-Token", required = false) String token) {
         try {
-            if (!adminToken.equals(token)) {
+            if (!hasAdminAccess(token)) {
                 log.warn("ERP 查询非法token");
                 return Response.<List<ESUserRaffleOrderResponseDTO>>builder()
                         .code(ResponseCode.APP_TOKEN_ERROR.getCode())
@@ -102,10 +105,23 @@ public class ErpOperateController implements IErpOperateService {
         }
     }
 
+    @Override
+    public Response<Boolean> updateStageActivity2Active(UpdateStageActivity2ActiveRequestDTO requestDTO) {
+        return updateStageActivity2Active(requestDTO, null);
+    }
+
     @RequestMapping(value = "update_stage_activity_2_active", method = RequestMethod.POST)
     @Override
-    public Response<Boolean> updateStageActivity2Active(@RequestBody UpdateStageActivity2ActiveRequestDTO requestDTO) {
+    public Response<Boolean> updateStageActivity2Active(@RequestBody UpdateStageActivity2ActiveRequestDTO requestDTO,
+                                                        @RequestHeader(value = "X-Admin-Token", required = false) String token) {
         try {
+            if (!hasAdminAccess(token)) {
+                log.warn("ERP 操作非法token");
+                return Response.<Boolean>builder()
+                        .code(ResponseCode.APP_TOKEN_ERROR.getCode())
+                        .info(ResponseCode.APP_TOKEN_ERROR.getInfo())
+                        .build();
+            }
             Long id = requestDTO.getId();
             log.info("更新上架活动状态为生效开始 id:{}", id);
             Long activityId = raffleActivityStageService.queryStageActivity2ActiveById(id);
@@ -129,10 +145,23 @@ public class ErpOperateController implements IErpOperateService {
         }
     }
 
-    @RequestMapping(value = "query_raffle_activity_stage_list", method = RequestMethod.GET)
     @Override
     public Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList() {
+        return queryRaffleActivityStageList(null);
+    }
+
+    @RequestMapping(value = "query_raffle_activity_stage_list", method = RequestMethod.GET)
+    @Override
+    public Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList(
+            @RequestHeader(value = "X-Admin-Token", required = false) String token) {
         try {
+            if (!hasAdminAccess(token)) {
+                log.warn("ERP 查询非法token");
+                return Response.<List<RaffleActivityStageResponseDTO>>builder()
+                        .code(ResponseCode.APP_TOKEN_ERROR.getCode())
+                        .info(ResponseCode.APP_TOKEN_ERROR.getInfo())
+                        .build();
+            }
             List<RaffleActivityStageResponseDTO> raffleActivityStageResponseDTOS = new ArrayList<>();
             List<RaffleActivityStageEntity> raffleActivityStageEntities = raffleActivityStageService.queryStageActivityList();
             for (RaffleActivityStageEntity raffleActivityStage : raffleActivityStageEntities) {
@@ -162,6 +191,15 @@ public class ErpOperateController implements IErpOperateService {
                     .info(ResponseCode.UN_ERROR.getInfo())
                     .build();
         }
+    }
+
+    private boolean hasAdminAccess(String token) {
+        if (adminToken.equals(token)) {
+            return true;
+        }
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        return attributes instanceof ServletRequestAttributes
+                && ((ServletRequestAttributes) attributes).getRequest().getAttribute("userId") != null;
     }
 
 }

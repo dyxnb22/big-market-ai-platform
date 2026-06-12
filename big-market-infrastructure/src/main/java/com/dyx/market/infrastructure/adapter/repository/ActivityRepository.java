@@ -222,7 +222,9 @@ public class ActivityRepository implements IActivityRepository {
 
     @Override
     public void doSaveCreditPayOrder(CreateQuotaOrderAggregate createOrderAggregate) {
+        RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + createOrderAggregate.getUserId() + Constants.UNDERLINE + createOrderAggregate.getActivityId());
         try {
+            lock.lock(3, TimeUnit.SECONDS);
             // 创建交易订单
             ActivityOrderEntity activityOrderEntity = createOrderAggregate.getActivityOrderEntity();
             RaffleActivityOrder raffleActivityOrder = new RaffleActivityOrder();
@@ -259,6 +261,9 @@ public class ActivityRepository implements IActivityRepository {
             });
         } finally {
             dbRouter.clear();
+            if (lock.isLocked() && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
     }
 
@@ -1054,10 +1059,73 @@ public class ActivityRepository implements IActivityRepository {
         }
     }
 
-    /**
-     * Phase 2.2-B14: insert only the raffle participation order row, shard-routed by userId.
-     * Used when quota was already decremented via IActivityAccountPort.decrementQuota (flag=true path).
-     */
+    @Override
+    public boolean markRaffleOrderFailed(String userId, String orderId) {
+        try {
+            dbRouter.doRouter(userId);
+            int updateCount = userRaffleOrderDao.updateUserRaffleOrderStateFailed(UserRaffleOrder.builder()
+                    .userId(userId)
+                    .orderId(orderId)
+                    .build());
+            return updateCount == 1;
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
+    public void compensatePartakeQuota(String userId, Long activityId, String orderId) {
+        String month = RaffleActivityAccountMonth.currentMonth();
+        String day = RaffleActivityAccountDay.currentDay();
+        try {
+            dbRouter.doRouter(userId);
+            Integer restored = transactionTemplate.execute(status -> {
+                int updateCount = userRaffleOrderDao.updateUserRaffleOrderStateFailed(UserRaffleOrder.builder()
+                        .userId(userId)
+                        .orderId(orderId)
+                        .build());
+                if (updateCount != 1) {
+                    log.warn("[compensate] raffle order already moved, skip quota restore userId:{} activityId:{} orderId:{}",
+                            userId, activityId, orderId);
+                    return 0;
+                }
+
+                RaffleActivityAccount account = RaffleActivityAccount.builder()
+                        .userId(userId)
+                        .activityId(activityId)
+                        .build();
+                raffleActivityAccountDao.addAccountTotalSurplusQuota(account);
+
+                RaffleActivityAccountMonth monthAccount = raffleActivityAccountMonthDao.queryActivityAccountMonthByUserId(
+                        RaffleActivityAccountMonth.builder().userId(userId).activityId(activityId).month(month).build());
+                if (monthAccount != null) {
+                    raffleActivityAccountMonthDao.addAccountQuota(
+                            RaffleActivityAccountMonth.builder()
+                                    .userId(userId).activityId(activityId).month(month)
+                                    .monthCount(0).monthCountSurplus(1).build());
+                    raffleActivityAccountDao.addAccountMonthSurplusQuota(account);
+                }
+
+                RaffleActivityAccountDay dayAccount = raffleActivityAccountDayDao.queryActivityAccountDayByUserId(
+                        RaffleActivityAccountDay.builder().userId(userId).activityId(activityId).day(day).build());
+                if (dayAccount != null) {
+                    raffleActivityAccountDayDao.addAccountQuota(
+                            RaffleActivityAccountDay.builder()
+                                    .userId(userId).activityId(activityId).day(day)
+                                    .dayCount(0).dayCountSurplus(1).build());
+                    raffleActivityAccountDao.addAccountDaySurplusQuota(account);
+                }
+
+                return 1;
+            });
+            if (Integer.valueOf(1).equals(restored)) {
+                log.info("[compensate] draw quota restored userId:{} activityId:{} orderId:{}", userId, activityId, orderId);
+            }
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
     @Override
     public void savePartakeOrderOnly(CreatePartakeOrderAggregate createPartakeOrderAggregate) {
         try {

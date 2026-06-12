@@ -118,4 +118,17 @@ public interface IActivityRepository {
      */
     void savePartakeOrderOnly(CreatePartakeOrderAggregate createPartakeOrderAggregate);
 
+    /**
+     * Mark a create-state raffle order as failed. Returns false when the order has
+     * already moved out of create state, allowing callers to avoid duplicate rollback.
+     */
+    boolean markRaffleOrderFailed(String userId, String orderId);
+
+    /**
+     * Compensate (restore) a draw quota for a just-failed raffle order. The order is
+     * first moved create -> failed by CAS; quota is restored only when that state
+     * transition succeeds, so repeated compensation attempts are ignored.
+     */
+    void compensatePartakeQuota(String userId, Long activityId, String orderId);
+
 }

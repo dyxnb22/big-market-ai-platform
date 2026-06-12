@@ -25,6 +25,13 @@ public interface IErpOperateService {
      */
     Response<Boolean> updateStageActivity2Active(UpdateStageActivity2ActiveRequestDTO requestDTO);
 
+    /**
+     * 上架活动，上架后驱动装配（带管理员token）
+     */
+    Response<Boolean> updateStageActivity2Active(UpdateStageActivity2ActiveRequestDTO requestDTO, String token);
+
     Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList();
+
+    Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList(String token);
 
 }

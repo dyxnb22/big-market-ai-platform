@@ -66,13 +66,13 @@
     <update id="updateActivityAccountMonthSurplusImageQuota" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccount">
         update raffle_activity_account
         set month_count_surplus = #{monthCountSurplus} - 1, update_time = now()
-        where user_id = #{userId} and activity_id = #{activityId}
+        where user_id = #{userId} and activity_id = #{activityId} and #{monthCountSurplus} > 0
     </update>
 
     <update id="updateActivityAccountDaySurplusImageQuota" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccountDay">
         update raffle_activity_account
         set day_count_surplus = #{dayCountSurplus} - 1, update_time = now()
-        where user_id = #{userId} and activity_id = #{activityId}
+        where user_id = #{userId} and activity_id = #{activityId} and #{dayCountSurplus} > 0
     </update>
 
     <select id="queryAccountByUserId" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccount" resultMap="dataMap">
