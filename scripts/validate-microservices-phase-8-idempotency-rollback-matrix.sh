@@ -44,6 +44,29 @@ assert_matrix_contains() {
   fi
 }
 
+assert_matrix_not_contains() {
+  local label="$1" pattern="$2"
+  if grep -qE "$pattern" "$MATRIX" 2>/dev/null; then
+    fail "$label — stale/incorrect pattern found: $pattern"
+  else
+    pass "$label"
+  fi
+}
+
+check_code_pattern() {
+  local label="$1" file="$2" pattern="$3"
+  local path="$REPO_ROOT/$file"
+  if [[ ! -f "$path" ]]; then
+    fail "$label — file missing: $file"
+    return
+  fi
+  if grep -qE "$pattern" "$path" 2>/dev/null; then
+    pass "$label"
+  else
+    fail "$label — pattern not found in $file"
+  fi
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 1: Matrix document presence and flow coverage
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -157,25 +180,68 @@ assert_matrix_contains \
   "uq_user_message_id documented in matrix" \
   "uq_user_message_id"
 
+assert_matrix_contains \
+  "baseline task table key documented as uq_message_id" \
+  'task\.uq_message_id.*message_id'
+
+assert_matrix_contains \
+  "baseline award record key documented as uq_order_id" \
+  'user_award_record\.uq_order_id.*order_id'
+
+assert_matrix_contains \
+  "baseline rebate key documented as uq_biz_id" \
+  'user_behavior_rebate_order\.uq_biz_id.*biz_id'
+
+assert_matrix_contains \
+  "baseline credit order key documented as uq_out_business_no" \
+  'user_credit_order\.uq_out_business_no.*out_business_no'
+
+assert_matrix_contains \
+  "baseline activity order key documented as uq_out_business_no" \
+  'raffle_activity_order\.uq_out_business_no.*out_business_no'
+
+assert_matrix_not_contains \
+  "Matrix must not claim shared task unique key is (user_id, message_id)" \
+  'task.*UNIQUE on `?\(user_id, message_id\)`?|`?\(user_id, message_id\)`? unique'
+
+assert_matrix_not_contains \
+  "Matrix must not claim RebateRemoteCreateOrderAdapter calls IRebateService.createOrder" \
+  'IRebateService\.createOrder'
+
+assert_matrix_not_contains \
+  "Matrix must not claim AccountRemoteActivityAccountPort has local fallback" \
+  'AccountRemoteActivityAccountPort.*falls back to local'
+
+assert_matrix_not_contains \
+  "Matrix must not use vague pre-existing UNIQUE wording without key names" \
+  'Pre-existing [A-Za-z_]+ UNIQUE|existing UNIQUE constraint \(pre-existing\)'
+
+DEVOPS_SQL="$REPO_ROOT/docs/dev-ops/mysql/sql/big_market_01.sql"
+check_code_pattern \
+  "dev-ops baseline task key is uq_message_id(message_id)" \
+  "docs/dev-ops/mysql/sql/big_market_01.sql" \
+  'UNIQUE KEY `uq_message_id` \(`message_id`\)'
+
+check_code_pattern \
+  "dev-ops baseline user_award_record key is uq_order_id(order_id)" \
+  "docs/dev-ops/mysql/sql/big_market_01.sql" \
+  'UNIQUE KEY `uq_order_id` \(`order_id`\)'
+
+check_code_pattern \
+  "dev-ops baseline rebate key is uq_biz_id(biz_id)" \
+  "docs/dev-ops/mysql/sql/big_market_01.sql" \
+  'UNIQUE KEY `uq_biz_id` \(`biz_id`\)'
+
+check_code_pattern \
+  "dev-ops baseline credit/activity key is uq_out_business_no(out_business_no)" \
+  "docs/dev-ops/mysql/sql/big_market_01.sql" \
+  'UNIQUE KEY `uq_out_business_no` \(`out_business_no`\)'
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 3: Code-level idempotency field verification
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 3. Code-level idempotency fields ──"
-
-check_code_pattern() {
-  local label="$1" file="$2" pattern="$3"
-  local path="$REPO_ROOT/$file"
-  if [[ ! -f "$path" ]]; then
-    fail "$label — file missing: $file"
-    return
-  fi
-  if grep -qE "$pattern" "$path" 2>/dev/null; then
-    pass "$label"
-  else
-    fail "$label — pattern not found in $file"
-  fi
-}
 
 # outBusinessNo as idempotency key in key code paths
 check_code_pattern \
@@ -217,6 +283,16 @@ check_code_pattern \
   "BehaviorRebateRepository catches DuplicateKeyException for rebate order idempotency" \
   "big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/BehaviorRebateRepository.java" \
   'DuplicateKeyException'
+
+check_code_pattern \
+  "BehaviorRebateService builds bizId from userId/rebateType/outBusinessNo" \
+  "big-market-domain/src/main/java/com/dyx/market/domain/rebate/service/BehaviorRebateService.java" \
+  'bizId = .*getUserId\(\).*getRebateType\(\).*getOutBusinessNo\(\)'
+
+check_code_pattern \
+  "RebateRemoteCreateOrderAdapter calls IRebateService.rebate" \
+  "big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteCreateOrderAdapter.java" \
+  'rebateService\.rebate'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 4: rollbackQuota exists in both local and remote ports
