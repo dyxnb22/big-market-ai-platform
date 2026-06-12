@@ -14,7 +14,7 @@ app:
     # 跨域，开发阶段可以设置为 * 不限制
     cross-origin: '*'
   jwt:
-    secret: ${JWT_SECRET:change-me-in-test-only}
+    secret: ${JWT_SECRET}
   admin:
     token: ${ADMIN_TOKEN:admin-test-token}
     user-ids: ${ADMIN_USER_IDS:}
@@ -167,7 +167,7 @@ zookeeper:
 xxl:
   job:
     # 验证信息 官网Bug https://github.com/xuxueli/xxl-job/issues/1951
-    accessToken: default_token
+    accessToken: ${XXL_JOB_ACCESS_TOKEN}
     # 注册地址
     admin:
       addresses: http://116.198.36.253:9090/xxl-job-admin

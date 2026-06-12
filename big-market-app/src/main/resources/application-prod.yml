@@ -170,7 +170,7 @@ zookeeper:
 xxl:
   job:
     # 验证信息 官网Bug https://github.com/xuxueli/xxl-job/issues/1951
-    accessToken: default_token
+    accessToken: ${XXL_JOB_ACCESS_TOKEN}
     # 注册地址
     admin:
       addresses: http://xxl-job-admin:9090/xxl-job-admin
@@ -196,7 +196,7 @@ gateway:
     apiHost: http://chatgpt-data-app:8091
     # big-market 大营销接口调用配置
     big-market-appId: big-market
-    big-market-appToken: 6ec604541f8b1ce4a
+    big-market-appToken: ${GATEWAY_APP_TOKEN}
 
 # 监控配置 Prometheus + Grafana
 management:
