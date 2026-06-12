@@ -16,7 +16,7 @@ app:
   jwt:
     secret: ${JWT_SECRET}
   admin:
-    token: ${ADMIN_TOKEN:admin-test-token}
+    token: ${ADMIN_TOKEN}
     user-ids: ${ADMIN_USER_IDS:}
 chatbot:
   provider: ${CHATBOT_PROVIDER:local}
@@ -31,8 +31,8 @@ spring:
   rabbitmq:
     addresses: 116.198.36.253
     port: 5672
-    username: admin
-    password: admin
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASS}
     listener:
       simple:
         prefetch: 10 # 每次投递n个消息，消费完在投递n个
@@ -73,8 +73,8 @@ mini-db-router:
       db00:
         driver-class-name: com.mysql.cj.jdbc.Driver
         url: jdbc:mysql://116.198.36.253:13306/big_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC&useSSL=true
-        username: root
-        password: 123456
+        username: ${MYSQL_USER}
+        password: ${MYSQL_PASS}
         type-class-name: com.zaxxer.hikari.HikariDataSource
         pool:
           pool-name: Retail_HikariCP
@@ -88,8 +88,8 @@ mini-db-router:
       db01:
         driver-class-name: com.mysql.cj.jdbc.Driver
         url: jdbc:mysql://116.198.36.253:13306/big_market_01?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC&useSSL=true
-        username: root
-        password: 123456
+        username: ${MYSQL_USER}
+        password: ${MYSQL_PASS}
         type-class-name: com.zaxxer.hikari.HikariDataSource
         pool:
           pool-name: Retail_HikariCP
@@ -103,8 +103,8 @@ mini-db-router:
       db02:
         driver-class-name: com.mysql.cj.jdbc.Driver
         url: jdbc:mysql://116.198.36.253:13306/big_market_02?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC&useSSL=true
-        username: root
-        password: 123456
+        username: ${MYSQL_USER}
+        password: ${MYSQL_PASS}
         type-class-name: com.zaxxer.hikari.HikariDataSource
         pool:
           pool-name: Retail_HikariCP

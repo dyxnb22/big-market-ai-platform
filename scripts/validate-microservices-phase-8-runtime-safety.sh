@@ -102,6 +102,29 @@ assert_pattern_absent \
   'admin:admin' \
   "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
 
+# 1e. Infrastructure credentials must be injected in non-dev configs.
+assert_pattern_absent \
+  "No root/123456 MySQL credential in non-dev configs" \
+  'username:[[:space:]]*root|password:[[:space:]]*123456' \
+  "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
+
+assert_pattern_absent \
+  "No admin/admin RabbitMQ credential in non-dev configs" \
+  'username:[[:space:]]*admin|password:[[:space:]]*admin' \
+  "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
+
+assert_pattern_absent \
+  "No known hardcoded infra password in non-dev configs" \
+  '12qw!@QW|admin-test-token' \
+  "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
+
+for f in "${NON_DEV_CONFIGS[@]}"; do
+  assert_pattern_present "RabbitMQ username env-injected in $(basename "$f")" "$f" 'username:[[:space:]]*\$\{RABBITMQ_USER\}'
+  assert_pattern_present "RabbitMQ password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{RABBITMQ_PASS\}'
+  assert_pattern_present "MySQL username env-injected in $(basename "$f")" "$f" 'username:[[:space:]]*\$\{MYSQL_USER\}'
+  assert_pattern_present "MySQL password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{MYSQL_PASS\}'
+done
+
 echo ""
 echo "── 1.2 Default credentials — docker-compose dev annotations ──"
 
@@ -304,7 +327,7 @@ echo ""
 echo "── 6. Proposed DDL stays under docs/sql/proposed-*.sql ──"
 
 # This section complements validate-microservices-phase-7-task-outbox-proposed-ddl.sh
-# by checking specifically for CREATE/ALTER/DROP TABLE outside proposed/ and archive/.
+# by checking specifically for executable DDL-looking statements outside proposed/ and archive/.
 DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' \
   "$REPO_ROOT/docs" --include='*.sql' 2>/dev/null \
   | grep -v '/docs/sql/proposed-' \
