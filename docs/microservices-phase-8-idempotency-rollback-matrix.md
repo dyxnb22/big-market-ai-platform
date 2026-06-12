@@ -34,8 +34,8 @@ This document is the authoritative reference for
 | **Retry behavior** | INSERT ledger row first; `DuplicateKeyException` → return `true` (already applied). Update quota counts atomically in same transaction. |
 | **Rollback behavior** | `rollbackQuota(userId, activityId, outBusinessNo)` — if `status == rolled_back` → idempotent return `true`. If `status == applied` → UPDATE status to `rolled_back`, increment surplus counts. No ledger row → no-op. |
 | **Saga compensation** | `RaffleApplicationService.doDraw()` calls `rollbackQuota` when draw execution fails after decrement; `RaffleActivityPartakeService.savePartakeOrderOnly()` calls `rollbackQuota` on order-save failure |
-| **Local port impl** | `LocalActivityAccountPort.java` — delegates to `activityRepository.rollbackQuotaWithLedger()` (18 `DuplicateKeyException` catch sites in `ActivityRepository`) |
-| **Remote port impl** | `AccountRemoteActivityAccountPort.java` — calls `accountQuotaService.rollbackQuota()` via Dubbo; falls back to local on RPC failure |
+| **Local port impl** | `LocalActivityAccountPort.java` — delegates to `activityRepository.rollbackQuotaWithLedger()`; duplicate ledger inserts are caught inside `decrementQuotaWithLedger()` |
+| **Remote port impl** | `AccountRemoteActivityAccountPort.java` — calls `accountQuotaService.rollbackQuota()` via Dubbo; RPC failures are logged and the remote path returns failure/no-op rather than silently falling back locally |
 | **Current repo evidence** | `IActivityAccountPort` declares `decrementQuota` + `rollbackQuota`; `LocalActivityAccountPort` implements both via ledger; `AccountRemoteActivityAccountPort` implements both via Dubbo; `RaffleActivityPartakeService` sagas `rollbackQuota` on order failure |
 | **Remaining EXTERNAL-GATED** | DBA: apply `proposed-quota-decrement-ledger.sql`; Ops: verify account-service Dubbo registration; Engineering: staging idempotency validation; Oncall: quota integrity monitoring |
 
@@ -66,7 +66,7 @@ This document is the authoritative reference for
 | **Legacy path** | `LocalAwardFulfillmentPort` → `IAwardService.saveUserAwardRecord()` |
 | **Future path** | Remote award fulfillment port (gated behind activity draw cutover) |
 | **Idempotency key** | `orderId` (= raffle order ID, used as `award_order_id` in outbox) |
-| **DB unique key** | `user_award_record` — existing UNIQUE constraint (not part of proposed DDL, pre-existing) |
+| **DB unique key** | `user_award_record.uq_order_id (order_id)` in the dev-ops baseline schema; still EXTERNAL-GATED for staging/prod DBA confirmation |
 | **Retry behavior** | `AwardRepository.saveGiveOutPrizesAggregate()` catches `DuplicateKeyException` on award record INSERT and outbox INSERT; treats both as idempotent success |
 | **Rollback behavior** | No explicit rollback for award records; the draw saga uses `rollbackQuota` for quota restoration; award records are append-only |
 | **Current repo evidence** | `AwardRepository.java` has 2 `DuplicateKeyException` catch sites (lines ~108, ~176, ~199); `LocalAwardFulfillmentPort.java` delegates to `awardService.saveUserAwardRecord()` |
@@ -79,11 +79,11 @@ This document is the authoritative reference for
 | **Business operation** | `createOrder(BehaviorEntity)` — creates a behavior rebate order (calendar sign, payment, etc.) |
 | **Owning service** | `big-market-rebate-service` |
 | **Legacy path** | `RebateServiceRPC` (Dubbo) + `LocalRebateOrderAdapter` → `IBehaviorRebateService.createOrder()` |
-| **Future path** | `RebateRemoteCreateOrderAdapter` → `IRebateService.createOrder()` via Dubbo |
-| **Idempotency key** | `outBusinessNo` (= `behaviorEntity.getOutBusinessNo()`, typically date string "yyyyMMdd" for calendar sign) |
-| **DB unique key** | `user_behavior_rebate_order` — existing UNIQUE constraint (pre-existing) |
-| **Retry behavior** | `BehaviorRebateRepository.createOrder()` catches `DuplicateKeyException` on INSERT → returns existing order list (idempotent) |
-| **Rollback behavior** | No explicit rollback; `createOrder` is idempotent — repeated calls with same `outBusinessNo` return the previously created orders |
+| **Future path** | `RebateRemoteCreateOrderAdapter` → `IRebateService.rebate()` via Dubbo |
+| **Idempotency key** | Business input `outBusinessNo`; persisted uniqueness is `bizId = userId + "_" + rebateType + "_" + outBusinessNo` |
+| **DB unique key** | `user_behavior_rebate_order.uq_biz_id (biz_id)` in the dev-ops baseline schema; still EXTERNAL-GATED for staging/prod DBA confirmation |
+| **Retry behavior** | `BehaviorRebateRepository.saveUserRebateRecord()` catches `DuplicateKeyException` on INSERT and raises `INDEX_DUP`; callers that need retry-as-success must handle that explicitly |
+| **Rollback behavior** | No explicit rollback; duplicate creation is blocked by `uq_biz_id`, and read paths can query by `outBusinessNo` |
 | **Dual-provider defense** | `FlagMutualExclusionValidator` prevents `REBATE_LEGACY_RPC_PROVIDER_ENABLED=true` AND `REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED=true` simultaneously |
 | **Current repo evidence** | `BehaviorRebateRepository.java` catches `DuplicateKeyException` at line 87; `RebateRemoteCreateOrderAdapter.java` passes `outBusinessNo` via Dubbo; `RaffleActivityController.java` uses deterministic `outBusinessNo` (userId + sku + date) |
 | **Remaining EXTERNAL-GATED** | DBA/Ops/Engineering/Oncall/Product rebate write cutover evidence; rebate outbox DDL; legacy provider disable confirmation |
@@ -112,8 +112,8 @@ This document is the authoritative reference for
 | **Legacy path** | `IAccountCreditWriteAdapter` → local `ICreditAdjustService` |
 | **Future path** | `AccountRemoteCreditWriteAdapter` → `AccountCreditServiceRPC` via Dubbo |
 | **Idempotency key** | `outBusinessNo` (= `tradeEntity.getOutBusinessNo()`, e.g., `awardOrderId` or `chat_xxx` for chatbot) |
-| **DB unique key** | `user_credit_order` — existing UNIQUE constraint (pre-existing) |
-| **Retry behavior** | `CreditRepository.createOrder()` catches `DuplicateKeyException` on INSERT → returns existing order (idempotent); `AccountRemoteCreditWriteAdapter` falls back to local on RPC failure |
+| **DB unique key** | `user_credit_order.uq_out_business_no (out_business_no)` in the dev-ops baseline schema; still EXTERNAL-GATED for staging/prod DBA confirmation |
+| **Retry behavior** | `CreditRepository.saveUserCreditTradeOrder()` catches `DuplicateKeyException` on INSERT and raises `INDEX_DUP`; higher-level callers such as chatbot refund convert that duplicate into idempotent success where appropriate. `AccountRemoteCreditWriteAdapter` falls back to local on RPC failure. |
 | **Rollback behavior** | Chatbot refund path: `RaffleActivityController.chatRefundCredit()` creates a REVERSE trade with `outBusinessNo = "chat_refund_" + originalRequestId` — idempotent, refunds only once |
 | **Current repo evidence** | `CreditRepository.java` catches `DuplicateKeyException` (line 105); `CreditAdjustSuccessMessageEvent.java` carries `outBusinessNo`; chatbot refund uses deterministic idempotency key |
 | **Remaining EXTERNAL-GATED** | account credit write staging/prod evidence; no credit drift validation |
@@ -127,7 +127,7 @@ This document is the authoritative reference for
 | **Legacy path** | `RaffleActivityController` → `IRaffleActivityAccountQuotaService` → local `ActivityRepository` |
 | **Future path** | `AccountRemoteQuotaWriteAdapter` → `AccountQuotaServiceRPC` via Dubbo |
 | **Idempotency key** | `outBusinessNo` (= `userId + "_" + sku + "_" + date`, deterministic per user/sku/day) |
-| **DB unique key** | `raffle_activity_order` — existing UNIQUE constraint (pre-existing) |
+| **DB unique key** | `raffle_activity_order.uq_out_business_no (out_business_no)` in the dev-ops baseline schema; still EXTERNAL-GATED for staging/prod DBA confirmation |
 | **Retry behavior** | `ActivityRepository` catches `DuplicateKeyException` at multiple sites (6+); `RaffleActivityController` detects existing order → skips payment, proceeds to delivery compensation |
 | **Rollback behavior** | On payment failure: `RaffleActivityController` restores SKU stock via `IRaffleStock.clearStock()`; on delivery failure: MQ re-delivers `credit_adjust_success` event |
 | **Current repo evidence** | `RaffleActivityController.java` lines 617-665 implement the full idempotent exchange flow with deterministic `outBusinessNo`, stock restoration on payment failure, and delivery compensation |
@@ -145,7 +145,7 @@ This document is the authoritative reference for
 | **Future path (credit trade)** | Per-domain `credit_trade_task_outbox` dispatcher (future) |
 | **Future path (award dispatch)** | Per-domain `award_dispatch_task_outbox` dispatcher (future) |
 | **Idempotency key (shared task)** | `message_id` (= MQ message ID, unique per task row) |
-| **DB unique key (shared task)** | `task` table — existing UNIQUE on `(user_id, message_id)` |
+| **DB unique key (shared task)** | `task.uq_message_id (message_id)` in the dev-ops baseline schema |
 | **Per-domain outbox keys** | `credit_award_task.uq_award_order_id`; `rebate_task_outbox.uq_user_message_id`; `credit_trade_task_outbox.uq_user_message_id`; `award_dispatch_task_outbox.uq_user_message_id` |
 | **Dual-dispatch risk** | When per-domain outbox is enabled but shared task fallback is not disabled for that domain, both `SendMessageTaskJob` and the per-domain dispatcher process the same work item through different tables |
 | **Dual-dispatch defense** | `JobMutualExclusionValidator` refuses startup when outbox enabled + shared-fallback.credit-award-disabled is false; proposed `job.shared-task-fallback.credit-award-disabled` flag must be set true when outbox is enabled |
@@ -173,11 +173,11 @@ This document is the authoritative reference for
 |------|-------------|-----------|-------|
 | Quota decrement (draw) | Yes | `rollbackQuota` → ledger status update + count restoration | `uq_user_activity_biz` prevents double-rollback |
 | Credit award outbox | No (at-least-once) | `outBusinessNo` idempotency at credit write layer | `uq_award_order_id` prevents duplicate outbox rows |
-| Award fulfillment | No (append-only) | `DuplicateKeyException` caught and treated as success | Pre-existing user_award_record UNIQUE |
-| Rebate create order | Implicit (idempotent) | `DuplicateKeyException` on INSERT returns existing orders | Pre-existing user_behavior_rebate_order UNIQUE |
-| Credit trade | Implicit (idempotent) | `DuplicateKeyException` on INSERT; chatbot refund uses unique key | Pre-existing user_credit_order UNIQUE |
+| Award fulfillment | No (append-only) | `DuplicateKeyException` blocks duplicate award record/outbox inserts | Baseline `user_award_record.uq_order_id`; DBA evidence required |
+| Rebate create order | Duplicate-blocked | `DuplicateKeyException` on INSERT raises `INDEX_DUP`; read path can query existing orders | Baseline `user_behavior_rebate_order.uq_biz_id`; DBA evidence required |
+| Credit trade | Caller-mediated idempotency | `DuplicateKeyException` on INSERT raises `INDEX_DUP`; chatbot refund treats duplicate refund as success | Baseline `user_credit_order.uq_out_business_no`; DBA evidence required |
 | SKU exchange | Yes (stock + payment) | Stock restoration on payment failure; MQ re-delivery on delivery failure | Deterministic `outBusinessNo` |
-| Shared task fallback | No (at-least-once) | MQ re-delivery via task retry | `(user_id, message_id)` unique |
+| Shared task fallback | No (at-least-once) | MQ re-delivery via task retry | Baseline `task.uq_message_id`; per-domain outbox DDL uses `(user_id, message_id)` |
 
 ---
 

@@ -2,25 +2,33 @@
 
 Last revised: 2026-06-12.
 
+## 0. Project Mode
+
+This is a **personal learning / resume portfolio project**. The repo
+demonstrates a progressive monolith→microservices decomposition, repo-only
+validators, and a Phase 8 cutover readiness pack. It does **not** claim real
+staging or production deployment. All remote/outbox/cutover feature flags
+default to `false`. No DDL has been applied from this repository. Every
+external-facing evidence row (DBA, Ops, Engineering, Oncall, Product) remains
+`EXTERNAL-GATED`.
+
 ## 1. Authoritative Status
 
-This is the **sole authoritative entry point** for the big-market microservices
-decomposition. The following documents have been superseded and archived:
+This document is the **sole authoritative entry point** for the big-market
+microservices decomposition. Historical summary docs (master plan, roadmap,
+completion index, next-execution roadmap, learning-mode closure) live under
+`docs/archive/microservices-history/` and remain symlinked at the docs root
+so existing validator scripts continue to resolve them.
 
-- `docs/microservices-roadmap.md` → `docs/archive/microservices-history/`
-- `docs/microservices-decomposition-master-plan.md` → `docs/archive/microservices-history/`
-- `docs/microservices-split-completion-index.md` → `docs/archive/microservices-history/`
-- `docs/microservices-next-execution-roadmap.md` → `docs/archive/microservices-history/`
-- `docs/microservices-learning-mode-closure.md` → `docs/archive/microservices-history/`
-
-Historical phase implementation records (Phase 1–7) are archived under
-`docs/archive/phases/`. Pre-microservices documents are under `docs/archive/obsolete/`.
+Phase 1-7 historical implementation records live under
+`docs/archive/phases/`. Redundant Phase 2 evidence templates, pre-microservices
+notes, and one-off review notes were removed during portfolio cleanup because
+they are superseded by the active Phase 8 evidence pack and this index.
 
 **Critical disclaimer:** the local learning-mode closure uses
-LOCAL-LEARNING-EVIDENCE and SIMULATED-CUTOVER-EVIDENCE from local Docker,
+`LOCAL-LEARNING-EVIDENCE` and `SIMULATED-CUTOVER-EVIDENCE` from local Docker,
 Maven, and validator commands. It does **not** prove real staging or
-production readiness. All production, remote, outbox, and cutover flags
-default to `false`. No DDL has been applied from this repository.
+production readiness.
 
 ---
 
@@ -82,7 +90,7 @@ full DAO ownership matrix.
 
 ---
 
-## 4. Phase 8: Cutover Status (Active)
+## 4. Phase 8: Cutover Readiness (Active)
 
 ### 4.1 Repo-Ready (Complete)
 
@@ -90,8 +98,11 @@ full DAO ownership matrix.
   templates + GO/NO-GO checklist + validators created.
 - Phase 8 staging evidence intake prep: repo-only missing-evidence detector
   and intake checklist ready.
-- Phase 8 external evidence intake document: `docs/microservices-phase-8-external-evidence-intake.md`
-- Phase 8 cutover runbook: `docs/microservices-phase-8-cutover-runbook.md`
+- External evidence intake: `docs/microservices-phase-8-external-evidence-intake.md`
+- Cutover runbook: `docs/microservices-phase-8-cutover-runbook.md`
+- External evidence readiness pack: `docs/microservices-phase-8-external-evidence-readiness-pack.md`
+- Cutover conflict matrix: `docs/microservices-phase-8-cutover-conflict-matrix.md`
+- Idempotency & rollback matrix: `docs/microservices-phase-8-idempotency-rollback-matrix.md`
 - Legacy cleanup inventory: `docs/microservices-legacy-cleanup-inventory.md`
 - Aggregate gate: `scripts/validate-microservices-split-all-gates.sh`
 
@@ -101,7 +112,7 @@ full DAO ownership matrix.
 
 The local learning-mode lane uses actual local commands and simulated role
 equivalents (Docker, Maven, validator scripts). Evidence type:
-LOCAL-LEARNING-EVIDENCE / SIMULATED-CUTOVER-EVIDENCE.
+`LOCAL-LEARNING-EVIDENCE` / `SIMULATED-CUTOVER-EVIDENCE`.
 
 Evidence files:
 - `docs/evidence/phase-8-local-learning-cutover-evidence.md`
@@ -130,7 +141,7 @@ repo-only work:
 **Every row in staging/production evidence templates remains `EXTERNAL-GATED`
 until real staging or production references are attached.**
 
-### 4.4 Recommended Execution Order
+### 4.4 Recommended Execution Order (Reference Only)
 
 1. **Staging cutover evidence** — Fill `docs/evidence/phase-8-staging-cutover-evidence-template.md` after external DBA/Ops/Engineering windows.
 2. **Production cutover evidence** — Fill `docs/evidence/phase-8-production-cutover-evidence-template.md` after staging GO.
@@ -174,6 +185,7 @@ docker compose up --build -d
 ### 5.3 Key Files for External Operators
 
 - Proposed DDL: `docs/sql/proposed-*.sql` (5 files)
+- External evidence readiness pack: `docs/microservices-phase-8-external-evidence-readiness-pack.md`
 - Staging cutover template: `docs/evidence/phase-8-staging-cutover-evidence-template.md`
 - Production cutover template: `docs/evidence/phase-8-production-cutover-evidence-template.md`
 - GO/NO-GO checklist: `docs/evidence/phase-8-go-no-go-checklist.md`
@@ -181,30 +193,54 @@ docker compose up --build -d
 
 ---
 
-## 6. Evidence Map
+## 6. Documentation Index
 
-### Active Evidence (Phase 8)
+### Active (root of `docs/`)
+
+| File | Purpose |
+|------|---------|
+| `MICROSERVICES.md` | Authoritative entry point (this file) |
+| `microservices-dao-ownership.md` | AL-1..AL-11 DAO ownership matrix |
+| `microservices-legacy-cleanup-inventory.md` | Post-cutover legacy removal inventory |
+| `microservices-phase-8-cutover-runbook.md` | Phase 8 runbook |
+| `microservices-phase-8-external-evidence-intake.md` | Phase 8 external evidence intake |
+| `microservices-phase-8-external-evidence-readiness-pack.md` | Phase 8 readiness pack |
+| `microservices-phase-8-cutover-conflict-matrix.md` | Phase 8 flag/conflict matrix |
+| `microservices-phase-8-idempotency-rollback-matrix.md` | Phase 8 idempotency & rollback matrix |
+
+### Active Evidence (`docs/evidence/`)
 
 | File | Type | Status |
 |------|------|--------|
-| `docs/evidence/phase-8-staging-cutover-evidence-template.md` | Template | All fields EXTERNAL-GATED |
-| `docs/evidence/phase-8-production-cutover-evidence-template.md` | Template | All fields EXTERNAL-GATED |
-| `docs/evidence/phase-8-go-no-go-checklist.md` | Gate index | All items EXTERNAL-GATED |
-| `docs/evidence/phase-8-staging-evidence-intake-checklist.md` | Intake | All rows EXTERNAL-GATED |
-| `docs/evidence/phase-8-local-learning-cutover-evidence.md` | Local-only | LEARNING-MODE-COMPLETE (simulated) |
-| `docs/evidence/phase-8-cutover-readiness-template.md` | Template | Reference only |
+| `phase-8-staging-cutover-evidence-template.md` | Template | All fields EXTERNAL-GATED |
+| `phase-8-production-cutover-evidence-template.md` | Template | All fields EXTERNAL-GATED |
+| `phase-8-go-no-go-checklist.md` | Gate index | All items EXTERNAL-GATED |
+| `phase-8-staging-evidence-intake-checklist.md` | Intake | All rows EXTERNAL-GATED |
+| `phase-8-local-learning-cutover-evidence.md` | Local-only | LEARNING-MODE-COMPLETE (simulated) |
+| `phase-8-cutover-readiness-template.md` | Template | Reference only |
+| `phase-8-external-evidence-readiness-pack.md` | (Pack lives at `docs/`) | See active root |
 
-### Historical Evidence (Phase 2)
+### Proposed DDL (`docs/sql/`)
 
-All files under `docs/evidence/phase-2-*` are historical Phase 2 staging and
-production promotion templates. They record the account-service and
-fulfillment-service cutover design but are no longer the active cutover
-target. Kept for traceability.
+`docs/sql/proposed-*.sql` (5 files). No DDL has been applied from this repo.
 
-### Intake Evidence
+### Symlinked Historical Docs (at docs root → archive)
 
-`docs/evidence/intake-*.md` files are role-specific evidence intake templates
-(DBA, Ops, Engineer, Oncall). Kept for reference.
+These are kept as symlinks at the docs root so existing validators continue
+to resolve them, while the actual content lives under
+`docs/archive/microservices-history/` or `docs/archive/phases/`:
+
+- `microservices-decomposition-master-plan.md`
+- `microservices-split-completion-index.md`
+- `microservices-next-execution-roadmap.md`
+- `microservices-learning-mode-closure.md`
+- `microservices-split-phase-5-account-quota-port-reverification.md`
+- `microservices-split-phase-5-activity-draw-orchestration.md`
+- `microservices-split-phase-5-draw-command-boundary.md`
+- `microservices-split-phase-7-strategy-activity-mapping-boundary.md`
+- `microservices-split-phase-7-task-outbox-ownership.md`
+- `microservices-phase-7-db-users-grants-plan.md`
+- `microservices-phase-7-sharded-schema-isolation-plan.md`
 
 ---
 
@@ -212,20 +248,29 @@ target. Kept for traceability.
 
 | Archive location | Contents |
 |-----------------|----------|
-| `docs/archive/phases/` | Phase 1–7 historical implementation records (16 files) |
-| `docs/archive/obsolete/` | Pre-microservices documents: `rebuild-roadmap.md`, `product-architecture.md` |
-| `docs/archive/reviews/` | Historical review: `microservices-learning-mode-opus-review.md` |
+| `docs/archive/phases/` | Phase 1-7 historical implementation records |
 | `docs/archive/microservices-history/` | Superseded summary docs (roadmap, master-plan, completion-index, next-execution-roadmap, learning-mode-closure) |
-| `docs/archive/microservices-historical-docs-index.md` | Index of all historical docs (pre-existing) |
+| `docs/archive/microservices-historical-docs-index.md` | Index of all historical docs |
 
 ---
 
-## 8. Cross-References
+## 8. Repository Cleanup Note (2026-06-12)
+
+A documentation cleanup pass removed redundant generated evidence snapshots,
+Phase 2 evidence templates, pre-microservices notes, and one-off review notes.
+`MICROSERVICES.md` became the single docs index. No SQL, no validator
+behavior, no feature-flag defaults, and no Java runtime behavior were changed.
+Repo-only gates remain green; external evidence remains EXTERNAL-GATED.
+
+---
+
+## 9. Cross-References
 
 - Active Phase 8 runbook: `docs/microservices-phase-8-cutover-runbook.md`
 - Cutover conflict matrix: `docs/microservices-phase-8-cutover-conflict-matrix.md`
 - Idempotency & rollback matrix: `docs/microservices-phase-8-idempotency-rollback-matrix.md`
 - Active external evidence intake: `docs/microservices-phase-8-external-evidence-intake.md`
+- External evidence readiness pack: `docs/microservices-phase-8-external-evidence-readiness-pack.md`
 - DAO ownership matrix: `docs/microservices-dao-ownership.md`
 - Legacy cleanup inventory: `docs/microservices-legacy-cleanup-inventory.md`
 - Proposed SQL DDL: `docs/sql/proposed-*.sql`

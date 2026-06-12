@@ -18,9 +18,16 @@
 
 ---
 
-## Phase 2.2-B3 Microservices (Current Active Architecture)
+## Microservices Architecture (Current Portfolio State)
 
-The monolith has been progressively split into 7 independently deployable services behind an API gateway. The original `big-market-app` is preserved untouched as a legacy fallback.
+The monolith has been progressively split into independently deployable
+service modules behind an API gateway. The original `big-market-app` remains
+as a local legacy fallback/reference launcher.
+
+This repository is currently in **Phase 8 cutover readiness** for learning and
+portfolio purposes: repo-only gates are green, remote/outbox/cutover flags
+default to `false`, and real staging/production evidence remains
+`EXTERNAL-GATED`.
 
 ### Services
 
@@ -32,7 +39,11 @@ The monolith has been progressively split into 7 independently deployable servic
 | big-market-market-service | 8083 | Core marketing / raffle / activity APIs + Dubbo RPC |
 | big-market-chatbot-service | 8084 | Chatbot APIs |
 | big-market-message-job-service | 8085 | MQ consumers + XXL-Job scheduled handlers |
-| big-market-account-service | 8086 | Internal Dubbo provider — credit + quota operations. Remote-read validated (Phase 2.2-B). MQ write consumers and HTTP credit exchange route through adapters (Phase 2.2-B2/B3); write flags still default false. |
+| big-market-account-service | 8086 | Dark-launch Dubbo provider for credit + quota operations |
+| big-market-fulfillment-service | 8087 | Dark-launch Dubbo provider for award fulfillment and credit-award outbox |
+| big-market-rebate-service | 8088 | Dark-launch Dubbo provider for rebate read/write paths |
+| big-market-strategy-service | 8089 | Dark-launch Dubbo provider for strategy reads |
+| big-market-activity-service | 8090 | Scaffold-only activity service; draw execution still stays in market-service |
 
 Shared library modules (`big-market-domain`, `big-market-infrastructure`, `big-market-api`, `big-market-types`, `big-market-queries`, starter modules) are reused as JAR dependencies — no code was moved or duplicated.
 
@@ -94,17 +105,11 @@ docker compose ps
 ./scripts/validate-microservices-stack.sh
 ```
 
-> **Runtime validation note (Phase 2.2-B3):** Remote-read has been script-validated.
-> MQ write consumers (`CreditAdjustSuccessConsumer`, `RebateMessageConsumer`) now route through
-> `IAccountQuotaWriteAdapter` / `IAccountCreditWriteAdapter` with local fallback adapters as default.
-> `RaffleActivityController.creditPayExchangeSku` also routes quota-order creation and credit debit through
-> the same write adapters.
-> Remote write adapters in message-job-service are `@ConditionalOnProperty` — inactive when flags are false.
-> Dubbo is enabled in message-job-service with `registry.check=false` so startup is safe even if nacos is
-> temporarily unavailable. Both write flags remain `false` by default:
-> `ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=false` / `ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=false`.
-> **Full production write traffic cutover still requires** MQ idempotency verification and
-> business-flow end-to-end validation before enabling either flag.
+> **Runtime validation note:** Phase 8 adds cutover conflict, idempotency,
+> rollback, runtime safety, and external-evidence readiness validators. Remote
+> service paths and per-domain outbox paths remain feature-flagged off by
+> default. Real staging/production cutover still requires external DBA, Ops,
+> Engineering, Oncall, and Product evidence.
 
 ### Stop
 
@@ -132,16 +137,19 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml logs nacos
 2. Pre-existing RabbitMQ test messages for `userId: xiaofuge` produce noisy consumer error logs due to a DB sharding mismatch. This does not affect service health or smoke test results.
 3. Gateway circuit breakers (Resilience4J) are active on all four downstream routes. If a service is down, the gateway returns `{"code":"0007","info":"网关接口调用失败","data":null}` instead of hanging.
 4. All services propagate `X-Trace-Id` — gateway generates one if absent; downstream services put it in MDC as `traceId`.
-5. `account-service` MQ write consumers and `RaffleActivityController.creditPayExchangeSku` are now routed through adapters (Phase 2.2-B2/B3), but write flags default false. Remaining write-path work: `UserCreditRandomAward` needs a call-chain audit, and `RaffleActivityPartakeService` quota decrement remains deferred/high risk.
+5. Phase 8 cutover paths are repo-ready but not real-production-proven: proposed DDL is not applied, service-provider registration is external-gated, and all cutover flags default false.
 
 ### Documentation
 
-- [docs/microservices-split-phase-1.md](docs/microservices-split-phase-1.md) — Phase 1 architecture, service responsibilities, env vars, verification checklist
-- [docs/microservices-roadmap.md](docs/microservices-roadmap.md) — phase-by-phase evolution plan (Phase 1 through Phase 4)
-- [docs/microservices-split-phase-2-2-account-service.md](docs/microservices-split-phase-2-2-account-service.md) — account-service extraction readiness and cutover plan
-- [scripts/smoke-test-phase-1.sh](scripts/smoke-test-phase-1.sh) — 17-check smoke test for the current 7-service stack
-- [scripts/validate-account-remote-read.sh](scripts/validate-account-remote-read.sh) — Phase 2.2-B remote-read and fallback validation
-- [scripts/validate-account-remote-write-scaffold.sh](scripts/validate-account-remote-write-scaffold.sh) — Phase 2.2-B2/B3 write-adapter scaffold validation (no real MQ messages)
+- [docs/MICROSERVICES.md](docs/MICROSERVICES.md) — authoritative entry point: current service inventory, bounded-context cutover status, completed phases, active Phase 8, documentation index, archive map
+- [docs/microservices-dao-ownership.md](docs/microservices-dao-ownership.md) — AL-1..AL-11 cross-boundary DAO ownership matrix
+- [docs/microservices-legacy-cleanup-inventory.md](docs/microservices-legacy-cleanup-inventory.md) — post-cutover legacy removal inventory
+- [docs/microservices-phase-8-cutover-runbook.md](docs/microservices-phase-8-cutover-runbook.md) — Phase 8 cutover runbook
+- [docs/microservices-phase-8-external-evidence-readiness-pack.md](docs/microservices-phase-8-external-evidence-readiness-pack.md) — Phase 8 external evidence readiness pack
+- [docs/sql/](docs/sql/) — proposed DDL (`proposed-*.sql`, never applied from this repo)
+- [docs/archive/](docs/archive/) — validator-backed historical phase records and superseded summary docs
+- [scripts/smoke-test-phase-1.sh](scripts/smoke-test-phase-1.sh) — smoke test for the multi-service stack
+- [scripts/validate-microservices-split-all-gates.sh](scripts/validate-microservices-split-all-gates.sh) — aggregate repo-only gate runner
 - [scripts/validate-microservices-stack.sh](scripts/validate-microservices-stack.sh) — orchestrated build + docker + smoke test runner
 
 ---
@@ -178,7 +186,7 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis 
 # 2. 打包
 mvn -DskipTests package
 
-# 3. 启动微服务栈（gateway + 7 个后端服务）
+# 3. 启动微服务栈（gateway + 后端服务）
 docker compose up -d --build
 
 # 4. 启动前端（开发模式，端口 5173）
@@ -229,6 +237,9 @@ POST /api/v1/chatbot/ask
 
 ## Further Reading
 
-- [docs/microservices-split-phase-1.md](docs/microservices-split-phase-1.md)
-- [docs/product-architecture.md](docs/product-architecture.md)
-- [docs/rebuild-roadmap.md](docs/rebuild-roadmap.md)
+- [docs/MICROSERVICES.md](docs/MICROSERVICES.md) — authoritative microservices decomposition status
+- [docs/archive/phases/microservices-split-phase-1.md](docs/archive/phases/microservices-split-phase-1.md) — Phase 1 historical record
+
+This repository is a personal learning / portfolio project. Repo-only
+validators are exercised in this codebase; all production/cutover feature
+flags default to `false` and external evidence remains EXTERNAL-GATED.

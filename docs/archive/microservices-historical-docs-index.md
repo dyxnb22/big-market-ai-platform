@@ -30,25 +30,22 @@ Active Phase 8 documents:
 ### Phase 1–7 historical implementation records
 - `docs/archive/phases/` (16 files)
 
-### Obsolete pre-microservices documents
-- `docs/archive/obsolete/rebuild-roadmap.md`
-- `docs/archive/obsolete/product-architecture.md`
-
-### Historical review
-- `docs/archive/reviews/microservices-learning-mode-opus-review.md`
-
 ## Historical Reference Sets
 
-- Phase 2 evidence templates under `docs/evidence/phase-2-*`.
-- Phase 8 evidence templates under `docs/evidence/phase-8-*`.
+- Phase 8 active evidence templates under `docs/evidence/phase-8-*`.
 - Proposed SQL files under `docs/sql/proposed-*.sql`.
 - Dev-ops configs under `docs/dev-ops/`.
 
-## Cleanup Note
+## Cleanup Notes
 
-The 2026-06-12 docs cleanup moved historical documents into archive/ and
-created `docs/MICROSERVICES.md` as the single authoritative entry point.
-Cross-references in active documents were updated. No physical files were
-moved — all documents remain archived by reference via symlinks. No document
-was deleted; all historical content is preserved in archive/.
-
+- 2026-06-12 (initial): historical documents were archived under
+  `docs/archive/microservices-history/` and `docs/archive/phases/`;
+  `docs/MICROSERVICES.md` became the single authoritative entry point.
+  Summary docs and Phase 5/7 design docs are **archived by reference**
+  — they remain symlinked at the docs root so existing validators
+  continue to resolve them. No physical files were moved in this pass.
+- 2026-06-12 (portfolio cleanup): redundant Phase 2 evidence templates,
+  generated evidence snapshots, pre-microservices notes, and one-off review
+  notes were removed. No SQL, no validator, no feature-flag defaults, and no
+  Java runtime behavior changed. Repo-only gates remain green; external
+  evidence remains EXTERNAL-GATED.
