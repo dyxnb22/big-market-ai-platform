@@ -151,6 +151,9 @@ mvn clean package -DskipTests
 # Run all repo-only split gates (no Docker/DB required)
 ./scripts/validate-microservices-split-all-gates.sh
 
+# Run Phase 8 runtime safety checks in isolation
+./scripts/validate-microservices-phase-8-runtime-safety.sh
+
 # Full local stack validation (build + Docker + smoke)
 ./scripts/validate-microservices-stack.sh
 ```
