@@ -6,7 +6,8 @@ Status: archive index.
 
 ## Active Source of Truth
 
-The single authoritative entry point for microservices decomposition is now:
+The single authoritative entry point — the active source of truth — for
+microservices decomposition is now:
 
 - **`docs/MICROSERVICES.md`** — authoritative current status, completed phases, active Phase 8, remaining external gates, operational notes, evidence map, and archive map.
 
@@ -47,6 +48,7 @@ Active Phase 8 documents:
 
 The 2026-06-12 docs cleanup moved historical documents into archive/ and
 created `docs/MICROSERVICES.md` as the single authoritative entry point.
-Cross-references in active documents were updated. No document was deleted;
-all historical content is preserved in archive/.
+Cross-references in active documents were updated. No physical files were
+moved — all documents remain archived by reference via symlinks. No document
+was deleted; all historical content is preserved in archive/.
 

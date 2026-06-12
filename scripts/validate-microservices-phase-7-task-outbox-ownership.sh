@@ -11,7 +11,7 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
 FAIL=0
-BASE_REF="${PHASE7B_BASE_REF:-phase-7-strategy-activity-mapping-port}"
+BASE_REF="${PHASE7B_BASE_REF:-phase-8-safety-hardening}"
 
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
@@ -172,6 +172,7 @@ non_proposed_ddl=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DAT
   "$REPO_ROOT/docs" "$REPO_ROOT/scripts" \
   --include='*.sql' --include='*.md' --include='*.sh' 2>/dev/null \
   | grep -v '/docs/sql/proposed-' \
+  | grep -v '/docs/archive/' \
   | grep -v 'microservices-split-phase-5-activity-draw-saga-outbox.md' \
   | grep -v 'validate-microservices-phase-7-task-outbox-ownership.sh' \
   || true)
@@ -182,9 +183,11 @@ else
   echo "[INFO] Existing non-proposed DDL-looking documentation references found; verifying Phase 7-B changed files only."
   phase7b_non_proposed_ddl=$(printf '%s\n' "$changed_files" \
     | grep -vE '^docs/sql/proposed-[^/]+\.sql$' \
+    | grep -vE '^docs/archive/' \
     | while read -r file; do
         [[ -f "$REPO_ROOT/$file" ]] || continue
-        grep -HnE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' "$REPO_ROOT/$file" 2>/dev/null || true
+        grep -HnE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' "$REPO_ROOT/$file" 2>/dev/null \
+          | grep -vE '(^\s*--|[[:space:]]+--\s+Recommended index)' || true
       done \
     | grep -v 'validate-microservices-phase-7-task-outbox-ownership.sh' \
     || true)

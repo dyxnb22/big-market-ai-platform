@@ -22,7 +22,7 @@ echo "========================================================================"
 [[ -f "$SCHEMA_PLAN" ]] && pass "Sharded schema isolation plan exists" || fail "Missing sharded schema isolation plan"
 
 for ctx in account activity fulfillment rebate strategy message-job market app legacy compatibility; do
-  if grep -Riq "$ctx" "$USER_PLAN" "$SCHEMA_PLAN" 2>/dev/null; then
+  if grep -iq "$ctx" "$USER_PLAN" "$SCHEMA_PLAN" 2>/dev/null; then
     pass "Isolation plans cover: $ctx"
   else
     fail "Isolation plans do not cover: $ctx"
@@ -30,7 +30,7 @@ for ctx in account activity fulfillment rebate strategy message-job market app l
 done
 
 for table in rebate_task_outbox credit_trade_task_outbox award_dispatch_task_outbox; do
-  if grep -Riq "$table" "$USER_PLAN" "$SCHEMA_PLAN" 2>/dev/null; then
+  if grep -iq "$table" "$USER_PLAN" "$SCHEMA_PLAN" 2>/dev/null; then
     pass "Shared task replacement reflected: $table"
   else
     fail "Shared task replacement missing: $table"
