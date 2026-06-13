@@ -47,7 +47,7 @@ public class RaffleStrategyController implements IRaffleStrategyService {
 
     /**
      * 策略装配，将策略信息装配到缓存中
-     * <a href="http://localhost:8091/api/v1/raffle/strategy/strategy_armory">/api/v1/raffle/strategy/strategy_armory</a>
+     * <a href="http://localhost:8080/api/v1/raffle/strategy/strategy_armory">/api/v1/raffle/strategy/strategy_armory</a>
      *
      * @param strategyId 策略ID
      * @return 装配结果
@@ -162,7 +162,7 @@ public class RaffleStrategyController implements IRaffleStrategyService {
 
     /**
      * 随机抽奖接口
-     * <a href="http://localhost:8091/api/v1/raffle/strategy/random_raffle">/api/v1/raffle/random_raffle</a>
+     * <a href="http://localhost:8080/api/v1/raffle/strategy/random_raffle">/api/v1/raffle/random_raffle</a>
      *
      * @param requestDTO 请求参数 {"strategyId":1000001}
      * @return 抽奖结果

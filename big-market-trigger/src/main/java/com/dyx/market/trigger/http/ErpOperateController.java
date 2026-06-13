@@ -55,7 +55,7 @@ public class ErpOperateController implements IErpOperateService {
 
     /**
      * 查询运营数据，用户抽奖单列表
-     * curl --request GET --url 'http://localhost:8098/api/v1/raffle/erp/query_user_raffle_order'
+     * curl --request GET --url 'http://localhost:8080/api/v1/raffle/erp/query_user_raffle_order'
      */
     @RequestMapping(value = "query_user_raffle_order", method = RequestMethod.GET)
     @Override

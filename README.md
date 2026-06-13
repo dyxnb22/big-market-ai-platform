@@ -92,7 +92,7 @@ docker compose up --build -d
 docker compose -f docs/dev-ops/docker-compose-environment.yml ps
 docker compose ps
 
-# Run smoke test (expects 17/17 PASS — 7 health + 9 functional + 1 fallback)
+# Run smoke test (expects 18/18 PASS — 8 health + 9 functional + 1 fallback)
 ./scripts/smoke-test-phase-1.sh
 
 # Validate account-service remote-read routing and fallback (temporarily recreates market-service only)
@@ -144,8 +144,7 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml logs nacos
 - [docs/MICROSERVICES.md](docs/MICROSERVICES.md) — authoritative entry point: current service inventory, bounded-context cutover status, completed phases, active Phase 8, documentation index, archive map
 - [docs/microservices-dao-ownership.md](docs/microservices-dao-ownership.md) — AL-1..AL-11 cross-boundary DAO ownership matrix
 - [docs/microservices-legacy-cleanup-inventory.md](docs/microservices-legacy-cleanup-inventory.md) — post-cutover legacy removal inventory
-- [docs/microservices-phase-8-cutover-runbook.md](docs/microservices-phase-8-cutover-runbook.md) — Phase 8 cutover runbook
-- [docs/microservices-phase-8-external-evidence-readiness-pack.md](docs/microservices-phase-8-external-evidence-readiness-pack.md) — Phase 8 external evidence readiness pack
+- [docs/microservices-phase-8.md](docs/microservices-phase-8.md) — Phase 8 consolidated doc: cutover runbook, external evidence readiness pack, and staging evidence
 - [docs/sql/](docs/sql/) — proposed DDL (`proposed-*.sql`, never applied from this repo)
 - [docs/archive/](docs/archive/) — validator-backed historical phase records and superseded summary docs
 - [scripts/smoke-test-phase-1.sh](scripts/smoke-test-phase-1.sh) — smoke test for the multi-service stack
@@ -171,8 +170,8 @@ The original single-JVM launcher is preserved at port 8098. Use it for local deb
 ```bash
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 mvn -DskipTests package
-./scripts/app-start.sh
-./scripts/app-status.sh
+./scripts/web-start.sh
+./scripts/web-status.sh
 ```
 
 应用默认地址（gateway）：`http://127.0.0.1:8080`
@@ -238,7 +237,7 @@ POST /api/v1/chatbot/ask
 ## Further Reading
 
 - [docs/MICROSERVICES.md](docs/MICROSERVICES.md) — authoritative microservices decomposition status
-- [docs/archive/phases/microservices-split-phase-1.md](docs/archive/phases/microservices-split-phase-1.md) — Phase 1 historical record
+- [docs/archive/phases.md](docs/archive/phases.md) — Phase 1–7 historical records
 
 This repository is a personal learning / portfolio project. Repo-only
 validators are exercised in this codebase; all production/cutover feature

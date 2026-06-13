@@ -162,7 +162,7 @@ xxl:
 gateway:
   config:
     enable: true
-    apiHost: http://${GATEWAY_API_HOST:127.0.0.1}:8091
+    apiHost: http://${GATEWAY_API_HOST:127.0.0.1}:8080
     big-market-appId: ${GATEWAY_APP_ID:big-market}
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
 
