@@ -23,9 +23,9 @@
     <p>登录后参与轮盘抽奖、每日签到、积分兑换，还能和 DeepSeek AI 对话。</p>
     <div class="hero-actions">
       <a href="./login.html" class="hero-primary-btn">立即登录</a>
-      <a href="./login.html" class="hero-secondary-btn">了解功能</a>
+      <a href="#features" class="hero-secondary-btn">了解功能</a>
     </div>
-    <div class="feature-grid">
+    <div class="feature-grid" id="features">
       <div class="feature-card">
         <div class="feature-icon">🎰</div>
         <strong>轮盘抽奖</strong>
@@ -197,30 +197,6 @@
 <!-- Drawer Overlay -->
 <div id="drawerOverlay" class="drawer-overlay"></div>
 
-<!-- Mobile Top Bar (visible on mobile when sidebar is hidden) -->
-<div class="mobile-topbar">
-  <a class="logo" href="./index.html">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 2a2 2 0 0 1 2 2v16a2 2 0 0 1-4 0V4a2 2 0 0 1 2-2z" fill="currentColor"/></svg>
-    Lucky Draw AI
-  </a>
-  <span id="creditDisplayMobile" class="credit-badge">积分: -</span>
-</div>
-
-<!-- Mobile Bottom Nav -->
-<nav class="mobile-nav">
-  <button id="mNewChatBtn" type="button" title="新建对话">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/></svg>
-    <span>新建对话</span>
-  </button>
-  <button id="mUserCenterBtn" type="button" onclick="window._uc&&window._uc()" title="用户中心">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2"/></svg>
-    <span>用户中心</span>
-  </button>
-  <button id="mOpenLotteryBtn" type="button" onclick="window._lottery&&window._lottery()" title="轮盘抽奖">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-    <span>轮盘抽奖</span>
-  </button>
-</nav>
 
 <!-- Context Menu -->
 <div id="contextMenu" class="context-menu" style="display:none">

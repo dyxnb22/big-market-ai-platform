@@ -17,17 +17,17 @@
 
     <div class="field">
       <label for="userIdInput">用户 ID</label>
-      <input id="userIdInput" value="xiaofuge" autocomplete="username" placeholder="输入用户ID" />
+      <input id="userIdInput" autocomplete="username" placeholder="输入用户ID" />
     </div>
 
     <div class="field">
       <label for="passwordInput">密码</label>
-      <input id="passwordInput" type="password" value="demo" autocomplete="current-password" placeholder="输入密码" />
+      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="输入密码" />
     </div>
 
     <button id="loginBtn" class="submit-btn" type="button">登 录</button>
 
-    <p class="hint">演示账号：xiaofuge / demo</p>
+    <p class="hint">演示账号：xiaofuge / demo &nbsp;<button type="button" onclick="document.getElementById('userIdInput').value='xiaofuge';document.getElementById('passwordInput').value='demo';" style="font-size:11px;padding:2px 8px;border:1px solid var(--line,#e5e7eb);border-radius:4px;background:transparent;cursor:pointer;color:inherit;">填入</button></p>
     <a class="back-link" href="./index.html">← 返回首页</a>
   </div>
 </div>

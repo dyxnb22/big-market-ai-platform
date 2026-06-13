@@ -7,8 +7,8 @@
 ### 入口
 
 ```
-POST /api/v1/raffle/activity/raffle
-  → RaffleActivityController.raffle()
+POST /api/v1/raffle/activity/draw_by_token
+  → RaffleActivityController.drawByToken()
   → RaffleApplicationService.executeDraw(ActivityDrawRequestEntity)
 ```
 
@@ -21,8 +21,8 @@ POST /api/v1/raffle/activity/raffle
 └─────────────────────────┬────────────────────────────────────┘
                           ↓
 ┌──────────────────────────────────────────────────────────────┐
-│ Step 2  幂等查询                                               │
-│   activityRepository.queryNoUsedRaffleOrder()                │
+│ Step 2  幂等查询（在 createOrder 内部完成）                        │
+│   IRaffleActivityPartakeService.createOrder() 内部查询旧订单    │
 │   → 若存在 create 态旧订单，直接复用（不重复扣配额）               │
 └─────────────────────────┬────────────────────────────────────┘
                           ↓
@@ -202,7 +202,7 @@ bizId 构成：userId + rebateType + outBusinessNo（日期）
 ## 流程四：积分扣减（SKU 兑换）
 
 ```
-POST /api/v1/raffle/activity/credit_pay_order
+POST /api/v1/raffle/activity/credit_pay_exchange_sku_by_token
 ```
 
 ### 流程

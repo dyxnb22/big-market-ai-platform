@@ -15,9 +15,9 @@ if (!auth.token) {
   }).then(function() {
     initApp();
   }).catch(function(e) {
-    // Auth errors (0009) are already handled by onAuthExpired above;
-    // only show network/server error toast for non-auth failures.
-    if (e.code !== "0009") {
+    // onAuthExpired already handles 0009 (expired token).
+    // For other API errors clear the token; for network errors (no code) keep it.
+    if (e.code && e.code !== "0009") {
       clearAuth();
       toast("服务暂时不可用，请稍后再试");
     }
@@ -86,7 +86,7 @@ function initApp() {
   };
 
   function qs(sel) { return document.querySelector(sel); }
-  var creditMobile = document.getElementById("creditDisplayMobile");
+  var creditMobile = null; // mobile topbar removed
 
   var chatState = readJson(CHAT_KEY, defaultChats());
   var awards = [
@@ -501,7 +501,7 @@ function initApp() {
     if (currentCredit < cost) { disableExchange("积分不足，需要 " + cost + " 积分"); return; }
     // Enable exchange
     if (d.exchangeBtn) { d.exchangeBtn.disabled = false; d.exchangeBtn.textContent = "兑换 1 次抽奖机会（消耗 " + cost + " 积分）"; }
-    if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = false; d.ucExchangeBtn.textContent = "兑换 1 次抽奖机会（消耗 " + cost + " 积分）"; }
+    if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = false; d.ucExchangeBtn.textContent = "兑换 1 次抽奖机会（" + cost + " 积分，每日限兑 1 次）"; }
     if (d.ucExchangeHint) { d.ucExchangeHint.style.display = "none"; }
   }
 
@@ -540,15 +540,7 @@ function initApp() {
   window._uc = openUserCenter;
   window._lottery = openLottery;
 
-  // Mobile nav button bindings
-  var mNewChat = document.getElementById("mNewChatBtn");
-  var mUc = document.getElementById("mUserCenterBtn");
-  var mLottery = document.getElementById("mOpenLotteryBtn");
-  if (mNewChat) mNewChat.onclick = newChat;
-  if (mUc) mUc.onclick = openUserCenter;
-  if (mLottery) mLottery.onclick = openLottery;
-
-  // ===== EVENT BINDINGS =====
+// ===== EVENT BINDINGS =====
   d.userMenuBtn.onclick = openUserCenter;
   d.userCenterBtn.onclick = openUserCenter;
   d.openLotteryBtn.onclick = openLottery;

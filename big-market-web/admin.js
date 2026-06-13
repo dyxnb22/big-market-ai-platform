@@ -239,12 +239,6 @@ var opsDom = {
   diagLogin: document.getElementById("diagLogin"),
   diagAdmin: document.getElementById("diagAdmin"),
   diagChatbot: document.getElementById("diagChatbot"),
-  logQueryBtn: document.getElementById("logQueryBtn"),
-  logService: document.getElementById("logService"),
-  logLevel: document.getElementById("logLevel"),
-  logKeyword: document.getElementById("logKeyword"),
-  logLines: document.getElementById("logLines"),
-  logOutput: document.getElementById("logOutput"),
 };
 
 function setDiag(el, ok, msg) {
@@ -338,21 +332,9 @@ async function refreshOps() {
   opsDom.healthBody.innerHTML = rows;
 }
 
-// Log query (placeholder — backend endpoint not yet implemented)
-function queryLogs() {
-  var service = opsDom.logService ? opsDom.logService.value : "";
-  var level = opsDom.logLevel ? opsDom.logLevel.value : "";
-  var keyword = opsDom.logKeyword ? opsDom.logKeyword.value : "";
-  var lines = opsDom.logLines ? opsDom.logLines.value : "50";
-  var params = "?service=" + encodeURIComponent(service) + "&level=" + encodeURIComponent(level) + "&keyword=" + encodeURIComponent(keyword) + "&lines=" + encodeURIComponent(lines);
-  var msg = "后端日志接口未接入。预留端点：GET /admin/ops/logs" + params.replace("&", "&amp;");
-  if (opsDom.logOutput) opsDom.logOutput.textContent = msg;
-}
-
 if (opsDom.refreshBtn) opsDom.refreshBtn.addEventListener("click", function() {
   refreshOps().catch(function(e) { toast("运维监控刷新失败: " + e.message); });
 });
-if (opsDom.logQueryBtn) opsDom.logQueryBtn.addEventListener("click", queryLogs);
 
 async function initializeAdmin() {
   if (!auth.token) {

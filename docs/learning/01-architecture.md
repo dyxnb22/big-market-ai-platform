@@ -44,11 +44,9 @@ big-market-ai-platform/
 │   ├── big-market-domain         # 领域层：五大领域的业务逻辑
 │   ├── big-market-infrastructure # 基础设施：Repository 实现、DAO、Redis、MQ
 │   ├── big-market-trigger        # 触发层：HTTP Controller、XXL-Job、MQ 消费者
-│   ├── big-market-queries        # 查询层：读模型（ES 查询）
-│   ├── big-market-auth-access    # 鉴权入口：JWT 校验
-│   ├── big-market-admin          # 管理端配置 API
-│   ├── big-market-management     # 本地持久化配置能力
-│   └── big-market-chatbot        # 规则版 Chatbot 领域逻辑
+│   └── big-market-management     # 本地持久化配置能力
+│   # 注：ES 读模型接口已迁入 big-market-domain；
+│   #     登录/管理/Chatbot Controller 已内聚到各自 service 模块
 │
 ├── ── Starter 框架模块（可复用中间件）──────────────────────────────
 │   ├── big-market-starter-db-router    # DB 分片路由中间件
@@ -67,7 +65,6 @@ big-market-ai-platform/
 │   ├── big-market-fulfillment-service:8087 # 履约服务（暗启动）
 │   ├── big-market-rebate-service :8088 # 返利服务（暗启动）
 │   ├── big-market-strategy-service:8089 # 策略服务（暗启动）
-│   └── big-market-activity-service:8090 # 活动服务（脚手架）
 ```
 
 ---

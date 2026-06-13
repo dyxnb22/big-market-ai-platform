@@ -108,40 +108,6 @@
         <div class="diag-item" id="diagChatbot"><span class="diag-label">Chatbot /api/v1/chatbot/ask</span><span class="diag-result">检测中...</span></div>
       </div>
 
-      <!-- Log Query (placeholder) -->
-      <h3 style="font-size:14px;margin:16px 0 8px;">日志采集</h3>
-      <div class="ops-log-query">
-        <div class="log-grid">
-          <label>服务
-            <select id="logService">
-              <option value="gateway">gateway</option>
-              <option value="auth-service">auth-service</option>
-              <option value="admin-service">admin-service</option>
-              <option value="market-service">market-service</option>
-              <option value="chatbot-service">chatbot-service</option>
-              <option value="message-job-service">message-job-service</option>
-              <option value="account-service">account-service</option>
-            </select>
-          </label>
-          <label>级别
-            <select id="logLevel">
-              <option value="">ALL</option>
-              <option value="ERROR">ERROR</option>
-              <option value="WARN">WARN</option>
-              <option value="INFO">INFO</option>
-              <option value="DEBUG">DEBUG</option>
-            </select>
-          </label>
-          <label>关键词
-            <input id="logKeyword" placeholder="过滤关键词" />
-          </label>
-          <label>行数
-            <input id="logLines" value="50" style="width:70px;" />
-          </label>
-          <button id="logQueryBtn" class="soft-button" type="button" style="align-self:flex-end;">查询</button>
-        </div>
-        <pre id="logOutput" class="log-output">后端日志接口未接入。预留端点：GET /admin/ops/logs?service=&amp;level=&amp;keyword=&amp;lines=</pre>
-      </div>
     </section>
   </main>
 </div>

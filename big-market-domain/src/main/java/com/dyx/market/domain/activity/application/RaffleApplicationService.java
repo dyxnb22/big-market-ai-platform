@@ -4,7 +4,6 @@ import com.dyx.market.domain.activity.adapter.port.IAwardFulfillmentPort;
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.adapter.port.IStrategyDecisionPort;
 import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
-import com.dyx.market.domain.activity.model.entity.PartakeRaffleActivityEntity;
 import com.dyx.market.domain.activity.model.entity.UserRaffleOrderEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivityPartakeService;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
@@ -49,12 +48,7 @@ public class RaffleApplicationService {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
 
-        UserRaffleOrderEntity existingOrder = activityRepository.queryNoUsedRaffleOrder(PartakeRaffleActivityEntity.builder()
-                .userId(userId)
-                .activityId(activityId)
-                .build());
-
-        // 2. 参与活动 - 创建参与记录订单（含额度扣减）
+        // 2. 参与活动 - 创建参与记录订单（含额度扣减；createOrder 内部处理订单复用）
         UserRaffleOrderEntity orderEntity = raffleActivityPartakeService.createOrder(userId, activityId);
         log.info("活动抽奖，创建订单 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
 

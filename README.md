@@ -10,11 +10,10 @@
 
 - Java 包名统一为 `com.dyx.market`，不再使用原作者命名空间。
 - 内置 `big-market-starter-db-router`、`big-market-starter-dcc`、`big-market-starter-ratelimiter`，便于学习 DB 路由、动态配置和限流实现。
-- 新增 `big-market-auth-access`，提供登录和 token 校验入口。
 - 新增 `big-market-management`，提供本地持久化配置能力。
-- 新增 `big-market-admin`，提供管理端配置 API。
-- 新增 `big-market-chatbot`，提供规则版 Chatbot，受管理端开关控制，并调用现有抽奖/积分/签到业务接口。
 - 新增 `big-market-web/index.html`，提供轻量用户端 + 管理端联调页面。
+- 登录/管理/Chatbot Controller 已分别内聚到 `big-market-auth-service`、`big-market-admin-service`、`big-market-chatbot-service`，不再是独立薄模块。
+- ES 读模型接口（`IESUserRaffleOrderRepository`）已迁入 `big-market-domain`。
 
 ---
 
@@ -43,9 +42,8 @@ default to `false`, and real staging/production evidence remains
 | big-market-fulfillment-service | 8087 | Dark-launch Dubbo provider for award fulfillment and credit-award outbox |
 | big-market-rebate-service | 8088 | Dark-launch Dubbo provider for rebate read/write paths |
 | big-market-strategy-service | 8089 | Dark-launch Dubbo provider for strategy reads |
-| big-market-activity-service | 8090 | Scaffold-only activity service; draw execution still stays in market-service |
 
-Shared library modules (`big-market-domain`, `big-market-infrastructure`, `big-market-api`, `big-market-types`, `big-market-queries`, starter modules) are reused as JAR dependencies — no code was moved or duplicated.
+Shared library modules (`big-market-domain`, `big-market-infrastructure`, `big-market-api`, `big-market-types`, starter modules) are reused as JAR dependencies.
 
 ### Infrastructure
 
@@ -92,24 +90,16 @@ docker compose up --build -d
 docker compose -f docs/dev-ops/docker-compose-environment.yml ps
 docker compose ps
 
-# Run smoke test (expects 18/18 PASS — 8 health + 9 functional + 1 fallback)
+# Run smoke test
 ./scripts/smoke-test-phase-1.sh
 
-# Validate account-service remote-read routing and fallback (temporarily recreates market-service only)
-./scripts/validate-account-remote-read.sh
-
-# Validate Phase 2.2-B2/B3 write-path adapter scaffold (no real MQ messages published)
-./scripts/validate-account-remote-write-scaffold.sh
-
-# Or run the full orchestrated validation (build → infra → app → smoke test):
+# Run full orchestrated validation (build → infra → app → smoke test)
 ./scripts/validate-microservices-stack.sh
+
+# Check runtime safety guardrails (default credentials, flag isolation, etc.)
+./scripts/validate-microservices-phase-8-runtime-safety.sh
 ```
 
-> **Runtime validation note:** Phase 8 adds cutover conflict, idempotency,
-> rollback, runtime safety, and external-evidence readiness validators. Remote
-> service paths and per-domain outbox paths remain feature-flagged off by
-> default. Real staging/production cutover still requires external DBA, Ops,
-> Engineering, Oncall, and Product evidence.
 
 ### Stop
 

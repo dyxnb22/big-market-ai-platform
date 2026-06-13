@@ -33,7 +33,7 @@ Compatibility directories:
 `big-market-rebate-service/src/main/resources/mybatis/mapper/mysql`,
 `big-market-strategy-service/src/main/resources/mybatis/mapper/mysql`.
 
-`big-market-activity-service` has no mapper XML. `big-market-fulfillment-service` has service-owned mappers.
+`big-market-fulfillment-service` has service-owned mappers. (`big-market-activity-service` scaffold was removed.)
 
 Compatibility set includes `strategy_rule_mapper.xml`,
 `rule_tree_node_line_mapper.xml`, `raffle_activity_order_mapper.xml`,

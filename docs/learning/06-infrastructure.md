@@ -228,7 +228,7 @@ private boolean remoteReadEnabled;
 
 ## Elasticsearch 集成
 
-**模块**：`big-market-queries`（读模型）
+**模块**：`big-market-domain`（ES 读模型接口 `IESUserRaffleOrderRepository` 已迁入 domain.queries 包）
 
 ```
 写入：Canal Adapter 同步 MySQL binlog → ES
@@ -240,7 +240,7 @@ private boolean remoteReadEnabled;
 
 ## 认证与鉴权
 
-**模块**：`big-market-auth-service` + `big-market-auth-access`
+**模块**：`big-market-auth-service`（登录 Controller 已内聚到 auth-service，不再有独立 auth-access 模块）
 
 ```
 登录：POST /api/v1/login

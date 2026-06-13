@@ -22,10 +22,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
     private final IAuthService authService;
 
-    @Value("${app.admin.token:admin-dev-token}")
-    private String adminToken;
-
-    @Value("${app.admin.user-ids:}")
+    @Value("${app.admin.user-ids:admin}")
     private String adminUserIds;
 
     public AdminAuthInterceptor(IAuthService authService) {
@@ -55,7 +52,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        if (!isAdmin(openid, token)) {
+        if (!isAdmin(openid)) {
             writeError(response, ResponseCode.APP_TOKEN_ERROR.getCode(), ResponseCode.APP_TOKEN_ERROR.getInfo());
             return false;
         }
@@ -64,15 +61,11 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private boolean isAdmin(String openid, String token) {
-        if (StringUtils.isNotBlank(adminToken) && adminToken.equals(token)) {
-            return true;
-        }
-        if (StringUtils.isNotBlank(adminUserIds)) {
-            List<String> ids = Arrays.asList(adminUserIds.split(","));
-            return ids.contains(openid);
-        }
-        return false;
+    private boolean isAdmin(String openid) {
+        if (StringUtils.isBlank(adminUserIds)) return false;
+        return Arrays.asList(adminUserIds.split(",")).stream()
+                .map(String::trim)
+                .anyMatch(id -> id.equals(openid));
     }
 
     private void writeError(HttpServletResponse response, String code, String info) throws IOException {

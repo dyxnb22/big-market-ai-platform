@@ -39,7 +39,6 @@ status; historical details live under `docs/archive/`.
 | `big-market-fulfillment-service` | 8087 | Dark launch |
 | `big-market-rebate-service` | 8088 | Dark launch |
 | `big-market-strategy-service` | 8089 | Dark launch |
-| `big-market-activity-service` | 8090 | Scaffold only |
 
 ## Boundaries
 

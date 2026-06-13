@@ -1,20 +1,21 @@
 package com.dyx.market.trigger.http;
 
+import com.dyx.market.domain.auth.service.IAuthService;
 import com.dyx.market.trigger.api.IDCCService;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.trigger.api.response.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -32,6 +33,15 @@ public class DCCController implements IDCCService {
 
     @Value("${dcc.admin.token:${app.admin.token:admin-dev-token}}")
     private String adminToken;
+
+    @Value("${app.admin.user-ids:admin}")
+    private String adminUserIds;
+
+    @Resource
+    private IAuthService authService;
+
+    @Autowired(required = false)
+    private HttpServletRequest httpRequest;
 
     private static final String BASE_CONFIG_PATH = "/big-market-dcc";
     private static final String BASE_CONFIG_PATH_CONFIG = BASE_CONFIG_PATH + "/config";
@@ -87,13 +97,23 @@ public class DCCController implements IDCCService {
         }
     }
 
-    private boolean hasAdminAccess(String token) {
-        if (adminToken.equals(token)) {
-            return true;
+    private boolean hasAdminAccess(String xAdminToken) {
+        if (StringUtils.isNotBlank(xAdminToken) && adminToken.equals(xAdminToken)) return true;
+        if (httpRequest == null) return false;
+        String authHeader = httpRequest.getHeader("Authorization");
+        if (StringUtils.isBlank(authHeader)) return false;
+        String jwtToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        try {
+            if (!authService.checkToken(jwtToken)) return false;
+            String openid = authService.openid(jwtToken);
+            return Arrays.stream(adminUserIds.split(","))
+                    .map(String::trim)
+                    .filter(StringUtils::isNotBlank)
+                    .anyMatch(id -> id.equals(openid));
+        } catch (Exception e) {
+            log.warn("DCC hasAdminAccess JWT check failed: {}", e.getMessage());
+            return false;
         }
-        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-        return attributes instanceof ServletRequestAttributes
-                && ((ServletRequestAttributes) attributes).getRequest().getAttribute("userId") != null;
     }
 
 }

@@ -269,41 +269,36 @@ public class ChatbotController {
     }
 
     private String callDeepSeek(String userMessage) {
-        try {
-            String url = deepseekBaseUrl.replaceAll("/$", "") + "/v1/chat/completions";
+        String url = deepseekBaseUrl.replaceAll("/$", "") + "/v1/chat/completions";
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(deepseekApiKey);
 
-            Map<String, Object> message = new HashMap<>();
-            message.put("role", "user");
-            message.put("content", userMessage);
+        Map<String, Object> message = new HashMap<>();
+        message.put("role", "user");
+        message.put("content", userMessage);
 
-            Map<String, Object> body = new HashMap<>();
-            body.put("model", deepseekModel);
-            body.put("messages", Collections.singletonList(message));
-            body.put("stream", false);
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", deepseekModel);
+        body.put("messages", Collections.singletonList(message));
+        body.put("stream", false);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-                if (choices != null && !choices.isEmpty()) {
-                    Map<String, Object> choice = choices.get(0);
-                    Map<String, Object> msg = (Map<String, Object>) choice.get("message");
-                    if (msg != null && msg.get("content") != null) {
-                        return msg.get("content").toString();
-                    }
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+            if (choices != null && !choices.isEmpty()) {
+                Map<String, Object> choice = choices.get(0);
+                Map<String, Object> msg = (Map<String, Object>) choice.get("message");
+                if (msg != null && msg.get("content") != null) {
+                    return msg.get("content").toString();
                 }
             }
-            log.warn("DeepSeek returned unexpected response: {}", response);
-            return localFallback(userMessage);
-        } catch (Exception e) {
-            log.error("DeepSeek API call failed", e);
-            return "抱歉，我暂时无法连接到 AI 服务。你可以继续在页面上使用抽奖、签到、积分兑换等功能。";
         }
+        // Non-2xx or empty body — let caller handle refund
+        throw new RuntimeException("DeepSeek returned unexpected response: " + response.getStatusCode());
     }
 
     private String localFallback(String userMessage) {

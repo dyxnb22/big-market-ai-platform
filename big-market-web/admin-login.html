@@ -18,17 +18,17 @@
 
     <div class="field">
       <label for="adminUserIdInput">管理员 ID</label>
-      <input id="adminUserIdInput" value="admin" autocomplete="username" placeholder="输入管理员ID" />
+      <input id="adminUserIdInput" autocomplete="username" placeholder="输入管理员ID" />
     </div>
 
     <div class="field">
       <label for="adminPasswordInput">密码</label>
-      <input id="adminPasswordInput" type="password" value="admin" autocomplete="current-password" placeholder="输入密码" />
+      <input id="adminPasswordInput" type="password" autocomplete="current-password" placeholder="输入密码" />
     </div>
 
     <button id="adminLoginBtn" class="submit-btn" type="button">登 录</button>
 
-    <p class="admin-hint">演示管理员：admin / admin</p>
+    <p class="admin-hint">演示管理员：admin / admin &nbsp;<button type="button" onclick="document.getElementById('adminUserIdInput').value='admin';document.getElementById('adminPasswordInput').value='admin';" style="font-size:11px;padding:2px 8px;border:1px solid #4b5563;border-radius:4px;background:transparent;cursor:pointer;color:inherit;">填入</button></p>
     <a class="back-link" href="./index.html">← 返回用户端</a>
   </div>
 </div>
