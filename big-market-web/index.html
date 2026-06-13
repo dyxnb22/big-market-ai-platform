@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lucky Draw AI - 智能抽奖平台</title>
   <link rel="stylesheet" href="./styles.css?v=__APP_VERSION__" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body data-page="user">
 
@@ -89,6 +90,7 @@
       </div>
       <div class="chat-header-right">
         <span id="creditDisplay" class="credit-badge">积分: -</span>
+        <button id="mOpenLotteryBtn" class="mobile-lottery-btn" type="button" onclick="window._lottery&&window._lottery()">抽奖</button>
         <button id="userMenuBtn" class="user-menu-btn" type="button" onclick="window._uc&&window._uc()">
           <span id="userNameBadge">?</span>
         </button>
@@ -136,6 +138,12 @@
         <div class="metric-card"><span class="metric-label">剩余次数</span><strong id="surplusMetric" class="metric-value">-</strong></div>
         <div class="metric-card"><span class="metric-label">今日剩余</span><strong id="dayMetric" class="metric-value">-</strong></div>
         <div class="metric-card"><span class="metric-label">积分余额</span><strong id="creditMetric" class="metric-value">-</strong></div>
+      </div>
+      <div class="drawer-action-panel">
+        <button id="signInBtn" class="action-btn primary" type="button">每日签到</button>
+        <p id="signInStatus" class="drawer-hint"></p>
+        <div id="exchangeInfo" class="exchange-info">加载兑换信息中...</div>
+        <button id="exchangeBtn" class="action-btn" type="button">积分兑换抽奖次数</button>
       </div>
     </div>
   </aside>

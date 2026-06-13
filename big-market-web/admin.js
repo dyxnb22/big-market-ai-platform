@@ -50,9 +50,9 @@ function redirectUnauthorized(message) {
   if (redirectingToLogin) return;
   redirectingToLogin = true;
   if (message) toast(message);
-  // Pass ?noperm=1 so admin-login.js skips auto-verify and avoids a redirect loop.
+  // Keep the normal user's session intact and return to the user app.
   setTimeout(function() {
-    location.replace("./admin-login.html?noperm=1&redirect=" + encodeURIComponent("./admin.html"));
+    location.replace("./index.html");
   }, 800);
 }
 

@@ -1,41 +1,37 @@
-# 学习文档导航
+# Big Market 学习手册索引
 
-Big Market 抽奖平台 — 面试 / 学习项目文档中心
+本目录是基于当前仓库代码、配置、脚本、SQL 和测试整理的学习手册。结论只写已发现证据；未发现的能力会明确写 `Not found in current code.`；仅作为建议的内容会明确写 `No real implementation found. This is only a future improvement recommendation.`
 
----
+## 最终阅读顺序
 
-## 推荐学习路径
+1. [00-learning-guide.md](00-learning-guide.md) - 一天学习路线和全局入口
+2. [03-architecture-overview.md](03-architecture-overview.md) - 先看运行形态和架构图
+3. [04-module-or-service-boundaries.md](04-module-or-service-boundaries.md) - 再看模块/服务边界
+4. [01-url-request-flows.md](01-url-request-flows.md) - 按 URL 进入代码
+5. [02-business-flows-and-diagrams.md](02-business-flows-and-diagrams.md) - 按业务流程理解系统
+6. [05-authentication-and-authorization.md](05-authentication-and-authorization.md) - 学登录、JWT、用户/管理员鉴权
+7. [06-high-concurrency-scenarios.md](06-high-concurrency-scenarios.md) - 学库存、额度、幂等、锁、任务
+8. [07-failure-degradation-and-resilience.md](07-failure-degradation-and-resilience.md) - 学失败、补偿、降级、网关熔断
+9. [08-technical-stack.md](08-technical-stack.md) - 技术栈和证据
+10. [09-code-map.md](09-code-map.md) - 关键代码地图
+11. [10-problems-and-fixes.md](10-problems-and-fixes.md) - 问题分类与整改结果
+12. [11-review-rounds-and-final-check.md](11-review-rounds-and-final-check.md) - 迭代复核记录
+13. [12-risky-changes-and-final-remediation.md](12-risky-changes-and-final-remediation.md) - 高风险整改计划和结论
 
-```
-第一阶段：读懂项目   →  01-architecture.md  +  02-domain-design.md
-第二阶段：读懂业务   →  03-business-flows.md
-第三阶段：读懂设计   →  04-design-patterns.md
-第四阶段：读懂拆分   →  05-microservices.md
-横向补充：基础设施   →  06-infrastructure.md
-```
+## 当前仓库的核心结论
 
-| 文档 | 内容概述 | 建议阅读时长 |
-|------|---------|------------|
-| [01 项目架构总览](01-architecture.md) | 模块划分、技术栈、分层结构 | 30 min |
-| [02 领域模型设计](02-domain-design.md) | 五大领域、实体/聚合/值对象、端口与适配器 | 60 min |
-| [03 核心业务流程](03-business-flows.md) | 抽奖、发奖、签到返利、积分、配额补偿等完整流程 | 60 min |
-| [04 设计模式解析](04-design-patterns.md) | 模板方法、责任链、决策树、Outbox、特性开关等 12 个模式 | 45 min |
-| [05 微服务拆分历程](05-microservices.md) | 8 个 Phase 的拆分过程、端口适配器、特性开关、最终状态 | 30 min |
-| [06 基础设施组件](06-infrastructure.md) | DB 分片路由、Redis 缓存策略、MQ、分布式锁、幂等 | 45 min |
+- 这是一个 Java 8 + Spring Boot 2.7.12 的多模块 Maven 项目。
+- 当前代码同时保留 `big-market-app` 传统一体化启动器，以及 `big-market-gateway`、`big-market-auth-service`、`big-market-admin-service`、`big-market-chatbot-service`、`big-market-market-service`、`big-market-message-job-service`、`big-market-account-service`、`big-market-fulfillment-service`、`big-market-rebate-service`、`big-market-strategy-service` 等服务化启动器。
+- 业务主线是营销抽奖活动：活动上架/装配、用户签到返利、积分账户、SKU 兑换抽奖次数、抽奖、中奖记录、发奖、运营查询、AI Chat 消耗积分。
+- 代码中存在真实的 JWT 登录校验、用户 Token 拦截、管理员 Token/JWT 校验、默认凭据启动保护。
+- 代码中存在 Redis/Redisson 缓存与锁、RabbitMQ 消息、XXL-Job 任务、MyBatis 持久化、分库分表路由、Dubbo/Nacos 服务化接口、Spring Cloud Gateway + Resilience4j 网关熔断。
+- 部分服务化能力是暗启动/脚手架状态，默认配置仍走本地进程内适配器；这些能力在文档中标为“部分实现”或“未来启用前需验证”。
 
----
+## 图表覆盖
 
-## 面试高频问题索引
+- 架构图：[03-architecture-overview.md](03-architecture-overview.md)
+- URL 流程图和时序图：[01-url-request-flows.md](01-url-request-flows.md)
+- 业务流程图和状态图：[02-business-flows-and-diagrams.md](02-business-flows-and-diagrams.md)
+- 高并发图：[06-high-concurrency-scenarios.md](06-high-concurrency-scenarios.md)
+- 失败/降级图：[07-failure-degradation-and-resilience.md](07-failure-degradation-and-resilience.md)
 
-| 问题方向 | 对应文档章节 |
-|---------|------------|
-| 抽奖概率算法是怎么实现的？O(1) 是怎么做到的？ | [04 § 概率算法](04-design-patterns.md#概率算法-o1-vs-ologn) |
-| 规则引擎怎么设计的？责任链和决策树分别解决什么？ | [04 § 责任链](04-design-patterns.md#责任链) + [04 § 决策树](04-design-patterns.md#决策树) |
-| 分布式事务怎么保证一致性？Outbox 是什么？ | [04 § Outbox 模式](04-design-patterns.md#outbox-模式) + [03 § 发奖流程](03-business-flows.md#流程二发奖履约) |
-| 用户配额（总次数 / 月 / 日）是怎么扣减的？并发怎么保证？ | [03 § 配额扣减](03-business-flows.md#流程一参与活动与抽奖) |
-| 库存超卖怎么防止？ | [06 § Redis 库存](06-infrastructure.md#redis-缓存策略) |
-| DB 分库分表怎么路由的？ | [06 § DB 分片路由](06-infrastructure.md#db-分片路由中间件) |
-| 为什么要做微服务拆分？拆分边界怎么定的？ | [05 § 拆分原则](05-microservices.md#拆分原则) |
-| 服务之间怎么通信的？同步和异步分别用在哪？ | [05 § 服务通信](05-microservices.md#服务间通信) |
-| 签到返利的幂等是怎么保证的？ | [03 § 签到返利流程](03-business-flows.md#流程三签到返利) |
-| 项目整体用了哪些设计模式？ | [04 § 总览](04-design-patterns.md#设计模式总览) |

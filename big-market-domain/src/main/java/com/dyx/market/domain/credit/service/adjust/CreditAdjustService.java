@@ -37,8 +37,12 @@ public class CreditAdjustService implements ICreditAdjustService {
         // 0. 判断处理，逆向交易，扣减积分，需要查询账户是否存在以及积分额度是否充足
         if (TradeTypeVO.REVERSE.equals(tradeEntity.getTradeType())) {
             CreditAccountEntity creditAccountEntity = creditRepository.queryUserCreditAccount(tradeEntity.getUserId());
-            if (null == creditAccountEntity || creditAccountEntity.getAdjustAmount().compareTo(tradeEntity.getAmount()) < 0) {
-                throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(), ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getInfo());
+            if (null == creditAccountEntity) {
+                throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(), "积分账户不存在");
+            }
+            if (creditAccountEntity.getAdjustAmount().compareTo(tradeEntity.getAmount()) < 0) {
+                throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(),
+                    "积分不足（当前 " + creditAccountEntity.getAdjustAmount() + "，需要 " + tradeEntity.getAmount() + " 积分）");
             }
         }
 

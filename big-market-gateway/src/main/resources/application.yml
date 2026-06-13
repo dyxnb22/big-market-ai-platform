@@ -75,6 +75,10 @@ management:
       show-details: always
 
 resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 30s
   circuitbreaker:
     configs:
       default:
@@ -161,6 +165,10 @@ management:
       show-details: always
 
 resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 30s
   circuitbreaker:
     configs:
       default:

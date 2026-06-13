@@ -57,7 +57,8 @@ public abstract class AbstractRaffleActivityAccountQuota extends RaffleActivityA
         if (OrderTradeTypeVO.credit_pay_trade.equals(skuRechargeEntity.getOrderTradeType())){
             BigDecimal availableAmount = activityRepository.queryUserCreditAccountAmount(userId);
             if (availableAmount.compareTo(activitySkuEntity.getProductAmount()) < 0) {
-                throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(), ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getInfo());
+                throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(),
+                    "积分不足（当前 " + availableAmount + "，需要 " + activitySkuEntity.getProductAmount() + " 积分）");
             }
         }
 

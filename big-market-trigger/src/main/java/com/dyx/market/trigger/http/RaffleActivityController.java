@@ -616,8 +616,8 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(request.getUserId()) || null == sku) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Deterministic outBusinessNo (userId + sku + date) makes retries idempotent
-            String outBusinessNo = request.getUserId() + "_" + sku + "_" + LocalDate.now().format(DATE_FORMAT_DAY);
+            // outBusinessNo with millis precision — retries within same ms are idempotent
+            String outBusinessNo = request.getUserId() + "_" + sku + "_" + LocalDate.now().format(DATE_FORMAT_DAY) + "_" + System.currentTimeMillis();
 
             // 1. 创建兑换商品sku订单（含库存校验和扣减）
             // Phase 2.2-B3: routed through IAccountQuotaWriteAdapter (local by default, remote when flag=true).

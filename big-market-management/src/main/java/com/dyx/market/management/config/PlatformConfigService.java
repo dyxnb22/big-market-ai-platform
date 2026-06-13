@@ -43,12 +43,22 @@ public class PlatformConfigService implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        putDefault("chatbot", "enabled", "true", "Chatbot entrance switch");
-        putDefault("chatbot", "model", "rule-based", "Default assistant engine before LLM provider is configured");
-        putDefault("chatbot", "provider", "local", "Provider: local, openai, deepseek");
-        putDefault("system", "degradeSwitch", "close", "Global raffle degrade switch");
-        putDefault("system", "rateLimiterSwitch", "close", "Global rate limiter switch");
+        putDefault("chatbot", "enabled",  "true",                        "Chatbot entrance switch");
+        putDefault("chatbot", "provider", "local",                       "Provider: local, deepseek, openai");
+        putDefault("chatbot", "apiKey",   "",                            "LLM provider API key");
+        putDefault("chatbot", "baseUrl",  "https://api.deepseek.com",    "LLM provider base URL");
+        putDefault("chatbot", "model",    "deepseek-chat",               "LLM model name");
+        putDefault("system",  "degradeSwitch",    "close", "Global raffle degrade switch");
+        putDefault("system",  "rateLimiterSwitch","close", "Global rate limiter switch");
         loadFromDisk();
+        // Nacos is source-of-truth: override disk state with latest remote config on startup
+        if (nacosConfigSyncService != null) {
+            String nacosContent = nacosConfigSyncService.fetchCurrent(3000);
+            if (nacosContent != null && !nacosContent.isEmpty()) {
+                refreshFromContent(nacosContent);
+                log.info("Platform config restored from Nacos on startup ({} entries)", configStore.size());
+            }
+        }
     }
 
     public List<AdminConfigResponseDTO> list(String namespace) {

@@ -141,10 +141,13 @@ public class ChatbotController {
                 newBalance = fetchCreditBalance(token);
             }
 
+            String effectiveProvider = platformConfigService.getValue("chatbot", "provider", provider);
+            String effectiveApiKey   = platformConfigService.getValue("chatbot", "apiKey",   deepseekApiKey);
+
             String answer;
             try {
-                if ("deepseek".equalsIgnoreCase(provider) && StringUtils.isNotBlank(deepseekApiKey)) {
-                    answer = callDeepSeek(message);
+                if ("deepseek".equalsIgnoreCase(effectiveProvider) && StringUtils.isNotBlank(effectiveApiKey)) {
+                    answer = callDeepSeek(message, effectiveApiKey);
                 } else {
                     answer = localFallback(message);
                 }
@@ -170,7 +173,7 @@ public class ChatbotController {
                     .info(ResponseCode.SUCCESS.getInfo())
                     .data(ChatbotAskResponseDTO.builder()
                             .intent("chat")
-                            .toolName("deepseek".equalsIgnoreCase(provider) ? "deepseek" : "local")
+                            .toolName("deepseek".equalsIgnoreCase(effectiveProvider) ? "deepseek" : "local")
                             .success(true)
                             .answer(answer)
                             .creditDeducted(deducted)
@@ -268,19 +271,21 @@ public class ChatbotController {
         }
     }
 
-    private String callDeepSeek(String userMessage) {
-        String url = deepseekBaseUrl.replaceAll("/$", "") + "/v1/chat/completions";
+    private String callDeepSeek(String userMessage, String apiKey) {
+        String baseUrl = platformConfigService.getValue("chatbot", "baseUrl", deepseekBaseUrl);
+        String model   = platformConfigService.getValue("chatbot", "model",   deepseekModel);
+        String url     = baseUrl.replaceAll("/$", "") + "/v1/chat/completions";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(deepseekApiKey);
+        headers.setBearerAuth(apiKey);
 
         Map<String, Object> message = new HashMap<>();
         message.put("role", "user");
         message.put("content", userMessage);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", deepseekModel);
+        body.put("model", model);
         body.put("messages", Collections.singletonList(message));
         body.put("stream", false);
 

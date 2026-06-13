@@ -45,8 +45,8 @@ function initApp() {
     drawBtn:         qs("#drawBtn"),
     drawResult:      qs("#drawResult"),
     refreshCampaign: qs("#refreshCampaignBtn"),
-    signInBtn:       null,
-    signInStatus:    null,
+    signInBtn:       qs("#signInBtn"),
+    signInStatus:    qs("#signInStatus"),
     surplusMetric:   qs("#surplusMetric"),
     dayMetric:       qs("#dayMetric"),
     creditMetric:    qs("#creditMetric"),
@@ -59,6 +59,7 @@ function initApp() {
     newChatBtn:      qs("#newChatBtn"),
     clearChatBtn:    qs("#clearChatBtn"),
     openLotteryBtn:  qs("#openLotteryBtn"),
+    mobileLotteryBtn: qs("#mOpenLotteryBtn"),
     closeDrawerBtn:  qs("#closeDrawerBtn"),
     lotteryDrawer:   qs("#lotteryDrawer"),
     userCenterBtn:   qs("#userCenterBtn"),
@@ -78,8 +79,8 @@ function initApp() {
     ucSigned:        qs("#ucSigned"),
     logoutBtn:       qs("#logoutBtn"),
     toast:           qs("#toast"),
-    exchangeInfo:    null,
-    exchangeBtn:     null,
+    exchangeInfo:    qs("#exchangeInfo"),
+    exchangeBtn:     qs("#exchangeBtn"),
     ucSignInBtn:     qs("#ucSignInBtn"),
     ucExchangeBtn:   qs("#ucExchangeBtn"),
     ucExchangeHint:  qs("#ucExchangeHint")
@@ -158,15 +159,17 @@ function initApp() {
     var grad = awards.map(function(a,i) { return colors[i%colors.length]+" "+(i*seg)+"deg "+((i+1)*seg)+"deg"; }).join(", ");
     d.wheel.style.background = "conic-gradient(" + grad + ")";
     d.wheel.innerHTML = "";
-    // Scale font size based on number of awards (more awards = smaller text)
-    var fontSize = awards.length > 8 ? 9 : awards.length > 6 ? 10 : 12;
-    var radius = 110; // distance from center to label
+    var mobile = window.innerWidth < 640;
+    // Keep labels well inside the circle to avoid clipping by border-radius
+    var fontSize = mobile ? (awards.length > 6 ? 9 : 11) : (awards.length > 8 ? 10 : awards.length > 6 ? 12 : 14);
+    var labelWidth = mobile ? (awards.length > 6 ? 54 : 70) : (awards.length > 6 ? 68 : 90);
+    var radius = mobile ? 72 : 112;
     awards.forEach(function(award, i) {
       var el = document.createElement("span");
       el.className = "wheel-label";
       el.style.fontSize = fontSize + "px";
-      el.style.width = (awards.length > 6 ? 70 : 90) + "px";
-      el.style.marginLeft = (awards.length > 6 ? "-35px" : "-45px");
+      el.style.width = labelWidth + "px";
+      el.style.marginLeft = "-" + (labelWidth/2) + "px";
       el.style.transform = "rotate(" + (i*seg+seg/2) + "deg) translateY(-" + radius + "px) rotate(90deg)";
       el.textContent = award.awardTitle || ("奖品"+(i+1));
       d.wheel.appendChild(el);
@@ -376,12 +379,13 @@ function initApp() {
       active.messages.forEach(function(m) {
         var el = document.createElement("div");
         el.className = "message "+m.role;
-        el.innerHTML = '<div class="avatar">'+(m.role==="user"?"我":"AI")+'</div><div class="bubble">'+esc(m.content)+'</div>';
-        if (m.payload) {
-          var p = document.createElement("div"); p.className="payload";
-          p.textContent = JSON.stringify(m.payload,null,2);
-          el.querySelector(".bubble").appendChild(p);
+        var content;
+        if (m.role === "assistant") {
+          content = marked.parse(m.content, {breaks: true, gfm: true});
+        } else {
+          content = esc(m.content);
         }
+        el.innerHTML = '<div class="avatar">'+(m.role==="user"?"我":"AI")+'</div><div class="bubble">'+content+'</div>';
         d.msgList.appendChild(el);
       });
     }
@@ -408,11 +412,10 @@ function initApp() {
     }).then(function(r) {
       var data = r.data || {};
       var answer = data.answer || r.info || "已处理。";
-      // Append credit info to response if credit was deducted
       if (data.creditDeducted && data.creditDeducted > 0) {
-        answer += "\n\n---\n本次消耗 " + data.creditDeducted + " 积分";
+        answer += "\n\n---\n*本次消耗 " + data.creditDeducted + " 积分*";
       }
-      addMsg("assistant", answer, data);
+      addMsg("assistant", answer, {creditDeducted: data.creditDeducted, creditBalance: data.creditBalance});
       // Update credit display
       if (data.creditBalance !== undefined && data.creditBalance !== null) {
         var bal = data.creditBalance;
@@ -501,7 +504,7 @@ function initApp() {
     if (currentCredit < cost) { disableExchange("积分不足，需要 " + cost + " 积分"); return; }
     // Enable exchange
     if (d.exchangeBtn) { d.exchangeBtn.disabled = false; d.exchangeBtn.textContent = "兑换 1 次抽奖机会（消耗 " + cost + " 积分）"; }
-    if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = false; d.ucExchangeBtn.textContent = "兑换 1 次抽奖机会（" + cost + " 积分，每日限兑 1 次）"; }
+    if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = false; d.ucExchangeBtn.textContent = "兑换 1 次抽奖机会（" + cost + " 积分）"; }
     if (d.ucExchangeHint) { d.ucExchangeHint.style.display = "none"; }
   }
 
@@ -544,6 +547,7 @@ function initApp() {
   d.userMenuBtn.onclick = openUserCenter;
   d.userCenterBtn.onclick = openUserCenter;
   d.openLotteryBtn.onclick = openLottery;
+  if (d.mobileLotteryBtn) d.mobileLotteryBtn.onclick = openLottery;
   d.closeDrawerBtn.onclick = closeLottery;
   d.closeUcBtn.onclick = closeUserCenter;
   d.drawerOverlay.onclick = closeAll;
@@ -551,6 +555,7 @@ function initApp() {
   d.refreshCampaign.onclick = function() { loadCampaign().then(function(){toast("已刷新");}).catch(function(e){toast(e.message);}); };
   d.logoutBtn.onclick = logout;
   if (d.exchangeBtn) d.exchangeBtn.onclick = doExchange;
+  if (d.signInBtn) d.signInBtn.onclick = signIn;
   if (d.ucSignInBtn) d.ucSignInBtn.onclick = signIn;
   if (d.ucExchangeBtn) d.ucExchangeBtn.onclick = doExchange;
 
