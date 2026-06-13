@@ -81,7 +81,7 @@ mvn clean package -DskipTests
 # 1. Start the full infrastructure stack
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 
-# 2. Start the Phase 1 microservices stack
+# 2. Start the current microservices stack
 docker compose up --build -d
 ```
 
@@ -153,25 +153,19 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml logs nacos
 
 ---
 
-## Legacy Monolith (big-market-app)
-
-The original single-JVM launcher is preserved at port 8098. Use it for local debugging or as a reference only. Do not run it simultaneously with the Phase 1 microservices stack against the same infrastructure unless you intentionally want duplicate MQ consumers, scheduled jobs, shared DB/Redis writes, and registration side effects. The main risk is shared infrastructure behavior, not direct HTTP port conflict.
-
-### Quick Start (monolith)
-
-启动中间件、打包并以前台方式运行应用：
+## Local Development
 
 ```bash
+# Start middleware, build modules, and launch the microservices stack
 ./scripts/dev-run.sh
 ```
 
-如果希望后台运行：
+If you prefer manual steps:
 
 ```bash
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 mvn -DskipTests package
-./scripts/web-start.sh
-./scripts/web-status.sh
+docker compose up -d --build
 ```
 
 应用默认地址（gateway）：`http://127.0.0.1:8080`

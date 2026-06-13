@@ -303,7 +303,8 @@ public class RaffleActivityController implements IRaffleActivityService {
             // 幂等检查：今日已签到直接返回，避免重复创建订单
             boolean alreadySigned = rebateReadAdapter.isCalendarSignRebate(userId, outBusinessNo);
             if (alreadySigned) {
-                BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+                BigDecimal balance;
+                try { balance = accountRemoteReadAdapter.queryUserCreditAccount(userId); } catch (Exception ignored) { balance = BigDecimal.ZERO; }
                 log.info("日历签到返利-今日已签到 userId:{}", userId);
                 return Response.<SignInResponseDTO>builder()
                         .code(ResponseCode.SUCCESS.getCode())
@@ -325,8 +326,9 @@ public class RaffleActivityController implements IRaffleActivityService {
             List<String> orderIds = rebateOrderAdapter.createOrder(behaviorEntity);
             log.info("日历签到返利完成 userId:{} orderIds: {}", userId, JSON.toJSONString(orderIds));
 
-            // 查询签到后的积分余额
-            BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
+            // 查询签到后的积分余额（首次签到时积分账户可能尚未通过 MQ 异步创建，查询失败时返回 0 而非报错）
+            BigDecimal balance;
+            try { balance = accountRemoteReadAdapter.queryUserCreditAccount(userId); } catch (Exception ignored) { balance = BigDecimal.ZERO; }
 
             return Response.<SignInResponseDTO>builder()
                     .code(ResponseCode.SUCCESS.getCode())

@@ -11,6 +11,8 @@ This consolidated Phase 8 document replaces the separate cutover runbook,
 external evidence intake, readiness pack, conflict matrix, and
 idempotency/rollback matrix. Evidence lives in
 `docs/evidence/phase-8-evidence-pack.md`.
+External evidence intake is consolidated in this same document:
+`docs/microservices-phase-8.md`.
 
 Validators:
 
@@ -40,6 +42,20 @@ STG/PROD/GNG rows EXTERNAL-GATED until real references exist.
 
 Production canary: only after external staging approval is recorded. Rollback:
 disable remote/outbox flags and restore legacy provider defaults. acceptance criteria: 7-day stable legacy-provider disable, then 30-day removal.
+
+### Flag Defaults And Rollback
+
+Do not enable production, remote, or outbox flags by default. Every flag below
+remains EXTERNAL-GATED until DBA/Ops/Engineering/Oncall/Product evidence is
+recorded.
+
+| Service | Required default | Rollback action |
+| --- | --- | --- |
+| account-service | account.remote-write.enabled=false; account.award-credit-outbox.enabled=false; quota decrement flags default false | set account write/outbox flags false |
+| fulfillment-service | fulfillment.remote.enabled=false; account.award-credit-outbox.enabled=false | disable fulfillment remote and outbox flags |
+| rebate-service | rebate.remote-create-order.enabled=false; rebate.service.remote-read.enabled=false | disable rebate remote flags |
+| strategy-service | strategy.service.remote-read.enabled=false; strategy.service.remote-decision.enabled=false | disable strategy remote read flag |
+| activity-service | activity.service.remote-draw.enabled=false | disable remote draw flag |
 
 ## External Evidence Intake
 
@@ -107,6 +123,14 @@ Owning team DBA/Ops/Engineering/Oncall/Product. Status: EXTERNAL-GATED.
 Status: EXTERNAL-GATED.
 No real production readiness, staging cutover, remote cutover, or DDL readiness
 is proven; real staging and production readiness remain external-gated.
+
+Compatibility cross-references retained after document consolidation:
+microservices-phase-8-cutover-runbook,
+microservices-phase-8-external-evidence-intake,
+microservices-phase-8-cutover-conflict-matrix,
+microservices-phase-8-idempotency-rollback-matrix,
+microservices-legacy-cleanup-inventory, and
+validate-microservices-split-all-gates.
 
 DBA DDL Verification. Ops Dubbo Provider / XXL-Job / MQ. Engineering Staging
 Canary. Oncall Dashboards and Alerts. Product GO/NO-GO.

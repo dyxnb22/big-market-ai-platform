@@ -49,12 +49,16 @@ function redirectExpiredLogin(message) {
 function redirectUnauthorized(message) {
   if (redirectingToLogin) return;
   redirectingToLogin = true;
-  // Do NOT clearAuth — user still has a valid token, just not admin role
   if (message) toast(message);
-  setTimeout(function() { location.href = "./index.html"; }, 800);
+  // Pass ?noperm=1 so admin-login.js skips auto-verify and avoids a redirect loop.
+  setTimeout(function() {
+    location.replace("./admin-login.html?noperm=1&redirect=" + encodeURIComponent("./admin.html"));
+  }, 800);
 }
 
-// Wrap apiRequest to add auth-expired guard
+// adminRequest: wraps apiRequest and redirects on auth/permission errors.
+// Use ONLY for /admin/* endpoints (admin-service). For raffle/ERP endpoints
+// use safeRequest() which shows a toast instead of redirecting.
 function adminRequest(path, opts) {
   return apiRequest(path, opts, {
     onAuthExpired: function() {
@@ -70,12 +74,17 @@ function adminRequest(path, opts) {
   });
 }
 
+// safeRequest: for non-admin-service endpoints (raffle, ERP) where errors
+// should show a toast but never trigger a redirect.
+function safeRequest(path, opts) {
+  return apiRequest(path, opts);
+}
+
 async function saveConfig(namespace, configKey, configValue, description) {
-  var res = await adminRequest("/admin/config/save", {
+  await adminRequest("/admin/config/save", {
     method: "POST",
     body: JSON.stringify({namespace: namespace, configKey: configKey, configValue: configValue, description: description})
   });
-  if (res.code !== "0000") throw new Error(res.info || "保存失败");
 }
 
 async function loadConfigs() {
@@ -93,9 +102,10 @@ async function loadConfigs() {
 
 async function loadActivity() {
   if (!requireLogin()) return;
-  var activityId = dom.activityIdInput.value.trim();
-  var stageRes = await adminRequest("/raffle/erp/query_raffle_activity_stage_list", {method: "GET"});
-  var skuRes = await adminRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST"});
+  var activityId = dom.activityIdInput.value.trim() || "100301";
+  dom.activityIdInput.value = activityId;
+  var stageRes = await safeRequest("/raffle/erp/query_raffle_activity_stage_list", {method: "GET"});
+  var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST"});
   var stage = (stageRes.data || []).find(function(item) { return String(item.activityId) === String(activityId); });
   dom.activityStateInput.value = stage?.state || "online";
   renderSkuTable(skuRes.data || []);
@@ -106,15 +116,15 @@ async function loadAwards() {
   if (!requireLogin()) return;
   var activityId = Number(dom.activityIdInput.value || 100301);
   try {
-    var res = await adminRequest("/raffle/strategy/query_raffle_award_list_by_token", {
+    var res = await safeRequest("/raffle/strategy/query_raffle_award_list_by_token", {
       method: "POST",
       body: JSON.stringify({activityId: activityId})
     });
-    if (res.code === "0000" && res.data?.length) {
+    if (res.data && res.data.length) {
       renderAwardTable(res.data);
-      return;
+    } else {
+      dom.awardTable.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">暂无奖品数据</div>';
     }
-    throw new Error(res.info || "奖品接口返回异常");
   } catch (e) {
     toast("奖品接口加载失败: " + e.message);
     dom.awardTable.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">奖品接口加载失败，请稍后重试。</div>';
@@ -123,7 +133,7 @@ async function loadAwards() {
 
 function renderSkuTable(items) {
   var rows = items.map(function(item) {
-    return "<tr><td>" + item.sku + "</td><td>" + item.productAmount + "</td><td>" + (item.activityCount?.totalCount || 0) + "</td><td>" + (item.activityCount?.dayCount || 0) + "</td><td>" + (item.stockCountSurplus ?? 0) + "</td></tr>";
+    return "<tr><td>" + esc(String(item.sku || "")) + "</td><td>" + Number(item.productAmount || 0) + "</td><td>" + (item.activityCount?.totalCount || 0) + "</td><td>" + (item.activityCount?.dayCount || 0) + "</td><td>" + (item.stockCountSurplus ?? 0) + "</td></tr>";
   }).join("");
   dom.skuTable.innerHTML = "<table><thead><tr><th>SKU</th><th>积分价格</th><th>总次数</th><th>日次数</th><th>剩余库存</th></tr></thead><tbody>" + (rows || '<tr><td colspan="5">暂无 SKU 数据</td></tr>') + "</tbody></table>";
 }
@@ -155,8 +165,7 @@ async function saveAwardDisplay() {
 
 async function armory() {
   if (!requireLogin()) return;
-  var res = await adminRequest("/raffle/activity/armory?activityId=" + dom.activityIdInput.value, {method: "GET"});
-  if (res.code !== "0000") throw new Error(res.info || "预热失败");
+  await safeRequest("/raffle/activity/armory?activityId=" + dom.activityIdInput.value, {method: "GET"});
   toast("活动预热成功");
 }
 
@@ -198,8 +207,8 @@ dom.adminLoginBtn.addEventListener("click", function() {
   } else {
     clearAuth();
     auth = {token: "", userId: ""};
-    dom.adminUserBadge.textContent = "未登录";
-    dom.adminLoginLink.textContent = "🔑 登录";
+    if (dom.adminUserBadge) dom.adminUserBadge.textContent = "未登录";
+    if (dom.adminLoginLink) dom.adminLoginLink.textContent = "🔑 登录";
     dom.adminLoginBtn.textContent = "登录";
     toast("已退出");
     setTimeout(function() { location.replace(adminLoginUrl()); }, 300);
@@ -281,16 +290,12 @@ async function refreshOps() {
     setDiag(opsDom.diagLogin, false, "请求失败: " + e.message);
   }
 
-  // 3. Admin config/list
+  // 3. Admin config/list — use safeRequest so a 0008 here doesn't trigger a redirect
   try {
-    var adminRes = await adminRequest("/admin/config/list", {method: "GET"});
-    if (adminRes.code === "0000") {
-      setDiag(opsDom.diagAdmin, true, "OK (" + (adminRes.data?.length || 0) + " items)");
-    } else {
-      setDiag(opsDom.diagAdmin, false, adminRes.info || "业务错误");
-    }
+    var adminRes = await safeRequest("/admin/config/list", {method: "GET"});
+    setDiag(opsDom.diagAdmin, true, "OK (" + (adminRes.data?.length || 0) + " items)");
   } catch (e) {
-    setDiag(opsDom.diagAdmin, false, e.message);
+    setDiag(opsDom.diagAdmin, false, e.message || "请求失败");
   }
 
   // 4. Chatbot API availability
@@ -350,10 +355,15 @@ if (opsDom.refreshBtn) opsDom.refreshBtn.addEventListener("click", function() {
 if (opsDom.logQueryBtn) opsDom.logQueryBtn.addEventListener("click", queryLogs);
 
 async function initializeAdmin() {
-  if (!auth.token) return;
+  if (!auth.token) {
+    location.replace(adminLoginUrl());
+    return;
+  }
+  // loadConfigs() both verifies admin privilege (via adminRequest) and loads data.
+  // On 0008/0009 it triggers the appropriate redirect internally.
   await loadConfigs();
   await Promise.all([
-    loadActivity().catch(function() {}),
+    loadActivity().catch(function(e) { toast("活动数据加载失败: " + (e.message || "")); }),
     loadAwards().catch(function() {}),
     refreshOps().catch(function() {})
   ]);

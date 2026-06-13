@@ -76,7 +76,7 @@ public class RaffleActivityControllerTest {
 
     @Test
     public void test_calendarSignRebate() throws InterruptedException {
-        Response<Boolean> response = raffleActivityService.calendarSignRebate("xiaofuge");
+        Response<SignInResponseDTO> response = raffleActivityService.calendarSignRebate("xiaofuge");
         log.info("测试结果：{}", JSON.toJSONString(response));
 
         // 让程序挺住方便测试，也可以去掉

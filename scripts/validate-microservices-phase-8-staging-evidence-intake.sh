@@ -111,7 +111,7 @@ for gate in \
   require_text "Missing evidence register covers: $gate" "$CHECKLIST" "$gate"
 done
 
-for service in account-service fulfillment-service rebate-service strategy-service activity-service; do
+for service in account-service fulfillment-service rebate-service strategy-service; do
   require_text "Per-service checklist covers $service" "$CHECKLIST" "$service"
 done
 

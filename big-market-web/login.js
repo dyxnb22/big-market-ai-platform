@@ -21,8 +21,14 @@ if (existingAuth.token) {
     onAuthExpired: function() { clearAuth(); }
   }).then(function() {
     location.replace(redirectUrl);
-  }).catch(function() {
-    clearAuth();
+  }).catch(function(e) {
+    // onAuthExpired already handles 0009 (token expired).
+    // For other API error codes, the token is unusable — clear it.
+    // For network errors (no code), keep the token so the user isn't
+    // logged out just because the server is temporarily unreachable.
+    if (e.code) {
+      clearAuth();
+    }
   });
 }
 

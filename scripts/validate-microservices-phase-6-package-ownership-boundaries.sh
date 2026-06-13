@@ -417,15 +417,6 @@ fi
 echo ""
 echo "── 4. No new mapper XML ownership movement ──"
 # Canonical: mapper XMLs known to each service module.
-# activity-service must still have zero mapper XMLs.
-ACT_MAPPERS=$(find "$REPO_ROOT/big-market-activity-service/src/main/resources/mybatis/mapper" \
-  -type f -name "*.xml" 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$ACT_MAPPERS" -eq 0 ]]; then
-  pass "big-market-activity-service has no mapper XMLs (correct)"
-else
-  fail "big-market-activity-service has $ACT_MAPPERS mapper XML(s) — unexpected; no mapper migration in this batch"
-fi
-
 # Verify well-known service mapper directories still contain their expected files
 check_mapper_present() {
   local label="$1" rel_path="$2"
@@ -444,42 +435,6 @@ check_mapper_present "strategy-service has strategy mapper" \
   "big-market-strategy-service/src/main/resources/mybatis/mapper/mysql/strategy_mapper.xml"
 check_mapper_present "rebate-service has daily_behavior_rebate mapper" \
   "big-market-rebate-service/src/main/resources/mybatis/mapper/mysql/daily_behavior_rebate_mapper.xml"
-
-# ── 5. activity-service scope constraints still hold ─────────────────────────
-echo ""
-echo "── 5. big-market-activity-service scope constraints ──"
-
-ACT_SRC="$REPO_ROOT/big-market-activity-service/src/main/java"
-
-count_pattern() {
-  local label="$1" pattern="$2"
-  local cnt
-  cnt=$(grep -rn "$pattern" "$ACT_SRC" --include="*.java" 2>/dev/null | wc -l | tr -d ' ')
-  if [[ "$cnt" -eq 0 ]]; then
-    pass "$label (0 occurrences)"
-  else
-    fail "$label ($cnt occurrence(s) found)"
-  fi
-}
-
-count_pattern "No mapper XMLs in activity-service" "@Mapper"
-count_pattern "No @DubboService in activity-service" "@DubboService"
-count_pattern "No @RestController in activity-service" "@RestController"
-count_pattern "No @RabbitListener in activity-service" "@RabbitListener"
-count_pattern "No @XxlJob in activity-service" "@XxlJob"
-
-# Also verify the mapper XML check (belt-and-suspenders with §4)
-ACT_MAPPER_DIR="$REPO_ROOT/big-market-activity-service/src/main/resources/mybatis/mapper"
-if [[ -d "$ACT_MAPPER_DIR" ]]; then
-  XML_COUNT=$(find "$ACT_MAPPER_DIR" -type f -name "*.xml" 2>/dev/null | wc -l | tr -d ' ')
-  if [[ "$XML_COUNT" -eq 0 ]]; then
-    pass "No mapper XML files in activity-service mapper directory"
-  else
-    fail "$XML_COUNT mapper XML file(s) found in activity-service"
-  fi
-else
-  pass "activity-service mapper directory absent (expected)"
-fi
 
 # ── 6. Phase 5-D/E/F/G port boundaries still hold ────────────────────────────
 echo ""
@@ -510,9 +465,6 @@ check_file_exists \
   "Phase 5-E LocalAwardFulfillmentPort exists" \
   "$(find "$REPO_ROOT" -name "LocalAwardFulfillmentPort.java" ! -path "*/target/*" 2>/dev/null | head -1)"
 
-check_file_exists \
-  "Phase 5-F ActivityServiceApplication exists" \
-  "$REPO_ROOT/big-market-activity-service/src/main/java/com/dyx/market/activity/ActivityServiceApplication.java"
 
 check_file_exists \
   "Phase 5-G IDrawOutboxPort exists" \
@@ -534,7 +486,6 @@ REMOTE_FLAGS=(
   "rebate.service.remote-read.enabled"
   "strategy.service.remote-read.enabled"
   "fulfillment.remote.enabled"
-  "activity.service.remote-draw.enabled"
   "award.service.remote-fulfillment.enabled"
   "strategy.service.remote-decision.enabled"
 )
@@ -545,7 +496,6 @@ RESOURCE_DIRS=(
   "$REPO_ROOT/big-market-message-job-service/src/main/resources"
   "$REPO_ROOT/big-market-rebate-service/src/main/resources"
   "$REPO_ROOT/big-market-strategy-service/src/main/resources"
-  "$REPO_ROOT/big-market-activity-service/src/main/resources"
   "$REPO_ROOT/big-market-fulfillment-service/src/main/resources"
 )
 

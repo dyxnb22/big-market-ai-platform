@@ -49,27 +49,10 @@ assert_file_exists() {
   [[ -f "$file" ]] && pass "$label" || fail "$label — missing: $file"
 }
 
-ACTIVITY="$REPO_ROOT/big-market-activity-service"
 STRATEGY="$REPO_ROOT/big-market-strategy-service"
 REBATE="$REPO_ROOT/big-market-rebate-service"
 FULFILLMENT="$REPO_ROOT/big-market-fulfillment-service"
 MESSAGE_JOB="$REPO_ROOT/big-market-message-job-service"
-
-echo ""
-echo "── 1. activity-service remains dark-launch only ──"
-assert_file_exists "activity-service launcher exists" "$ACTIVITY/src/main/java/com/dyx/market/activity/ActivityServiceApplication.java"
-ACTIVITY_MAPPER_COUNT=$(find "$ACTIVITY/src/main/resources" -path '*/mybatis/mapper/*' -type f -name '*.xml' 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$ACTIVITY_MAPPER_COUNT" -eq 0 ]]; then
-  pass "activity-service has no mapper XML"
-else
-  fail "activity-service has mapper XML files ($ACTIVITY_MAPPER_COUNT)"
-  find "$ACTIVITY/src/main/resources" -path '*/mybatis/mapper/*' -type f -name '*.xml' 2>/dev/null | sed 's#^#       #'
-fi
-assert_zero "activity-service has no Dubbo provider" "$ACTIVITY/src/main/java" '@DubboService'
-assert_zero "activity-service has no REST controller" "$ACTIVITY/src/main/java" '@RestController'
-assert_zero "activity-service has no MQ listener" "$ACTIVITY/src/main/java" '@RabbitListener'
-assert_zero "activity-service has no XXL job" "$ACTIVITY/src/main/java" '@XxlJob'
-assert_zero "activity-service has no mapper scan/mapper annotations" "$ACTIVITY/src/main/java" '@MapperScan|@Mapper'
 
 echo ""
 echo "── 2. strategy-service DAO ownership does not expand outside strategy ──"

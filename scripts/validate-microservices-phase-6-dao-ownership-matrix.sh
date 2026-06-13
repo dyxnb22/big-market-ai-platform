@@ -116,19 +116,6 @@ else
   fail "LocalAwardFulfillmentPort missing — Phase 5-E boundary broken"
 fi
 
-# 5-F: activity-service scaffold exists, no HTTP controller, no @DubboService in scan path
-ACTIVITY_APP="$REPO_ROOT/big-market-activity-service/src/main/java/com/dyx/market/activity/ActivityServiceApplication.java"
-if [[ -f "$ACTIVITY_APP" ]]; then
-  pass "big-market-activity-service scaffold exists (Phase 5-F)"
-else
-  fail "big-market-activity-service scaffold missing — Phase 5-F boundary broken"
-fi
-DUBBO_IN_ACTIVITY=$({ grep -rn "@DubboService" "$REPO_ROOT/big-market-activity-service/src/main/java/" --include="*.java" 2>/dev/null || true; } | wc -l | tr -d ' ')
-if [[ "$DUBBO_IN_ACTIVITY" -eq 0 ]]; then
-  pass "No @DubboService in activity-service (Phase 5-F scope preserved)"
-else
-  fail "@DubboService found in big-market-activity-service — Phase 5-F scope violated ($DUBBO_IN_ACTIVITY occurrences)"
-fi
 
 # 5-G: IDrawOutboxPort and LocalDrawOutboxPort exist; not wired into hot-path
 DRAW_OUTBOX_PORT=$(find "$REPO_ROOT" -path "*/domain/activity/adapter/port/IDrawOutboxPort.java" ! -path "*/target/*" 2>/dev/null | head -1)
@@ -163,7 +150,6 @@ for flag in "${REMOTE_FLAGS[@]}"; do
     "$REPO_ROOT/big-market-message-job-service/src/main/resources/" \
     "$REPO_ROOT/big-market-rebate-service/src/main/resources/" \
     "$REPO_ROOT/big-market-strategy-service/src/main/resources/" \
-    "$REPO_ROOT/big-market-activity-service/src/main/resources/" \
     --include="*.yml" --include="*.yaml" --include="*.properties" \
     2>/dev/null || true; } | { grep -v "^#\|^[[:space:]]*#" || true; } | wc -l | tr -d ' ')
   if [[ "$ENABLED_COUNT" -eq 0 ]]; then

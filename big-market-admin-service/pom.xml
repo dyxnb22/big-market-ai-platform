@@ -52,7 +52,11 @@
         <!-- Project modules -->
         <dependency>
             <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-admin</artifactId>
+            <artifactId>big-market-management</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-api</artifactId>
         </dependency>
         <!-- domain.auth needed for AdminAuthInterceptor's IAuthService -->
         <dependency>

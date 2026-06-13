@@ -1,7 +1,8 @@
 # Microservices Phase Archive
 
-This consolidated archive replaces the old per-phase files. The old filenames
-remain as compatibility links for scripts and references.
+This consolidated archive replaces the old per-phase files and phase-specific
+validator notes. The old one-off validator scripts were removed from the active
+script surface; this document keeps their conclusions for traceability.
 
 ## Phase 1
 
@@ -52,11 +53,8 @@ then `REBATE_LEGACY_RPC_PROVIDER_ENABLED=false`.
 
 Rebate job/outbox ownership is documented but not production-enabled.
 `RebateMessageConsumer` ownership and shared task outbox coupling remain
-blockers. Validation commands:
-`validate-microservices-phase-3-next-extraction.sh`,
-`validate-microservices-phase-3-rebate-adapter`,
-`validate-microservices-phase-3-rebate-read-adapter`, and
-`validate-microservices-phase-3-rebate-provider-ownership`.
+blockers. The former Phase 3 validator scripts were removed during script
+surface cleanup; their status is preserved in this archive.
 
 ## Phase 3 Rebate Outbox Ownership
 

@@ -256,7 +256,6 @@ RESOURCE_DIRS=(
   "$REPO_ROOT/big-market-account-service/src/main/resources"
   "$REPO_ROOT/big-market-market-service/src/main/resources"
   "$REPO_ROOT/big-market-message-job-service/src/main/resources"
-  "$REPO_ROOT/big-market-activity-service/src/main/resources"
 )
 
 for flag in "${REMOTE_FLAGS[@]}"; do

@@ -114,7 +114,6 @@ if [[ -f "$INVENTORY" ]]; then
   for module in big-market-app big-market-market-service big-market-message-job-service big-market-account-service big-market-rebate-service big-market-strategy-service; do
     require_text "Inventory lists mapper compatibility for $module" "$INVENTORY" "$module/src/main/resources/mybatis/mapper/mysql"
   done
-  require_text "Inventory explicitly exempts activity-service mapper absence" "$INVENTORY" "big-market-activity-service.*no mapper XML"
   require_text "Inventory explicitly describes fulfillment-service mapper ownership" "$INVENTORY" "big-market-fulfillment-service.*service-owned"
 
   for mapper in \

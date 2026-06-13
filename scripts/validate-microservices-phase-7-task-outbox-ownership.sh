@@ -173,7 +173,6 @@ non_proposed_ddl=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DAT
   --include='*.sql' --include='*.md' --include='*.sh' 2>/dev/null \
   | grep -v '/docs/sql/proposed-' \
   | grep -v '/docs/archive/' \
-  | grep -v 'microservices-split-phase-5-activity-draw-saga-outbox.md' \
   | grep -v 'validate-microservices-phase-7-task-outbox-ownership.sh' \
   || true)
 
@@ -184,7 +183,6 @@ else
   phase7b_non_proposed_ddl=$(printf '%s\n' "$changed_files" \
     | grep -vE '^docs/sql/proposed-[^/]+\.sql$' \
     | grep -vE '^docs/archive/' \
-    | grep -v 'validate-microservices-phase-5-activity-draw-saga-outbox.sh' \
     | while read -r file; do
         [[ -f "$REPO_ROOT/$file" ]] || continue
         grep -HnE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' "$REPO_ROOT/$file" 2>/dev/null \
@@ -214,8 +212,6 @@ REMOTE_FLAGS=(
   "strategy.service.remote-read.enabled"
   "strategy.service.remote-decision.enabled"
   "fulfillment.remote.enabled"
-  "activity.service.remote-draw.enabled"
-  "activity.service.remote-strategy-mapping.enabled"
   "award.service.remote-fulfillment.enabled"
 )
 
@@ -225,7 +221,6 @@ RESOURCE_DIRS=(
   "$REPO_ROOT/big-market-message-job-service/src/main/resources"
   "$REPO_ROOT/big-market-rebate-service/src/main/resources"
   "$REPO_ROOT/big-market-strategy-service/src/main/resources"
-  "$REPO_ROOT/big-market-activity-service/src/main/resources"
   "$REPO_ROOT/big-market-fulfillment-service/src/main/resources"
 )
 

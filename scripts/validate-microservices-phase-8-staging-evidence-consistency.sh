@@ -119,7 +119,7 @@ done
 
 echo ""
 echo "-- Per-service checklist references valid STG fields --"
-for service in account-service fulfillment-service rebate-service strategy-service activity-service; do
+for service in account-service fulfillment-service rebate-service strategy-service; do
   require_text "Per-service checklist covers $service" "$STAGING_INTAKE" "^\\| $service \\|"
 done
 for field in \

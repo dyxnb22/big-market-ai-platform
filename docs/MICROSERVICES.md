@@ -8,6 +8,9 @@ cutover readiness pack. It does not claim real staging or production readiness.
 All remote/outbox/cutover flags default false; external evidence is
 EXTERNAL-GATED.
 
+This file is the sole authoritative entry point for the current microservices
+status; historical details live under `docs/archive/`.
+
 ## Status
 
 | Area | Status |

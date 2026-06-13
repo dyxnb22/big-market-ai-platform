@@ -78,6 +78,19 @@ for f in \
   [[ -f "$f" ]] && NON_DEV_CONFIGS+=("$f")
 done
 
+# Also audit every microservice application.yml (default profile) and
+# spring-config-token.xml for hardcoded secrets that would be dangerous in prod.
+ALL_SVC_YMLS=()
+ALL_TOKEN_XMLS=()
+while IFS= read -r f; do
+  ALL_SVC_YMLS+=("$f")
+done < <(find "$REPO_ROOT" -path '*/src/main/resources/application.yml' \
+           ! -path '*/target/*' ! -path '*/big-market-app/*' 2>/dev/null | sort)
+while IFS= read -r f; do
+  ALL_TOKEN_XMLS+=("$f")
+done < <(find "$REPO_ROOT" -path '*/src/main/resources/spring/spring-config-token.xml' \
+           ! -path '*/target/*' 2>/dev/null | sort)
+
 # 1a. JWT secret defaults
 assert_pattern_absent \
   "No 'change-me' JWT secret in non-dev configs" \
@@ -125,6 +138,32 @@ for f in "${NON_DEV_CONFIGS[@]}"; do
   assert_pattern_present "MySQL password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{MYSQL_PASS\}'
 done
 
+
+# 1f. Microservice application.yml files must not carry bare change-me-in-dev-only
+#     as an uncommitted default; they should use ${ENV_VAR:change-me-in-dev-only}
+#     (env-var injection with dev fallback) which is acceptable, but a literal
+#     hardcoded 'change-me-in-dev-only' without an env-var wrapper is a red flag.
+if [[ ${#ALL_SVC_YMLS[@]} -gt 0 ]]; then
+  # Ensure each svc yml uses env-var substitution for the JWT secret, not a bare literal.
+  for f in "${ALL_SVC_YMLS[@]}"; do
+    short="${f##*/big-market-ai-platform/}"
+    if grep -qE 'secret:[[:space:]]*change-me-in-dev-only' "$f" 2>/dev/null; then
+      fail "Bare JWT secret default (no env-var wrapper) in $short"
+    elif grep -qE 'secret:[[:space:]]*\$\{[A-Z_]+(:.*)?}' "$f" 2>/dev/null; then
+      pass "JWT secret uses env-var injection in $short"
+    fi
+  done
+fi
+
+# 1g. spring-config-token.xml must not contain the literal hardcoded Dubbo token.
+#     After migration, the token should be ${DUBBO_APP_TOKEN:...}.
+if [[ ${#ALL_TOKEN_XMLS[@]} -gt 0 ]]; then
+  assert_pattern_absent \
+    "No bare hardcoded Dubbo app token in spring-config-token.xml files" \
+    'value="89iu7o8732ijd9114"' \
+    "${ALL_TOKEN_XMLS[@]}"
+fi
+
 echo ""
 echo "── 1.2 Default credentials — docker-compose dev annotations ──"
 
@@ -141,13 +180,16 @@ for f in "${COMPOSE_FILES[@]}"; do
 done
 
 echo ""
-echo "── 1.3 DefaultCredentialsGuard class presence ──"
+echo "── 1.3 DefaultCredentialGuard class presence ──"
 
-GUARD_JAVA="$REPO_ROOT/big-market-auth-service/src/main/java/com/dyx/market/auth/service/config/DefaultCredentialGuard.java"
-assert_file "DefaultCredentialGuard.java exists" "$GUARD_JAVA"
-assert_pattern_present "DefaultCredentialGuard is a CommandLineRunner" "$GUARD_JAVA" "implements CommandLineRunner"
+# Guard was moved to big-market-domain so it is auto-discovered by all services
+# that scan com.dyx.market.domain.auth (market-service, admin-service, auth-service).
+GUARD_JAVA="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java"
+assert_file "DefaultCredentialGuard.java exists in domain" "$GUARD_JAVA"
+assert_pattern_present "DefaultCredentialGuard is an InitializingBean" "$GUARD_JAVA" "implements InitializingBean"
 assert_pattern_present "DefaultCredentialGuard has guardEnabled flag" "$GUARD_JAVA" 'default-credential-guard\.enabled'
 assert_pattern_present "DefaultCredentialGuard detects dev profiles" "$GUARD_JAVA" 'DEV_PROFILES'
+assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_JAVA" '89iu7o8732ijd9114'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 2: Flag mutual-exclusion guardrails (config-file defaults)
@@ -266,7 +308,7 @@ assert_file "TokenRevocationServiceTest.java exists" "$REVOKE_TEST"
 echo ""
 echo "── 3.2 AuthAccessController logout endpoint ──"
 
-AUTH_CTRL="$REPO_ROOT/big-market-auth-access/src/main/java/com/dyx/market/auth/AuthAccessController.java"
+AUTH_CTRL="$REPO_ROOT/big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java"
 assert_file "AuthAccessController.java exists" "$AUTH_CTRL"
 assert_pattern_present "AuthAccessController has logout endpoint" "$AUTH_CTRL" '@RequestMapping.*logout|@PostMapping.*logout'
 assert_pattern_present "AuthAccessController injects ITokenRevocationService" "$AUTH_CTRL" 'ITokenRevocationService'

@@ -23,8 +23,8 @@ import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
  * Remote path (future, NOT introduced in this batch):
  *   A future StrategyRemoteDecisionPort would be guarded by
  *   strategy.service.remote-decision.enabled=false. It must not be introduced
- *   until Phase 5-G saga design is approved and all preconditions in
- *   docs/microservices-split-phase-5-draw-command-boundary.md §7 are met.
+ *   until Phase 5-G saga design is approved and the preconditions documented
+ *   in docs/archive/phases.md are met.
  */
 public interface IStrategyDecisionPort {
 

@@ -15,9 +15,12 @@ if (!auth.token) {
   }).then(function() {
     initApp();
   }).catch(function(e) {
-    clearAuth();
-    // Network error — show toast on landing
-    toast("后端不可用: " + e.message);
+    // Auth errors (0009) are already handled by onAuthExpired above;
+    // only show network/server error toast for non-auth failures.
+    if (e.code !== "0009") {
+      clearAuth();
+      toast("服务暂时不可用，请稍后再试");
+    }
   });
 }
 
@@ -42,8 +45,8 @@ function initApp() {
     drawBtn:         qs("#drawBtn"),
     drawResult:      qs("#drawResult"),
     refreshCampaign: qs("#refreshCampaignBtn"),
-    signInBtn:       qs("#signInBtn"),
-    signInStatus:    qs("#signInStatus"),
+    signInBtn:       null,
+    signInStatus:    null,
     surplusMetric:   qs("#surplusMetric"),
     dayMetric:       qs("#dayMetric"),
     creditMetric:    qs("#creditMetric"),
@@ -75,8 +78,8 @@ function initApp() {
     ucSigned:        qs("#ucSigned"),
     logoutBtn:       qs("#logoutBtn"),
     toast:           qs("#toast"),
-    exchangeInfo:    qs("#exchangeInfo"),
-    exchangeBtn:     qs("#exchangeBtn"),
+    exchangeInfo:    null,
+    exchangeBtn:     null,
     ucSignInBtn:     qs("#ucSignInBtn"),
     ucExchangeBtn:   qs("#ucExchangeBtn"),
     ucExchangeHint:  qs("#ucExchangeHint")
@@ -401,7 +404,7 @@ function initApp() {
     var requestId = crypto.randomUUID();
     apiRequest("/chatbot/ask", {
       method:"POST",
-      body: JSON.stringify({token:auth.token||"", requestId: requestId, activityId:CONFIG.ACTIVITY_ID, message:text})
+      body: JSON.stringify({requestId: requestId, activityId:CONFIG.ACTIVITY_ID, message:text})
     }).then(function(r) {
       var data = r.data || {};
       var answer = data.answer || r.info || "已处理。";
@@ -420,9 +423,9 @@ function initApp() {
       }
     }).catch(function(e) {
       if (e.code === "0003" || (e.message && e.message.indexOf("积分不足") >= 0)) {
-        addMsg("assistant", "积分不足，无法发送消息。请先签到赚取积分或兑换后再试。\n\n你可以：\n1. 打开轮盘抽奖抽屉 → 点击“每日签到”获取积分\n2. 在用户中心查看积分余额");
+        addMsg("assistant", "积分不足，无法发送消息。请先签到赚取积分或兑换后再试。\n\n你可以：\n1. 点击左侧「用户中心」→ 每日签到获取积分\n2. 在用户中心兑换抽奖次数");
       } else {
-        addMsg("assistant", "请求失败："+e.message);
+        addMsg("assistant", "请求失败：" + (e.message || "未知错误"));
       }
     }).finally(function() {
       busy(d.sendBtn, false);
@@ -553,7 +556,6 @@ function initApp() {
   d.closeUcBtn.onclick = closeUserCenter;
   d.drawerOverlay.onclick = closeAll;
   d.drawBtn.onclick = draw;
-  d.signInBtn.onclick = signIn;
   d.refreshCampaign.onclick = function() { loadCampaign().then(function(){toast("已刷新");}).catch(function(e){toast(e.message);}); };
   d.logoutBtn.onclick = logout;
   if (d.exchangeBtn) d.exchangeBtn.onclick = doExchange;

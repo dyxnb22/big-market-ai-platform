@@ -155,18 +155,6 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-infrastructure</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-auth-access</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-admin</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-chatbot</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

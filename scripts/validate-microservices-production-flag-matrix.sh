@@ -120,9 +120,6 @@ check_runbook_terms "strategy-service flags" \
   "strategy.service.remote-read.enabled=false" \
   "strategy.service.remote-decision.enabled=false" \
   "disable strategy remote read flag"
-check_runbook_terms "activity-service flags" \
-  "activity.service.remote-draw.enabled=false" \
-  "disable remote draw flag"
 
 if grep -q 'EXTERNAL-GATED' "$RUNBOOK" 2>/dev/null && grep -qi 'Do not enable production, remote, or outbox flags by default' "$RUNBOOK" 2>/dev/null; then
   pass "Runbook keeps flag enablement external-gated"

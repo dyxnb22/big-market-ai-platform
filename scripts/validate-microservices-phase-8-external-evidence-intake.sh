@@ -46,7 +46,7 @@ if [[ -f "$INTAKE" ]]; then
 
   echo ""
   echo "-- Service cutover placeholders --"
-  for service in account-service fulfillment-service rebate-service strategy-service activity-service; do
+  for service in account-service fulfillment-service rebate-service strategy-service; do
     require_text "$service cutover placeholder exists" "$INTAKE" "^### $service cutover evidence"
     require_text "$service placeholder is EXTERNAL-GATED" "$INTAKE" "$service cutover evidence|EXTERNAL-GATED"
   done

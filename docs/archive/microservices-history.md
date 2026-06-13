@@ -23,7 +23,9 @@ Active source of truth:
 - `docs/microservices-legacy-cleanup-inventory.md`
 
 Deprecated history is archived by reference and retained only for validation,
-traceability, and migration notes.
+traceability, and migration notes. Historical one-off phase scripts have been
+removed from the active script surface; their outcomes are represented here and
+in the current aggregate validators.
 
 ## 3. Definition of Done
 
@@ -44,6 +46,7 @@ requires real external evidence and approvals.
 | Phase 7 | done | DB/user/outbox isolation planning |
 | Phase 8 | repo-ready | external evidence and cutover remain gated |
 
+Phase 6-A DAO ownership matrix complete; see `docs/microservices-dao-ownership.md`.
 Phase 6-B done. Phase 7-B complete.
 Phase 5-E IAwardFulfillmentPort Done; 5-E local award fulfillment port introduced.
 Phase 5-F and Phase 5-G are the next scaffold/outbox gates.

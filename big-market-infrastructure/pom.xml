@@ -50,10 +50,6 @@
             <artifactId>big-market-domain</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-queries</artifactId>
-        </dependency>
 
     </dependencies>
 

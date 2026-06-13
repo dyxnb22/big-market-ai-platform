@@ -28,12 +28,12 @@ strategy; task / outbox; query / ES; auth; admin / config; chatbot.
 | AL-3 | StrategyRepository -> IRaffleActivityAccountDayDao | resolved via IStrategyActivityAccountPort; AL-2/AL-3 |
 | AL-4 | ActivityRepository -> IUserCreditAccountDao | RESOLVED Phase 7-A prep |
 | AL-5 | AwardRepository -> IUserRaffleOrderDao | RESOLVED Phase 7-A prep |
-| AL-6 | AwardRepository -> IUserCreditAccountDao | RESOLVED Phase 7-A prep |
+| AL-6 | AwardRepository -> IUserCreditAccountDao | AL-6 resolved via IAwardCreditWritePort |
 | AL-7 | DispatchCreditAwardTaskJob -> ICreditAwardTaskDao | RESOLVED Phase 7-A prep |
 | AL-8 | BehaviorRebateRepository -> ITaskDao | decision complete; resolved via IRebateTaskOutboxPort |
 | AL-9 | CreditRepository -> ITaskDao | decision complete; resolved via ICreditTradeTaskOutboxPort |
 | AL-10 | AwardRepository -> ITaskDao | decision complete; resolved via IAwardDispatchTaskOutboxPort |
-| AL-11 | AwardRepository -> ICreditAwardTaskDao | RESOLVED Phase 7-A prep |
+| AL-11 | AwardRepository -> ICreditAwardTaskDao | AL-11 resolved via IAwardCreditWritePort |
 
 ## Enforcement
 

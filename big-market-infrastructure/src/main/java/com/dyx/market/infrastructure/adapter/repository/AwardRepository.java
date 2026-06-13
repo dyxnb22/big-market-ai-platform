@@ -153,7 +153,7 @@ public class AwardRepository implements IAwardRepository {
         // Phase 2.2-B6: when outbox flag=true the credit_award_task row replaces the direct write.
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + userId);
         try {
-            lock.lock();
+            lock.lock(3, TimeUnit.SECONDS);
             dbRouter.doRouter(giveOutPrizesAggregate.getUserId());
             if (awardCreditOutboxEnabled) {
                 // Outbox path (flag=true): insert outbox row inside the same transaction as

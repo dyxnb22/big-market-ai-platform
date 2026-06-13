@@ -216,39 +216,6 @@ if [[ -f "$STRATEGY_REPO" ]]; then
   fi
 fi
 
-# ── 7. activity-service scope constraints still hold ─────────────────────────
-echo ""
-echo "── 7. big-market-activity-service scope constraints ──"
-
-ACT_SRC="$REPO_ROOT/big-market-activity-service/src/main/java"
-
-count_pattern_fail() {
-  local label="$1" pattern="$2"
-  local cnt
-  cnt=$(grep -rn "$pattern" "$ACT_SRC" --include="*.java" 2>/dev/null | wc -l | tr -d ' ')
-  if [[ "$cnt" -eq 0 ]]; then
-    pass "$label (0 occurrences)"
-  else
-    fail "$label ($cnt occurrence(s) found)"
-  fi
-}
-
-count_pattern_fail "No @DubboService in activity-service" "@DubboService"
-count_pattern_fail "No @RestController in activity-service" "@RestController"
-count_pattern_fail "No @RabbitListener in activity-service" "@RabbitListener"
-count_pattern_fail "No @XxlJob in activity-service" "@XxlJob"
-
-ACT_MAPPER_DIR="$REPO_ROOT/big-market-activity-service/src/main/resources/mybatis/mapper"
-if [[ -d "$ACT_MAPPER_DIR" ]]; then
-  XML_COUNT=$(find "$ACT_MAPPER_DIR" -type f -name "*.xml" 2>/dev/null | wc -l | tr -d ' ')
-  if [[ "$XML_COUNT" -eq 0 ]]; then
-    pass "activity-service has no mapper XMLs"
-  else
-    fail "activity-service has $XML_COUNT unexpected mapper XML(s)"
-  fi
-else
-  pass "activity-service mapper directory absent (expected)"
-fi
 
 # ── 8. Remote flags remain disabled ───────────────────────────────────────────
 echo ""
@@ -258,15 +225,12 @@ REMOTE_FLAGS=(
   "account.remote-read.enabled"
   "account.remote-write.enabled"
   "strategy.service.remote-read.enabled"
-  "activity.service.remote-draw.enabled"
-  "activity.service.remote-strategy-mapping.enabled"
 )
 
 RESOURCE_DIRS=(
   "$REPO_ROOT/big-market-account-service/src/main/resources"
   "$REPO_ROOT/big-market-market-service/src/main/resources"
   "$REPO_ROOT/big-market-strategy-service/src/main/resources"
-  "$REPO_ROOT/big-market-activity-service/src/main/resources"
 )
 
 for flag in "${REMOTE_FLAGS[@]}"; do

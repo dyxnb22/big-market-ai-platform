@@ -2,7 +2,6 @@ var userIdInput = document.getElementById("adminUserIdInput");
 var passwordInput = document.getElementById("adminPasswordInput");
 var loginBtn = document.getElementById("adminLoginBtn");
 
-// Read redirect from URL query; only allow same-origin destinations.
 var redirectUrl = (function() {
   var p = new URLSearchParams(location.search);
   var r = p.get("redirect");
@@ -15,21 +14,9 @@ var redirectUrl = (function() {
   return "./admin.html";
 })();
 
-var existingAuth = readAuth();
-if (existingAuth.token) {
-  verifyAdminToken(existingAuth.token).then(function() {
-    location.replace(redirectUrl);
-  }).catch(function(err) {
-    // 0008 = valid token but not admin — do NOT clearAuth, just stay on login page
-    var msg = err && err.message;
-    if (msg && msg.indexOf("无管理员权限") >= 0) {
-      toast("当前账号不是管理员，请使用管理员账号登录");
-    } else {
-      // 0009 or network error — token is unusable, clean up
-      clearAuth();
-    }
-  });
-}
+// ?noperm=1 means admin.html redirected us because the stored token lacked admin privilege.
+// In this case, do NOT auto-verify (would just loop back), show a helpful message instead.
+var noPerm = new URLSearchParams(location.search).get("noperm") === "1";
 
 function verifyAdminToken(token) {
   return fetch(CONFIG.API_BASE + "/admin/config/list", {
@@ -39,13 +26,34 @@ function verifyAdminToken(token) {
       "Authorization": token
     }
   }).then(function(response) {
-    return response.json().catch(function() { return {code: String(response.status), info: "管理员权限校验失败"}; });
+    return response.json().catch(function() {
+      return {code: String(response.status), info: "管理员权限校验失败"};
+    });
   }).then(function(data) {
     if (data.code !== "0000") {
       throw new Error(data.code === "0008" ? "当前账号无管理员权限" : (data.info || "管理员权限校验失败"));
     }
     return data;
   });
+}
+
+var existingAuth = readAuth();
+if (!noPerm && existingAuth.token) {
+  // Normal entry (not a redirect-from-noperm): auto-verify existing token.
+  verifyAdminToken(existingAuth.token).then(function() {
+    location.replace(redirectUrl);
+  }).catch(function(err) {
+    var msg = err && err.message;
+    if (msg && msg.indexOf("无管理员权限") >= 0) {
+      toast("当前账号不是管理员，请使用管理员账号登录");
+    } else {
+      // Token invalid/expired — clear it
+      clearAuth();
+    }
+  });
+} else if (noPerm && existingAuth.token) {
+  // Redirected here because stored token has no admin role.
+  toast("当前账号不是管理员，请使用管理员账号登录");
 }
 
 async function login() {
@@ -63,6 +71,7 @@ async function login() {
     });
     if (!data.data?.token) throw new Error(data.info || "登录失败");
 
+    // Verify admin privilege before saving
     await verifyAdminToken(data.data.token);
 
     saveAuth(data.data.token, data.data.userId);

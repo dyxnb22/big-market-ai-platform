@@ -39,11 +39,11 @@
             <!-- 每天日志归档路径以及格式 -->
             <fileNamePattern>./data/log/log-info-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
+                <maxFileSize>50MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
             <!--日志文件保留天数-->
-            <maxHistory>15</maxHistory>
-            <totalSizeCap>10GB</totalSizeCap>
+            <maxHistory>5</maxHistory>
+            <totalSizeCap>600MB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
@@ -60,11 +60,11 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>./data/log/log-error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
+                <maxFileSize>20MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
             <!-- 日志文件保留天数【根据服务器预留，可自行调整】 -->
-            <maxHistory>7</maxHistory>
-            <totalSizeCap>5GB</totalSizeCap>
+            <maxHistory>5</maxHistory>
+            <totalSizeCap>200MB</totalSizeCap>
         </rollingPolicy>
         <!-- WARN 级别及以上 -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">

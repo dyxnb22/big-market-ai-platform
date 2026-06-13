@@ -43,12 +43,11 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
-        <!-- Project modules: auth-access controller + domain (stateless JWT AuthService) -->
+        <!-- Project modules -->
         <dependency>
             <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-auth-access</artifactId>
+            <artifactId>big-market-api</artifactId>
         </dependency>
-        <!-- big-market-domain is transitive via big-market-auth-access, declared explicitly for clarity -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-domain</artifactId>

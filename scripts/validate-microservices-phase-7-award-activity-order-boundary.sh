@@ -169,8 +169,6 @@ REMOTE_FLAGS=(
   "strategy.service.remote-read.enabled"
   "strategy.service.remote-decision.enabled"
   "fulfillment.remote.enabled"
-  "activity.service.remote-draw.enabled"
-  "activity.service.remote-strategy-mapping.enabled"
   "award.service.remote-fulfillment.enabled"
 )
 
@@ -180,7 +178,6 @@ RESOURCE_DIRS=(
   "$REPO_ROOT/big-market-message-job-service/src/main/resources"
   "$REPO_ROOT/big-market-rebate-service/src/main/resources"
   "$REPO_ROOT/big-market-strategy-service/src/main/resources"
-  "$REPO_ROOT/big-market-activity-service/src/main/resources"
   "$REPO_ROOT/big-market-fulfillment-service/src/main/resources"
 )
 

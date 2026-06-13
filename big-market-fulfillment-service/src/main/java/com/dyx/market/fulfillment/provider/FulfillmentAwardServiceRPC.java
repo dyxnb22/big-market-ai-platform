@@ -27,7 +27,7 @@ import javax.annotation.Resource;
  * Safety constraint: UserCreditRandomAward writes user_credit_account directly in a
  * shared local transaction with user_award_record. This must be routed through
  * account-service via the outbox BEFORE any traffic cutover to fulfillment-service.
- * See docs/microservices-split-phase-2-3-fulfillment-service.md.
+ * See docs/archive/phases.md.
  */
 @Slf4j
 @DubboService(version = "1.0")

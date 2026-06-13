@@ -1,8 +1,8 @@
-package com.dyx.market.auth.service.config;
+package com.dyx.market.domain.auth.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -19,12 +19,15 @@ import java.util.Set;
  * development and docker-compose stacks remain runnable without external
  * secret injection.
  *
+ * Moved to big-market-domain so it is auto-discovered by any service that
+ * scans com.dyx.market.domain.auth (market-service, admin-service, auth-service).
+ *
  * SAFETY: This is a read-only startup check. It never modifies config.
  * ROLLBACK: Set DEFAULT_CREDENTIAL_GUARD_ENABLED=false to disable.
  */
 @Slf4j
 @Component
-public class DefaultCredentialGuard implements CommandLineRunner {
+public class DefaultCredentialGuard implements InitializingBean {
 
     private static final List<String> DEV_PROFILES = Arrays.asList("dev", "local", "docker");
 
@@ -35,6 +38,7 @@ public class DefaultCredentialGuard implements CommandLineRunner {
             "change-me-in-prod",
             "default_token",
             "6ec604541f8b1ce4a",
+            "89iu7o8732ijd9114",
             "xiaofuge:demo,admin:admin",
             "admin:admin"
     ));
@@ -58,7 +62,7 @@ public class DefaultCredentialGuard implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) {
+    public void afterPropertiesSet() {
         if (!guardEnabled) {
             log.warn("[DefaultCredentialGuard] DISABLED — dangerous defaults will not be caught");
             return;

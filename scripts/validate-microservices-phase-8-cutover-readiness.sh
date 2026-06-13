@@ -22,7 +22,7 @@ echo "========================================================================"
 [[ -f "$RUNBOOK" ]] && pass "Phase 8 runbook exists" || fail "Phase 8 runbook missing"
 [[ -f "$EVIDENCE" ]] && pass "Phase 8 evidence template exists" || fail "Phase 8 evidence template missing"
 
-for service in account-service fulfillment-service rebate-service strategy-service activity-service; do
+for service in account-service fulfillment-service rebate-service strategy-service; do
   if grep -q "$service" "$RUNBOOK" 2>/dev/null; then
     pass "Runbook covers $service"
   else

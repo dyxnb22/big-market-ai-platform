@@ -18,10 +18,6 @@
         <module>big-market-starter-ratelimiter</module>
         <module>big-market-api</module>
         <module>big-market-management</module>
-        <module>big-market-queries</module>
-        <module>big-market-auth-access</module>
-        <module>big-market-admin</module>
-        <module>big-market-chatbot</module>
         <!-- Phase 1 microservice launchers (shared jars remain above) -->
         <module>big-market-gateway</module>
         <module>big-market-auth-service</module>
@@ -33,8 +29,6 @@
         <module>big-market-fulfillment-service</module>
         <module>big-market-rebate-service</module>
         <module>big-market-strategy-service</module>
-        <!-- Phase 5-F: activity-service dark-launch scaffold (no traffic; no RPC provider) -->
-        <module>big-market-activity-service</module>
     </modules>
 
     <properties>
@@ -215,11 +209,6 @@
             </dependency>
             <dependency>
                 <groupId>com.dyx.market</groupId>
-                <artifactId>big-market-queries</artifactId>
-                <version>1.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.dyx.market</groupId>
                 <artifactId>big-market-starter-db-router</artifactId>
                 <version>1.1</version>
             </dependency>
@@ -241,21 +230,6 @@
             <dependency>
                 <groupId>com.dyx.market</groupId>
                 <artifactId>big-market-management</artifactId>
-                <version>1.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.dyx.market</groupId>
-                <artifactId>big-market-auth-access</artifactId>
-                <version>1.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.dyx.market</groupId>
-                <artifactId>big-market-admin</artifactId>
-                <version>1.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.dyx.market</groupId>
-                <artifactId>big-market-chatbot</artifactId>
                 <version>1.1</version>
             </dependency>
         </dependencies>

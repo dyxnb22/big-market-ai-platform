@@ -16,12 +16,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import javax.servlet.http.HttpServletRequest;
 
+import com.dyx.market.domain.auth.service.IAuthService;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -39,8 +41,15 @@ public class ErpOperateController implements IErpOperateService {
     @Value("${erp.admin.token:${app.admin.token:admin-dev-token}}")
     private String adminToken;
 
+    @Value("${app.admin.user-ids:admin}")
+    private String adminUserIds;
+
     private static final int MAX_RESULT_LIMIT = 100;
 
+    @Resource
+    private IAuthService authService;
+    @Autowired(required = false)
+    private HttpServletRequest httpRequest;
     @Resource
     private IESUserRaffleOrderRepository userRaffleOrderRepository;
     @Resource
@@ -193,13 +202,25 @@ public class ErpOperateController implements IErpOperateService {
         }
     }
 
-    private boolean hasAdminAccess(String token) {
-        if (adminToken.equals(token)) {
-            return true;
+    private boolean hasAdminAccess(String xAdminToken) {
+        // 1. Static X-Admin-Token header
+        if (StringUtils.isNotBlank(xAdminToken) && adminToken.equals(xAdminToken)) return true;
+        // 2. JWT admin: read Authorization from injected request proxy
+        if (httpRequest == null) return false;
+        String authHeader = httpRequest.getHeader("Authorization");
+        if (StringUtils.isBlank(authHeader)) return false;
+        String jwtToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        try {
+            if (!authService.checkToken(jwtToken)) return false;
+            String openid = authService.openid(jwtToken);
+            return Arrays.stream(adminUserIds.split(","))
+                    .map(String::trim)
+                    .filter(StringUtils::isNotBlank)
+                    .anyMatch(id -> id.equals(openid));
+        } catch (Exception e) {
+            log.warn("ERP hasAdminAccess JWT check failed: {}", e.getMessage());
+            return false;
         }
-        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-        return attributes instanceof ServletRequestAttributes
-                && ((ServletRequestAttributes) attributes).getRequest().getAttribute("userId") != null;
     }
 
 }

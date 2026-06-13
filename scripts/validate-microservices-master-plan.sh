@@ -83,7 +83,6 @@ check "legacy cleanup inventory linked"  "docs/microservices-legacy-cleanup-inve
 echo
 echo "== Section 5: non-goals enumerated =="
 check "non-goal: no big-bang rewrite"    "[Nn]o big-bang rewrite"
-check "non-goal: no immediate activity"  "[Nn]o immediate activity-service extraction"
 check "non-goal: no production traffic"  "[Nn]o production traffic enablement"
 check "non-goal: no evidence expansion"  "[Nn]o expansion of generated evidence"
 check "non-goal: no large renames"       "[Nn]o large-scale package renames"
