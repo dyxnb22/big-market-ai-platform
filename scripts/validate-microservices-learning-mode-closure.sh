@@ -4,13 +4,13 @@
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CLOSURE="$REPO_ROOT/docs/microservices-learning-mode-closure.md"
-EVIDENCE="$REPO_ROOT/docs/evidence/phase-8-local-learning-cutover-evidence.md"
-COMPLETION="$REPO_ROOT/docs/microservices-split-completion-index.md"
-ROADMAP="$REPO_ROOT/docs/microservices-next-execution-roadmap.md"
-RUNBOOK="$REPO_ROOT/docs/microservices-phase-8-cutover-runbook.md"
-INTAKE="$REPO_ROOT/docs/microservices-phase-8-external-evidence-intake.md"
-GONOGO="$REPO_ROOT/docs/evidence/phase-8-go-no-go-checklist.md"
+CLOSURE="$REPO_ROOT/docs/archive/microservices-history.md"
+EVIDENCE="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+COMPLETION="$REPO_ROOT/docs/archive/microservices-history.md"
+ROADMAP="$REPO_ROOT/docs/archive/microservices-history.md"
+RUNBOOK="$REPO_ROOT/docs/microservices-phase-8.md"
+INTAKE="$REPO_ROOT/docs/microservices-phase-8.md"
+GONOGO="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
 ARCHIVE_INDEX="$REPO_ROOT/docs/archive/microservices-historical-docs-index.md"
 AGGREGATE="$REPO_ROOT/scripts/validate-microservices-split-all-gates.sh"
 

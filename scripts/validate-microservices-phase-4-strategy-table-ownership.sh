@@ -68,7 +68,7 @@ echo "  Phase 4-F Strategy Table Ownership Validator"
 echo "  Repo: $ROOT"
 echo "========================================================================"
 
-OWNERSHIP_DOC="docs/microservices-split-phase-4-strategy-table-ownership.md"
+OWNERSHIP_DOC="docs/archive/phases.md"
 
 # -----------------------------------------------------------------------
 echo ""

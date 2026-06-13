@@ -4,9 +4,9 @@
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-INTAKE="$REPO_ROOT/docs/microservices-phase-8-external-evidence-intake.md"
-RUNBOOK="$REPO_ROOT/docs/microservices-phase-8-cutover-runbook.md"
-COMPLETION="$REPO_ROOT/docs/microservices-split-completion-index.md"
+INTAKE="$REPO_ROOT/docs/microservices-phase-8.md"
+RUNBOOK="$REPO_ROOT/docs/microservices-phase-8.md"
+COMPLETION="$REPO_ROOT/docs/archive/microservices-history.md"
 
 PASS=0
 FAIL=0
@@ -92,8 +92,8 @@ fi
 
 echo ""
 echo "-- Cross-links --"
-require_text "Runbook links to intake doc" "$RUNBOOK" "docs/microservices-phase-8-external-evidence-intake\\.md"
-require_text "Completion index links to intake doc" "$COMPLETION" "docs/microservices-phase-8-external-evidence-intake\\.md"
+require_text "Runbook links to intake doc" "$RUNBOOK" "docs/microservices-phase-8\\.md"
+require_text "Completion index links to intake doc" "$COMPLETION" "docs/microservices-phase-8\\.md"
 
 echo ""
 echo "Summary: $PASS PASS, $FAIL FAIL"

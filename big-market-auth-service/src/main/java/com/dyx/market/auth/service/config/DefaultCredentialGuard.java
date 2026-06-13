@@ -26,7 +26,7 @@ import java.util.Set;
 @Component
 public class DefaultCredentialGuard implements CommandLineRunner {
 
-    private static final List<String> DEV_PROFILES = List.of("dev", "local", "docker");
+    private static final List<String> DEV_PROFILES = Arrays.asList("dev", "local", "docker");
 
     private static final Set<String> DANGEROUS_PATTERNS = new LinkedHashSet<>(Arrays.asList(
             "change-me",

@@ -95,7 +95,7 @@ MARKET_YML="big-market-market-service/src/main/resources/application.yml"
 MSGJOB_YML="big-market-message-job-service/src/main/resources/application.yml"
 APP_YML="big-market-app/src/main/resources/application-dev.yml"
 DOCKER_COMPOSE="docker-compose.yml"
-SCAFFOLD_DOC="docs/microservices-split-phase-5-activity-service-scaffold.md"
+SCAFFOLD_DOC="docs/archive/phases.md"
 
 # -----------------------------------------------------------------------
 echo ""

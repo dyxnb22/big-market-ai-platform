@@ -135,7 +135,10 @@ public interface IActivityRepository {
      * Compensate (restore) a draw quota for a just-failed raffle order. The order is
      * first moved create -> failed by CAS; quota is restored only when that state
      * transition succeeds, so repeated compensation attempts are ignored.
+     *
+     * @param orderTime the original order creation time — used to derive the correct
+     *                  month/day account keys so cross-day/-month compensation is accurate.
      */
-    void compensatePartakeQuota(String userId, Long activityId, String orderId);
+    void compensatePartakeQuota(String userId, Long activityId, String orderId, Date orderTime);
 
 }

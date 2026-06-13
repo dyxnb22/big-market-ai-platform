@@ -10,8 +10,8 @@ FAIL=0
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
-USER_PLAN="$REPO_ROOT/docs/microservices-phase-7-db-users-grants-plan.md"
-SCHEMA_PLAN="$REPO_ROOT/docs/microservices-phase-7-sharded-schema-isolation-plan.md"
+USER_PLAN="$REPO_ROOT/docs/archive/phases.md"
+SCHEMA_PLAN="$REPO_ROOT/docs/archive/phases.md"
 
 echo ""
 echo "========================================================================"

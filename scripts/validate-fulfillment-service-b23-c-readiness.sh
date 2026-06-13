@@ -107,7 +107,7 @@ else
 fi
 
 # D5: Phase 2.3 design doc exists
-DESIGN_DOC="$ROOT/docs/microservices-split-phase-2-3-fulfillment-service.md"
+DESIGN_DOC="$ROOT/docs/archive/phases.md"
 [ -f "$DESIGN_DOC" ] \
   && check D5 "Phase 2.3 design doc exists" ok \
   || check D5 "Phase 2.3 design doc exists" fail

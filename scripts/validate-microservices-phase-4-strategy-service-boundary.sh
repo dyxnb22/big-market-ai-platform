@@ -280,7 +280,7 @@ fi
 # -----------------------------------------------------------------------
 echo ""
 echo "-- [14] Phase 4 boundary assessment doc"
-PHASE4_DOC="docs/microservices-split-phase-4-strategy-service.md"
+PHASE4_DOC="docs/archive/phases.md"
 check_file "P4-DOC-1 phase4 doc" "$PHASE4_DOC"
 check_contains "P4-DOC-2 documents read-first extraction" \
   "$PHASE4_DOC" "read.first|Read.first|read-first|Read-First"

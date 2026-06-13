@@ -265,7 +265,7 @@ echo "── Required Docs and Scripts ─────────────�
   || check DS5 "Outbox DDL file exists (docs/sql/proposed-credit-award-task-outbox.sql)" fail
 
 # DS6: Phase 2.3 design doc exists and has Phase 2.3-D section
-DESIGN_DOC="$ROOT/docs/microservices-split-phase-2-3-fulfillment-service.md"
+DESIGN_DOC="$ROOT/docs/archive/phases.md"
 if [ -f "$DESIGN_DOC" ] && grep -q "Phase 2.3-D\|2\.3-D" "$DESIGN_DOC"; then
   check DS6 "Phase 2.3 design doc has Phase 2.3-D section" ok
 else

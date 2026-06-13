@@ -9,7 +9,7 @@
 set -u
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-PLAN="$ROOT_DIR/docs/microservices-decomposition-master-plan.md"
+PLAN="$ROOT_DIR/docs/archive/microservices-history.md"
 
 pass=0
 fail=0
@@ -76,8 +76,8 @@ check "execution batch 2 staging/prod evidence" '^\| 2 \| Staging/prod cutover e
 check "execution batch 3 legacy providers" '^\| 3 \| 7-day stable legacy-provider disable'
 check "execution batch 4 obsolete paths" '^\| 4 \| 30-day obsolete-path removal'
 check "execution batch 5 aggregate gate" '^\| 5 \| Keep `scripts/validate-microservices-split-all-gates\.sh` green in CI'
-check "completion index linked"          "docs/microservices-split-completion-index\.md"
-check "external evidence intake linked"  "docs/microservices-phase-8-external-evidence-intake\.md"
+check "completion index linked"          "docs/archive/microservices-history\.md"
+check "external evidence intake linked"  "docs/microservices-phase-8\.md"
 check "legacy cleanup inventory linked"  "docs/microservices-legacy-cleanup-inventory\.md"
 
 echo

@@ -572,7 +572,7 @@ done
 # ── 8. Phase 6-B noted in master plan ────────────────────────────────────────
 echo ""
 echo "── 8. Master plan updated for Phase 6-B ──"
-MASTER="$REPO_ROOT/docs/microservices-decomposition-master-plan.md"
+MASTER="$REPO_ROOT/docs/archive/microservices-history.md"
 if grep -q "6-B.*Done\|6-B.*done\|Phase 6-B.*complete\|6-B.*package.*Done\|6-B.*package.*done" "$MASTER" 2>/dev/null; then
   pass "Master plan marks Phase 6-B done"
 else

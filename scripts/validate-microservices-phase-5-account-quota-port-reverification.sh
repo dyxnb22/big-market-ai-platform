@@ -62,7 +62,7 @@ echo "  Phase 5-C Account/Quota Port Re-Verification Validator"
 echo "  Repo: $ROOT"
 echo "========================================================================"
 
-REVERIF_DOC="docs/microservices-split-phase-5-account-quota-port-reverification.md"
+REVERIF_DOC="docs/archive/phases.md"
 PORT_IFACE="big-market-domain/src/main/java/com/dyx/market/domain/activity/adapter/port/IActivityAccountPort.java"
 LOCAL_IMPL="big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port/LocalActivityAccountPort.java"
 REMOTE_IMPL="big-market-market-service/src/main/java/com/dyx/market/market/config/AccountRemoteActivityAccountPort.java"

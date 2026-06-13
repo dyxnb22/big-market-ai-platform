@@ -58,7 +58,7 @@ REMOTE="big-market-market-service/src/main/java/com/dyx/market/market/config/Reb
 CTRL="big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleActivityController.java"
 MKT_YML="big-market-market-service/src/main/resources/application.yml"
 DC="docker-compose.yml"
-DOC="docs/microservices-split-phase-3-next-extraction.md"
+DOC="docs/archive/phases.md"
 
 echo ""
 echo "-- [1] Adapter interface"

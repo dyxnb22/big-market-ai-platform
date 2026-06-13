@@ -5,7 +5,7 @@
 #   1. AwardRepository does NOT reference IAccountCreditWriteAdapter (wiring still deferred).
 #   2. Both credit-account and award-record writes remain inside transactionTemplate.execute()
 #      in saveGiveOutPrizesAggregate (transaction boundary unchanged).
-#   3. docs/microservices-split-phase-2-2-account-service.md contains the B5 outbox strategy section.
+#   3. docs/archive/phases.md contains the B5 outbox strategy section.
 #   4. That doc explicitly forbids direct remote adapter wiring before outbox/saga.
 #   5. docs/sql/proposed-credit-award-task-outbox.sql exists.
 #   6. The SQL DDL contains a UNIQUE constraint on award_order_id (idempotency key present).
@@ -18,7 +18,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AWARD_REPO="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java"
-DESIGN_DOC="$REPO_ROOT/docs/microservices-split-phase-2-2-account-service.md"
+DESIGN_DOC="$REPO_ROOT/docs/archive/phases.md"
 DDL_FILE="$REPO_ROOT/docs/sql/proposed-credit-award-task-outbox.sql"
 
 PASS=0
@@ -58,7 +58,7 @@ fi
 if grep -q "Phase 2.2-B5" "$DESIGN_DOC" && grep -q "credit_award_task" "$DESIGN_DOC"; then
     check_pass "Design doc contains Phase 2.2-B5 outbox strategy section (Phase 2.2-B5 heading and credit_award_task both present)"
 else
-    check_fail "Design doc is missing Phase 2.2-B5 outbox strategy section — update docs/microservices-split-phase-2-2-account-service.md"
+    check_fail "Design doc is missing Phase 2.2-B5 outbox strategy section — update docs/archive/phases.md"
 fi
 
 # --- Check 4: Design doc explicitly forbids direct adapter wiring before outbox/saga ---

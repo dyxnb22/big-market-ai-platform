@@ -2,7 +2,7 @@
 # Repo-only Phase 8 external evidence readiness pack validator.
 #
 # Validates that the readiness pack
-# (docs/microservices-phase-8-external-evidence-readiness-pack.md) is present,
+# (docs/microservices-phase-8.md) is present,
 # complete, and consistent with the proposed DDL and flag defaults.
 #
 # Deterministic, repo-only, no DB/MQ/Docker/network.
@@ -16,7 +16,7 @@ FAIL=0
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
-PACK="$REPO_ROOT/docs/microservices-phase-8-external-evidence-readiness-pack.md"
+PACK="$REPO_ROOT/docs/microservices-phase-8.md"
 PROPOSED_DDL_DIR="$REPO_ROOT/docs/sql"
 
 echo ""

@@ -120,7 +120,7 @@ fi
 
 echo ""
 echo "-- [6] Documentation and generated evidence safety"
-DOC="docs/microservices-split-phase-3-next-extraction.md"
+DOC="docs/archive/phases.md"
 check_file "P3-DOC-1 assessment doc" "$DOC"
 check_contains "P3-DOC-2 documents chosen target" "$DOC" "Target: rebate-service"
 check_contains "P3-DOC-3 documents coupling points" "$DOC" "Remaining Monolith Coupling Points"

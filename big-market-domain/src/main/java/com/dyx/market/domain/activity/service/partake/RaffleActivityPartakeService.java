@@ -42,6 +42,12 @@ public class RaffleActivityPartakeService extends AbstractRaffleActivityPartake 
 
     @Override
     protected CreatePartakeOrderAggregate doFilterAccount(String userId, Long activityId, Date currentDate) {
+        // These three reads are a pre-flight check outside the write transaction.
+        // They are NOT the atomicity boundary — the real guard is the DB-level
+        // WHERE surplus > 0 inside saveCreatePartakeOrderAggregate. Concurrent
+        // requests can both pass here and one will fail at the DB update; the
+        // trade-off is an early, user-friendly error for the common case.
+
         // 查询总账户额度
         ActivityAccountEntity activityAccountEntity = activityRepository.queryActivityAccountByUserId(userId, activityId);
 

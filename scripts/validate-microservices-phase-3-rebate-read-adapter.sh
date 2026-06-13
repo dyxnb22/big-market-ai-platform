@@ -62,7 +62,7 @@ LEGACY_RPC="big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RebateSe
 REBATE_RPC="big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider/RebateServiceRPC.java"
 MKT_YML="big-market-market-service/src/main/resources/application.yml"
 DC="docker-compose.yml"
-DOC="docs/microservices-split-phase-3-next-extraction.md"
+DOC="docs/archive/phases.md"
 
 echo ""
 echo "-- [1] IRebateReadAdapter exists and declares isCalendarSignRebate"
