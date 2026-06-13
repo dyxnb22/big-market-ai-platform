@@ -14,7 +14,7 @@ FAIL=0
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
-RUNBOOK="$REPO_ROOT/docs/microservices-phase-8-cutover-runbook.md"
+RUNBOOK="$REPO_ROOT/docs/microservices-phase-8.md"
 
 echo ""
 echo "========================================================================"

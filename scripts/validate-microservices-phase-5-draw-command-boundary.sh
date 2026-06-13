@@ -74,7 +74,7 @@ echo "  Phase 5-B Draw-Command Boundary Validator"
 echo "  Repo: $ROOT"
 echo "========================================================================"
 
-BOUNDARY_DOC="docs/microservices-split-phase-5-draw-command-boundary.md"
+BOUNDARY_DOC="docs/archive/phases.md"
 
 # -----------------------------------------------------------------------
 echo ""

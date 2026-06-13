@@ -85,7 +85,7 @@ echo "  Phase 5-G Activity Draw Saga / Outbox Scaffold Validator"
 echo "  Repo: $ROOT"
 echo "========================================================================"
 
-SAGA_DOC="docs/microservices-split-phase-5-activity-draw-saga-outbox.md"
+SAGA_DOC="docs/archive/phases.md"
 OUTBOX_PORT="big-market-domain/src/main/java/com/dyx/market/domain/activity/adapter/port/IDrawOutboxPort.java"
 OUTBOX_EVENT="big-market-domain/src/main/java/com/dyx/market/domain/activity/model/event/DrawOutboxEvent.java"
 LOCAL_OUTBOX="big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port/LocalDrawOutboxPort.java"

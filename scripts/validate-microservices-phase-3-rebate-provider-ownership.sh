@@ -55,7 +55,7 @@ echo "========================================================================"
 LEGACY_RPC="big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RebateServiceRPC.java"
 MKT_YML="big-market-market-service/src/main/resources/application.yml"
 DC="docker-compose.yml"
-DOC="docs/microservices-split-phase-3-next-extraction.md"
+DOC="docs/archive/phases.md"
 REBATE_APP="big-market-rebate-service/src/main/java/com/dyx/market/rebate/RebateServiceApplication.java"
 REMOTE_ADP="big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteCreateOrderAdapter.java"
 

@@ -76,7 +76,7 @@ echo "  Phase 5-A Activity/Draw Orchestration Validator"
 echo "  Repo: $ROOT"
 echo "========================================================================"
 
-ORCH_DOC="docs/microservices-split-phase-5-activity-draw-orchestration.md"
+ORCH_DOC="docs/archive/phases.md"
 
 # -----------------------------------------------------------------------
 echo ""

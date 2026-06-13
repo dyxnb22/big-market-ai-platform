@@ -2,7 +2,7 @@
 # Repo-only Phase 8 idempotency & rollback matrix validator.
 #
 # Validates that the idempotency/rollback matrix
-# (docs/microservices-phase-8-idempotency-rollback-matrix.md) is present,
+# (docs/microservices-phase-8.md) is present,
 # complete, and consistent with actual code and proposed DDL.
 #
 # Deterministic, repo-only, no DB/MQ/Docker/network.
@@ -16,7 +16,7 @@ FAIL=0
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
-MATRIX="$REPO_ROOT/docs/microservices-phase-8-idempotency-rollback-matrix.md"
+MATRIX="$REPO_ROOT/docs/microservices-phase-8.md"
 PROPOSED_DDL_DIR="$REPO_ROOT/docs/sql"
 
 echo ""

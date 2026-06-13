@@ -4,12 +4,12 @@
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-STAGING="$REPO_ROOT/docs/evidence/phase-8-staging-cutover-evidence-template.md"
-PRODUCTION="$REPO_ROOT/docs/evidence/phase-8-production-cutover-evidence-template.md"
-CHECKLIST="$REPO_ROOT/docs/evidence/phase-8-go-no-go-checklist.md"
-RUNBOOK="$REPO_ROOT/docs/microservices-phase-8-cutover-runbook.md"
-INTAKE="$REPO_ROOT/docs/microservices-phase-8-external-evidence-intake.md"
-COMPLETION="$REPO_ROOT/docs/microservices-split-completion-index.md"
+STAGING="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+PRODUCTION="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+CHECKLIST="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+RUNBOOK="$REPO_ROOT/docs/microservices-phase-8.md"
+INTAKE="$REPO_ROOT/docs/microservices-phase-8.md"
+COMPLETION="$REPO_ROOT/docs/archive/microservices-history.md"
 AGGREGATE="$REPO_ROOT/scripts/validate-microservices-split-all-gates.sh"
 
 PASS=0
@@ -127,9 +127,9 @@ done
 echo ""
 echo "-- Cross-links --"
 for rel in \
-  "docs/evidence/phase-8-staging-cutover-evidence-template.md" \
-  "docs/evidence/phase-8-production-cutover-evidence-template.md" \
-  "docs/evidence/phase-8-go-no-go-checklist.md" \
+  "docs/evidence/phase-8-evidence-pack.md" \
+  "docs/evidence/phase-8-evidence-pack.md" \
+  "docs/evidence/phase-8-evidence-pack.md" \
   "scripts/validate-microservices-phase-8-cutover-evidence-pack.sh"; do
   require_text "Runbook links $rel" "$RUNBOOK" "$rel"
   require_text "Completion index links $rel" "$COMPLETION" "$rel"

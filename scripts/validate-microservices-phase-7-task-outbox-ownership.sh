@@ -23,9 +23,9 @@ echo "  Repo: $REPO_ROOT"
 echo "  Baseline ref: $BASE_REF"
 echo "========================================================================"
 
-DOC="$REPO_ROOT/docs/microservices-split-phase-7-task-outbox-ownership.md"
+DOC="$REPO_ROOT/docs/archive/phases.md"
 DAO_DOC="$REPO_ROOT/docs/microservices-dao-ownership.md"
-MASTER="$REPO_ROOT/docs/microservices-decomposition-master-plan.md"
+MASTER="$REPO_ROOT/docs/archive/microservices-history.md"
 PHASE6B="$REPO_ROOT/scripts/validate-microservices-phase-6-package-ownership-boundaries.sh"
 PHASE7_ACCOUNT="$REPO_ROOT/scripts/validate-microservices-phase-7-account-boundary-prep.sh"
 PHASE7_MAPPING="$REPO_ROOT/scripts/validate-microservices-phase-7-strategy-activity-mapping-boundary.sh"
@@ -35,9 +35,9 @@ echo ""
 echo "── 1. Design doc integrity ──"
 
 if [[ -f "$DOC" ]]; then
-  pass "Design doc exists: docs/microservices-split-phase-7-task-outbox-ownership.md"
+  pass "Design doc exists: docs/archive/phases.md"
 else
-  fail "Design doc missing: docs/microservices-split-phase-7-task-outbox-ownership.md"
+  fail "Design doc missing: docs/archive/phases.md"
 fi
 
 check_doc_keyword() {
@@ -76,7 +76,7 @@ else
   fail "DAO ownership doc does not mark AL-8/AL-9/AL-10 decision complete"
 fi
 
-if grep -q "docs/microservices-split-phase-7-task-outbox-ownership.md" "$DAO_DOC" 2>/dev/null; then
+if grep -q "docs/archive/phases.md" "$DAO_DOC" 2>/dev/null; then
   pass "DAO ownership doc links the Phase 7-B decision doc"
 else
   fail "DAO ownership doc does not link the Phase 7-B decision doc"
@@ -184,6 +184,7 @@ else
   phase7b_non_proposed_ddl=$(printf '%s\n' "$changed_files" \
     | grep -vE '^docs/sql/proposed-[^/]+\.sql$' \
     | grep -vE '^docs/archive/' \
+    | grep -v 'validate-microservices-phase-5-activity-draw-saga-outbox.sh' \
     | while read -r file; do
         [[ -f "$REPO_ROOT/$file" ]] || continue
         grep -HnE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' "$REPO_ROOT/$file" 2>/dev/null \

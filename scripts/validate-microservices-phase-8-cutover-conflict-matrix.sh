@@ -2,7 +2,7 @@
 # Repo-only Phase 8 cutover conflict matrix validator.
 #
 # Validates that the cutover conflict matrix document
-# (docs/microservices-phase-8-cutover-conflict-matrix.md) is present, complete,
+# (docs/microservices-phase-8.md) is present, complete,
 # and consistent with the actual codebase: every referenced file/class/flag
 # must exist, every row must document its external evidence gates, and every
 # row must not claim premature cleanup eligibility.
@@ -18,7 +18,7 @@ FAIL=0
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
-MATRIX="$REPO_ROOT/docs/microservices-phase-8-cutover-conflict-matrix.md"
+MATRIX="$REPO_ROOT/docs/microservices-phase-8.md"
 LEGACY_INVENTORY="$REPO_ROOT/docs/microservices-legacy-cleanup-inventory.md"
 
 echo ""
@@ -88,7 +88,7 @@ assert_legacy_flag_default_true() {
 echo ""
 echo "── 1. Matrix document presence ──"
 
-assert_file "Cutover conflict matrix exists" "docs/microservices-phase-8-cutover-conflict-matrix.md"
+assert_file "Cutover conflict matrix exists" "docs/microservices-phase-8.md"
 
 # Verify all 9 domain rows are present
 DOMAINS=(

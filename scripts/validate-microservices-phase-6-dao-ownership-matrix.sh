@@ -207,7 +207,7 @@ done
 # ── 8. Master plan references Phase 6-A ───────────────────────────────────────
 echo ""
 echo "── 8. Master plan updated ──"
-MASTER="$REPO_ROOT/docs/microservices-decomposition-master-plan.md"
+MASTER="$REPO_ROOT/docs/archive/microservices-history.md"
 if grep -q "6-A.*Done\|6-A.*done\|Phase 6-A.*complete\|6-A.*DAO ownership matrix.*Done" "$MASTER" 2>/dev/null; then
   pass "Master plan marks Phase 6-A done"
 else

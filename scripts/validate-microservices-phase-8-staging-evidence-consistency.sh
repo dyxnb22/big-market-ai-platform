@@ -4,13 +4,13 @@
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-STAGING="$REPO_ROOT/docs/evidence/phase-8-staging-cutover-evidence-template.md"
-STAGING_INTAKE="$REPO_ROOT/docs/evidence/phase-8-staging-evidence-intake-checklist.md"
-PRODUCTION="$REPO_ROOT/docs/evidence/phase-8-production-cutover-evidence-template.md"
-GONOGO="$REPO_ROOT/docs/evidence/phase-8-go-no-go-checklist.md"
-RUNBOOK="$REPO_ROOT/docs/microservices-phase-8-cutover-runbook.md"
-INTAKE="$REPO_ROOT/docs/microservices-phase-8-external-evidence-intake.md"
-COMPLETION="$REPO_ROOT/docs/microservices-split-completion-index.md"
+STAGING="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+STAGING_INTAKE="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+PRODUCTION="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+GONOGO="$REPO_ROOT/docs/evidence/phase-8-evidence-pack.md"
+RUNBOOK="$REPO_ROOT/docs/microservices-phase-8.md"
+INTAKE="$REPO_ROOT/docs/microservices-phase-8.md"
+COMPLETION="$REPO_ROOT/docs/archive/microservices-history.md"
 AGGREGATE="$REPO_ROOT/scripts/validate-microservices-split-all-gates.sh"
 
 PASS=0
@@ -133,9 +133,9 @@ done
 echo ""
 echo "-- Cross-document links include this consistency gate --"
 for rel in \
-  "docs/evidence/phase-8-staging-cutover-evidence-template.md" \
-  "docs/evidence/phase-8-staging-evidence-intake-checklist.md" \
-  "docs/evidence/phase-8-go-no-go-checklist.md" \
+  "docs/evidence/phase-8-evidence-pack.md" \
+  "docs/evidence/phase-8-evidence-pack.md" \
+  "docs/evidence/phase-8-evidence-pack.md" \
   "scripts/validate-microservices-phase-8-staging-evidence-intake.sh" \
   "scripts/validate-microservices-phase-8-staging-evidence-consistency.sh"; do
   require_text "Runbook links $rel" "$RUNBOOK" "$rel"

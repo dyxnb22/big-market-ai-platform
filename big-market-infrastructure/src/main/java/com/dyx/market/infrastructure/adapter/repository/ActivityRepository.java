@@ -28,6 +28,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -139,7 +142,7 @@ public class ActivityRepository implements IActivityRepository {
     public void doSaveNoPayOrder(CreateQuotaOrderAggregate createOrderAggregate) {
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + createOrderAggregate.getUserId() + Constants.UNDERLINE + createOrderAggregate.getActivityId());
         try {
-            lock.lock(3, TimeUnit.SECONDS);
+            lock.lock();
             // 订单对象
             ActivityOrderEntity activityOrderEntity = createOrderAggregate.getActivityOrderEntity();
             RaffleActivityOrder raffleActivityOrder = new RaffleActivityOrder();
@@ -224,7 +227,7 @@ public class ActivityRepository implements IActivityRepository {
     public void doSaveCreditPayOrder(CreateQuotaOrderAggregate createOrderAggregate) {
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + createOrderAggregate.getUserId() + Constants.UNDERLINE + createOrderAggregate.getActivityId());
         try {
-            lock.lock(3, TimeUnit.SECONDS);
+            lock.lock();
             // 创建交易订单
             ActivityOrderEntity activityOrderEntity = createOrderAggregate.getActivityOrderEntity();
             RaffleActivityOrder raffleActivityOrder = new RaffleActivityOrder();
@@ -696,7 +699,7 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public void updateOrder(DeliveryOrderEntity deliveryOrderEntity) {
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_UPDATE_LOCK + deliveryOrderEntity.getUserId() + Constants.UNDERLINE + deliveryOrderEntity.getOutBusinessNo());
-        lock.lock(3, TimeUnit.SECONDS);
+        lock.lock();
         try {
             dbRouter.doRouter(deliveryOrderEntity.getUserId());
             // 查询订单
@@ -1080,10 +1083,16 @@ public class ActivityRepository implements IActivityRepository {
         }
     }
 
+    private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
+    private static final DateTimeFormatter DAY_FMT   = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
     @Override
-    public void compensatePartakeQuota(String userId, Long activityId, String orderId) {
-        String month = RaffleActivityAccountMonth.currentMonth();
-        String day = RaffleActivityAccountDay.currentDay();
+    public void compensatePartakeQuota(String userId, Long activityId, String orderId, Date orderTime) {
+        // Derive month/day from the original order's creation time, not wall-clock now,
+        // so cross-day/-month failures restore to the correct period account.
+        LocalDate date = orderTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        String month = date.format(MONTH_FMT);
+        String day   = date.format(DAY_FMT);
         try {
             dbRouter.doRouter(userId);
             Integer restored = transactionTemplate.execute(status -> {

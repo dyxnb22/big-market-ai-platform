@@ -5,7 +5,7 @@ set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INVENTORY="$REPO_ROOT/docs/microservices-legacy-cleanup-inventory.md"
-INTAKE="$REPO_ROOT/docs/microservices-phase-8-external-evidence-intake.md"
+INTAKE="$REPO_ROOT/docs/microservices-phase-8.md"
 
 PASS=0
 FAIL=0

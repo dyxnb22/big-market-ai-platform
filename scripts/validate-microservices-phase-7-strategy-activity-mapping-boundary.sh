@@ -8,7 +8,7 @@
 #        activityId <-> strategyId lookups through IStrategyActivityMappingPort.
 #
 # Hard constraints verified:
-#   1. Design doc exists: docs/microservices-split-phase-7-strategy-activity-mapping-boundary.md
+#   1. Design doc exists: docs/archive/phases.md
 #   2. StrategyRepository no longer imports IRaffleActivityDao.
 #   3. IStrategyActivityMappingPort declares both mapping methods.
 #   4. LocalStrategyActivityMappingPort implements both methods and delegates to IRaffleActivityDao.
@@ -41,11 +41,11 @@ echo "========================================================================"
 echo ""
 echo "── 1. Design doc presence ──"
 
-DESIGN_DOC="$REPO_ROOT/docs/microservices-split-phase-7-strategy-activity-mapping-boundary.md"
+DESIGN_DOC="$REPO_ROOT/docs/archive/phases.md"
 if [[ -f "$DESIGN_DOC" ]]; then
-  pass "Design doc exists: docs/microservices-split-phase-7-strategy-activity-mapping-boundary.md"
+  pass "Design doc exists: docs/archive/phases.md"
 else
-  fail "Design doc missing: docs/microservices-split-phase-7-strategy-activity-mapping-boundary.md"
+  fail "Design doc missing: docs/archive/phases.md"
 fi
 
 # Confirm the doc captures the key design decisions

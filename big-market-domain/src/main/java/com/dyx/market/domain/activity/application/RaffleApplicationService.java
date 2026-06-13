@@ -56,7 +56,6 @@ public class RaffleApplicationService {
 
         // 2. 参与活动 - 创建参与记录订单（含额度扣减）
         UserRaffleOrderEntity orderEntity = raffleActivityPartakeService.createOrder(userId, activityId);
-        boolean quotaDecrementedInThisCall = existingOrder == null;
         log.info("活动抽奖，创建订单 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
 
         try {
@@ -88,28 +87,25 @@ public class RaffleApplicationService {
                     .awardIndex(raffleAwardEntity.getSort())
                     .build();
         } catch (Exception e) {
-            // Quota was already decremented in step 2 but raffle/award failed.
-            // Compensate by restoring the quota slot so the user doesn't lose their draw chance.
+            // Always compensate on failure regardless of whether the order was newly created or
+            // reused from a previous stuck 'create' order. compensatePartakeQuota uses a CAS
+            // state transition (create -> failed), so it is safe to call idempotently and will
+            // no-op if the order was already moved to a terminal state.
             log.error("活动抽奖执行异常，补偿回退额度 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), e);
-            if (quotaDecrementedInThisCall) {
-                try {
-                    if (remoteQuotaDecrementEnabled) {
-                        if (activityRepository.markRaffleOrderFailed(userId, orderEntity.getOrderId())) {
-                            activityAccountPort.rollbackQuota(userId, activityId, orderEntity.getOrderId());
-                        } else {
-                            log.warn("活动抽奖订单已非创建态，跳过远程额度回滚避免重复补偿 userId:{} activityId:{} orderId:{}",
-                                    userId, activityId, orderEntity.getOrderId());
-                        }
+            try {
+                if (remoteQuotaDecrementEnabled) {
+                    if (activityRepository.markRaffleOrderFailed(userId, orderEntity.getOrderId())) {
+                        activityAccountPort.rollbackQuota(userId, activityId, orderEntity.getOrderId());
                     } else {
-                        activityRepository.compensatePartakeQuota(userId, activityId, orderEntity.getOrderId());
+                        log.warn("活动抽奖订单已非创建态，跳过远程额度回滚避免重复补偿 userId:{} activityId:{} orderId:{}",
+                                userId, activityId, orderEntity.getOrderId());
                     }
-                    log.info("活动抽奖补偿回退额度完成 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
-                } catch (Exception ce) {
-                    log.error("活动抽奖补偿回退额度失败 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), ce);
+                } else {
+                    activityRepository.compensatePartakeQuota(userId, activityId, orderEntity.getOrderId(), orderEntity.getOrderTime());
                 }
-            } else {
-                log.warn("活动抽奖复用未完成订单失败，跳过额度补偿避免重复返还 userId:{} activityId:{} orderId:{}",
-                        userId, activityId, orderEntity.getOrderId());
+                log.info("活动抽奖补偿回退额度完成 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
+            } catch (Exception ce) {
+                log.error("活动抽奖补偿回退额度失败 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), ce);
             }
             throw e;
         }

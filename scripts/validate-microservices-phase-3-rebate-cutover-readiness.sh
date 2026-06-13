@@ -60,7 +60,7 @@ REMOTE_CREATE="big-market-market-service/src/main/java/com/dyx/market/market/con
 REMOTE_READ="big-market-market-service/src/main/java/com/dyx/market/market/config/RebateRemoteReadAdapter.java"
 MKT_YML="big-market-market-service/src/main/resources/application.yml"
 DC="docker-compose.yml"
-OUTBOX_DOC="docs/microservices-split-phase-3-rebate-outbox-ownership.md"
+OUTBOX_DOC="docs/archive/phases.md"
 
 echo ""
 echo "========================================================================"
