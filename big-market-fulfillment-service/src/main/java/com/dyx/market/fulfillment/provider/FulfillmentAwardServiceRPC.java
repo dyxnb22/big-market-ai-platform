@@ -16,18 +16,17 @@ import org.apache.dubbo.config.annotation.DubboService;
 import javax.annotation.Resource;
 
 /**
- * Phase 2.3-A dark launch: Dubbo provider wrapping the existing IAwardService.
+ * Dubbo provider wrapping the award domain service.
  *
  * Implements the API contract {@link IFulfillmentAwardService} from big-market-api.
  * Internally delegates to the domain {@link IAwardService} — no logic lives here.
  *
- * No caller is wired to this provider yet; traffic cutover deferred to Phase 2.3-B+
- * after the credit-award outbox is staging-validated.
+ * The provider exposes the award fulfillment contract for service-oriented learning runs.
  *
  * Safety constraint: UserCreditRandomAward writes user_credit_account directly in a
  * shared local transaction with user_award_record. This must be routed through
- * account-service via the outbox BEFORE any traffic cutover to fulfillment-service.
- * See docs/archive/phases.md.
+ * account-service via the outbox BEFORE any final routing to fulfillment-service.
+ * See docs/data-and-outbox.md.
  */
 @Slf4j
 @DubboService(version = "1.0")

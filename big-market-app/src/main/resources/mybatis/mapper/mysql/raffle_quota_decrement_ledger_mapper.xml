@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
-  Phase 2.2-B12 quota-decrement idempotency ledger mapper.
+  quota-decrement idempotency ledger mapper.
   Tables raffle_quota_decrement_ledger_000..003 are PROPOSED ONLY.
   Apply docs/sql/proposed-quota-decrement-ledger.sql before enabling
   account.service.remote-quota-decrement.enabled=true in any environment.

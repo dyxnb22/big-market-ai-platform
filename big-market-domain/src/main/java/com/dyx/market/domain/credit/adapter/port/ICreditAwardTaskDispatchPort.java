@@ -8,14 +8,14 @@ import java.util.List;
  * Domain port isolating DispatchCreditAwardTaskJob from direct credit-award
  * outbox DAO access.
  *
- * Phase 7-A prep (AL-7): message-job-service must not import
+ * prep (AL-7): message-job-service must not import
  * ICreditAwardTaskDao directly. The credit_award_task table is owned by the
  * account/credit boundary; the job only needs pending reads and state updates.
  *
  * Local path (default): LocalCreditAwardTaskDispatchPort delegates directly to
  * ICreditAwardTaskDao. The job keeps the existing DB/TB routing and flag gate.
  *
- * Remote path (future, flag-gated): account-service API can replace the local
+ * Remote path (configurable): account-service API can replace the local
  * implementation before account-service owns credit outbox dispatch at runtime.
  */
 public interface ICreditAwardTaskDispatchPort {

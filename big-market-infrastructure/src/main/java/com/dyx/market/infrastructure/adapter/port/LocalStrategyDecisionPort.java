@@ -13,15 +13,15 @@ import javax.annotation.Resource;
 /**
  * Local (in-process) implementation of IStrategyDecisionPort.
  *
- * Phase 5-D: delegates directly to the existing IRaffleStrategy bean,
+ * delegates directly to the existing IRaffleStrategy bean,
  * preserving identical behavior to the pre-5-D direct injection in
  * RaffleApplicationService. No network hop. No behavior change.
  *
  * Active by default via @ConditionalOnMissingBean — if no other
- * IStrategyDecisionPort bean is registered this one is used. A future remote
+ * IStrategyDecisionPort bean is registered this one is used. A configured remote
  * implementation in big-market-market-service (guarded by
  * strategy.service.remote-decision.enabled=false) would take precedence when
- * that flag is true. That remote implementation is NOT introduced in this batch.
+ * that flag is true. That remote implementation is documented extension point.
  */
 @Slf4j
 @Component

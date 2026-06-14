@@ -86,7 +86,7 @@ public abstract class AbstractRaffleActivityPartake implements IRaffleActivityPa
 
     /**
      * Persist the partake order aggregate. Default: local saveCreatePartakeOrderAggregate (quota
-     * decrement + order insert in one transaction). Override in subclasses to apply flag-gated
+     * decrement + order insert in one transaction). Override in subclasses to apply configurable
      * remote quota decrement before the order insert (B14+).
      */
     protected void doSavePartakeOrder(CreatePartakeOrderAggregate aggregate) {

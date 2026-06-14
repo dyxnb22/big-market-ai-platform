@@ -11,9 +11,9 @@ import java.util.List;
 /**
  * Read-only Dubbo contract for the strategy bounded context.
  *
- * Phase 4-B: narrow read-only surface exported by big-market-strategy-service.
+ * narrow read-only surface exported by big-market-strategy-service.
  * Draw execution and stock mutation are intentionally excluded — those paths
- * remain in market-service until Phase 5.
+ * remain in market-service until 
  */
 public interface IStrategyReadService {
 

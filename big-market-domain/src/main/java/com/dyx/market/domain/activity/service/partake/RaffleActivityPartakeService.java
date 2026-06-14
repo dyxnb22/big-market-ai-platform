@@ -124,7 +124,7 @@ public class RaffleActivityPartakeService extends AbstractRaffleActivityPartake 
     }
 
     /**
-     * Phase 2.2-B14 flag-gated wiring.
+     * configurable wiring.
      *
      * flag=false (default): original saveCreatePartakeOrderAggregate — quota decrement and
      *   order insert happen atomically in a single local transaction. No change to runtime behavior.

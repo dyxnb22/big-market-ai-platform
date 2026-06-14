@@ -24,13 +24,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Dark-launch strategy read RPC provider hosted by big-market-strategy-service.
+ * strategy read RPC provider hosted by big-market-strategy-service.
  *
- * Phase 4-C: read-only surface for strategy award list and rule-weight queries.
+ * read-only surface for strategy award list and rule-weight queries.
  * No draw execution, no stock mutation, no activity/account cross-domain calls.
  *
  * Unlock-status enrichment (isAwardUnlock, waitUnLockCount) requires the account
- * participation count, which crosses into the activity/account domain. Phase 4-D
+ * participation count, which crosses into the activity/account domain. 
  * supplies those counts through IStrategyAccountParticipationPort, backed by the
  * existing IAccountQuotaService API contract with conservative fallback to 0.
  */
@@ -64,7 +64,7 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
 
             Map<String, Integer> ruleLockCountMap = raffleRule.queryAwardRuleLockCount(treeIds);
 
-            // Phase 4-D: real day partake count from account-service via IStrategyAccountParticipationPort.
+            // real day partake count from account-service via IStrategyAccountParticipationPort.
             // Falls back to 0 if account-service is unreachable (conservative — all locked awards remain locked).
             int dayPartakeCount = strategyAccountParticipationPort
                     .queryRaffleActivityAccountDayPartakeCount(request.getActivityId(), request.getUserId());
@@ -113,7 +113,7 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
 
-            // Phase 4-D: real total use count from account-service via IStrategyAccountParticipationPort.
+            // real total use count from account-service via IStrategyAccountParticipationPort.
             // Falls back to 0 if account-service is unreachable (conservative — unlock thresholds appear unmet).
             int userActivityAccountTotalUseCount = strategyAccountParticipationPort
                     .queryRaffleActivityAccountPartakeCount(request.getActivityId(), request.getUserId());

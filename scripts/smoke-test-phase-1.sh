@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Microservices smoke test — validates the full 8-service stack (Phase 2.3-A dark launch).
+# Microservices smoke test — validates the local microservices stack.
 #
-# Historical note: this script is named smoke-test-phase-1 for backwards compatibility
-# (it was introduced in Phase 1) but it now covers all 8 services including
-# big-market-message-job-service (added in Phase 2.1),
-# big-market-account-service (dark-launched in Phase 2.2-A, Dubbo/internal only), and
-# big-market-fulfillment-service (dark-launched in Phase 2.3-A, Dubbo/internal only).
+# The filename is kept for compatibility with existing local docs. The script
+# validates the final learning stack: gateway, auth, admin, market, chatbot,
+# message-job, account, and fulfillment services.
 # The canonical alias is:
 #   ./scripts/validate-microservices-stack.sh  ← orchestrates build + docker + this script
 #
@@ -13,7 +11,7 @@
 # Default host: localhost
 #
 # Expected result: 18/18 PASS
-#   - 8 health checks  (gateway + 7 backend services, including fulfillment-service dark launch)
+#   - 8 health checks  (gateway + 7 backend services)
 #   - 9 functional API checks
 #   - 1 gateway fallback endpoint check
 
@@ -43,11 +41,11 @@ check() {
   fi
 }
 
-echo "=== Phase 2.3-A Smoke Test (8-service dark launch) ==="
+echo "=== Microservices Smoke Test ==="
 echo ""
 
 echo "--- Health checks ---"
-for svc_port in "auth-service:$HOST:8081" "admin-service:$HOST:8082" "market-service:$HOST:8083" "chatbot-service:$HOST:8084" "gateway:$HOST:8080" "message-job-service:$HOST:8085" "account-service(dark):$HOST:8086" "fulfillment-service(dark):$HOST:8087"; do
+for svc_port in "auth-service:$HOST:8081" "admin-service:$HOST:8082" "market-service:$HOST:8083" "chatbot-service:$HOST:8084" "gateway:$HOST:8080" "message-job-service:$HOST:8085" "account-service:$HOST:8086" "fulfillment-service:$HOST:8087"; do
   name="${svc_port%%:*}"; addr="${svc_port#*:}"
   result=$(curl -sf "http://$addr/actuator/health" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "UNREACHABLE")
   if [ "$result" = "UP" ]; then

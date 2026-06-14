@@ -9,20 +9,20 @@ import org.springframework.stereotype.Component;
 /**
  * Local (in-process) no-op implementation of IDrawOutboxPort.
  *
- * Phase 5-G: no additional outbox write is needed in the local path because
+ * no additional outbox write is needed in the local path because
  * AwardRepository.saveUserAwardRecord already writes the task outbox row
  * inside the same DB transaction as user_award_record. Durability is provided
  * by that existing local transaction; this adapter merely logs the saga step
  * for observability.
  *
- * Active by default via @ConditionalOnMissingBean. A future remote
+ * Active by default via @ConditionalOnMissingBean. A configured remote
  * ActivityDrawOutboxPort (guarded by activity.service.draw-outbox.enabled=false)
  * would take precedence when that flag is true. That remote implementation is
- * NOT introduced in this batch.
+ * documented extension point.
  *
  * NOTE: IDrawOutboxPort is not yet injected into RaffleApplicationService.
- * This class exists as a scaffold. Wiring it into the draw hot-path requires
- * Phase 7-D outbox DDL to be applied and Phase 8-E cutover approval.
+ * This class exists as a default implementation. Wiring it into the draw hot-path requires
+ * outbox DDL to be applied and routing approval.
  */
 @Slf4j
 @Component

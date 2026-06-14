@@ -1,5 +1,5 @@
--- PROPOSED ONLY — Phase 2.2-B12 quota-decrement idempotency foundation.
--- DO NOT run against production. DO NOT add to any Flyway/Liquibase migration.
+-- Learning-environment DDL reference. Apply manually only in local study environments.
+-- This repository does not auto-apply this DDL; keep it as an explicit local learning reference.
 -- This DDL is documentation of the intended raffle_quota_decrement_ledger table.
 -- Production wiring must wait until decrementQuota is validated end-to-end and
 -- the remote-quota-decrement flag is promoted (B13+).
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
     -- the caller treats this as an already-processed event and returns true immediately.
     UNIQUE KEY `uq_user_activity_biz` (`user_id`, `activity_id`, `out_business_no`),
     KEY `idx_status_create` (`status`, `create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Quota-decrement idempotency ledger — proposed Phase 2.2-B12';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Quota-decrement idempotency ledger — learning DDL';
 
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `raffle_quota_decrement_ledger_000`;
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `raffle_quota_decrement_ledger_000`;

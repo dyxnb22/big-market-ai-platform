@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Phase 2.2-B6: outbox consumer for award credit dispatch.
+ * outbox consumer for award credit dispatch.
  *
  * Active ONLY when account.award-credit-outbox.enabled=true. When false (default) this bean
  * is never instantiated and the @XxlJob handlers are never registered — no DB access occurs.

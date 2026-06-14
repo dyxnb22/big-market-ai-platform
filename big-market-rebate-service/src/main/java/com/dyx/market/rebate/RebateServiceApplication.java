@@ -7,11 +7,11 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * Rebate service: dark-launch Dubbo provider for behavior rebate creation.
+ * Rebate service: Dubbo provider for behavior rebate creation.
  *
- * Phase 3 scaffold only: the existing market-service provider remains active.
+ * default implementation: the existing market-service provider remains active.
  * This launcher gives the rebate bounded context its own service boundary before
- * any caller or traffic cutover is attempted.
+ * any caller or final routing is attempted.
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.rebate",

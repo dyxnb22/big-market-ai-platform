@@ -27,7 +27,7 @@ import java.util.Map;
  */
 @Slf4j
 @DubboService(version = "1.0")
-@ConditionalOnProperty(name = "rebate.legacy-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "rebate.default-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RebateServiceRPC implements IRebateService {
 
     @Resource

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
  * Domain port isolating AwardRepository from direct credit-account and
  * credit-award outbox DAO writes.
  *
- * Phase 7-A prep (AL-6/AL-11): fulfillment keeps the existing local transaction,
+ * prep (AL-6/AL-11): fulfillment keeps the existing local transaction,
  * lock, and shard routing, while the credit table writes are hidden behind this
  * narrow boundary. The local implementation delegates to IUserCreditAccountDao
  * and ICreditAwardTaskDao without enabling remote traffic.

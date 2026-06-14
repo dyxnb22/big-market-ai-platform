@@ -5,12 +5,12 @@ import com.dyx.market.domain.activity.model.entity.SkuRechargeEntity;
 import com.dyx.market.domain.activity.model.entity.UnpaidActivityOrderEntity;
 
 /**
- * Quota write routing adapter — Phase 2.2-B2/B3.
+ * Quota write routing adapter — 
  *
- * Wired callers (Phase 2.2-B2/B3):
+ * Wired callers ():
  *   - CreditAdjustSuccessConsumer.updateOrder   (message-job-service)
  *   - RebateMessageConsumer.createOrder for sku  (message-job-service)
- *   - RaffleActivityController.creditPayExchangeSku createOrder (market-service, Phase 2.2-B3)
+ *   - RaffleActivityController.creditPayExchangeSku createOrder (market-service, )
  *
  * Still pending wiring:
  *   - RaffleActivityPartakeService quota decrement — deferred (high risk, needs dedicated RPC)

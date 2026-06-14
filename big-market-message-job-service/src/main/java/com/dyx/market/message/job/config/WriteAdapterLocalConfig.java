@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Phase 2.2-B2: provides local write adapter beans for message-job-service.
+ * provides local write adapter beans for message-job-service.
  *
  * Using @Bean + @ConditionalOnMissingBean in a @Configuration class (rather than
  * @Component on the adapter classes themselves) ensures reliable evaluation order:

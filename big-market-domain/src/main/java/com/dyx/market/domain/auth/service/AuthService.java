@@ -37,7 +37,7 @@ public class AuthService extends AbstractAuthService {
         if (!isVerify(token)) {
             return false;
         }
-        // Phase 8-B: check revocation blacklist if service is available
+        // check revocation blacklist if service is available
         if (tokenRevocationService != null) {
             String jti = extractJti(token);
             if (jti != null && tokenRevocationService.isRevoked(jti)) {

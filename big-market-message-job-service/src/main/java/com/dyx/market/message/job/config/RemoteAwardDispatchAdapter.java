@@ -11,7 +11,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
- * Phase 2.3-B: remote award dispatch adapter for message-job-service.
+ * remote award dispatch adapter for message-job-service.
  * Active only when account.fulfillment.remote-award.enabled=true.
  * Registered as @Bean by WriteAdapterLocalConfig — do NOT add @Component.
  *

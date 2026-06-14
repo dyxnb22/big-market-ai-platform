@@ -78,10 +78,10 @@ public class RaffleActivityController implements IRaffleActivityService {
     private IStrategyArmory strategyArmory;
     @Resource
     private RaffleApplicationService raffleApplicationService;
-    // Phase 3: routes calendarSignRebate createOrder; local adapter active by default (flag=false).
+    // routes calendarSignRebate createOrder; local adapter active by default (flag=false).
     @Resource
     private IRebateOrderAdapter rebateOrderAdapter;
-    // Phase 3-A/B: routes isCalendarSignRebate reads; local adapter active by default (flag=false).
+    // routes isCalendarSignRebate reads; local adapter active by default (flag=false).
     @Resource
     private IRebateReadAdapter rebateReadAdapter;
     @Resource
@@ -90,16 +90,16 @@ public class RaffleActivityController implements IRaffleActivityService {
     private IRaffleActivityStageService raffleActivityStageService;
     @Resource
     private HttpServletRequest httpServletRequest;
-    // Phase 2.2-B1: routes read-only account queries; flag defaults to local service.
+    // routes read-only account queries; flag defaults to local service.
     @Resource
     private IAccountReadAdapter accountRemoteReadAdapter;
-    // Phase 2.2-B3: routes credit exchange writes; flags default to local service.
+    // routes credit exchange writes; flags default to local service.
     @Resource
     private IAccountQuotaWriteAdapter accountQuotaWriteAdapter;
     @Resource
     private IAccountCreditWriteAdapter accountCreditWriteAdapter;
 
-    // Phase 2.2-B infrastructure repository — used for SKU stock restore on exchange failure
+    // infrastructure repository — used for SKU stock restore on exchange failure
     @Resource
     private IActivityRepository activityRepository;
 
@@ -322,7 +322,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             behaviorEntity.setUserId(userId);
             behaviorEntity.setBehaviorTypeVO(BehaviorTypeVO.SIGN);
             behaviorEntity.setOutBusinessNo(outBusinessNo);
-            // Phase 3: routed through IRebateOrderAdapter (local by default, remote when flag=true).
+            // routed through IRebateOrderAdapter (local by default, remote when flag=true).
             List<String> orderIds = rebateOrderAdapter.createOrder(behaviorEntity);
             log.info("日历签到返利完成 userId:{} orderIds: {}", userId, JSON.toJSONString(orderIds));
 
@@ -403,7 +403,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(userId)) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Phase 3-A/B: routed through IRebateReadAdapter (local by default, remote when flag=true).
+            // routed through IRebateReadAdapter (local by default, remote when flag=true).
             boolean signed = rebateReadAdapter.isCalendarSignRebate(userId, LocalDate.now().format(DATE_FORMAT_DAY));
             log.info("查询用户是否完成日历签到返利完成 userId:{} signed:{}", userId, signed);
             return Response.<Boolean>builder()
@@ -457,7 +457,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
+            // routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
             ActivityAccountEntity activityAccountEntity = accountRemoteReadAdapter.queryActivityAccountEntity(request.getActivityId(), request.getUserId());
             UserActivityAccountResponseDTO userActivityAccountResponseDTO = UserActivityAccountResponseDTO.builder()
                     .totalCount(activityAccountEntity.getTotalCount())
@@ -561,7 +561,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             if (StringUtils.isBlank(userId)) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Phase 2.2-B1: routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
+            // routes to account-service when account.service.remote-read.enabled=true; falls back to local on error.
             BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
             log.info("查询用户积分值完成 userId:{} adjustAmount:{}", userId, balance);
             return Response.<BigDecimal>builder()
@@ -620,7 +620,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             String outBusinessNo = request.getUserId() + "_" + sku + "_" + LocalDate.now().format(DATE_FORMAT_DAY) + "_" + System.currentTimeMillis();
 
             // 1. 创建兑换商品sku订单（含库存校验和扣减）
-            // Phase 2.2-B3: routed through IAccountQuotaWriteAdapter (local by default, remote when flag=true).
+            // routed through IAccountQuotaWriteAdapter (local by default, remote when flag=true).
             UnpaidActivityOrderEntity unpaidActivityOrder = accountQuotaWriteAdapter.createOrder(SkuRechargeEntity.builder()
                     .userId(request.getUserId())
                     .sku(sku)
@@ -630,7 +630,7 @@ public class RaffleActivityController implements IRaffleActivityService {
             log.info("积分兑换商品，创建订单完成 userId:{} sku:{} outBusinessNo:{}", request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
 
             // 2.支付兑换商品 — 扣减积分
-            // Phase 2.2-B3: routed through IAccountCreditWriteAdapter (local by default, remote when flag=true).
+            // routed through IAccountCreditWriteAdapter (local by default, remote when flag=true).
             try {
                 String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
                         .userId(unpaidActivityOrder.getUserId())

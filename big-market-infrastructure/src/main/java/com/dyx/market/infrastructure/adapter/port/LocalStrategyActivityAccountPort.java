@@ -14,7 +14,7 @@ import javax.annotation.Resource;
 /**
  * Local (in-process) implementation of IStrategyActivityAccountPort.
  *
- * Phase 7-A prep (AL-2/AL-3): StrategyRepository previously injected
+ * prep (AL-2/AL-3): StrategyRepository previously injected
  * IRaffleActivityAccountDao and IRaffleActivityAccountDayDao directly.
  * This port encapsulates those reads behind the strategy domain boundary.
  *

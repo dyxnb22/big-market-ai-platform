@@ -6,7 +6,7 @@ app:
     api-version: ${API_VERSION:v1}
     cross-origin: ${CROSS_ORIGIN:'*'}
   jwt:
-    # DEV-ONLY default — overridden via JWT_SECRET env var in staging/production.
+    # DEV-ONLY default — overridden via JWT_SECRET env var /production.
     # The DefaultCredentialGuard will refuse to start in non-dev profiles if
     # this default is still in place.
     secret: ${JWT_SECRET:change-me-in-dev-only}
@@ -17,14 +17,14 @@ app:
     # "admin:admin" or "xiaofuge:demo" are still present.
     dev-users: ${APP_AUTH_DEV_USERS:xiaofuge:demo,admin:admin}
 
-# ── Token revocation (Phase 8-B) ──
+# ── Token revocation () ──
 # In-memory by default. Set token-revocation.redis.enabled=true when
 # RedissonClient is available for multi-instance consistency.
 token-revocation:
   redis:
     enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
 
-# ── Default credential guard (Phase 8-A) ──
+# ── Default credential guard () ──
 # Set DEFAULT_CREDENTIAL_GUARD_ENABLED=false only in dev environments.
 default-credential-guard:
   enabled: ${DEFAULT_CREDENTIAL_GUARD_ENABLED:true}

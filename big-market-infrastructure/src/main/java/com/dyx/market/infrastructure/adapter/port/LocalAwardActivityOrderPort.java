@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 /**
  * Local (in-process) implementation of IAwardActivityOrderPort.
  *
- * Phase 7-A prep (AL-5): AwardRepository previously injected
+ * prep (AL-5): AwardRepository previously injected
  * IUserRaffleOrderDao directly. This port encapsulates the same guarded
  * user_raffle_order state transition without changing transaction or routing
  * behavior; AwardRepository still controls dbRouter and transactionTemplate.

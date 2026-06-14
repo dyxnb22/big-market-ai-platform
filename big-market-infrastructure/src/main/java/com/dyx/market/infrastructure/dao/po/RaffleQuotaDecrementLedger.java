@@ -10,7 +10,7 @@ import java.util.Date;
 /**
  * Persistent object for raffle_quota_decrement_ledger_{000..003}.
  *
- * Phase 2.2-B12 idempotency ledger for AccountQuotaServiceRPC.decrementQuota.
+ * idempotency ledger for AccountQuotaServiceRPC.decrementQuota.
  * The UNIQUE KEY (user_id, activity_id, out_business_no) is the guard against
  * double-decrement on duplicate RPC calls.
  */

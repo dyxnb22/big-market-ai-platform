@@ -15,7 +15,7 @@ import com.dyx.market.trigger.api.response.Response;
  *
  * Local (in-process) callers in market-service, message-job-service, and
  * infrastructure still invoke IAwardService directly — no traffic is routed
- * through this interface until the award-credit outbox is staging-validated
+ * through this interface until the award-credit outbox is local smoke validated
  * and the remote-award flag is enabled.
  *
  * @see com.dyx.market.domain.award.service.IAwardService

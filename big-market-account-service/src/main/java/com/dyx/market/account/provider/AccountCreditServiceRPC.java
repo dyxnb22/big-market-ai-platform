@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 /**
  * Dubbo provider for credit account operations.
  *
- * Dark-launch Phase 2.2-A: provider is registered but receives no traffic.
+ * provider is registered but receives no traffic.
  * Delegates to the existing ICreditAdjustService domain service unchanged.
  */
 @Slf4j

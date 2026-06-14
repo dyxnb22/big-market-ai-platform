@@ -24,7 +24,7 @@ import java.util.Map;
  * big-market-app (monolith) or any service that does not supply StrategyRemoteReadAdapter
  * from market-service.
  *
- * Preserves the exact read semantics that RaffleStrategyController used before Phase 4-D:
+ * Preserves the exact read semantics that RaffleStrategyController used before 
  * award lock status from IRaffleAward + IRaffleRule; day/total partake counts from IAccountReadAdapter.
  * No DubboReference, no feature flag.
  */

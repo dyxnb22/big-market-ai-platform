@@ -25,7 +25,7 @@ import javax.annotation.Resource;
 /**
  * Dubbo provider for activity account quota operations.
  *
- * Dark-launch Phase 2.2-A: provider is registered but receives no traffic.
+ * provider is registered but receives no traffic.
  * Delegates to the existing IRaffleActivityAccountQuotaService domain service unchanged.
  */
 @Slf4j
@@ -224,9 +224,9 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request) {
-        // Phase 2.2-B12: real idempotent implementation.
+        // real idempotent implementation.
         // Ledger table (raffle_quota_decrement_ledger) must be applied to the shard DBs
-        // before this path is reachable in production. RaffleActivityPartakeService is
+        // before this path is enabled in a shared environment. RaffleActivityPartakeService is
         // NOT wired to call this via remote yet (remote-quota-decrement.enabled=false).
         if (request == null
                 || StringUtils.isBlank(request.getUserId())
@@ -276,7 +276,7 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request) {
-        // Phase 2.2-B14: real ledger-guarded rollback implementation.
+        // real ledger-guarded rollback implementation.
         // Ledger status update (applied → rolled_back) and quota restore in one transaction.
         // Idempotent: safe to call even if the matching decrementQuota was never applied.
         // Requires raffle_quota_decrement_ledger DDL applied to the shard DBs.

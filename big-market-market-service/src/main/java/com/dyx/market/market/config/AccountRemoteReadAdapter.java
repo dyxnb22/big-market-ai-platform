@@ -22,7 +22,7 @@ import java.math.BigDecimal;
  * Routes account read queries to either the local domain service (default) or
  * account-service via Dubbo, controlled by account.service.remote-read.enabled.
  *
- * Phase 2.2-B1: read-only adapter. Write paths (createOrder, quota decrement,
+ * read-only adapter. Write paths (createOrder, quota decrement,
  * rebate, award) are NOT routed here and remain on local domain services.
  *
  * When remote-read is enabled and the remote call fails, this adapter logs the

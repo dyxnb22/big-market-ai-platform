@@ -8,9 +8,9 @@ import java.math.BigDecimal;
 /**
  * Cross-service Dubbo API for credit account operations.
  *
- * Dark-launch Phase 2.2-A: interface declared here; provider lives in
+ * interface declared here; provider lives in
  * big-market-account-service. Existing callers in market-service/message-job-service
- * still call domain services in-process — no traffic cutover yet.
+ * still call domain services in-process — no final routing yet.
  */
 public interface IAccountCreditService {
 

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 /**
  * Local (in-process) implementation of IActivityAccountPort.
  *
- * Phase 2.2-B14: delegates to the same ledger-guarded repository methods used by
+ * delegates to the same ledger-guarded repository methods used by
  * AccountQuotaServiceRPC on the account-service side. This removes the no-op behavior
  * and makes the local path functionally equivalent to the remote path for testing.
  *

@@ -14,7 +14,7 @@ public interface IRebateService {
 
     Response<Boolean> rebate(Request<RebateRequestDTO> request);
 
-    /** Phase 3-A/B: read RPC — returns true when a rebate order exists for the given userId + outBusinessNo. */
+    /** read RPC — returns true when a rebate order exists for the given userId + outBusinessNo. */
     Response<Boolean> isCalendarSignRebate(Request<RebateOrderQueryRequestDTO> request);
 
 }

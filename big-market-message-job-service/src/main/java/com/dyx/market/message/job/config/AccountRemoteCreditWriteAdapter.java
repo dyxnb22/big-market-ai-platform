@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Phase 2.2-B2: remote credit write adapter for message-job-service.
+ * remote credit write adapter for message-job-service.
  * Active only when account.service.remote-credit-write.enabled=true.
  * Falls back to local ICreditAdjustService on remote exception or non-success response.
  */

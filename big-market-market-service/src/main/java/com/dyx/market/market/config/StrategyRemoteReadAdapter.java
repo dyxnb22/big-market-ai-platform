@@ -34,10 +34,10 @@ import java.util.Map;
  * When flag=true and remote call fails or returns non-success: logs and falls back to local.
  *
  * Do NOT enable until:
- *   - big-market-strategy-service is registered in staging Nacos
+ *   - big-market-strategy-service is registered  Nacos
  *   - IStrategyAccountParticipationPort in strategy-service returns real counts from account-service
- *   - end-to-end staging validation passes
- *   - DBA + Ops + Engineering + Oncall sign off (Phase 8-D approval gate)
+ *   - end-to-end local validation passes
+ *   - DBA + Ops + Engineering + Oncall sign off (approval gate)
  */
 @Slf4j
 @Component

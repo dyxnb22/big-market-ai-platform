@@ -3,11 +3,11 @@ package com.dyx.market.trigger.adapter;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 
 /**
- * Credit write routing adapter — Phase 2.2-B2/B3.
+ * Credit write routing adapter — 
  *
- * Wired callers (Phase 2.2-B2/B3):
+ * Wired callers ():
  *   - RebateMessageConsumer.createOrder for integral  (message-job-service)
- *   - RaffleActivityController.creditPayExchangeSku createOrder (market-service, Phase 2.2-B3)
+ *   - RaffleActivityController.creditPayExchangeSku createOrder (market-service, )
  *
  * Still pending wiring:
  *   - UserCreditRandomAward (award credit path) — needs call-chain audit before wiring

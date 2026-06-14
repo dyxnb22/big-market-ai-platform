@@ -15,7 +15,7 @@ import java.util.List;
  * implementation (StrategyRemoteReadAdapter in market-service) proxies to
  * big-market-strategy-service via Dubbo when strategy.service.remote-read.enabled=true.
  *
- * Phase 4-D: introduced so RaffleStrategyController no longer calls strategy
+ * introduced so RaffleStrategyController no longer calls strategy
  * domain services directly for the two pure read endpoints.
  */
 public interface IStrategyReadAdapter {

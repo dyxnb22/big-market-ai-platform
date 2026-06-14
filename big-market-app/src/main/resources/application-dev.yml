@@ -218,10 +218,10 @@ management:
 account:
   fulfillment:
     remote-award:
-      # Phase 2.3-B scaffold; not active in big-market-app (uses LocalAwardDispatchAdapter).
+      # default implementation; not active in big-market-app (uses LocalAwardDispatchAdapter).
       enabled: false
   award-credit-outbox:
-    # Phase 2.2-B6 scaffold only. Default false — credit_award_task tables are proposed-only.
+    # default implementation. Default false — credit_award_task tables are learning-reference.
     # Set true ONLY after applying docs/sql/proposed-credit-award-task-outbox.sql.
     enabled: ${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:false}
 

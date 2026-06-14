@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * Request DTO for rebate order read queries (Phase 3-A/B: rebate read RPC contract).
+ * Request DTO for rebate order read queries (rebate read RPC contract).
  */
 @Data
 @Builder

@@ -169,55 +169,55 @@ gateway:
 account:
   service:
     remote-read:
-      # Phase 2.2-B1: feature flag for routing read-only account queries to account-service via Dubbo.
+      # feature flag for routing read-only account queries to account-service via Dubbo.
       # Default false — existing local domain service path is used.
       # Set to true only after Docker 17/17 validation and manual read verification.
       enabled: ${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:false}
     remote-credit-write:
-      # Phase 2.2-B2 scaffold only. Default false keeps all credit writes local.
+      # default implementation. Default false keeps all credit writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
     remote-quota-write:
-      # Phase 2.2-B2 scaffold only. Default false keeps all quota writes local.
+      # default implementation. Default false keeps all quota writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
     remote-quota-decrement:
-      # Phase 2.2-B11 scaffold. Default false — LocalActivityAccountPort is used.
+      # default implementation. Default false — LocalActivityAccountPort is used.
       # Set true only after B12 idempotency ledger DDL is applied, decrementQuota
-      # provider is fully implemented, and end-to-end staging validation passes.
+      # provider is fully implemented, and end-to-end local validation passes.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
 strategy:
-  legacy-rpc-provider:
-    # Phase 4-D provider ownership gate. Default true preserves existing behavior.
-    # Controls the legacy IRaffleStrategyService Dubbo provider only; HTTP stays registered.
-    # Set STRATEGY_LEGACY_RPC_PROVIDER_ENABLED=false only after all IRaffleStrategyService
+  default-rpc-provider:
+    # provider ownership gate. Default true preserves existing behavior.
+    # Controls the default IRaffleStrategyService Dubbo provider only; HTTP stays registered.
+    # Set STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED=false only after all IRaffleStrategyService
     # consumers are migrated or explicitly retired.
-    enabled: ${STRATEGY_LEGACY_RPC_PROVIDER_ENABLED:true}
+    enabled: ${STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED:true}
   service:
     remote-read:
-      # Phase 4-D strategy read adapter boundary. Default false — local domain services are used.
+      # strategy read adapter boundary. Default false — local domain services are used.
       # Do not enable until: IStrategyAccountParticipationPort returns real counts from account-service,
-      # big-market-strategy-service is registered in staging Nacos, and staging validation passes.
+      # big-market-strategy-service is registered in local Nacos, and local validation passes.
       enabled: ${STRATEGY_SERVICE_REMOTE_READ_ENABLED:false}
 
 rebate:
-  legacy-rpc-provider:
-    # Phase 3 provider ownership gate. Default true preserves existing behavior.
-    # Set REBATE_LEGACY_RPC_PROVIDER_ENABLED=false on market-service only after
+  default-rpc-provider:
+    # provider ownership gate. Default true preserves existing behavior.
+    # Set REBATE_DEFAULT_RPC_PROVIDER_ENABLED=false on market-service only after
     # big-market-rebate-service is deployed and verified as the sole IRebateService provider.
-    enabled: ${REBATE_LEGACY_RPC_PROVIDER_ENABLED:true}
+    enabled: ${REBATE_DEFAULT_RPC_PROVIDER_ENABLED:true}
   service:
     remote-create-order:
-      # Phase 3 rebate adapter boundary. Default false — local IBehaviorRebateService is used.
-      # Do not enable until: legacy trigger.rpc IRebateService provider in market-service is
+      # rebate adapter boundary. Default false — local IBehaviorRebateService is used.
+      # Do not enable until: default trigger.rpc IRebateService provider in market-service is
       # disabled (duplicate provider risk), shared task outbox ownership is clarified, and
-      # staging validation for big-market-rebate-service passes.
+      # local validation for big-market-rebate-service passes.
       enabled: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:false}
       # IRebateService requires appId/appToken. Token value is resolved from appTokenMap.
       app-id: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_APP_ID:chatgpt-data}
     remote-read:
-      # Phase 3-A/B rebate read adapter boundary. Default false — local IBehaviorRebateService is used.
-      # Do not enable until: legacy trigger.rpc IRebateService provider in market-service is
-      # disabled (duplicate provider risk), and staging validation for big-market-rebate-service passes.
+      # rebate read adapter boundary. Default false — local IBehaviorRebateService is used.
+      # Do not enable until: default trigger.rpc IRebateService provider in market-service is
+      # disabled (duplicate provider risk), and local validation for big-market-rebate-service passes.
       enabled: ${REBATE_SERVICE_REMOTE_READ_ENABLED:false}
       app-id: ${REBATE_SERVICE_REMOTE_READ_APP_ID:chatgpt-data}
 

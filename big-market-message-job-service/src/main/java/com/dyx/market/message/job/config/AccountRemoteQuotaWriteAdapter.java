@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Phase 2.2-B2: remote quota write adapter for message-job-service.
+ * remote quota write adapter for message-job-service.
  * Active only when account.service.remote-quota-write.enabled=true.
  * Falls back to local IRaffleActivityAccountQuotaService on remote exception or non-success response.
  */

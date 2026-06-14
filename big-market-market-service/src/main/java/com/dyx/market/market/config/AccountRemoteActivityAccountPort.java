@@ -16,17 +16,17 @@ import org.springframework.stereotype.Component;
 /**
  * Remote (Dubbo) implementation of IActivityAccountPort.
  *
- * Phase 2.2-B11 scaffold. Active only when:
+ * default implementation. Active only when:
  *   account.service.remote-quota-decrement.enabled=true
  *
  * This bean is NOT activated by default — LocalActivityAccountPort (in
  * big-market-infrastructure) is used instead, preserving existing behavior.
  *
  * Do NOT set remote-quota-decrement.enabled=true until:
- *   1. B12 idempotency ledger DDL is applied to staging account-service DB.
+ *   1. Idempotency ledger DDL is applied to the local account-service DB.
  *   2. AccountQuotaServiceRPC.decrementQuota is fully implemented (not UN_ERROR stub).
  *   3. RaffleActivityPartakeService is rewired to call IActivityAccountPort.
- *   4. End-to-end idempotency validation passes in staging.
+ *   4. End-to-end idempotency validation passes .
  */
 @Slf4j
 @Component
@@ -67,7 +67,7 @@ public class AccountRemoteActivityAccountPort implements IActivityAccountPort {
 
     @Override
     public BigDecimal queryUserCreditAccountAmount(String userId) {
-        // Remote credit-balance read is deferred to Phase 7-A account-service API work.
+        // Remote credit-balance read is deferred to account-service API work.
         // This bean is only active when account.service.remote-quota-decrement.enabled=true,
         // which is not enabled — the local path handles credit reads exclusively until then.
         log.warn("[AccountRemoteActivityAccountPort] queryUserCreditAccountAmount not yet wired for remote path; userId:{}", userId);

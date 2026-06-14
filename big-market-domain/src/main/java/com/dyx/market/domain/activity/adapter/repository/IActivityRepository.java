@@ -93,7 +93,7 @@ public interface IActivityRepository {
      * Atomically decrement total/month/day quota for a confirmed raffle participation,
      * guarded by an idempotency ledger row (raffle_quota_decrement_ledger).
      *
-     * Phase 2.2-B12 foundation for AccountQuotaServiceRPC.decrementQuota.
+     * foundation for AccountQuotaServiceRPC.decrementQuota.
      *
      * Idempotency: a duplicate call with the same outBusinessNo returns true immediately
      * without re-decrementing (DuplicateKeyException on ledger INSERT is caught and
@@ -107,7 +107,7 @@ public interface IActivityRepository {
     /**
      * Atomically roll back a previously decremented quota slot (saga compensation).
      *
-     * Phase 2.2-B14: ledger-guarded rollback.
+     * ledger-guarded rollback.
      *   - No ledger row         → safe no-op, return true
      *   - status = rolled_back  → idempotent, return true
      *   - status = applied      → CAS applied→rolled_back + restore total/month/day surplus
@@ -119,7 +119,7 @@ public interface IActivityRepository {
     /**
      * Persist only the raffle participation order row without touching quota accounts.
      *
-     * Phase 2.2-B14: used in the flag=true (remote quota decrement) path where quota
+     * used in the flag=true (remote quota decrement) path where quota
      * has already been decremented via IActivityAccountPort.decrementQuota before this
      * call. Shard-routed by userId, same as saveCreatePartakeOrderAggregate.
      */

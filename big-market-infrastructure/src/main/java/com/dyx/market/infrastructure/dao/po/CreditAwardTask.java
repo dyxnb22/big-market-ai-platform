@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * Outbox row for award credit dispatch — Phase 2.2-B6 scaffold.
+ * Outbox row for award credit dispatch — default implementation.
  *
  * One row is inserted inside the same transactionTemplate block as updateAwardRecordCompletedState
  * when account.award-credit-outbox.enabled=true. The outbox poller (DispatchCreditAwardTaskJob)

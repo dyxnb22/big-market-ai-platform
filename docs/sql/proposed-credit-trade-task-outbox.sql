@@ -1,11 +1,11 @@
--- PROPOSED ONLY - Phase 7-C credit-trade task outbox readiness scaffold.
--- DO NOT run against production. DO NOT add to Flyway/Liquibase or applied migrations.
+-- Learning-environment DDL reference. Apply manually only in local study environments.
+-- This repository does not auto-apply this DDL; keep it as an explicit local learning reference.
 -- This DDL documents the intended replacement for credit trade writes to the shared task table.
 --
 -- Runtime status:
 --   CreditRepository now writes through ICreditTradeTaskOutboxPort.
 --   The default LocalCreditTradeTaskOutboxPort still delegates to ITaskDao/shared task.
---   Switching to these tables is EXTERNAL-GATED by DBA-applied DDL and Phase 8 flags.
+--   Switching to these tables is local learning validation and explicit configuration.
 --
 -- Sharding note: credit_trade_task_outbox_000..003 follows the existing 2-DB / 4-table
 -- router pattern keyed by user_id, matching user_credit_order placement.
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `credit_trade_task_outbox_000` (
     UNIQUE KEY `uq_user_message_id` (`user_id`, `message_id`),
     KEY `idx_state_update` (`state`, `update_time`),
     KEY `idx_topic_state_update` (`topic`, `state`, `update_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Credit trade task outbox - proposed Phase 7-C';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Credit trade task outbox - learning DDL';
 
 CREATE TABLE IF NOT EXISTS `credit_trade_task_outbox_001` LIKE `credit_trade_task_outbox_000`;
 CREATE TABLE IF NOT EXISTS `credit_trade_task_outbox_002` LIKE `credit_trade_task_outbox_000`;

@@ -10,11 +10,11 @@ import java.util.Date;
 /**
  * Correlation payload for the draw saga outbox port.
  *
- * Phase 5-G: carries the minimum set of identifiers needed to reconstruct
- * the in-flight draw saga step across a future service boundary.
+ * carries the minimum set of identifiers needed to reconstruct
+ * the in-flight draw saga step across a configured service boundary.
  *
  * orderId is the idempotency key that threads through createOrder →
- * performRaffle → saveUserAwardRecord. Any future remote step MUST echo
+ * performRaffle → saveUserAwardRecord. Any configured remote step MUST echo
  * it back so the orchestrator can detect duplicate delivery.
  */
 @Data

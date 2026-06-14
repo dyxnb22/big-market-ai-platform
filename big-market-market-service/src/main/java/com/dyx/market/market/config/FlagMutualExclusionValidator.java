@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Startup validator that prevents dangerous dual-path configurations.
  *
- * If BOTH a remote/cutover flag AND its corresponding legacy provider/fallback
+ * If BOTH a remote/routing flag AND its corresponding default provider/fallback
  * flag are enabled simultaneously, the application refuses to start because
  * this would cause double-writes, double-dispatch, or duplicate provider
  * registration.
@@ -29,8 +29,8 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
     // Account credit write
     @Value("${account.service.remote-credit-write.enabled:false}")
     private boolean remoteCreditWrite;
-    // Legacy credit write is always local until remote is cut over;
-    // guarding against ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED + legacy
+    // default credit write is always local until remote is cut over;
+    // guarding against ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED + default
 
     // Account quota write
     @Value("${account.service.remote-quota-write.enabled:false}")
@@ -47,14 +47,14 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
     // Rebate
     @Value("${rebate.service.remote-create-order.enabled:false}")
     private boolean rebateRemoteCreateOrder;
-    @Value("${rebate.legacy-rpc-provider.enabled:true}")
-    private boolean rebateLegacyProvider;
+    @Value("${rebate.default-rpc-provider.enabled:true}")
+    private boolean rebateDefaultProvider;
 
     // Strategy
     @Value("${strategy.service.remote-read.enabled:false}")
     private boolean strategyRemoteRead;
-    @Value("${strategy.legacy-rpc-provider.enabled:true}")
-    private boolean strategyLegacyProvider;
+    @Value("${strategy.default-rpc-provider.enabled:true}")
+    private boolean strategyDefaultProvider;
 
     @Override
     public void run(String... args) {
@@ -65,18 +65,18 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
 
         List<String> violations = new ArrayList<>();
 
-        // Rebate: remote create-order + legacy provider = duplicate provider risk
-        if (rebateRemoteCreateOrder && rebateLegacyProvider) {
+        // Rebate: remote create-order + default provider = duplicate provider risk
+        if (rebateRemoteCreateOrder && rebateDefaultProvider) {
             violations.add("rebate.service.remote-create-order.enabled=true AND "
-                    + "rebate.legacy-rpc-provider.enabled=true — duplicate IRebateService provider risk. "
-                    + "Disable the legacy provider before enabling remote rebate.");
+                    + "rebate.default-rpc-provider.enabled=true — duplicate IRebateService provider risk. "
+                    + "Disable the default provider before enabling remote rebate.");
         }
 
-        // Strategy: remote read + legacy provider = duplicate provider risk
-        if (strategyRemoteRead && strategyLegacyProvider) {
+        // Strategy: remote read + default provider = duplicate provider risk
+        if (strategyRemoteRead && strategyDefaultProvider) {
             violations.add("strategy.service.remote-read.enabled=true AND "
-                    + "strategy.legacy-rpc-provider.enabled=true — duplicate IRaffleStrategyService provider risk. "
-                    + "Disable the legacy provider before enabling remote strategy read.");
+                    + "strategy.default-rpc-provider.enabled=true — duplicate IRaffleStrategyService provider risk. "
+                    + "Disable the default provider before enabling remote strategy read.");
         }
 
         // Quota: remote decrement + remote quota write both on = unclear path

@@ -18,7 +18,7 @@
         <module>big-market-starter-ratelimiter</module>
         <module>big-market-api</module>
         <module>big-market-management</module>
-        <!-- Phase 1 microservice launchers (shared jars remain above) -->
+        <!-- Microservice launchers (shared jars remain above) -->
         <module>big-market-gateway</module>
         <module>big-market-auth-service</module>
         <module>big-market-admin-service</module>

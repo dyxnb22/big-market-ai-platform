@@ -8,14 +8,14 @@ import org.apache.ibatis.annotations.Mapper;
 import java.util.List;
 
 /**
- * Outbox DAO for credit_award_task — Phase 2.2-B6 scaffold.
+ * Outbox DAO for credit_award_task — default implementation.
  *
  * insert: called inside saveGiveOutPrizesAggregate transaction when outbox flag=true.
  *         Caller sets DB/TB key before the transactionTemplate block; no @DBRouter needed.
  * queryPendingTasks: called by DispatchCreditAwardTaskJob; caller sets DB/TB key first.
  * updateDispatched / updateRetryFailed: routed via @DBRouter on userId field.
  *
- * NOTE: the credit_award_task_000..003 tables are proposed-only and must be applied to the
+ * NOTE: the credit_award_task_000..003 tables are learning-reference and must be applied to the
  * database (docs/sql/proposed-credit-award-task-outbox.sql) before enabling the flag.
  */
 @Mapper

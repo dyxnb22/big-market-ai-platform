@@ -39,7 +39,7 @@ public class RaffleStrategyController implements IRaffleStrategyService {
     private IAuthService authService;
     @Resource
     private HttpServletRequest httpServletRequest;
-    // Phase 4-D: routes queryRaffleAwardList and queryRaffleStrategyRuleWeight read endpoints.
+    // routes queryRaffleAwardList and queryRaffleStrategyRuleWeight read endpoints.
     // Local default: LocalStrategyReadAdapter (IRaffleAward + IRaffleRule + IAccountReadAdapter).
     // Remote path: StrategyRemoteReadAdapter (strategy.service.remote-read.enabled=false by default).
     @Resource
@@ -111,7 +111,7 @@ public class RaffleStrategyController implements IRaffleStrategyService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Phase 4-D: routed through IStrategyReadAdapter (local default; remote when flag=true).
+            // routed through IStrategyReadAdapter (local default; remote when flag=true).
             List<RaffleAwardListResponseDTO> data = strategyReadAdapter.queryRaffleAwardList(request);
             Response<List<RaffleAwardListResponseDTO>> response = Response.<List<RaffleAwardListResponseDTO>>builder()
                     .code(ResponseCode.SUCCESS.getCode())
@@ -132,7 +132,7 @@ public class RaffleStrategyController implements IRaffleStrategyService {
     /**
      * INTERNAL — only called by query_raffle_strategy_rule_weight_by_token equivalent.
      * Removed @RequestMapping to prevent exposing user weight data without auth.
-     * Phase 4-D: routed through IStrategyReadAdapter.
+     * routed through IStrategyReadAdapter.
      */
     @Override
     public Response<List<RaffleStrategyRuleWeightResponseDTO>> queryRaffleStrategyRuleWeight(@RequestBody RaffleStrategyRuleWeightRequestDTO request) {
@@ -142,7 +142,7 @@ public class RaffleStrategyController implements IRaffleStrategyService {
             if (StringUtils.isBlank(request.getUserId()) || null == request.getActivityId()) {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
-            // Phase 4-D: routed through IStrategyReadAdapter (local default; remote when flag=true).
+            // routed through IStrategyReadAdapter (local default; remote when flag=true).
             List<RaffleStrategyRuleWeightResponseDTO> data = strategyReadAdapter.queryRaffleStrategyRuleWeight(request);
             Response<List<RaffleStrategyRuleWeightResponseDTO>> response = Response.<List<RaffleStrategyRuleWeightResponseDTO>>builder()
                     .code(ResponseCode.SUCCESS.getCode())

@@ -58,7 +58,7 @@ public class AwardRepository implements IAwardRepository {
     private IRedisService redisService;
 
     /**
-     * Phase 2.2-B6 feature flag (default false).
+     * feature flag (default false).
      * When false: saveGiveOutPrizesAggregate behaves exactly as before B6 — direct local
      *             user_credit_account write inside the same transaction as user_award_record.
      * When true:  inserts a credit_award_task outbox row instead of calling updateOrCreateCreditAccount.
@@ -149,8 +149,8 @@ public class AwardRepository implements IAwardRepository {
         userAwardRecordReq.setAwardState(userAwardRecordEntity.getAwardState().getCode());
 
         // Both credit-account and award-record writes share one transaction — do not split until
-        // a distributed transaction strategy (saga/outbox) is in place. See Phase 2.2-B4 design note.
-        // Phase 2.2-B6: when outbox flag=true the credit_award_task row replaces the direct write.
+        // a distributed transaction strategy (saga/outbox) is in place. See design note.
+        // when outbox flag=true the credit_award_task row replaces the direct write.
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + userId);
         try {
             lock.lock(3, TimeUnit.SECONDS);

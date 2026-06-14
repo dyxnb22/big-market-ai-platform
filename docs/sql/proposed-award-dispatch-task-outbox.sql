@@ -1,11 +1,11 @@
--- PROPOSED ONLY - Phase 7-C award-dispatch task outbox readiness scaffold.
--- DO NOT run against production. DO NOT add to Flyway/Liquibase or applied migrations.
+-- Learning-environment DDL reference. Apply manually only in local study environments.
+-- This repository does not auto-apply this DDL; keep it as an explicit local learning reference.
 -- This DDL documents the intended replacement for award dispatch writes to the shared task table.
 --
 -- Runtime status:
 --   AwardRepository now writes through IAwardDispatchTaskOutboxPort.
 --   The default LocalAwardDispatchTaskOutboxPort still delegates to ITaskDao/shared task.
---   Switching to these tables is EXTERNAL-GATED by DBA-applied DDL and Phase 8 flags.
+--   Switching to these tables is local learning validation and explicit configuration.
 --
 -- Sharding note: award_dispatch_task_outbox_000..003 follows the existing 2-DB / 4-table
 -- router pattern keyed by user_id, matching user_award_record placement.
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `award_dispatch_task_outbox_000` (
     UNIQUE KEY `uq_user_message_id` (`user_id`, `message_id`),
     KEY `idx_state_update` (`state`, `update_time`),
     KEY `idx_topic_state_update` (`topic`, `state`, `update_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award dispatch task outbox - proposed Phase 7-C';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award dispatch task outbox - learning DDL';
 
 CREATE TABLE IF NOT EXISTS `award_dispatch_task_outbox_001` LIKE `award_dispatch_task_outbox_000`;
 CREATE TABLE IF NOT EXISTS `award_dispatch_task_outbox_002` LIKE `award_dispatch_task_outbox_000`;

@@ -1,69 +1,65 @@
-# 09 代码地图
+# 09 Code Map
 
-## 认证登录
+## Gateway
 
-- 先读：`big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
-- 再读：`big-market-domain/src/main/java/com/dyx/market/domain/auth/service/AuthService.java`
-- 关联：`TokenAuthInterceptor`、`AdminAuthInterceptor`、`DefaultCredentialGuard`
-- 学到：JWT 生成/校验、jti 注销、管理员鉴权、默认凭据防护。
+- `big-market-gateway/src/main/resources/application.yml`
+- `big-market-gateway/src/main/java/com/dyx/market/gateway/filter/TraceIdGlobalFilter.java`
+- `big-market-gateway/src/main/java/com/dyx/market/gateway/fallback/FallbackController.java`
 
-## 网关
+## Authentication
 
-- 先读：`big-market-gateway/src/main/resources/application.yml`
-- 再读：`TraceIdGlobalFilter`、`FallbackController`
-- 学到：Path 路由、CircuitBreaker fallback、trace id 透传。
+- `big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/AuthService.java`
+- `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/AdminAuthInterceptor.java`
 
-## 抽奖主链路
+## Raffle
 
-- 先读：`RaffleActivityController.draw_by_token`
-- 再读：`RaffleApplicationService.executeDraw`
-- 继续读：`AbstractRaffleActivityPartake.createOrder`、`DefaultRaffleStrategy`、`AwardRepository.saveUserAwardRecord`
-- 学到：登录用户参与活动、扣额度、抽策略、写中奖记录、发送发奖消息。
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleActivityController.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/raffle/DefaultRaffleStrategy.java`
+- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`
 
-## 活动额度和 SKU 兑换
+## Account And Credit
 
-- 先读：`RaffleActivityController.creditPayExchangeSku`
-- 再读：`RaffleActivityAccountQuotaService`、`AbstractRaffleActivityAccountQuota`、`ActivityRepository.doSaveCreditPayOrder`、`CreditRepository.saveUserCreditTradeOrder`
-- 学到：SKU 库存、积分扣减、订单完成、MQ 补偿。
+- `big-market-api/src/main/java/com/dyx/market/trigger/api/IAccountCreditService.java`
+- `big-market-api/src/main/java/com/dyx/market/trigger/api/IAccountQuotaService.java`
+- `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountCreditServiceRPC.java`
+- `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java`
+- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/CreditRepository.java`
 
-## 签到返利
+## Rebate
 
-- 先读：`RaffleActivityController.calendarSignRebate`
-- 再读：`BehaviorRebateService`、`BehaviorRebateRepository.saveUserRebateRecord`
-- 再读 MQ：`RebateMessageConsumer`
-- 学到：每日幂等、返利配置、积分/SKU 入账。
+- `big-market-domain/src/main/java/com/dyx/market/domain/rebate/service/BehaviorRebateService.java`
+- `big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider/RebateServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
 
-## 策略配置和抽奖算法
+## Strategy
 
-- 先读：`RaffleStrategyController`
-- 再读：`StrategyArmoryDispatch`、`DefaultChainFactory`、`DefaultTreeFactory`
-- 再读：`O1Algorithm`、`OLogNAlgorithm`
-- 学到：策略装配、责任链、规则树、概率表。
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleStrategyController.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/armory/StrategyArmoryDispatch.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/rule/chain/factory/DefaultChainFactory.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/rule/tree/factory/DefaultTreeFactory.java`
+- `big-market-strategy-service/src/main/java/com/dyx/market/strategy/provider/StrategyReadServiceRPC.java`
 
-## 发奖
+## Award Fulfillment
 
-- 先读：`AwardService`
-- 再读：`AwardRepository.saveUserAwardRecord`、`saveGiveOutPrizesAggregate`
-- 再读：`SendAwardConsumer`
-- 学到：中奖记录、任务表、消息、发奖状态。
+- `big-market-domain/src/main/java/com/dyx/market/domain/award/service/AwardService.java`
+- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
 
-## 任务和补偿
+## Tasks, Outbox, And Operations
 
-- 先读：`SendMessageTaskJob`
-- 再读：`UpdateActivitySkuStockJob`、`UpdateAwardStockJob`、`DispatchCreditAwardTaskJob`
-- 学到：XXL-Job、Redisson 分布式锁、任务表重试、最终一致。
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/job/SendMessageTaskJob.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateActivitySkuStockJob.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateAwardStockJob.java`
+- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java`
+- `docs/data-and-outbox.md`
+- `docs/operations-checklist.md`
 
-## 管理和配置
+## Admin And Chatbot
 
-- 先读：`AdminConfigController`
-- 再读：`PlatformConfigService`、`NacosConfigSyncService`
-- 再读：`DCCController`、`DccValueBeanPostProcessor`
-- 学到：平台配置、Nacos 同步、Zookeeper/DCC 动态值。
-
-## AI Chat
-
-- 先读：`ChatbotController.ask`
-- 再读：`RestTemplateConfig`、`PlatformConfigService`
-- 关联：market 的 `chat_credit_deduct_by_token` 和 `chat_credit_refund_by_token`
-- 学到：调用前扣积分，AI 失败后退还积分，本地 fallback。
-
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java`
+- `big-market-management/src/main/java/com/dyx/market/management/config/PlatformConfigService.java`
+- `big-market-chatbot-service/src/main/java/com/dyx/market/chatbot/ChatbotController.java`

@@ -3,7 +3,7 @@ package com.dyx.market.domain.strategy.adapter.port;
 /**
  * Domain port isolating StrategyRepository from direct activity-account DAO access.
  *
- * Phase 7-A prep (AL-2/AL-3): StrategyRepository must not import
+ * prep (AL-2/AL-3): StrategyRepository must not import
  * IRaffleActivityAccountDao or IRaffleActivityAccountDayDao.
  *
  * Both methods require shard routing by userId — callers pass the resolved
@@ -13,8 +13,8 @@ package com.dyx.market.domain.strategy.adapter.port;
  * Local path (default): LocalStrategyActivityAccountPort delegates directly to
  * IRaffleActivityAccountDao / IRaffleActivityAccountDayDao with IDBRouterStrategy.
  *
- * Remote path (future, flag-gated): AccountRemoteStrategyActivityAccountPort
- * will call account-service read API once Phase 8-B read endpoints are wired.
+ * Remote path (configurable): AccountRemoteStrategyActivityAccountPort
+ * will call account-service read API once read endpoints are wired.
  */
 public interface IStrategyActivityAccountPort {
 

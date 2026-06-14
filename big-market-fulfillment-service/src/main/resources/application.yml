@@ -122,8 +122,8 @@ dubbo:
 
 account:
   award-credit-outbox:
-    # Phase 2.2-B6 outbox flag — must remain false until credit_award_task DDL is applied
-    # and staging-validated. Enabling in fulfillment-service requires Phase 2.3-B+ sign-off.
+    # outbox flag — must remain false until credit_award_task DDL is applied
+    # and local smoke validated. Enabling in fulfillment-service requires + sign-off.
     enabled: ${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:false}
 
 gateway:

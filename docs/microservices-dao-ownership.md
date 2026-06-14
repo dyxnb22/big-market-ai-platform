@@ -1,7 +1,8 @@
 # DAO Ownership Matrix
 
-Compact source for Phase 6-A / Phase 6-B validators. Current status:
-direct DAO coupling resolved; physical runtime table isolation remains Phase 8 external-gated.
+Compact source for DAO ownership and service-boundary learning. Current status:
+direct DAO coupling is resolved through ports/adapters for the local
+microservices architecture.
 
 ## Contexts
 
@@ -23,13 +24,13 @@ strategy; task / outbox; query / ES; auth; admin / config; chatbot.
 
 | AL | Historical coupling | Status |
 |----|---------------------|--------|
-| AL-1 | StrategyRepository -> IRaffleActivityDao | RESOLVED Phase 7-A AL-1 |
+| AL-1 | StrategyRepository -> IRaffleActivityDao | resolved through `IStrategyActivityMappingPort` |
 | AL-2 | StrategyRepository -> IRaffleActivityAccountDao | resolved via IStrategyActivityAccountPort; AL-2/AL-3 |
 | AL-3 | StrategyRepository -> IRaffleActivityAccountDayDao | resolved via IStrategyActivityAccountPort; AL-2/AL-3 |
-| AL-4 | ActivityRepository -> IUserCreditAccountDao | RESOLVED Phase 7-A prep |
-| AL-5 | AwardRepository -> IUserRaffleOrderDao | RESOLVED Phase 7-A prep |
+| AL-4 | ActivityRepository -> IUserCreditAccountDao | resolved through account/credit ports |
+| AL-5 | AwardRepository -> IUserRaffleOrderDao | resolved through award activity-order port |
 | AL-6 | AwardRepository -> IUserCreditAccountDao | AL-6 resolved via IAwardCreditWritePort |
-| AL-7 | DispatchCreditAwardTaskJob -> ICreditAwardTaskDao | RESOLVED Phase 7-A prep |
+| AL-7 | DispatchCreditAwardTaskJob -> ICreditAwardTaskDao | resolved through credit award dispatch port |
 | AL-8 | BehaviorRebateRepository -> ITaskDao | decision complete; resolved via IRebateTaskOutboxPort |
 | AL-9 | CreditRepository -> ITaskDao | decision complete; resolved via ICreditTradeTaskOutboxPort |
 | AL-10 | AwardRepository -> ITaskDao | decision complete; resolved via IAwardDispatchTaskOutboxPort |
@@ -37,8 +38,8 @@ strategy; task / outbox; query / ES; auth; admin / config; chatbot.
 
 ## Enforcement
 
-Phase 6-B / phase-6-package enforcement requires this file to list DAO owners
-before new DAO or repository boundary changes. Phase 7-B decision doc:
+Boundary enforcement requires this file to list DAO owners before new DAO or
+repository boundary changes. Historical decision notes live in
 `docs/archive/phases.md`.
 
 ## Cross-References

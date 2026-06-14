@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
-  Phase 2.2-B6 outbox scaffold — credit_award_task mapper.
+  outbox default implementation — credit_award_task mapper.
   Tables credit_award_task_000..003 are PROPOSED ONLY.
   Apply docs/sql/proposed-credit-award-task-outbox.sql before enabling
   account.award-credit-outbox.enabled=true in any environment.

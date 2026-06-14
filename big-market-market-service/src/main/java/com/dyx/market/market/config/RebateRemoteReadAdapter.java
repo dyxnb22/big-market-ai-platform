@@ -26,8 +26,8 @@ import java.util.Map;
  * When flag=true and remote call fails: logs the error and falls back to local.
  *
  * Do not enable until:
- *   - legacy trigger.rpc IRebateService provider in market-service is disabled
- *   - staging validation passes for rebate-service
+ *   - default trigger.rpc IRebateService provider in market-service is disabled
+ *   - local validation passes for rebate-service
  */
 @Slf4j
 @Component

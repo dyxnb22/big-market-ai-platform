@@ -10,7 +10,7 @@ import javax.annotation.Resource;
 /**
  * Local (in-process) implementation of IStrategyActivityMappingPort.
  *
- * Phase 7-A (AL-1): StrategyRepository previously injected IRaffleActivityDao
+ * (AL-1): StrategyRepository previously injected IRaffleActivityDao
  * directly. This port encapsulates those ID-mapping reads behind the strategy
  * domain boundary without altering behavior.
  *

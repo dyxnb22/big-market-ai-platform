@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  * Implementations route queries to either the local domain service or
  * account-service via Dubbo, controlled by account.service.remote-read.enabled.
  *
- * Phase 2.2-B1: only read operations are routed here. Write paths (createOrder,
+ * only read operations are routed here. Write paths (createOrder,
  * quota decrement, rebate, award) remain on local domain services.
  */
 public interface IAccountReadAdapter {

@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 /**
  * Domain port for synchronous, idempotent quota decrement on activity accounts.
  *
- * Phase 2.2-B11 contract.
+ * contract.
  *
  * Design rationale:
  *   decrementQuota is a pre-draw gate and MUST return synchronously so that
@@ -23,7 +23,7 @@ import java.math.BigDecimal;
  * Local path (default, flag=false):
  *   LocalActivityAccountPort — no-op because RaffleActivityPartakeService still
  *   calls IActivityRepository.saveCreatePartakeOrderAggregate directly. This port
- *   is the future routing seam; the local impl is the safety fallback for B12+.
+ *   is the configurable routing seam; the local impl is the safety fallback for B12+.
  *
  * Remote path (flag=true, B12+):
  *   AccountRemoteActivityAccountPort routes to account-service via Dubbo.
@@ -56,9 +56,9 @@ public interface IActivityAccountPort {
     /**
      * Read the available credit balance for a user (credit-purchase partake validation).
      *
-     * Phase 7-A prep: ActivityRepository must not directly import IUserCreditAccountDao.
+     * prep: ActivityRepository must not directly import IUserCreditAccountDao.
      * Local implementation delegates to IUserCreditAccountDao; remote implementation
-     * is deferred until the account-service credit-read API is wired (post Phase 8-B).
+     * is 
      *
      * @param userId user identifier (used as shard key)
      * @return available credit amount; BigDecimal.ZERO if no account exists

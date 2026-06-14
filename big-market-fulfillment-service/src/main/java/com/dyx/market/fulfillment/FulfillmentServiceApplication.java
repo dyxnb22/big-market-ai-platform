@@ -8,10 +8,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 /**
  * Fulfillment service: Dubbo RPC provider for award fulfillment (prize dispatch after raffle win).
  *
- * Phase 2.3-A dark launch: service registers Dubbo provider but receives no traffic yet.
- * Existing callers in message-job-service (SendAwardConsumer) still call IAwardService
- * in-process. Traffic cutover happens in Phase 2.3-B+ after the credit-award outbox is
- * staging-validated.
+ * Service registers a Dubbo provider for award fulfillment. Local development can still use the in-process award service for compact learning runs.
  *
  * Scans:
  *   - own config (com.dyx.market.fulfillment)

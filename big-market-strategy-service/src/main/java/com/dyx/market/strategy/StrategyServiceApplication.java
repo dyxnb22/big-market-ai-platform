@@ -7,11 +7,11 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * Strategy service: dark-launch Dubbo provider for read-only strategy queries.
+ * Strategy service: Dubbo provider for read-only strategy queries.
  *
- * Phase 4-C scaffold only: the existing market-service provider remains active.
+ * Default implementation: the market-service provider remains active for local learning runs.
  * Draw execution (performRaffle), stock mutation, and armory assembly remain in
- * market-service until Phase 5. This launcher exposes only IStrategyReadService.
+ * market-service for this learning architecture. This launcher exposes only IStrategyReadService.
  *
  * Scan boundary: strategy module + strategy domain + infrastructure only.
  * No HTTP controllers, MQ listeners, or job handlers are included.

@@ -12,7 +12,7 @@ import javax.annotation.Resource;
 /**
  * Legacy local credit-trade outbox adapter.
  *
- * Delegates to ITaskDao intentionally so Phase 7-C can remove direct repository
+ * Delegates to ITaskDao intentionally so can remove direct repository
  * DAO coupling without switching physical tables before DBA-applied DDL.
  */
 @Component

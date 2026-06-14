@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * Request DTO for the deferred quota-decrement RPC.
  *
- * Phase 2.2-B10 scaffold only. The corresponding provider method returns
+ * default implementation. The corresponding provider method returns
  * UN_ERROR until RaffleActivityPartakeService quota-decrement wiring is
  * fully validated and promoted. No callers are wired at this stage.
  */

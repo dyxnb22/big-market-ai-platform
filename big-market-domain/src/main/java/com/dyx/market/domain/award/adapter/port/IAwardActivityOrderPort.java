@@ -3,7 +3,7 @@ package com.dyx.market.domain.award.adapter.port;
 /**
  * Domain port isolating AwardRepository from direct activity-order DAO access.
  *
- * Phase 7-A prep (AL-5): AwardRepository must not import IUserRaffleOrderDao.
+ * prep (AL-5): AwardRepository must not import IUserRaffleOrderDao.
  * The user_raffle_order table is owned by activity-service; fulfillment only
  * needs the guarded create -> used state transition by userId and orderId.
  *
@@ -11,7 +11,7 @@ package com.dyx.market.domain.award.adapter.port;
  * IUserRaffleOrderDao.updateUserRaffleOrderStateUsed. The caller keeps the
  * existing shard routing and transaction boundary.
  *
- * Remote path (future, flag-gated): activity-service API can replace the local
+ * Remote path (configurable): activity-service API can replace the local
  * implementation once activity-service owns draw/order writes.
  */
 public interface IAwardActivityOrderPort {

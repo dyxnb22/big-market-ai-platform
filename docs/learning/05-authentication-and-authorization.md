@@ -1,76 +1,69 @@
-# 05 认证与授权
+# 05 Authentication And Authorization
 
-## Authentication mechanism found
+## User Authentication
 
-当前代码存在 JWT 认证。
+JWT authentication is implemented in the auth service.
 
-- 生成位置：`AuthAccessController.login` 调用 `AuthService.createToken`
-- 校验位置：`AuthService.checkToken`、`TokenAuthInterceptor`、`AdminAuthInterceptor`
-- Token 字段：`openId` claim、`jti`、`iat`、`exp`、`subject`
-- TTL：`AuthService` 中 24 小时
-- Secret：`app.jwt.secret`
-- 注销：`AuthAccessController.logout` 提取 jti，调用可选 `ITokenRevocationService`
+Code paths:
 
-## Credential source
+- `big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/AuthService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/ITokenRevocationService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java`
 
-当前登录账号来自配置：
+`AuthAccessController.login` validates configured learning users from
+`app.auth.dev-users`, calls `AuthService.createToken`, and returns a JWT with
+`openId`, `jti`, `iat`, `exp`, and `subject`. `verify` checks token validity.
+`logout` extracts `jti` and records token revocation when the revocation
+service is available.
 
-- `AuthAccessController` 的 `app.auth.dev-users`
-- 默认值：`xiaofuge:demo,admin:admin`
+## User Authorization
 
-这不是完整用户中心。No real implementation found. This is only a future improvement recommendation: 接入真实用户表、密码哈希、注册/改密/锁定策略。
+User APIs are guarded by `TokenAuthInterceptor`:
 
-## Authorization mechanism found
+- `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
+- `big-market-app/src/main/java/com/dyx/market/config/TokenAuthInterceptor.java`
 
-### 普通用户接口
+The interceptor validates `Authorization`, writes `userId` into the request,
+and token-aware controller methods use that value instead of trusting request
+body user ids.
 
-`TokenAuthInterceptor` 校验 `Authorization`，校验通过后把 `userId` 写入 `HttpServletRequest` attribute。Controller 中 token 版本接口使用该 userId 覆盖请求体 userId，避免用户伪造。
+Typical protected APIs:
 
-典型接口：
+- `/api/v1/raffle/activity/draw_by_token`
+- `/api/v1/raffle/activity/calendar_sign_rebate_by_token`
+- `/api/v1/raffle/activity/query_user_activity_account_by_token`
+- `/api/v1/raffle/activity/query_user_credit_account_by_token`
+- `/api/v1/raffle/activity/credit_pay_exchange_sku_by_token`
+- `/api/v1/raffle/strategy/query_raffle_award_list_by_token`
 
-- `draw_by_token`
-- `calendar_sign_rebate_by_token`
-- `is_calendar_sign_rebate_by_token`
-- `query_user_activity_account_by_token`
-- `query_user_credit_account_by_token`
-- `credit_pay_exchange_sku_by_token`
-- `chat_credit_deduct_by_token`
-- `chat_credit_refund_by_token`
-- `query_raffle_award_list_by_token`
+## Admin Authorization
 
-### 管理员接口
+Admin APIs are guarded by JWT admin allow-lists or a configured admin token.
 
-发现两类管理员校验：
+Code paths:
 
-- `AdminAuthInterceptor`: 校验 JWT 且 `openid` 在 `app.admin.user-ids`。
-- `ErpOperateController` / `DCCController`: 接受 `X-Admin-Token` 静态 token，或 Authorization JWT + admin user ids。
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/AdminAuthInterceptor.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/http/ErpOperateController.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/http/DCCController.java`
 
-典型接口：
-
-- `/api/v1/admin/config/*`
-- `/api/v1/raffle/erp/*`
-- `/api/v1/raffle/dcc/update_config`
-
-## Auth diagram
+Admin config APIs use `AdminAuthInterceptor`. ERP and DCC endpoints accept
+`X-Admin-Token` or an admin JWT whose `openId` is listed in
+`app.admin.user-ids`.
 
 ```mermaid
 flowchart TD
-    A["Client"] --> B["/auth/login"]
-    B --> C["配置账号密码校验 app.auth.dev-users"]
-    C --> D["AuthService.createToken"]
-    D --> E["JWT: openId + jti + exp"]
-    E --> F["Client Authorization"]
-    F --> G{"User API or Admin API"}
-    G -->|User API| H["TokenAuthInterceptor"]
-    G -->|Admin API| I["AdminAuthInterceptor 或 X-Admin-Token"]
-    H --> J["request.userId"]
-    I --> K["admin allowed"]
+    Client["Client"] --> Login["/api/v1/auth/login"]
+    Login --> Token["JWT with openId + jti + exp"]
+    Token --> UserApi["TokenAuthInterceptor"]
+    Token --> AdminApi["AdminAuthInterceptor"]
+    UserApi --> Market["Market user API"]
+    AdminApi --> Admin["Admin/ERP/DCC API"]
+    Logout["/api/v1/auth/logout"] --> Revocation["ITokenRevocationService"]
 ```
 
-## 风险与整改结果
+## Learning Notes
 
-- 已发现安全保护：`DefaultCredentialGuard` 在非 dev/local/docker profile 下拒绝默认 secret/token/dev-users。
-- 已发现安全整改：多个非 token 版本接口在 controller 中保留为内部方法，未暴露 `@RequestMapping`，注释说明是防止 userId impersonation。
-- 保留风险：`app.auth.dev-users` 仍是 demo 账号源；生产必须替换。
-- 保留风险：部分公开查询/装配接口未在 controller 层发现鉴权，比如 `armory`、`strategy_armory`、`query_sku_product_list_by_activity_id`。是否安全取决于网关/部署访问控制；当前代码未证明它们被保护。
-
+`app.auth.dev-users` is a local learning credential source. The guard in
+`DefaultCredentialGuard` prevents unsafe default credentials in non-development
+profiles. A real production identity system is outside this portfolio scope.

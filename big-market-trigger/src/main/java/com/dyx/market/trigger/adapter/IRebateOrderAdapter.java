@@ -8,12 +8,12 @@ import java.util.List;
  * Routes rebate order creation to either the local domain service (default) or
  * big-market-rebate-service via Dubbo, controlled by rebate.service.remote-create-order.enabled.
  *
- * Phase 3 rebate adapter boundary. Default: local domain service (flag=false).
+ * rebate adapter boundary. Default: local domain service (flag=false).
  * Remote Dubbo call active only when rebate.service.remote-create-order.enabled=true.
  * Do not enable that flag until:
- *   - duplicate IRebateService provider risk is resolved (market-service trigger.rpc legacy provider disabled)
+ *   - duplicate IRebateService provider risk is resolved (market-service trigger.rpc default provider disabled)
  *   - shared task outbox ownership is clarified
- *   - staging validation passes
+ *   - local validation passes
  */
 public interface IRebateOrderAdapter {
 

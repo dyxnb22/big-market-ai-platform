@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-# Repo-only Phase 8 runtime safety validator.
+# Repo-only runtime safety validator.
 #
-# Validates guards that were deployed in phase-8-safety-hardening and verifies
-# that no regression has occurred in default credentials, mutually exclusive
-# flag paths, compatibility mapper copies, proposed DDL isolation, or the
-# presence of safety hardening classes.
+# Validates final-architecture guardrails and verifies that no regression has
+# occurred in default credentials, mutually exclusive flag paths,
+# compatibility mapper copies, learning DDL isolation, or the presence of
+# safety hardening classes.
 #
 # This validator complements (does not replace):
-#   validate-microservices-production-flag-matrix.sh
-#   validate-microservices-phase-7-task-outbox-ownership.sh
-#   validate-microservices-phase-7-task-outbox-proposed-ddl.sh
-#   validate-microservices-legacy-cleanup-readiness.sh
+#   validate-microservices-stack.sh
+#   smoke-test-phase-1.sh
+#   smoke-api.sh
 #
 # Deterministic, repo-only, no DB/MQ/Docker/network.
 
@@ -25,7 +24,7 @@ fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
 echo ""
 echo "========================================================================"
-echo "  Phase 8 Runtime Safety Validator"
+echo "  Runtime Safety Validator"
 echo "  Repo: $REPO_ROOT"
 echo "========================================================================"
 
@@ -195,15 +194,15 @@ assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_J
 # Section 2: Flag mutual-exclusion guardrails (config-file defaults)
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 2.1 Mutual-exclusion: legacy provider vs remote provider ──"
+echo "── 2.1 Mutual-exclusion: default provider vs remote provider ──"
 
-# Rebate: legacy provider must NOT be default-true WHILE remote create is default-true
+# Rebate: default provider must NOT be default-true WHILE remote create is default-true
 REBATE_LEGACY_DEFAULT_TRUE=0
 REBATE_REMOTE_DEFAULT_TRUE=0
 for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
            "$REPO_ROOT"/big-market-app/src/main/resources; do
   [[ -d "$dir" ]] || continue
-  if grep -RqE 'REBATE_LEGACY_RPC_PROVIDER_ENABLED:-true|rebate\.legacy-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
+  if grep -RqE 'REBATE_DEFAULT_RPC_PROVIDER_ENABLED:-true|rebate\.default-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
     REBATE_LEGACY_DEFAULT_TRUE=1
   fi
   if grep -RqE 'REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-true|rebate\.service\.remote-create-order\.enabled.*:.*true' "$dir" 2>/dev/null; then
@@ -211,18 +210,18 @@ for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
   fi
 done
 if [[ "$REBATE_LEGACY_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Rebate legacy provider AND remote create-order both default to true — dual-provider risk"
+  fail "Rebate default provider AND remote create-order both default to true — dual-provider risk"
 else
-  pass "Rebate dual-provider config: legacy=$REBATE_LEGACY_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
+  pass "Rebate dual-provider config: default=$REBATE_LEGACY_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
 fi
 
-# Strategy: legacy provider must NOT be default-true WHILE remote read is default-true
+# Strategy: default provider must NOT be default-true WHILE remote read is default-true
 STRATEGY_LEGACY_DEFAULT_TRUE=0
 STRATEGY_REMOTE_DEFAULT_TRUE=0
 for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
            "$REPO_ROOT"/big-market-app/src/main/resources; do
   [[ -d "$dir" ]] || continue
-  if grep -RqE 'STRATEGY_LEGACY_RPC_PROVIDER_ENABLED:-true|strategy\.legacy-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
+  if grep -RqE 'STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED:-true|strategy\.default-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
     STRATEGY_LEGACY_DEFAULT_TRUE=1
   fi
   if grep -RqE 'STRATEGY_SERVICE_REMOTE_READ_ENABLED:-true|strategy\.service\.remote-read\.enabled.*:.*true' "$dir" 2>/dev/null; then
@@ -230,9 +229,9 @@ for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
   fi
 done
 if [[ "$STRATEGY_LEGACY_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Strategy legacy provider AND remote read both default to true — dual-provider risk"
+  fail "Strategy default provider AND remote read both default to true — dual-provider risk"
 else
-  pass "Strategy dual-provider config: legacy=$STRATEGY_LEGACY_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
+  pass "Strategy dual-provider config: default=$STRATEGY_LEGACY_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
 fi
 
 echo ""
@@ -268,8 +267,8 @@ FLAG_VALIDATOR="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/marke
 JOB_VALIDATOR="$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/JobMutualExclusionValidator.java"
 
 assert_file "FlagMutualExclusionValidator.java exists" "$FLAG_VALIDATOR"
-assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateServiceRemoteCreateOrder.*rebateLegacyProvider|rebate.*duplicate'
-assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyLegacyProvider|strategy.*duplicate'
+assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateRemoteCreateOrder.*rebateDefaultProvider|rebate.*duplicate'
+assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyDefaultProvider|strategy.*duplicate'
 assert_pattern_present "FlagMutualExclusionValidator has disable flag" "$FLAG_VALIDATOR" 'FLAG_MUTUAL_EXCLUSION_GUARD_ENABLED'
 
 assert_file "JobMutualExclusionValidator.java exists" "$JOB_VALIDATOR"
@@ -348,8 +347,8 @@ assert_pattern_present "Gateway yml references IpPathRateLimit" "$GATEWAY_YML" '
 echo ""
 echo "── 5. Compatibility mapper copies still present ──"
 
-# From docs/microservices-legacy-cleanup-inventory.md — key mapper compatibility
-# copies that must remain until their 30-day removal gates are satisfied.
+# Old-path cleanup inventory — key mapper compatibility
+# copies that must remain until their local cleanup gates are satisfied.
 check_mapper_copy() {
   local label="$1" relpath="$2"
   assert_file "$label present" "$REPO_ROOT/$relpath"
@@ -366,10 +365,10 @@ check_mapper_copy "big-market-rebate-service task_mapper.xml" "big-market-rebate
 # Section 6: Proposed DDL isolation
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 6. Proposed DDL stays under docs/sql/proposed-*.sql ──"
+echo "── 6. Learning DDL stays under docs/sql/proposed-*.sql ──"
 
-# This section complements validate-microservices-phase-7-task-outbox-proposed-ddl.sh
-# by checking specifically for executable DDL-looking statements outside proposed/ and archive/.
+# This section checks specifically for executable DDL-looking statements outside
+# docs/sql learning references and archive material.
 DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' \
   "$REPO_ROOT/docs" --include='*.sql' 2>/dev/null \
   | grep -v '/docs/sql/proposed-' \
@@ -378,47 +377,44 @@ DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATAB
   || true)
 
 if [[ -z "$DDL_VIOLATIONS" ]]; then
-  pass "No DDL outside docs/sql/proposed-*.sql (excluding archive)"
+  pass "No DDL outside docs/sql learning references (excluding archive)"
 else
-  fail "DDL statements found outside docs/sql/proposed-*.sql:"
+  fail "DDL statements found outside docs/sql learning references:"
   printf '%s\n' "$DDL_VIOLATIONS"
 fi
 
-# Also verify the 5 known proposed DDL files exist
+# Also verify the 5 known learning DDL files exist
 PROPOSED_DDL_COUNT=$(find "$REPO_ROOT/docs/sql" -name 'proposed-*.sql' -type f 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$PROPOSED_DDL_COUNT" -ge 5 ]]; then
-  pass "$PROPOSED_DDL_COUNT proposed DDL files under docs/sql/ (expect >=5)"
+  pass "$PROPOSED_DDL_COUNT learning DDL files under docs/sql/ (expect >=5)"
 else
-  fail "Only $PROPOSED_DDL_COUNT proposed DDL files found (expect >=5)"
+  fail "Only $PROPOSED_DDL_COUNT learning DDL files found (expect >=5)"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 7: Cross-reference to sibling validators
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 7. Sibling validators remain referenced ──"
+echo "── 7. Compatible validators ──"
 
 SIBLING_VALIDATORS=(
-  "scripts/validate-microservices-production-flag-matrix.sh"
-  "scripts/validate-microservices-phase-7-task-outbox-proposed-ddl.sh"
-  "scripts/validate-microservices-phase-7-task-outbox-ownership.sh"
-  "scripts/validate-microservices-legacy-cleanup-readiness.sh"
-  "scripts/validate-microservices-post-cutover-cleanup-gates.sh"
-  "scripts/validate-microservices-service-module-ownership.sh"
+  "scripts/validate-microservices-stack.sh"
+  "scripts/smoke-test-phase-1.sh"
+  "scripts/smoke-api.sh"
 )
 
 for sib in "${SIBLING_VALIDATORS[@]}"; do
   if [[ -x "$REPO_ROOT/$sib" ]]; then
-    pass "Sibling validator executable: $sib"
+    pass "Compatible validator executable: $sib"
   else
-    fail "Sibling validator missing or not executable: $sib"
+    fail "Compatible validator missing or not executable: $sib"
   fi
 done
 
 # Also verify MICROSERVICES.md is the authoritative entry point
 MICROSERVICES_MD="$REPO_ROOT/docs/MICROSERVICES.md"
 assert_file "MICROSERVICES.md is authoritative entry point" "$MICROSERVICES_MD"
-assert_pattern_present "MICROSERVICES.md declares itself authoritative" "$MICROSERVICES_MD" 'sole authoritative entry point'
+assert_pattern_present "MICROSERVICES.md declares itself authoritative" "$MICROSERVICES_MD" 'authoritative entry point'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Summary
@@ -432,10 +428,10 @@ echo "Checks failed: $FAIL"
 echo ""
 
 if [[ "$FAIL" -eq 0 ]]; then
-  echo "RESULT: ALL CHECKS PASSED — Phase 8 runtime safety guardrails intact"
+  echo "RESULT: ALL CHECKS PASSED — runtime safety guardrails intact"
   echo "        Default credential guards, mutual-exclusion validators,"
   echo "        token revocation service, gateway rate limiter, compatibility"
-  echo "        mapper copies, and proposed DDL isolation are all in place."
+  echo "        mapper copies, and learning DDL isolation are all in place."
   exit 0
 else
   echo "RESULT: $FAIL CHECK(S) FAILED — review output above"

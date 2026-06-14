@@ -6,25 +6,23 @@ import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
 /**
  * Domain port for the in-draw strategy decision step.
  *
- * Phase 5-D contract.
+ * Domain contract for executing the strategy decision step.
  *
  * Design rationale:
  *   RaffleApplicationService previously injected IRaffleStrategy directly.
- *   This port is the future routing seam that allows the strategy decision
- *   step to be swapped between the local in-process call and a future remote
+ *   This port is the configurable routing seam that allows the strategy decision
+ *   step to be swapped between the local in-process call and a configured remote
  *   Dubbo call without changing the orchestrator.
  *
  * Local path (default):
  *   LocalStrategyDecisionPort (in big-market-infrastructure) delegates to the
  *   existing in-process IRaffleStrategy bean. Behavior is identical to the
- *   pre-5-D direct call. Active when no other IStrategyDecisionPort bean exists
+ *   direct call. Active when no other IStrategyDecisionPort bean exists
  *   (@ConditionalOnMissingBean).
  *
- * Remote path (future, NOT introduced in this batch):
- *   A future StrategyRemoteDecisionPort would be guarded by
- *   strategy.service.remote-decision.enabled=false. It must not be introduced
- *   until Phase 5-G saga design is approved and the preconditions documented
- *   in docs/archive/phases.md are met.
+ * Remote path (documented extension point):
+ *   A configured StrategyRemoteDecisionPort can use the same contract when
+ *   a remote strategy decision service is added to a learning run.
  */
 public interface IStrategyDecisionPort {
 

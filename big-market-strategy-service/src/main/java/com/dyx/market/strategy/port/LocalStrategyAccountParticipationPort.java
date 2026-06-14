@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
  *
  * check=false: startup succeeds even when account-service is not registered in Nacos.
  * On failure, both methods return 0 (conservative default), which is identical to
- * the StrategyReadServiceRPC scaffold behavior before Phase 4-D. The remote strategy
+ * the StrategyReadServiceRPC default implementation behavior before The remote strategy
  * read path must remain disabled (strategy.service.remote-read.enabled=false) until
- * account-service is confirmed reachable from strategy-service in staging.
+ * account-service is confirmed reachable from strategy-service .
  */
 @Slf4j
 @Component

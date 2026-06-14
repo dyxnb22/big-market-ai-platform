@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Message-job service: owns all MQ consumers and XXL-Job scheduled handlers.
- * Extracted from big-market-market-service in Phase 2.1.
+ * Extracted from big-market-market-service in 
  *
  * Scans only the packages required for job and listener execution:
  *   - own config (this package)

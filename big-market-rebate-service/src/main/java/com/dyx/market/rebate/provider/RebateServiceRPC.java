@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Dark-launch rebate RPC provider hosted by big-market-rebate-service.
+ * rebate RPC provider hosted by big-market-rebate-service.
  * The implementation mirrors the existing market-service provider while keeping
  * the new service boundary isolated from trigger.http, trigger.listener, and
  * trigger.job packages.

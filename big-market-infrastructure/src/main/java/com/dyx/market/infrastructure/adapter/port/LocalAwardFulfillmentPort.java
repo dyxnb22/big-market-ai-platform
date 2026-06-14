@@ -12,7 +12,7 @@ import javax.annotation.Resource;
 /**
  * Local (in-process) implementation of IAwardFulfillmentPort.
  *
- * Phase 5-E: delegates directly to the existing IAwardService bean, preserving
+ * delegates directly to the existing IAwardService bean, preserving
  * identical behavior to the pre-5-E direct injection in RaffleApplicationService.
  * No network hop. No remote flag. No transaction behavior change.
  */

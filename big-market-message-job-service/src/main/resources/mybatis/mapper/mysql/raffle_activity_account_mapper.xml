@@ -82,7 +82,7 @@
         where user_id = #{userId} and activity_id = #{activityId}
     </select>
 
-    <!-- Phase 2.2-B14 rollback compensation: restore surplus +1 -->
+    <!-- rollback compensation: restore surplus +1 -->
     <update id="addAccountTotalSurplusQuota" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccount">
         update raffle_activity_account
         set total_count_surplus = total_count_surplus + 1, update_time = now()

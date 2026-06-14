@@ -25,7 +25,7 @@ spring:
     zookeeper:
       enabled: false
 
-# Phase 2.2-B2: Dubbo enabled for remote write adapters (conditional on write flags).
+# Dubbo enabled for remote write adapters (conditional on write flags).
 # When write flags are false (default), no @DubboReference beans are created and Dubbo
 # is idle. check=false on registry prevents startup failure if nacos is temporarily unavailable.
 dubbo:
@@ -146,18 +146,18 @@ gateway:
 account:
   fulfillment:
     remote-award:
-      # Phase 2.3-B scaffold; enable only after Phase 2.2 staging GO + outbox staging-validated.
+      # default implementation; enable only after local validation + outbox local smoke validated.
       enabled: ${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:false}
   service:
     remote-credit-write:
-      # Phase 2.2-B2 scaffold only. Default false keeps message-job credit writes local.
+      # default implementation. Default false keeps message-job credit writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
     remote-quota-write:
-      # Phase 2.2-B2 scaffold only. Default false keeps message-job quota writes local.
+      # default implementation. Default false keeps message-job quota writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
   award-credit-outbox:
-    # Phase 2.2-B6 scaffold only. Default false — credit_award_task tables are proposed-only.
-    # Set true ONLY after applying docs/sql/proposed-credit-award-task-outbox.sql in staging.
+    # default implementation. Default false — credit_award_task tables are learning-reference.
+    # Set true ONLY after applying docs/sql/proposed-credit-award-task-outbox.sql .
     # When false: AwardRepository uses direct user_credit_account write (unchanged from pre-B6).
     # When true:  AwardRepository inserts credit_award_task outbox row; DispatchCreditAwardTaskJob
     #             poller dispatches credits asynchronously via IAccountCreditWriteAdapter.

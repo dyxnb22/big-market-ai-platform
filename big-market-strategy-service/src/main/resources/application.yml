@@ -104,7 +104,7 @@ dubbo:
   scan:
     base-packages: com.dyx.market.strategy.provider
 
-# Phase 4-C dark-launch: no traffic flags enabled; remote flag must remain false
+# Local default: no remote traffic flags enabled.
 strategy:
   service:
     remote-read:

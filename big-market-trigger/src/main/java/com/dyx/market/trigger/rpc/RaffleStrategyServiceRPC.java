@@ -16,13 +16,13 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * Legacy strategy Dubbo provider hosted by market-service.
+ * default strategy Dubbo provider hosted by market-service.
  *
- * Phase 4-D: keep HTTP controller always registered while making only the
- * legacy Dubbo provider disableable for future cutover.
+ * Keeps the HTTP controller registered while making the default Dubbo provider
+ * configurable for local service-oriented runs.
  */
 @DubboService(version = "1.0")
-@ConditionalOnProperty(name = "strategy.legacy-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "strategy.default-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RaffleStrategyServiceRPC implements IRaffleStrategyService {
 
     @Resource

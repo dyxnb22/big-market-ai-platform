@@ -1,10 +1,10 @@
-# Phase 1 microservices docker-compose.
+# microservices docker-compose.
 #
 # PREREQUISITES: The shared infrastructure stack must already be running on
 # the dev-ops_my-network Docker network. Start it with:
 #   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 #
-# This compose file attaches all Phase 1 application services to that existing
+# This compose file attaches all application services to that existing
 # network so they can reach mysql, redis, rabbitmq, nacos, elasticsearch, and
 # xxl-job-admin by container name without duplicating the infrastructure.
 #
@@ -139,10 +139,10 @@ services:
       - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-false}
       - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
       - ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:-false}
-      - REBATE_LEGACY_RPC_PROVIDER_ENABLED=${REBATE_LEGACY_RPC_PROVIDER_ENABLED:-true}
+      - REBATE_DEFAULT_RPC_PROVIDER_ENABLED=${REBATE_DEFAULT_RPC_PROVIDER_ENABLED:-true}
       - REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED=${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-false}
       - REBATE_SERVICE_REMOTE_READ_ENABLED=${REBATE_SERVICE_REMOTE_READ_ENABLED:-false}
-      - STRATEGY_LEGACY_RPC_PROVIDER_ENABLED=${STRATEGY_LEGACY_RPC_PROVIDER_ENABLED:-true}
+      - STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED=${STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED:-true}
       - STRATEGY_SERVICE_REMOTE_READ_ENABLED=${STRATEGY_SERVICE_REMOTE_READ_ENABLED:-false}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
@@ -204,7 +204,7 @@ services:
       retries: 10
       start_period: 90s
 
-  # ─── Account service (dark launch — Dubbo/internal only, no traffic cutover) ──
+  # ─── Account service ──
 
   big-market-account-service:
     build:
@@ -242,7 +242,7 @@ services:
       retries: 10
       start_period: 90s
 
-  # ── Fulfillment service (dark launch — Dubbo/internal only, no traffic cutover) ──
+  # ── Fulfillment service ──
 
   big-market-fulfillment-service:
     build:
@@ -294,7 +294,7 @@ services:
     restart: always
     ports:
       - "8080:8080"
-      # Compatibility for stale cached legacy frontend bundles that called
+      # Compatibility for cached frontend bundles that called
       # http://127.0.0.1:8098/api/v1 directly. Remove after all clients have
       # picked up the versioned /api/v1 frontend.
       - "8098:8080"

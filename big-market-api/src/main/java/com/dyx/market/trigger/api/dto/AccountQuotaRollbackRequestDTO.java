@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * Request DTO for the quota rollback (saga compensation) RPC.
  *
- * Phase 2.2-B11 contract. Provider returns UN_ERROR until account-service
+ * contract. Provider returns UN_ERROR until account-service
  * idempotency ledger is in place (B12+). No callers are wired at this stage.
  */
 @Data

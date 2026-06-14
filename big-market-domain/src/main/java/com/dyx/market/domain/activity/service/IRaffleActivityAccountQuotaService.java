@@ -56,7 +56,7 @@ public interface IRaffleActivityAccountQuotaService {
     /**
      * Synchronously decrement total/month/day quota, guarded by idempotency ledger.
      *
-     * Phase 2.2-B12: called by AccountQuotaServiceRPC.decrementQuota on the
+     * called by AccountQuotaServiceRPC.decrementQuota on the
      * account-service side. The ledger table prevents double-decrement on RPC retry.
      *
      * @param userId        user identifier (shard key)
@@ -69,7 +69,7 @@ public interface IRaffleActivityAccountQuotaService {
     /**
      * Roll back a previously decremented quota slot (saga compensation).
      *
-     * Phase 2.2-B14: ledger-guarded. Safe to call if decrement was never applied.
+     * ledger-guarded. Safe to call if decrement was never applied.
      * Idempotent: repeated calls with the same key return true without double-restore.
      *
      * @param userId        user identifier (shard key)

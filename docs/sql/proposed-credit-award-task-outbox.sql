@@ -1,15 +1,15 @@
--- PROPOSED ONLY — Phase 2.2-B5 outbox readiness scaffold.
--- DO NOT run against production. DO NOT add to any Flyway/Liquibase migration.
+-- Learning-environment DDL reference. Apply manually only in local study environments.
+-- This repository does not auto-apply this DDL; keep it as an explicit local learning reference.
 -- This DDL is documentation of the intended credit_award_task outbox table.
--- Production wiring must wait until the outbox producer/consumer is implemented
--- and validated in a dedicated batch (Phase 2.2-B6 or later).
+-- Enable the outbox path only after the producer/consumer is implemented
+-- and validated in a local learning run.
 --
 -- Sharding note: this table follows the same 2-DB / 4-table router pattern used by
 -- big_market_01..02. credit_award_task_000..003 maps to the same user shard as
 -- user_award_record so they always land in the same physical DB and can share one
 -- transactionTemplate.execute() block.
 --
--- Usage in AwardRepository.saveGiveOutPrizesAggregate (future):
+-- Usage in AwardRepository.saveGiveOutPrizesAggregate (local learning):
 --   Step 1 (inside transactionTemplate):
 --     a. updateAwardRecordCompletedState  (user_award_record)
 --     b. INSERT credit_award_task row     (state = 'pending')
@@ -20,7 +20,7 @@
 --     On success: UPDATE state = 'dispatched'
 --     On failure: retry_count++; keep pending until max retries, then mark failed
 
--- Phase 2.2-B6 note: activity_id and strategy_id were removed from the PO and mapper
+-- Implementation note: activity_id and strategy_id were removed from the PO and mapper
 -- because DistributeAwardEntity / buildDistributeUserAwardRecordEntity does not carry
 -- them through to GiveOutPrizesAggregate. The unique key on (user_id, award_order_id)
 -- is sufficient for dispatch correctness. Audit trail is available via user_award_record JOIN.
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `credit_award_task_000` (
     -- which the caller treats as an already-processed event and rolls back cleanly.
     UNIQUE KEY `uq_award_order_id` (`user_id`, `award_order_id`),
     KEY `idx_state_retry` (`state`, `retry_count`, `create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award credit outbox — proposed Phase 2.2-B6';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award credit outbox — learning DDL';
 
 -- Repeat for shards _001, _002, _003 (router creates 4 tables per DB).
 CREATE TABLE IF NOT EXISTS `credit_award_task_001` LIKE `credit_award_task_000`;

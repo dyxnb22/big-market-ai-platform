@@ -4,7 +4,7 @@ package com.dyx.market.strategy.port;
  * Narrow port for reading account participation counts inside strategy-service.
  *
  * Avoids direct activity/account domain imports inside the strategy bounded context.
- * Phase 4-D: supplies the real unlock/use-count values to StrategyReadServiceRPC
+ * supplies the real unlock/use-count values to StrategyReadServiceRPC
  * so remote responses match local RaffleStrategyController semantics.
  */
 public interface IStrategyAccountParticipationPort {

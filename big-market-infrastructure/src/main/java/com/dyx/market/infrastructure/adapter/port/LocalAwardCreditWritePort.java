@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 /**
  * Local (in-process) implementation of IAwardCreditWritePort.
  *
- * Preserves AwardRepository's Phase 2.2-B6 behavior: caller owns Redis locking,
+ * Preserves AwardRepository's behavior: caller owns Redis locking,
  * dbRouter, transactionTemplate, and the account.award-credit-outbox flag; this
  * adapter only performs the same DAO operations that were previously inline.
  */

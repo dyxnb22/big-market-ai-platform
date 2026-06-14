@@ -10,10 +10,8 @@ import org.springframework.context.annotation.Import;
 /**
  * Account service: Dubbo RPC provider for credit and activity quota operations.
  *
- * Phase 2.2-A dark launch: service registers Dubbo providers but receives no
- * traffic yet. Existing callers in market-service and message-job-service still
- * call domain services in-process. Traffic cutover happens in Phase 2.2-B.
- *
+ * Service registers Dubbo providers for credit and quota operations. Local development can
+ * still use in-process adapters for compact learning runs.
  * Scans:
  *   - own config (com.dyx.market.account)
  *   - domain — credit + activity quota domain services (and all others; shared JAR)

@@ -873,7 +873,7 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     /**
-     * Phase 2.2-B12: idempotent quota decrement with ledger guard.
+     * idempotent quota decrement with ledger guard.
      *
      * Transaction boundary (single shard, all tables in same DB):
      *   1. INSERT raffle_quota_decrement_ledger — DuplicateKeyException → already done, return true.
@@ -989,7 +989,7 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     /**
-     * Phase 2.2-B14: ledger-guarded saga compensation.
+     * ledger-guarded saga compensation.
      *
      * Transaction contract (single shard):
      *   1. Query ledger row by (userId, activityId, outBusinessNo).
