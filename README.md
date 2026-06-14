@@ -18,12 +18,19 @@ XXL-Job tasks, MySQL, Redis, Nacos, Prometheus, and Grafana.
 | `big-market-message-job-service` | 8085 | MQ consumers, XXL-Job handlers, retry dispatch |
 | `big-market-account-service` | 8086 | Credit and quota RPC provider |
 | `big-market-fulfillment-service` | 8087 | Award fulfillment RPC provider |
-| `big-market-rebate-service` | 8088 | Rebate create/read RPC provider |
-| `big-market-strategy-service` | 8089 | Strategy read RPC provider |
+| `big-market-rebate-service` | 8088 | Rebate create/read RPC provider (dedicated deployment) |
+| `big-market-strategy-service` | 8089 | Strategy read RPC provider (dedicated deployment) |
 
 Shared modules such as `big-market-domain`, `big-market-infrastructure`,
 `big-market-api`, `big-market-types`, and starter modules are reused as JAR
 dependencies.
+
+> **Deployment note:** `big-market-rebate-service` and `big-market-strategy-service` are not
+> included in the default `docker-compose.yml` stack. By default, `big-market-market-service`
+> hosts their Dubbo providers internally via embedded provider beans
+> (`rebate.embedded-rpc-provider.enabled=true`, `strategy.embedded-rpc-provider.enabled=true`).
+> The dedicated service containers are available for service-oriented deployment — set the
+> corresponding `embedded-rpc-provider.enabled=false` and start the dedicated service to switch modes.
 
 ## Build
 
