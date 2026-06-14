@@ -20,8 +20,8 @@ import java.util.Map;
 /**
  * Local-only implementation of IStrategyReadAdapter.
  *
- * Registered only when no other IStrategyReadAdapter bean is present — i.e., in
- * big-market-app (monolith) or any service that does not supply StrategyRemoteReadAdapter
+ * Registered only when no other IStrategyReadAdapter bean is present, such as in
+ * the embedded big-market-app or any service that does not supply StrategyRemoteReadAdapter
  * from market-service.
  *
  * Preserves the exact read semantics that RaffleStrategyController used before 

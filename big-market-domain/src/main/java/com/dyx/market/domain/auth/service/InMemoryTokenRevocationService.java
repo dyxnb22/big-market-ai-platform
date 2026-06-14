@@ -9,8 +9,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * In-memory token revocation store. Suitable for dev/test and as a fallback
- * when Redis is unavailable.
+ * In-memory token revocation store for local development and tests.
  *
  * Expired entries are cleaned periodically to bound memory. Not suitable for
  * multi-instance production (use RedisTokenRevocationService in that case).

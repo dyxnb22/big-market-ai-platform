@@ -12,10 +12,10 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 
 /**
- * Local-only fallback implementation of IAccountReadAdapter.
+ * Local development implementation of IAccountReadAdapter.
  *
- * Registered only when no other IAccountReadAdapter bean is present — i.e.,
- * in big-market-app (monolith) or any service that does not provide
+ * Registered only when no other IAccountReadAdapter bean is present, such as
+ * in the embedded big-market-app or any service that does not provide
  * AccountRemoteReadAdapter from market-service.
  *
  * Always delegates to local domain services. No Dubbo calls, no feature flag.

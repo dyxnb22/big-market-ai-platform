@@ -342,13 +342,12 @@ GATEWAY_YML="$REPO_ROOT/big-market-gateway/src/main/resources/application.yml"
 assert_pattern_present "Gateway yml references IpPathRateLimit" "$GATEWAY_YML" 'IpPathRateLimit'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 5: Compatibility mapper copy presence
+# Section 5: Shared mapper copy presence
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 5. Compatibility mapper copies still present ──"
+echo "── 5. Shared mapper copies still present ──"
 
-# Old-path cleanup inventory — key mapper compatibility
-# copies that must remain until their local cleanup gates are satisfied.
+# Old-path cleanup inventory - shared mapper copies used by local learning modes.
 check_mapper_copy() {
   local label="$1" relpath="$2"
   assert_file "$label present" "$REPO_ROOT/$relpath"
@@ -400,7 +399,7 @@ done
 # Section 7: Cross-reference to sibling validators
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 7. Compatible validators ──"
+echo "── 7. Sibling validators ──"
 
 SIBLING_VALIDATORS=(
   "scripts/validate-microservices-stack.sh"
@@ -410,9 +409,9 @@ SIBLING_VALIDATORS=(
 
 for sib in "${SIBLING_VALIDATORS[@]}"; do
   if [[ -x "$REPO_ROOT/$sib" ]]; then
-    pass "Compatible validator executable: $sib"
+    pass "Sibling validator executable: $sib"
   else
-    fail "Compatible validator missing or not executable: $sib"
+    fail "Sibling validator missing or not executable: $sib"
   fi
 done
 
@@ -435,8 +434,8 @@ echo ""
 if [[ "$FAIL" -eq 0 ]]; then
   echo "RESULT: ALL CHECKS PASSED — runtime safety guardrails intact"
   echo "        Default credential guards, mutual-exclusion validators,"
-  echo "        token revocation service, gateway rate limiter, compatibility"
-  echo "        mapper copies, and learning DDL isolation are all in place."
+  echo "        token revocation service, gateway rate limiter, shared mapper"
+  echo "        copies, and learning DDL isolation are all in place."
   exit 0
 else
   echo "RESULT: $FAIL CHECK(S) FAILED — review output above"

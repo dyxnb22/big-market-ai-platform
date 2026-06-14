@@ -32,7 +32,7 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         // When a specific list is configured, use setAllowedOrigins (exact match).
-        // When "*" is configured, use setAllowedOriginPattern to keep compatibility.
+        // When "*" is configured, use setAllowedOriginPattern as required by Spring.
         if ("*".equals(allowedOrigins)) {
             config.addAllowedOriginPattern("*");
         } else {

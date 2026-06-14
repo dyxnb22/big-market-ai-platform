@@ -1,8 +1,8 @@
 package com.dyx.market.domain.auth.service;
 
 /**
- * Minimal token revocation contract. Implementations may use Redis (production)
- * or in-memory storage (dev/fallback).
+ * Minimal token revocation contract. Implementations may use Redis for shared
+ * deployments or in-memory storage for local development.
  */
 public interface ITokenRevocationService {
 

@@ -64,9 +64,8 @@ public interface IAccountQuotaService {
      *
      * Idempotent: repeated calls with the same outBusinessNo are safe.
      *
-     * contract — provider stub only. Returns UN_ERROR until
-     * account-service idempotency ledger (B12 DDL) is in place.
-     * No callers in market-service are wired to this method until B12 validation passes.
+     * Requires the account-service idempotency ledger DDL and smoke validation
+     * when this service-oriented mode is enabled.
      */
     Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request);
 
@@ -75,9 +74,8 @@ public interface IAccountQuotaService {
      *
      * Safe to call even if the matching decrementQuota was never applied.
      *
-     * contract — provider stub only. Returns UN_ERROR until
-     * account-service idempotency ledger is in place (B12+).
-     * No callers are wired at this stage.
+     * Requires the account-service idempotency ledger DDL and smoke validation
+     * when this service-oriented mode is enabled.
      */
     Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request);
 
