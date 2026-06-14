@@ -362,16 +362,16 @@ check_mapper_copy "big-market-account-service task_mapper.xml" "big-market-accou
 check_mapper_copy "big-market-rebate-service task_mapper.xml" "big-market-rebate-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 6: Proposed DDL isolation
+# Section 6: Learning DDL location
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 6. Learning DDL stays under docs/sql/proposed-*.sql ──"
+echo "── 6. Learning DDL stays under docs/sql/*.sql ──"
 
 # This section checks specifically for executable DDL-looking statements outside
 # docs/sql learning references and archive material.
 DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' \
   "$REPO_ROOT/docs" --include='*.sql' 2>/dev/null \
-  | grep -v '/docs/sql/proposed-' \
+  | grep -v '/docs/sql/' \
   | grep -v '/docs/archive/' \
   | grep -v '/docs/dev-ops/' \
   || true)
@@ -383,13 +383,18 @@ else
   printf '%s\n' "$DDL_VIOLATIONS"
 fi
 
-# Also verify the 5 known learning DDL files exist
-PROPOSED_DDL_COUNT=$(find "$REPO_ROOT/docs/sql" -name 'proposed-*.sql' -type f 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$PROPOSED_DDL_COUNT" -ge 5 ]]; then
-  pass "$PROPOSED_DDL_COUNT learning DDL files under docs/sql/ (expect >=5)"
-else
-  fail "Only $PROPOSED_DDL_COUNT learning DDL files found (expect >=5)"
-fi
+# Also verify the 5 known learning DDL files exist.
+LEARNING_DDL_FILES=(
+  "docs/sql/award-dispatch-task-outbox.sql"
+  "docs/sql/credit-award-task-outbox.sql"
+  "docs/sql/credit-trade-task-outbox.sql"
+  "docs/sql/quota-decrement-ledger.sql"
+  "docs/sql/rebate-task-outbox.sql"
+)
+
+for ddl in "${LEARNING_DDL_FILES[@]}"; do
+  assert_file "Learning DDL present: $ddl" "$REPO_ROOT/$ddl"
+done
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 7: Cross-reference to sibling validators

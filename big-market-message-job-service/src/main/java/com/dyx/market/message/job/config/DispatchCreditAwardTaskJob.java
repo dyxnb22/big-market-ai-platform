@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * account-service deduplicates duplicate dispatch attempts.
  *
  * Pre-requisite: credit_award_task_000..003 tables must exist in big_market_01 and big_market_02
- * (apply docs/sql/proposed-credit-award-task-outbox.sql) before setting the flag to true.
+ * (apply docs/sql/credit-award-task-outbox.sql) when this feature flag is true.
  */
 @Slf4j
 @Component

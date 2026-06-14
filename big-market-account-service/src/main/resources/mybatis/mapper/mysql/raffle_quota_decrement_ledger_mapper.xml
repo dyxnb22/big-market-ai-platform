@@ -2,8 +2,8 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
   quota-decrement idempotency ledger mapper.
-  Tables raffle_quota_decrement_ledger_000..003 are PROPOSED ONLY.
-  Apply docs/sql/proposed-quota-decrement-ledger.sql before enabling
+  Tables raffle_quota_decrement_ledger_000..003 use local learning DDL.
+  requires docs/sql/quota-decrement-ledger.sql and smoke validation before running
   account.service.remote-quota-decrement.enabled=true in any environment.
 -->
 <mapper namespace="com.dyx.market.infrastructure.dao.IRaffleQuotaDecrementLedgerDao">

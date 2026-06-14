@@ -1,29 +1,6 @@
--- Learning-environment DDL reference. Apply manually only in local study environments.
--- This repository does not auto-apply this DDL; keep it as an explicit local learning reference.
--- This DDL is documentation of the intended credit_award_task outbox table.
--- Enable the outbox path only after the producer/consumer is implemented
--- and validated in a local learning run.
---
--- Sharding note: this table follows the same 2-DB / 4-table router pattern used by
--- big_market_01..02. credit_award_task_000..003 maps to the same user shard as
--- user_award_record so they always land in the same physical DB and can share one
--- transactionTemplate.execute() block.
---
--- Usage in AwardRepository.saveGiveOutPrizesAggregate (local learning):
---   Step 1 (inside transactionTemplate):
---     a. updateAwardRecordCompletedState  (user_award_record)
---     b. INSERT credit_award_task row     (state = 'pending')
---        -- user_credit_account write is REMOVED from this transaction
---   Step 2 (outside transaction, idempotent poller):
---     Scan credit_award_task WHERE state = 'pending' AND retry_count < max
---     Call IAccountCreditWriteAdapter.createOrder(userId, creditAmount, awardOrderId)
---     On success: UPDATE state = 'dispatched'
---     On failure: retry_count++; keep pending until max retries, then mark failed
+-- Learning/reference DDL for the completed local microservices architecture.
+-- Apply locally to enable the full feature set in development.
 
--- Implementation note: activity_id and strategy_id were removed from the PO and mapper
--- because DistributeAwardEntity / buildDistributeUserAwardRecordEntity does not carry
--- them through to GiveOutPrizesAggregate. The unique key on (user_id, award_order_id)
--- is sufficient for dispatch correctness. Audit trail is available via user_award_record JOIN.
 CREATE TABLE IF NOT EXISTS `credit_award_task_000` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT                       COMMENT 'Auto-increment row id',
     `user_id`         VARCHAR(32)  NOT NULL                                      COMMENT 'User id (shard key)',

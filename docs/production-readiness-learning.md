@@ -9,11 +9,11 @@ local smoke tests, validators, and explainable rollback/idempotency behavior.
 Core schema examples live under `docs/dev-ops/mysql/sql/`. Additional learning
 DDL references for outbox and idempotency tables live under `docs/sql/`:
 
-- `docs/sql/proposed-quota-decrement-ledger.sql`
-- `docs/sql/proposed-credit-award-task-outbox.sql`
-- `docs/sql/proposed-rebate-task-outbox.sql`
-- `docs/sql/proposed-credit-trade-task-outbox.sql`
-- `docs/sql/proposed-award-dispatch-task-outbox.sql`
+- `docs/sql/quota-decrement-ledger.sql`
+- `docs/sql/credit-award-task-outbox.sql`
+- `docs/sql/rebate-task-outbox.sql`
+- `docs/sql/credit-trade-task-outbox.sql`
+- `docs/sql/award-dispatch-task-outbox.sql`
 
 Learning completion: table purpose, shard key, unique key, state field, and
 retry behavior can be explained from SQL to repository/job code.
