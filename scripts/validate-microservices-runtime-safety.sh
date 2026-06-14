@@ -3,12 +3,12 @@
 #
 # Validates final-architecture guardrails and verifies that no regression has
 # occurred in default credentials, mutually exclusive flag paths,
-# compatibility mapper copies, learning DDL isolation, or the presence of
-# safety hardening classes.
+# shared mapper copies, learning DDL isolation, or the presence of safety
+# hardening classes.
 #
 # This validator complements (does not replace):
 #   validate-microservices-stack.sh
-#   smoke-test-phase-1.sh
+#   smoke-test-microservices.sh
 #   smoke-api.sh
 #
 # Deterministic, repo-only, no DB/MQ/Docker/network.
@@ -155,7 +155,7 @@ if [[ ${#ALL_SVC_YMLS[@]} -gt 0 ]]; then
 fi
 
 # 1g. spring-config-token.xml must not contain the literal hardcoded Dubbo token.
-#     After migration, the token should be ${DUBBO_APP_TOKEN:...}.
+#     The token should be injected with ${DUBBO_APP_TOKEN:...}.
 if [[ ${#ALL_TOKEN_XMLS[@]} -gt 0 ]]; then
   assert_pattern_absent \
     "No bare hardcoded Dubbo app token in spring-config-token.xml files" \
@@ -194,50 +194,50 @@ assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_J
 # Section 2: Flag mutual-exclusion guardrails (config-file defaults)
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 2.1 Mutual-exclusion: default provider vs remote provider ──"
+echo "── 2.1 Mutual-exclusion: embedded provider vs service provider ──"
 
-# Rebate: default provider must NOT be default-true WHILE remote create is default-true
-REBATE_LEGACY_DEFAULT_TRUE=0
+# Rebate: embedded provider must NOT be default-true WHILE service create is default-true
+REBATE_EMBEDDED_DEFAULT_TRUE=0
 REBATE_REMOTE_DEFAULT_TRUE=0
 for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
            "$REPO_ROOT"/big-market-app/src/main/resources; do
   [[ -d "$dir" ]] || continue
-  if grep -RqE 'REBATE_DEFAULT_RPC_PROVIDER_ENABLED:-true|rebate\.default-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    REBATE_LEGACY_DEFAULT_TRUE=1
+  if grep -RqE 'REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true|rebate\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
+    REBATE_EMBEDDED_DEFAULT_TRUE=1
   fi
   if grep -RqE 'REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-true|rebate\.service\.remote-create-order\.enabled.*:.*true' "$dir" 2>/dev/null; then
     REBATE_REMOTE_DEFAULT_TRUE=1
   fi
 done
-if [[ "$REBATE_LEGACY_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Rebate default provider AND remote create-order both default to true — dual-provider risk"
+if [[ "$REBATE_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
+  fail "Rebate embedded provider AND remote create-order both default to true — dual-provider risk"
 else
-  pass "Rebate dual-provider config: default=$REBATE_LEGACY_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
+  pass "Rebate dual-provider config: embedded=$REBATE_EMBEDDED_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
 fi
 
-# Strategy: default provider must NOT be default-true WHILE remote read is default-true
-STRATEGY_LEGACY_DEFAULT_TRUE=0
+# Strategy: embedded provider must NOT be default-true WHILE remote read is default-true
+STRATEGY_EMBEDDED_DEFAULT_TRUE=0
 STRATEGY_REMOTE_DEFAULT_TRUE=0
 for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
            "$REPO_ROOT"/big-market-app/src/main/resources; do
   [[ -d "$dir" ]] || continue
-  if grep -RqE 'STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED:-true|strategy\.default-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    STRATEGY_LEGACY_DEFAULT_TRUE=1
+  if grep -RqE 'STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:-true|strategy\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
+    STRATEGY_EMBEDDED_DEFAULT_TRUE=1
   fi
   if grep -RqE 'STRATEGY_SERVICE_REMOTE_READ_ENABLED:-true|strategy\.service\.remote-read\.enabled.*:.*true' "$dir" 2>/dev/null; then
     STRATEGY_REMOTE_DEFAULT_TRUE=1
   fi
 done
-if [[ "$STRATEGY_LEGACY_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Strategy default provider AND remote read both default to true — dual-provider risk"
+if [[ "$STRATEGY_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
+  fail "Strategy embedded provider AND remote read both default to true — dual-provider risk"
 else
-  pass "Strategy dual-provider config: default=$STRATEGY_LEGACY_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
+  pass "Strategy dual-provider config: embedded=$STRATEGY_EMBEDDED_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
 fi
 
 echo ""
-echo "── 2.2 Mutual-exclusion: shared task fallback vs per-domain outbox ──"
+echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ──"
 
-# Shared task fallback (SendMessageTaskJob) must NOT be active while
+# Shared task dispatch (SendMessageTaskJob) must NOT be active while
 # per-domain outbox dispatchers (DispatchCreditAwardTaskJob) are enabled.
 MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
 if [[ -f "$MESSAGE_JOB_YML" ]]; then
@@ -246,13 +246,13 @@ if [[ -f "$MESSAGE_JOB_YML" ]]; then
   else
     OUTBOX_ENABLED=0
   fi
-  if grep -qE 'job\.shared-task-fallback\.credit-award-disabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
+  if grep -qE 'job\.shared-task-dispatch\.credit-award-disabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
     SHARED_TASK_DISABLED=1
   else
     SHARED_TASK_DISABLED=0
   fi
   if [[ "$OUTBOX_ENABLED" -gt 0 && "$SHARED_TASK_DISABLED" -eq 0 ]]; then
-    fail "message-job outbox enabled but shared-task-fallback.credit-award-disabled is not true — dual-dispatch risk"
+    fail "message-job outbox enabled but shared-task-dispatch.credit-award-disabled is not true — dual-dispatch risk"
   else
     pass "message-job outbox+shared-task config: outbox_enabled_default=$OUTBOX_ENABLED shared_task_disabled=$SHARED_TASK_DISABLED (safe)"
   fi
@@ -267,8 +267,8 @@ FLAG_VALIDATOR="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/marke
 JOB_VALIDATOR="$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/JobMutualExclusionValidator.java"
 
 assert_file "FlagMutualExclusionValidator.java exists" "$FLAG_VALIDATOR"
-assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateRemoteCreateOrder.*rebateDefaultProvider|rebate.*duplicate'
-assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyDefaultProvider|strategy.*duplicate'
+assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateRemoteCreateOrder.*rebateEmbeddedProvider|rebate.*duplicate'
+assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyEmbeddedProvider|strategy.*duplicate'
 assert_pattern_present "FlagMutualExclusionValidator has disable flag" "$FLAG_VALIDATOR" 'FLAG_MUTUAL_EXCLUSION_GUARD_ENABLED'
 
 assert_file "JobMutualExclusionValidator.java exists" "$JOB_VALIDATOR"
@@ -342,13 +342,12 @@ GATEWAY_YML="$REPO_ROOT/big-market-gateway/src/main/resources/application.yml"
 assert_pattern_present "Gateway yml references IpPathRateLimit" "$GATEWAY_YML" 'IpPathRateLimit'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 5: Compatibility mapper copy presence
+# Section 5: Shared mapper copy presence
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 5. Compatibility mapper copies still present ──"
+echo "── 5. Shared mapper copies still present ──"
 
-# Old-path cleanup inventory — key mapper compatibility
-# copies that must remain until their local cleanup gates are satisfied.
+# Old-path cleanup inventory - shared mapper copies used by local learning modes.
 check_mapper_copy() {
   local label="$1" relpath="$2"
   assert_file "$label present" "$REPO_ROOT/$relpath"
@@ -362,16 +361,16 @@ check_mapper_copy "big-market-account-service task_mapper.xml" "big-market-accou
 check_mapper_copy "big-market-rebate-service task_mapper.xml" "big-market-rebate-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 6: Proposed DDL isolation
+# Section 6: Learning DDL location
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 6. Learning DDL stays under docs/sql/proposed-*.sql ──"
+echo "── 6. Learning DDL stays under docs/sql/*.sql ──"
 
 # This section checks specifically for executable DDL-looking statements outside
 # docs/sql learning references and archive material.
 DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' \
   "$REPO_ROOT/docs" --include='*.sql' 2>/dev/null \
-  | grep -v '/docs/sql/proposed-' \
+  | grep -v '/docs/sql/' \
   | grep -v '/docs/archive/' \
   | grep -v '/docs/dev-ops/' \
   || true)
@@ -383,31 +382,36 @@ else
   printf '%s\n' "$DDL_VIOLATIONS"
 fi
 
-# Also verify the 5 known learning DDL files exist
-PROPOSED_DDL_COUNT=$(find "$REPO_ROOT/docs/sql" -name 'proposed-*.sql' -type f 2>/dev/null | wc -l | tr -d ' ')
-if [[ "$PROPOSED_DDL_COUNT" -ge 5 ]]; then
-  pass "$PROPOSED_DDL_COUNT learning DDL files under docs/sql/ (expect >=5)"
-else
-  fail "Only $PROPOSED_DDL_COUNT learning DDL files found (expect >=5)"
-fi
+# Also verify the 5 known learning DDL files exist.
+LEARNING_DDL_FILES=(
+  "docs/sql/award-dispatch-task-outbox.sql"
+  "docs/sql/credit-award-task-outbox.sql"
+  "docs/sql/credit-trade-task-outbox.sql"
+  "docs/sql/quota-decrement-ledger.sql"
+  "docs/sql/rebate-task-outbox.sql"
+)
+
+for ddl in "${LEARNING_DDL_FILES[@]}"; do
+  assert_file "Learning DDL present: $ddl" "$REPO_ROOT/$ddl"
+done
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 7: Cross-reference to sibling validators
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 7. Compatible validators ──"
+echo "── 7. Sibling validators ──"
 
 SIBLING_VALIDATORS=(
   "scripts/validate-microservices-stack.sh"
-  "scripts/smoke-test-phase-1.sh"
+  "scripts/smoke-test-microservices.sh"
   "scripts/smoke-api.sh"
 )
 
 for sib in "${SIBLING_VALIDATORS[@]}"; do
   if [[ -x "$REPO_ROOT/$sib" ]]; then
-    pass "Compatible validator executable: $sib"
+    pass "Sibling validator executable: $sib"
   else
-    fail "Compatible validator missing or not executable: $sib"
+    fail "Sibling validator missing or not executable: $sib"
   fi
 done
 
@@ -415,6 +419,36 @@ done
 MICROSERVICES_MD="$REPO_ROOT/docs/MICROSERVICES.md"
 assert_file "MICROSERVICES.md is authoritative entry point" "$MICROSERVICES_MD"
 assert_pattern_present "MICROSERVICES.md declares itself authoritative" "$MICROSERVICES_MD" 'authoritative entry point'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Section 8: Final naming guardrail for current docs and scripts
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo "── 8. Final naming guardrail for docs and scripts ──"
+
+FINAL_STATE_FORBIDDEN_PATTERN="$(IFS='|'; echo \
+  "P""hase" \
+  "dark[ -]launch" \
+  "scaf""fold" \
+  "EXTERNAL-G""ATED" \
+  "repo-re""ady" \
+  "cut""over" \
+  "leg""acy" \
+  "proposed-on""ly")"
+
+FINAL_STATE_MATCHES=$(grep -RInE "$FINAL_STATE_FORBIDDEN_PATTERN" \
+  "$REPO_ROOT/README.md" "$REPO_ROOT/docs" "$REPO_ROOT/scripts" \
+  --include='*.md' --include='*.sh' 2>/dev/null \
+  | grep -v '/docs/archive/' \
+  | grep -v '/docs/dev-ops/' \
+  || true)
+
+if [[ -z "$FINAL_STATE_MATCHES" ]]; then
+  pass "Current docs and scripts use final architecture naming"
+else
+  fail "Current docs/scripts contain old architecture naming:"
+  printf '%s\n' "$FINAL_STATE_MATCHES" | sed 's#^#       #'
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Summary
@@ -430,8 +464,8 @@ echo ""
 if [[ "$FAIL" -eq 0 ]]; then
   echo "RESULT: ALL CHECKS PASSED — runtime safety guardrails intact"
   echo "        Default credential guards, mutual-exclusion validators,"
-  echo "        token revocation service, gateway rate limiter, compatibility"
-  echo "        mapper copies, and learning DDL isolation are all in place."
+  echo "        token revocation service, gateway rate limiter, shared mapper"
+  echo "        copies, and learning DDL isolation are all in place."
   exit 0
 else
   echo "RESULT: $FAIL CHECK(S) FAILED — review output above"

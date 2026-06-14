@@ -10,8 +10,8 @@ import java.io.Serializable;
 /**
  * Request DTO for the quota rollback (saga compensation) RPC.
  *
- * contract. Provider returns UN_ERROR until account-service
- * idempotency ledger is in place (B12+). No callers are wired at this stage.
+ * Requires the account-service idempotency ledger DDL and smoke validation when
+ * service-oriented quota decrement mode is enabled.
  */
 @Data
 @Builder

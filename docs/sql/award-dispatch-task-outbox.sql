@@ -1,14 +1,6 @@
--- Learning-environment DDL reference. Apply manually only in local study environments.
--- This repository does not auto-apply this DDL; keep it as an explicit local learning reference.
--- This DDL documents the intended replacement for award dispatch writes to the shared task table.
---
--- Runtime status:
---   AwardRepository now writes through IAwardDispatchTaskOutboxPort.
---   The default LocalAwardDispatchTaskOutboxPort still delegates to ITaskDao/shared task.
---   Switching to these tables is local learning validation and explicit configuration.
---
--- Sharding note: award_dispatch_task_outbox_000..003 follows the existing 2-DB / 4-table
--- router pattern keyed by user_id, matching user_award_record placement.
+-- Learning/reference DDL for the completed local microservices architecture.
+-- Apply locally to enable the full feature set in development.
+
 CREATE TABLE IF NOT EXISTS `award_dispatch_task_outbox_000` (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT                COMMENT 'Auto-increment row id',
     `user_id`       VARCHAR(32)  NOT NULL                               COMMENT 'User id (shard key)',

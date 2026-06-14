@@ -9,10 +9,9 @@ project:
 - Learning notes use one reading order: architecture, request flow, domain
   model, service boundary, data/tasks, MQ/XXL-Job, idempotency, rollback,
   monitoring, and code map.
-- SQL notes describe learning-environment DDL references instead of migration
-  proposals.
-- Script output describes final architecture validation while preserving
-  compatible filenames where existing docs may call them.
+- SQL notes describe learning-environment DDL references.
+- Script output describes final architecture validation with current script
+  names.
 
 ## Common Troubleshooting Paths
 

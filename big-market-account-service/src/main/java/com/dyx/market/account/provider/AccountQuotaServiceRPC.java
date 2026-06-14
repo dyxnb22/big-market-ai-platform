@@ -224,10 +224,9 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request) {
-        // real idempotent implementation.
+        // Idempotent service-oriented quota decrement implementation.
         // Ledger table (raffle_quota_decrement_ledger) must be applied to the shard DBs
-        // before this path is enabled in a shared environment. RaffleActivityPartakeService is
-        // NOT wired to call this via remote yet (remote-quota-decrement.enabled=false).
+        // when this mode is enabled in a shared environment.
         if (request == null
                 || StringUtils.isBlank(request.getUserId())
                 || request.getActivityId() == null

@@ -14,7 +14,7 @@ see which readiness topics were considered. It is not a current gate.
 | Monitoring | actuator, Prometheus config, Grafana config, trace filters |
 | Acceptance | Maven build, smoke scripts, final-architecture guardrail script |
 | Rollback | `docs/operations-checklist.md`, `docs/data-and-outbox.md` |
-| Old path cleanup | `docs/microservices-legacy-cleanup-inventory.md` |
+| Old path cleanup | `docs/old-path-cleanup-inventory.md` |
 
 ## Current Standard
 

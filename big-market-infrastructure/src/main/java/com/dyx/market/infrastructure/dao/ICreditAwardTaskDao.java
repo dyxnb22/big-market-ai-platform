@@ -16,7 +16,7 @@ import java.util.List;
  * updateDispatched / updateRetryFailed: routed via @DBRouter on userId field.
  *
  * NOTE: the credit_award_task_000..003 tables are learning-reference and must be applied to the
- * database (docs/sql/proposed-credit-award-task-outbox.sql) before enabling the flag.
+ * database (docs/sql/credit-award-task-outbox.sql) with this feature flag.
  */
 @Mapper
 @DBRouterStrategy(splitTable = true)

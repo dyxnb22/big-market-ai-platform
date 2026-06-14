@@ -1,7 +1,7 @@
 # Big Market Final-State Learning Notes
 
 This directory explains the finished local microservices learning project. The
-notes use the current repository as evidence and avoid migration diary wording.
+notes use the current repository as evidence and describe the completed system.
 
 ## Reading Order
 

@@ -106,7 +106,7 @@ public class AuthAccessController {
      * verify() calls will reject it.
      *
      * Idempotent — revoking an already-revoked or invalid token returns SUCCESS.
-     * When no revocation service is configured (monolith fallback),
+     * When no revocation service is configured in the embedded application,
      * returns a NOT_IMPLEMENTED response.
      */
     @RequestMapping(value = "logout", method = RequestMethod.POST)

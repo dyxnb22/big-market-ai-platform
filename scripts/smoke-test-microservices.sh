@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Microservices smoke test — validates the local microservices stack.
 #
-# The filename is kept for compatibility with existing local docs. The script
-# validates the final learning stack: gateway, auth, admin, market, chatbot,
-# message-job, account, and fulfillment services.
-# The canonical alias is:
-#   ./scripts/validate-microservices-stack.sh  ← orchestrates build + docker + this script
+# Validates the completed learning stack: gateway, auth, admin, market,
+# chatbot, message-job, account, and fulfillment services.
+# The full stack validator orchestrates build + docker + this script:
+#   ./scripts/validate-microservices-stack.sh
 #
-# Usage: ./scripts/smoke-test-phase-1.sh [gateway-host]
+# Usage: ./scripts/smoke-test-microservices.sh [gateway-host]
 # Default host: localhost
 #
 # Expected result: 18/18 PASS

@@ -138,9 +138,9 @@ automatically applied by this repository.
 For this learning environment the architecture is considered complete when:
 
 - `mvn clean package -DskipTests` succeeds.
-- `./scripts/validate-microservices-stack.sh` or the compatible smoke script
-  succeeds in a local Docker environment.
-- `./scripts/validate-microservices-phase-8-runtime-safety.sh` succeeds as a
+- `./scripts/validate-microservices-stack.sh` succeeds in a local Docker
+  environment.
+- `./scripts/validate-microservices-runtime-safety.sh` succeeds as a
   final-architecture guardrail validator.
 - Core flows can be explained from controller to domain service, repository,
   MQ/XXL-Job, and rollback/idempotency handling.
@@ -159,6 +159,6 @@ canary or observation period.
 - `docs/operations-checklist.md` — local operations checklist
 - `docs/data-and-outbox.md` — data, outbox, idempotency, and duplicate handling
 - `docs/microservices-dao-ownership.md` — table and DAO ownership matrix
-- `docs/microservices-legacy-cleanup-inventory.md` — old-path cleanup notes
-- `docs/microservices-phase-8.md` — archived historical notes, not current state
-- `docs/evidence/phase-8-evidence-pack.md` — archived evidence template, not current state
+- `docs/old-path-cleanup-inventory.md` — old-path cleanup notes
+- `docs/archive/microservices-historical-readiness-notes.md` — archived historical notes, not current state
+- `docs/archive/evidence-template-archive.md` — archived evidence template, not current state

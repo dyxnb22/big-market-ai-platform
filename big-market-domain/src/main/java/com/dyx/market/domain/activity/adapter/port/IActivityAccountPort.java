@@ -21,13 +21,14 @@ import java.math.BigDecimal;
  *   if the matching decrement was never applied.
  *
  * Local path (default, flag=false):
- *   LocalActivityAccountPort — no-op because RaffleActivityPartakeService still
+ *   LocalActivityAccountPort is a no-op because RaffleActivityPartakeService
  *   calls IActivityRepository.saveCreatePartakeOrderAggregate directly. This port
- *   is the configurable routing seam; the local impl is the safety fallback for B12+.
+ *   is the configurable routing seam; the local implementation is the default
+ *   local development mode.
  *
- * Remote path (flag=true, B12+):
- *   AccountRemoteActivityAccountPort routes to account-service via Dubbo.
- *   Not enabled until end-to-end idempotency validation passes.
+ * Service path (flag=true):
+ *   AccountRemoteActivityAccountPort routes to account-service via Dubbo and
+ *   requires local DDL plus smoke validation.
  */
 public interface IActivityAccountPort {
 

@@ -218,11 +218,11 @@ management:
 account:
   fulfillment:
     remote-award:
-      # default implementation; not active in big-market-app (uses LocalAwardDispatchAdapter).
+      # Local development default uses LocalAwardDispatchAdapter in big-market-app.
       enabled: false
   award-credit-outbox:
-    # default implementation. Default false — credit_award_task tables are learning-reference.
-    # Set true ONLY after applying docs/sql/proposed-credit-award-task-outbox.sql.
+    # Dedicated credit-award outbox dispatch mode for local learning DDL.
+    # Set true when docs/sql/credit-award-task-outbox.sql is applied and smoke validation passes.
     enabled: ${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:false}
 
 # 日志

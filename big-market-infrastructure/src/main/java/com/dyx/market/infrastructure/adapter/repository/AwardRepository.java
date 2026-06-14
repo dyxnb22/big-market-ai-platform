@@ -158,7 +158,7 @@ public class AwardRepository implements IAwardRepository {
             if (awardCreditOutboxEnabled) {
                 // Outbox path (flag=true): insert outbox row inside the same transaction as
                 // updateAwardRecordCompletedState. credit_award_task tables MUST exist before
-                // enabling this flag (apply docs/sql/proposed-credit-award-task-outbox.sql).
+                // running this mode with docs/sql/credit-award-task-outbox.sql applied.
                 // The DispatchCreditAwardTaskJob poller will dispatch the credit asynchronously.
                 transactionTemplate.execute(status -> {
                     try {

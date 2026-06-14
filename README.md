@@ -43,14 +43,13 @@ Gateway address: `http://127.0.0.1:8080`.
 ## Verify
 
 ```bash
-./scripts/smoke-test-phase-1.sh
+./scripts/smoke-test-microservices.sh
 ./scripts/validate-microservices-stack.sh
-./scripts/validate-microservices-phase-8-runtime-safety.sh
+./scripts/validate-microservices-runtime-safety.sh
 ./scripts/smoke-api.sh
 ```
 
-The script filenames are kept for compatibility with earlier local notes; their
-current output validates the final local microservices architecture.
+These commands validate the completed local microservices architecture.
 
 ## Frontend
 

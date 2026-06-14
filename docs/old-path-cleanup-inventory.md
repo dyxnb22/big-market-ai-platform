@@ -1,9 +1,9 @@
 # Old Path Cleanup Inventory
 
-This is a learning inventory for compatibility paths that should be understood
+This is a learning inventory for old local paths that should be understood
 before removing files. It is not a timed production cleanup plan.
 
-## RPC Providers Kept For Compatibility
+## Embedded RPC Providers
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RebateServiceRPC.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RaffleStrategyServiceRPC.java`
@@ -32,9 +32,9 @@ before removing files. It is not a timed production cleanup plan.
 - `LocalAwardActivityOrderPort`
 - `LocalDrawOutboxPort`
 
-## Mapper Compatibility Copies
+## Shared Mapper Copies
 
-Compatibility mapper directories exist in several service modules so each
+Shared mapper directories exist in several service modules so each
 service can run in the local learning stack with shared infrastructure classes.
 Do not remove a mapper until `rg` proves no active resource path loads it and
 `mvn clean package -DskipTests` still passes.
