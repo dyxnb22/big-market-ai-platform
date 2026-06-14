@@ -1,39 +1,51 @@
-# Big Market Final-State Learning Notes
+# Big Market 学习文档索引
 
-This directory explains the finished local microservices learning project. The
-notes use the current repository as evidence and describe the completed system.
+本目录是 Big Market 微服务项目的学习材料，基于完成态代码编写，可直接对照代码阅读。
 
-## Reading Order
+## 推荐学习顺序
 
-1. [03-architecture-overview.md](03-architecture-overview.md) - 总体架构
-2. [01-url-request-flows.md](01-url-request-flows.md) - 请求链路
-3. [02-business-flows-and-diagrams.md](02-business-flows-and-diagrams.md) - 领域模型
-4. [04-module-or-service-boundaries.md](04-module-or-service-boundaries.md) - 服务边界
-5. [00-learning-guide.md](00-learning-guide.md) - 数据与任务学习路线
-6. [08-technical-stack.md](08-technical-stack.md) - MQ/XXL-Job 和技术栈
-7. [06-high-concurrency-scenarios.md](06-high-concurrency-scenarios.md) - 幂等与一致性
+**第一阶段：建立整体认知**
+
+1. [03-architecture-overview.md](03-architecture-overview.md) - 整体架构与服务拓扑
+2. [04-module-or-service-boundaries.md](04-module-or-service-boundaries.md) - 模块职责与服务边界
+3. [13-ddd-and-design-patterns.md](13-ddd-and-design-patterns.md) - DDD 四层架构与设计模式（重点）
+
+**第二阶段：理解业务流程**
+
+4. [01-url-request-flows.md](01-url-request-flows.md) - 所有 URL 入口与请求流
+5. [02-business-flows-and-diagrams.md](02-business-flows-and-diagrams.md) - 7 个核心业务机制
+6. [12-raffle-strategy-algorithm.md](12-raffle-strategy-algorithm.md) - 抽奖策略算法详解（重点）
+
+**第三阶段：理解技术实现**
+
+7. [06-high-concurrency-scenarios.md](06-high-concurrency-scenarios.md) - 高并发与幂等设计
 8. [07-failure-degradation-and-resilience.md](07-failure-degradation-and-resilience.md) - 降级与回滚
-9. [10-problems-and-fixes.md](10-problems-and-fixes.md) 与 [11-review-rounds-and-final-check.md](11-review-rounds-and-final-check.md) - 监控、排查和验收
-10. [09-code-map.md](09-code-map.md) - 代码地图
+9. [05-authentication-and-authorization.md](05-authentication-and-authorization.md) - 鉴权体系
+10. [08-technical-stack.md](08-technical-stack.md) - 技术栈全览
 
-## Core Conclusion
+**第四阶段：面试备考**
 
-The project is a Java 8 + Spring Boot 2.7.12 multi-module microservices learning
-system. Runtime services include gateway, auth, admin, market, chatbot,
-message-job, account, fulfillment, rebate, and strategy. Shared modules provide
-domain models, repository adapters, API contracts, common types, DB routing,
-DCC, and rate limiting.
+11. [11-key-design-decisions.md](11-key-design-decisions.md) - 7 个关键设计决策与理由（面试必读）
+12. [14-interview-qa.md](14-interview-qa.md) - 20 道高频面试题 Q&A（面试必读）
 
-Important code paths:
+**参考工具**
 
-- `pom.xml`
-- `docker-compose.yml`
-- `big-market-gateway/src/main/resources/application.yml`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/http`
-- `big-market-domain/src/main/java/com/dyx/market/domain`
-- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository`
-- `big-market-message-job-service/src/main/java/com/dyx/market/message/job`
+- [09-code-map.md](09-code-map.md) - 代码跳转地图
+- [10-troubleshooting.md](10-troubleshooting.md) - 常见问题排查
+- [00-learning-guide.md](00-learning-guide.md) - 学习路径总览
 
-Local completion is verified by Maven build, smoke tests, runtime guardrail
-scripts, and the ability to explain raffle, credit, rebate, award, strategy,
-message, and rollback flows from code.
+## 项目核心信息
+
+| 维度 | 内容 |
+|------|------|
+| 语言/框架 | Java 8 + Spring Boot 2.7.12 |
+| 架构 | DDD 四层 + 10 个微服务 |
+| 核心技术 | Dubbo、Nacos、RabbitMQ、Redis/Redisson、MySQL、XXL-Job、ES |
+| 关键设计 | 责任链+规则树抽奖、Outbox 消息可靠投递、分库分表、适配器灰度切换 |
+
+关键代码入口：
+
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleActivityController.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/AbstractRaffleStrategy.java`
+- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`

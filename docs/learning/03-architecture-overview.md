@@ -31,8 +31,8 @@ flowchart TD
     Gateway --> Chatbot["chatbot-service:8084"]
     Market --> Account["account-service:8086"]
     Market --> Fulfillment["fulfillment-service:8087"]
-    Market --> Rebate["rebate-service:8088"]
-    Market --> Strategy["strategy-service:8089"]
+    Market -->|"Dubbo RPC\n(embedded by default)"| Rebate["rebate-service:8088"]
+    Market -->|"Dubbo RPC\n(embedded by default)"| Strategy["strategy-service:8089"]
     Market --> MQ["RabbitMQ"]
     MQ --> MessageJob["message-job-service:8085"]
     MessageJob --> XXL["XXL-Job Admin"]
@@ -43,6 +43,8 @@ flowchart TD
     Chatbot --> Nacos
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
+
+> **说明：** `rebate-service` 和 `strategy-service` 在默认配置下以 **embedded provider** 模式运行于 `market-service` 进程内（`rebate.embedded-rpc-provider.enabled=true`），docker-compose 默认栈不需要单独启动这两个容器。将 `embedded-rpc-provider.enabled` 改为 `false` 并启动对应服务容器，即可切换为独立进程 Dubbo RPC 模式。
 
 ## Main Responsibilities
 
