@@ -146,22 +146,27 @@ gateway:
 account:
   fulfillment:
     remote-award:
-      # default implementation; enable only after local validation + outbox local smoke validated.
+      # Service-oriented award dispatch mode through fulfillment-service.
       enabled: ${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:false}
   service:
     remote-credit-write:
-      # default implementation. Default false keeps message-job credit writes local.
+      # Service-oriented credit write mode. Default false keeps local development writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
     remote-quota-write:
-      # default implementation. Default false keeps message-job quota writes local.
+      # Service-oriented quota write mode. Default false keeps local development writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
   award-credit-outbox:
-    # default implementation. Default false — credit_award_task tables are learning-reference.
+    # Dedicated credit-award outbox dispatch mode.
     # Set true when docs/sql/credit-award-task-outbox.sql is applied and smoke validation passes.
-    # When false: AwardRepository uses direct user_credit_account write (unchanged from pre-B6).
+    # When false: AwardRepository uses direct user_credit_account write.
     # When true:  AwardRepository inserts credit_award_task outbox row; DispatchCreditAwardTaskJob
     #             poller dispatches credits asynchronously via IAccountCreditWriteAdapter.
     enabled: ${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:false}
+
+job:
+  shared-task-dispatch:
+    # Disable shared credit-award task dispatch when the dedicated outbox dispatcher owns it.
+    credit-award-disabled: ${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:false}
 
 management:
   endpoints:

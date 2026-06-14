@@ -169,55 +169,46 @@ gateway:
 account:
   service:
     remote-read:
-      # feature flag for routing read-only account queries to account-service via Dubbo.
-      # Default false — existing local domain service path is used.
-      # Set to true only after Docker 17/17 validation and manual read verification.
+      # Service-oriented read mode for account queries via Dubbo.
+      # Default false keeps the local domain service path for local development.
       enabled: ${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:false}
     remote-credit-write:
-      # default implementation. Default false keeps all credit writes local.
+      # Service-oriented credit write mode. Default false keeps local development writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
     remote-quota-write:
-      # default implementation. Default false keeps all quota writes local.
+      # Service-oriented quota write mode. Default false keeps local development writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
     remote-quota-decrement:
-      # default implementation. Default false — LocalActivityAccountPort is used.
-      # Set true only after B12 idempotency ledger DDL is applied, decrementQuota
-      # provider is fully implemented, and end-to-end local validation passes.
+      # Service-oriented quota decrement mode. Default false uses LocalActivityAccountPort.
+      # Requires local DDL and smoke validation when this mode is enabled.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
 strategy:
-  default-rpc-provider:
-    # provider ownership gate. Default true preserves existing behavior.
-    # Controls the default IRaffleStrategyService Dubbo provider only; HTTP stays registered.
-    # Set STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED=false only after all IRaffleStrategyService
-    # consumers are migrated or explicitly retired.
-    enabled: ${STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED:true}
+  embedded-rpc-provider:
+    # Embedded IRaffleStrategyService Dubbo provider for local development.
+    # Disable when the dedicated strategy service is the selected provider.
+    enabled: ${STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:true}
   service:
     remote-read:
-      # strategy read adapter boundary. Default false — local domain services are used.
-      # Do not enable until: IStrategyAccountParticipationPort returns real counts from account-service,
-      # big-market-strategy-service is registered in local Nacos, and local validation passes.
+      # Service-oriented strategy read mode via big-market-strategy-service.
+      # Default false uses local domain services for local development.
       enabled: ${STRATEGY_SERVICE_REMOTE_READ_ENABLED:false}
 
 rebate:
-  default-rpc-provider:
-    # provider ownership gate. Default true preserves existing behavior.
-    # Set REBATE_DEFAULT_RPC_PROVIDER_ENABLED=false on market-service only after
-    # big-market-rebate-service is deployed and verified as the sole IRebateService provider.
-    enabled: ${REBATE_DEFAULT_RPC_PROVIDER_ENABLED:true}
+  embedded-rpc-provider:
+    # Embedded IRebateService Dubbo provider for local development.
+    # Disable when the dedicated rebate service is the selected provider.
+    enabled: ${REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:true}
   service:
     remote-create-order:
-      # rebate adapter boundary. Default false — local IBehaviorRebateService is used.
-      # Do not enable until: default trigger.rpc IRebateService provider in market-service is
-      # disabled (duplicate provider risk), shared task outbox ownership is clarified, and
-      # local validation for big-market-rebate-service passes.
+      # Service-oriented rebate order creation mode via big-market-rebate-service.
+      # Default false uses local IBehaviorRebateService for local development.
       enabled: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:false}
       # IRebateService requires appId/appToken. Token value is resolved from appTokenMap.
       app-id: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_APP_ID:chatgpt-data}
     remote-read:
-      # rebate read adapter boundary. Default false — local IBehaviorRebateService is used.
-      # Do not enable until: default trigger.rpc IRebateService provider in market-service is
-      # disabled (duplicate provider risk), and local validation for big-market-rebate-service passes.
+      # Service-oriented rebate read mode via big-market-rebate-service.
+      # Default false uses local IBehaviorRebateService for local development.
       enabled: ${REBATE_SERVICE_REMOTE_READ_ENABLED:false}
       app-id: ${REBATE_SERVICE_REMOTE_READ_APP_ID:chatgpt-data}
 

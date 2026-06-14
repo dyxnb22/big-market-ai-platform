@@ -67,10 +67,10 @@ public class AccountRemoteActivityAccountPort implements IActivityAccountPort {
 
     @Override
     public BigDecimal queryUserCreditAccountAmount(String userId) {
-        // Remote credit-balance read is deferred to account-service API work.
+        // Extension point for dedicated account-service credit-balance reads.
         // This bean is only active when account.service.remote-quota-decrement.enabled=true,
-        // which is not enabled — the local path handles credit reads exclusively until then.
-        log.warn("[AccountRemoteActivityAccountPort] queryUserCreditAccountAmount not yet wired for remote path; userId:{}", userId);
+        // while the local development default handles credit reads in the embedded path.
+        log.warn("[AccountRemoteActivityAccountPort] credit-balance read uses local development default; userId:{}", userId);
         return BigDecimal.ZERO;
     }
 

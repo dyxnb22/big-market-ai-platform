@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Startup validator that prevents dangerous dual-path configurations.
  *
- * If BOTH a remote/routing flag AND its corresponding default provider/fallback
+ * If BOTH a service-oriented routing flag AND its corresponding embedded provider
  * flag are enabled simultaneously, the application refuses to start because
  * this would cause double-writes, double-dispatch, or duplicate provider
  * registration.
@@ -29,8 +29,8 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
     // Account credit write
     @Value("${account.service.remote-credit-write.enabled:false}")
     private boolean remoteCreditWrite;
-    // default credit write is always local until remote is cut over;
-    // guarding against ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED + default
+    // Credit writes use the local implementation unless service-oriented
+    // execution is explicitly enabled.
 
     // Account quota write
     @Value("${account.service.remote-quota-write.enabled:false}")
@@ -47,14 +47,14 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
     // Rebate
     @Value("${rebate.service.remote-create-order.enabled:false}")
     private boolean rebateRemoteCreateOrder;
-    @Value("${rebate.default-rpc-provider.enabled:true}")
-    private boolean rebateDefaultProvider;
+    @Value("${rebate.embedded-rpc-provider.enabled:true}")
+    private boolean rebateEmbeddedProvider;
 
     // Strategy
     @Value("${strategy.service.remote-read.enabled:false}")
     private boolean strategyRemoteRead;
-    @Value("${strategy.default-rpc-provider.enabled:true}")
-    private boolean strategyDefaultProvider;
+    @Value("${strategy.embedded-rpc-provider.enabled:true}")
+    private boolean strategyEmbeddedProvider;
 
     @Override
     public void run(String... args) {
@@ -65,18 +65,18 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
 
         List<String> violations = new ArrayList<>();
 
-        // Rebate: remote create-order + default provider = duplicate provider risk
-        if (rebateRemoteCreateOrder && rebateDefaultProvider) {
+        // Rebate: service create-order + embedded provider = duplicate provider risk
+        if (rebateRemoteCreateOrder && rebateEmbeddedProvider) {
             violations.add("rebate.service.remote-create-order.enabled=true AND "
-                    + "rebate.default-rpc-provider.enabled=true — duplicate IRebateService provider risk. "
-                    + "Disable the default provider before enabling remote rebate.");
+                    + "rebate.embedded-rpc-provider.enabled=true — duplicate IRebateService provider risk. "
+                    + "Run either the embedded provider or the dedicated rebate service provider.");
         }
 
-        // Strategy: remote read + default provider = duplicate provider risk
-        if (strategyRemoteRead && strategyDefaultProvider) {
+        // Strategy: service read + embedded provider = duplicate provider risk
+        if (strategyRemoteRead && strategyEmbeddedProvider) {
             violations.add("strategy.service.remote-read.enabled=true AND "
-                    + "strategy.default-rpc-provider.enabled=true — duplicate IRaffleStrategyService provider risk. "
-                    + "Disable the default provider before enabling remote strategy read.");
+                    + "strategy.embedded-rpc-provider.enabled=true — duplicate IRaffleStrategyService provider risk. "
+                    + "Run either the embedded provider or the dedicated strategy service provider.");
         }
 
         // Quota: remote decrement + remote quota write both on = unclear path

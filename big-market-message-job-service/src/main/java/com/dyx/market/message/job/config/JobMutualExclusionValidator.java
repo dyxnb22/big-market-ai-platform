@@ -17,7 +17,7 @@ import java.util.List;
  * task table and finds the same work items, duplicate dispatch occurs.
  *
  * This validator refuses startup when the outbox is enabled but the shared
- * task fallback is not explicitly disabled, or vice versa.
+ * shared task dispatch is not explicitly disabled, or vice versa.
  *
  * SAFETY: Read-only check. Never modifies config.
  * ROLLBACK: Set JOB_MUTUAL_EXCLUSION_GUARD_ENABLED=false to disable.
@@ -33,11 +33,10 @@ public class JobMutualExclusionValidator implements CommandLineRunner {
     private boolean awardCreditOutboxEnabled;
 
     /**
-     * When true, the shared task table fallback dispatcher (SendMessageTaskJob)
-     * should not also process credit-award tasks. This flag signals that the
-     * owner is aware of the shared task table overlap.
+     * When true, the shared task dispatcher (SendMessageTaskJob) does not
+     * process credit-award tasks while the dedicated outbox dispatcher owns them.
      */
-    @Value("${job.shared-task-fallback.credit-award-disabled:false}")
+    @Value("${job.shared-task-dispatch.credit-award-disabled:false}")
     private boolean sharedTaskCreditAwardDisabled;
 
     @Value("${account.service.remote-credit-write.enabled:false}")
@@ -52,14 +51,14 @@ public class JobMutualExclusionValidator implements CommandLineRunner {
 
         List<String> violations = new ArrayList<>();
 
-        // If outbox is enabled but shared task fallback is not explicitly disabled,
+        // If outbox is enabled but shared task dispatch is not explicitly disabled,
         // DispatchCreditAwardTaskJob and SendMessageTaskJob could both process
         // credit-award tasks from the shared task table.
         if (awardCreditOutboxEnabled && !sharedTaskCreditAwardDisabled) {
             violations.add("account.award-credit-outbox.enabled=true BUT "
-                    + "job.shared-task-fallback.credit-award-disabled=false — "
+                    + "job.shared-task-dispatch.credit-award-disabled=false — "
                     + "DispatchCreditAwardTaskJob and SendMessageTaskJob may both "
-                    + "process credit-award tasks. Set shared-task-fallback.credit-award-disabled=true "
+                    + "process credit-award tasks. Set shared-task-dispatch.credit-award-disabled=true "
                     + "or keep outbox disabled.");
         }
 

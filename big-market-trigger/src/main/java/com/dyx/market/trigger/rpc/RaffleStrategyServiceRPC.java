@@ -22,7 +22,7 @@ import java.util.List;
  * configurable for local service-oriented runs.
  */
 @DubboService(version = "1.0")
-@ConditionalOnProperty(name = "strategy.default-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "strategy.embedded-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RaffleStrategyServiceRPC implements IRaffleStrategyService {
 
     @Resource

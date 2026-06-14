@@ -155,7 +155,7 @@ if [[ ${#ALL_SVC_YMLS[@]} -gt 0 ]]; then
 fi
 
 # 1g. spring-config-token.xml must not contain the literal hardcoded Dubbo token.
-#     After migration, the token should be ${DUBBO_APP_TOKEN:...}.
+#     The token should be injected with ${DUBBO_APP_TOKEN:...}.
 if [[ ${#ALL_TOKEN_XMLS[@]} -gt 0 ]]; then
   assert_pattern_absent \
     "No bare hardcoded Dubbo app token in spring-config-token.xml files" \
@@ -194,50 +194,50 @@ assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_J
 # Section 2: Flag mutual-exclusion guardrails (config-file defaults)
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 2.1 Mutual-exclusion: default provider vs remote provider ──"
+echo "── 2.1 Mutual-exclusion: embedded provider vs service provider ──"
 
-# Rebate: default provider must NOT be default-true WHILE remote create is default-true
-REBATE_LEGACY_DEFAULT_TRUE=0
+# Rebate: embedded provider must NOT be default-true WHILE service create is default-true
+REBATE_EMBEDDED_DEFAULT_TRUE=0
 REBATE_REMOTE_DEFAULT_TRUE=0
 for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
            "$REPO_ROOT"/big-market-app/src/main/resources; do
   [[ -d "$dir" ]] || continue
-  if grep -RqE 'REBATE_DEFAULT_RPC_PROVIDER_ENABLED:-true|rebate\.default-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    REBATE_LEGACY_DEFAULT_TRUE=1
+  if grep -RqE 'REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true|rebate\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
+    REBATE_EMBEDDED_DEFAULT_TRUE=1
   fi
   if grep -RqE 'REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-true|rebate\.service\.remote-create-order\.enabled.*:.*true' "$dir" 2>/dev/null; then
     REBATE_REMOTE_DEFAULT_TRUE=1
   fi
 done
-if [[ "$REBATE_LEGACY_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Rebate default provider AND remote create-order both default to true — dual-provider risk"
+if [[ "$REBATE_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
+  fail "Rebate embedded provider AND remote create-order both default to true — dual-provider risk"
 else
-  pass "Rebate dual-provider config: default=$REBATE_LEGACY_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
+  pass "Rebate dual-provider config: embedded=$REBATE_EMBEDDED_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
 fi
 
-# Strategy: default provider must NOT be default-true WHILE remote read is default-true
-STRATEGY_LEGACY_DEFAULT_TRUE=0
+# Strategy: embedded provider must NOT be default-true WHILE remote read is default-true
+STRATEGY_EMBEDDED_DEFAULT_TRUE=0
 STRATEGY_REMOTE_DEFAULT_TRUE=0
 for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
            "$REPO_ROOT"/big-market-app/src/main/resources; do
   [[ -d "$dir" ]] || continue
-  if grep -RqE 'STRATEGY_DEFAULT_RPC_PROVIDER_ENABLED:-true|strategy\.default-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    STRATEGY_LEGACY_DEFAULT_TRUE=1
+  if grep -RqE 'STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:-true|strategy\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
+    STRATEGY_EMBEDDED_DEFAULT_TRUE=1
   fi
   if grep -RqE 'STRATEGY_SERVICE_REMOTE_READ_ENABLED:-true|strategy\.service\.remote-read\.enabled.*:.*true' "$dir" 2>/dev/null; then
     STRATEGY_REMOTE_DEFAULT_TRUE=1
   fi
 done
-if [[ "$STRATEGY_LEGACY_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Strategy default provider AND remote read both default to true — dual-provider risk"
+if [[ "$STRATEGY_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
+  fail "Strategy embedded provider AND remote read both default to true — dual-provider risk"
 else
-  pass "Strategy dual-provider config: default=$STRATEGY_LEGACY_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
+  pass "Strategy dual-provider config: embedded=$STRATEGY_EMBEDDED_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
 fi
 
 echo ""
-echo "── 2.2 Mutual-exclusion: shared task fallback vs per-domain outbox ──"
+echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ──"
 
-# Shared task fallback (SendMessageTaskJob) must NOT be active while
+# Shared task dispatch (SendMessageTaskJob) must NOT be active while
 # per-domain outbox dispatchers (DispatchCreditAwardTaskJob) are enabled.
 MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
 if [[ -f "$MESSAGE_JOB_YML" ]]; then
@@ -246,13 +246,13 @@ if [[ -f "$MESSAGE_JOB_YML" ]]; then
   else
     OUTBOX_ENABLED=0
   fi
-  if grep -qE 'job\.shared-task-fallback\.credit-award-disabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
+  if grep -qE 'job\.shared-task-dispatch\.credit-award-disabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
     SHARED_TASK_DISABLED=1
   else
     SHARED_TASK_DISABLED=0
   fi
   if [[ "$OUTBOX_ENABLED" -gt 0 && "$SHARED_TASK_DISABLED" -eq 0 ]]; then
-    fail "message-job outbox enabled but shared-task-fallback.credit-award-disabled is not true — dual-dispatch risk"
+    fail "message-job outbox enabled but shared-task-dispatch.credit-award-disabled is not true — dual-dispatch risk"
   else
     pass "message-job outbox+shared-task config: outbox_enabled_default=$OUTBOX_ENABLED shared_task_disabled=$SHARED_TASK_DISABLED (safe)"
   fi
