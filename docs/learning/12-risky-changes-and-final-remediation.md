@@ -12,7 +12,7 @@ idempotency checks, and rollback checks before they are treated as complete.
 | --- | --- | --- |
 | Remote quota decrement | Draw depends on exactly-once quota consumption | Keep ledger idempotency and rollback paths documented and testable |
 | Award-credit outbox | Changes award completion from direct write to async dispatch | Keep DDL, dispatcher, and duplicate-key behavior documented |
-| Per-domain task outboxes | Changes task ownership and retry surfaces | Keep outbox DDL references and shared task compatibility paths documented |
+| Per-domain task outboxes | Changes task ownership and retry surfaces | Keep outbox DDL references and shared task dispatch paths documented |
 | DLQ replay | Automatic replay can duplicate credit or award effects | Keep DLQ logging and require manual idempotency review before replay |
 | Real user system | Replaces config users with persistent accounts | Outside current portfolio scope |
 

@@ -82,6 +82,6 @@ smoke checks. The rollback surface is documented in
 ## Old Path Cleanup
 
 Old path cleanup is treated as a learning inventory, not as a timed production
-removal process. Keep compatibility adapters and mapper copies when they are
+removal process. Keep local adapters and shared mapper copies when they are
 referenced by active modules. Remove only after build, smoke tests, and code
 references prove they are unused.

@@ -159,6 +159,6 @@ canary or observation period.
 - `docs/operations-checklist.md` — local operations checklist
 - `docs/data-and-outbox.md` — data, outbox, idempotency, and duplicate handling
 - `docs/microservices-dao-ownership.md` — table and DAO ownership matrix
-- `docs/microservices-legacy-cleanup-inventory.md` — old-path cleanup notes
-- `docs/microservices-phase-8.md` — archived historical notes, not current state
-- `docs/evidence/phase-8-evidence-pack.md` — archived evidence template, not current state
+- `docs/old-path-cleanup-inventory.md` — old-path cleanup notes
+- `docs/archive/microservices-historical-readiness-notes.md` — archived historical notes, not current state
+- `docs/archive/evidence-template-archive.md` — archived evidence template, not current state

@@ -40,7 +40,7 @@ strategy; task / outbox; query / ES; auth; admin / config; chatbot.
 
 Boundary enforcement requires this file to list DAO owners before new DAO or
 repository boundary changes. Historical decision notes live in
-`docs/archive/phases.md`.
+`docs/archive/microservices-historical-docs-index.md`.
 
 ## Cross-References
 
