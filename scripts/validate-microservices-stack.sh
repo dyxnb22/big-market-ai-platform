@@ -145,7 +145,7 @@ fi
 
 echo "Step 4/4: Running smoke test"
 echo "-----------------------------------------------------------------"
-if ! ./scripts/smoke-test-phase-1.sh "$HOST"; then
+if ! ./scripts/smoke-test-microservices.sh "$HOST"; then
   echo ""
   echo "SMOKE TEST FAILED. Check the failures above, then:"
   echo ""
@@ -156,7 +156,7 @@ if ! ./scripts/smoke-test-phase-1.sh "$HOST"; then
   echo "  docker compose logs --tail=50 big-market-message-job-service # job logs"
   echo ""
   echo "  # Re-run just the smoke test after fixing:"
-  echo "  ./scripts/smoke-test-phase-1.sh"
+  echo "  ./scripts/smoke-test-microservices.sh"
   exit 1
 fi
 

@@ -65,7 +65,7 @@ Run:
 
 ```bash
 mvn clean package -DskipTests
-./scripts/validate-microservices-phase-8-runtime-safety.sh
+./scripts/validate-microservices-runtime-safety.sh
 ./scripts/validate-microservices-stack.sh
 ```
 

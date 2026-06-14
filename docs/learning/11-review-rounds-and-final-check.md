@@ -19,14 +19,13 @@
 
 ```bash
 mvn clean package -DskipTests
-./scripts/validate-microservices-phase-8-runtime-safety.sh
+./scripts/validate-microservices-runtime-safety.sh
 ./scripts/validate-microservices-stack.sh
 ./scripts/smoke-api.sh
 ```
 
-The compatible script name
-`scripts/validate-microservices-phase-8-runtime-safety.sh` is retained for
-existing references, but its output describes final architecture guardrails.
+`scripts/validate-microservices-runtime-safety.sh` validates final architecture
+guardrails without requiring Docker or network access.
 
 ## Monitoring And Investigation
 

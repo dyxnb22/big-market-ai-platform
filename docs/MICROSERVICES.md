@@ -138,9 +138,9 @@ automatically applied by this repository.
 For this learning environment the architecture is considered complete when:
 
 - `mvn clean package -DskipTests` succeeds.
-- `./scripts/validate-microservices-stack.sh` or the compatible smoke script
-  succeeds in a local Docker environment.
-- `./scripts/validate-microservices-phase-8-runtime-safety.sh` succeeds as a
+- `./scripts/validate-microservices-stack.sh` succeeds in a local Docker
+  environment.
+- `./scripts/validate-microservices-runtime-safety.sh` succeeds as a
   final-architecture guardrail validator.
 - Core flows can be explained from controller to domain service, repository,
   MQ/XXL-Job, and rollback/idempotency handling.

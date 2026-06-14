@@ -3,12 +3,12 @@
 #
 # Validates final-architecture guardrails and verifies that no regression has
 # occurred in default credentials, mutually exclusive flag paths,
-# compatibility mapper copies, learning DDL isolation, or the presence of
-# safety hardening classes.
+# shared mapper copies, learning DDL isolation, or the presence of safety
+# hardening classes.
 #
 # This validator complements (does not replace):
 #   validate-microservices-stack.sh
-#   smoke-test-phase-1.sh
+#   smoke-test-microservices.sh
 #   smoke-api.sh
 #
 # Deterministic, repo-only, no DB/MQ/Docker/network.
@@ -399,7 +399,7 @@ echo "── 7. Compatible validators ──"
 
 SIBLING_VALIDATORS=(
   "scripts/validate-microservices-stack.sh"
-  "scripts/smoke-test-phase-1.sh"
+  "scripts/smoke-test-microservices.sh"
   "scripts/smoke-api.sh"
 )
 
