@@ -267,8 +267,8 @@ FLAG_VALIDATOR="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/marke
 JOB_VALIDATOR="$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/JobMutualExclusionValidator.java"
 
 assert_file "FlagMutualExclusionValidator.java exists" "$FLAG_VALIDATOR"
-assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateRemoteCreateOrder.*rebateDefaultProvider|rebate.*duplicate'
-assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyDefaultProvider|strategy.*duplicate'
+assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateRemoteCreateOrder.*rebateEmbeddedProvider|rebate.*duplicate'
+assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyEmbeddedProvider|strategy.*duplicate'
 assert_pattern_present "FlagMutualExclusionValidator has disable flag" "$FLAG_VALIDATOR" 'FLAG_MUTUAL_EXCLUSION_GUARD_ENABLED'
 
 assert_file "JobMutualExclusionValidator.java exists" "$JOB_VALIDATOR"
@@ -419,6 +419,36 @@ done
 MICROSERVICES_MD="$REPO_ROOT/docs/MICROSERVICES.md"
 assert_file "MICROSERVICES.md is authoritative entry point" "$MICROSERVICES_MD"
 assert_pattern_present "MICROSERVICES.md declares itself authoritative" "$MICROSERVICES_MD" 'authoritative entry point'
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Section 8: Final naming guardrail for current docs and scripts
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo "── 8. Final naming guardrail for docs and scripts ──"
+
+FINAL_STATE_FORBIDDEN_PATTERN="$(IFS='|'; echo \
+  "P""hase" \
+  "dark[ -]launch" \
+  "scaf""fold" \
+  "EXTERNAL-G""ATED" \
+  "repo-re""ady" \
+  "cut""over" \
+  "leg""acy" \
+  "proposed-on""ly")"
+
+FINAL_STATE_MATCHES=$(grep -RInE "$FINAL_STATE_FORBIDDEN_PATTERN" \
+  "$REPO_ROOT/README.md" "$REPO_ROOT/docs" "$REPO_ROOT/scripts" \
+  --include='*.md' --include='*.sh' 2>/dev/null \
+  | grep -v '/docs/archive/' \
+  | grep -v '/docs/dev-ops/' \
+  || true)
+
+if [[ -z "$FINAL_STATE_MATCHES" ]]; then
+  pass "Current docs and scripts use final architecture naming"
+else
+  fail "Current docs/scripts contain old architecture naming:"
+  printf '%s\n' "$FINAL_STATE_MATCHES" | sed 's#^#       #'
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Summary
