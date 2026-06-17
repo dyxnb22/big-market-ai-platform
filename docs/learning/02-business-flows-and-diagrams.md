@@ -120,10 +120,11 @@ flowchart TD
 
 ## 机制 6：运营上架和查询
 
-- Business meaning: 管理员查询 ES 中的抽奖订单、查询上架列表、把 staged 活动改为 active 并装配。
+- Business meaning: 管理员查询 ES 中的抽奖订单、查询上架列表、将 `raffle_activity_stage` 从 `create` 改为 `active` 并触发活动装配（`armory`）。
 - Code location: `ErpOperateController`、`RaffleActivityStageService`、`ESUserRaffleOrderRepository`。
 - Auth: `X-Admin-Token` 或管理员 JWT。
-- Data read/write: ES 查询、`raffle_activity_stage` 更新。
+- Data read/write: ES 查询、`raffle_activity_stage` 状态更新（`create` / `active` / `expire`）。活动本身的开闭状态在 `raffle_activity.state`（`create` / `open` / `close` / `restart`），与上架表状态是两套字段。
+- ES 同步原理见 [17-canal-es-sync.md](17-canal-es-sync.md)。
 
 ## 机制 7：AI Chat 积分消费
 

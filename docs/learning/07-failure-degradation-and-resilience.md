@@ -63,3 +63,28 @@ For local learning, rollback means returning configuration to the default local
 development values, stopping dispatch jobs before changing outbox behavior, and
 rerunning smoke checks. Detailed steps are in `docs/operations-checklist.md`
 and `docs/production-readiness-learning.md`.
+
+## Risky Change Areas
+
+The project is kept stable for learning. Changes that alter credit, quota,
+award, or rebate semantics need DDL review, smoke tests, idempotency checks,
+and rollback verification before they are treated as complete.
+
+| Area | Why risky | Learning treatment |
+| --- | --- | --- |
+| Remote quota decrement | Draw depends on exactly-once quota consumption | Keep ledger idempotency and rollback paths documented and testable |
+| Award-credit outbox | Award completion moves from direct write to async dispatch | Keep DDL, dispatcher, and duplicate-key behavior documented |
+| Per-domain task outboxes | Changes task ownership and retry surfaces | Keep outbox DDL references and shared task dispatch paths documented |
+| DLQ replay | Automatic replay can duplicate credit or award effects | Keep DLQ logging; require manual idempotency review before replay |
+| Real user system | Replaces config users with persistent accounts | Outside current portfolio scope |
+
+Rollback principles:
+
+- Prefer config rollback for service route and write-adapter choices.
+- Preserve idempotency keys: `out_business_no`, `award_order_id`,
+  `message_id`, `requestId`, and quota ledger keys.
+- Stop dispatch jobs before changing outbox ownership.
+- Verify account balances, quota surplus, award records, and task state after
+  any retry or rollback exercise.
+
+See also `docs/data-and-outbox.md` and `archive/risky-changes-remediation.md`.
