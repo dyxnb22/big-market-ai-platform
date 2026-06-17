@@ -10,22 +10,17 @@ import com.dyx.market.domain.strategy.service.IRaffleStrategy;
 import com.dyx.market.domain.strategy.service.armory.IStrategyArmory;
 import com.dyx.market.domain.strategy.service.rule.chain.impl.RuleWeightLogicChain;
 import com.dyx.market.domain.strategy.service.rule.tree.impl.RuleLockLogicTreeNode;
-import com.dyx.market.types.common.Constants;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RDelayedQueue;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥

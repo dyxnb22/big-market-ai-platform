@@ -9,7 +9,6 @@ import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +28,8 @@ public class AuthAccessController {
     @Resource
     private IAuthService authService;
 
-    /** Optional — present only when TokenRevocationConfig provides a bean. */
-    @Autowired(required = false)
+    /** Injected from shared {@link com.dyx.market.domain.auth.config.TokenRevocationConfig}. */
+    @Resource
     private ITokenRevocationService tokenRevocationService;
 
     /**
@@ -105,19 +104,10 @@ public class AuthAccessController {
      * Revoke/logout: adds the token's jti to the blacklist so subsequent
      * verify() calls will reject it.
      *
-     * Idempotent — revoking an already-revoked or invalid token returns SUCCESS.
-     * When no revocation service is configured in the embedded application,
-     * returns a NOT_IMPLEMENTED response.
+     * Idempotent - revoking an already-revoked token returns SUCCESS.
      */
     @RequestMapping(value = "logout", method = RequestMethod.POST)
     public Response<String> logout(@RequestHeader("Authorization") String token) {
-        if (tokenRevocationService == null) {
-            log.warn("[AuthAccessController] logout called but no ITokenRevocationService is configured");
-            return Response.<String>builder()
-                    .code(ResponseCode.UN_ERROR.getCode())
-                    .info("Token revocation is not available in this deployment mode")
-                    .build();
-        }
         try {
             String jti = authService.extractJti(token);
             if (jti == null) {

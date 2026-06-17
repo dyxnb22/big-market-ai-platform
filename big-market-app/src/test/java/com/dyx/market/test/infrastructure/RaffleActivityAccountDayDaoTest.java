@@ -28,7 +28,7 @@ public class RaffleActivityAccountDayDaoTest {
         RaffleActivityAccountDay raffleActivityAccountDay = new RaffleActivityAccountDay();
         raffleActivityAccountDay.setActivityId(100301L);
         raffleActivityAccountDay.setUserId("xiaofuge");
-        raffleActivityAccountDay.setDay(raffleActivityAccountDay.currentDay());
+        raffleActivityAccountDay.setDay(RaffleActivityAccountDay.currentDay());
         Integer dayPartakeCount = raffleActivityAccountDayDao.queryRaffleActivityAccountDayPartakeCount(raffleActivityAccountDay);
         log.info("测试结果:{}", dayPartakeCount);
     }

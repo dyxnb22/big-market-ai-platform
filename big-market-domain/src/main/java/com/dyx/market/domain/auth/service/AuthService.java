@@ -17,7 +17,7 @@ public class AuthService extends AbstractAuthService {
 
     private static final long TOKEN_TTL_MILLIS = 24 * 60 * 60 * 1000L;
 
-    /** Optional — only present when auth-service provides a revocation bean. */
+    /** Optional for legacy launchers; microservices get this from TokenRevocationConfig. */
     @Autowired(required = false)
     private ITokenRevocationService tokenRevocationService;
 
@@ -41,7 +41,7 @@ public class AuthService extends AbstractAuthService {
         if (tokenRevocationService != null) {
             String jti = extractJti(token);
             if (jti != null && tokenRevocationService.isRevoked(jti)) {
-                log.warn("[AuthService] token rejected — jti:{} is revoked", jti);
+                log.warn("[AuthService] token rejected - jti:{} is revoked", jti);
                 return false;
             }
         }

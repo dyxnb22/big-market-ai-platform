@@ -1,32 +1,24 @@
-package com.dyx.market.auth.service.config;
+package com.dyx.market.domain.auth.service;
 
-import com.dyx.market.domain.auth.service.ITokenRevocationService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Redis-backed token revocation.
+ * Redis-backed token revocation shared across auth, market, and admin services.
  *
- * ACTIVATION: Requires a RedissonClient bean on the classpath AND
- * token-revocation.redis.enabled=true. Until then, the default
- * InMemoryTokenRevocationService handles revocation.
- *
- * To activate: add Redisson dependency to auth-service and set
- * TOKEN_REVOCATION_REDIS_ENABLED=true.
- *
- * Implementation note: this class deliberately avoids compile-time
- * dependency on Redisson. At runtime the bean factory uses reflection
- * to construct it when RedissonClient is available.
+ * Uses reflection so domain does not require a compile-time Redisson dependency.
+ * A {@code org.redisson.api.RedissonClient} bean must be present when
+ * {@code token-revocation.redis.enabled=true}.
  */
 @Slf4j
 public class RedisTokenRevocationService implements ITokenRevocationService {
 
     private static final String REVOKED_KEY_PREFIX = "jwt:revoked:";
 
-    private final Object redissonClient; // org.redisson.api.RedissonClient at runtime
+    private final Object redissonClient;
 
     public RedisTokenRevocationService(Object redissonClient) {
         this.redissonClient = redissonClient;
-        log.info("[RedisTokenRevocationService] active — using Redis for token revocation");
+        log.info("[RedisTokenRevocationService] active - using Redis for token revocation");
     }
 
     @Override
@@ -34,7 +26,6 @@ public class RedisTokenRevocationService implements ITokenRevocationService {
         long ttlSeconds = Math.max(1, (expiresAtMillis - System.currentTimeMillis()) / 1000);
         String key = REVOKED_KEY_PREFIX + jti;
         try {
-            // Reflection: redissonClient.getBucket(key).set("revoked", ttlSeconds, TimeUnit.SECONDS)
             Object bucket = redissonClient.getClass().getMethod("getBucket", String.class)
                     .invoke(redissonClient, key);
             bucket.getClass().getMethod("set", Object.class, long.class, java.util.concurrent.TimeUnit.class)
@@ -42,6 +33,7 @@ public class RedisTokenRevocationService implements ITokenRevocationService {
             log.info("[RedisTokenRevocationService] revoked jti:{} ttl:{}s", jti, ttlSeconds);
         } catch (Exception e) {
             log.error("[RedisTokenRevocationService] failed to revoke jti:{}", jti, e);
+            throw new IllegalStateException("Failed to revoke token in Redis", e);
         }
     }
 
@@ -52,13 +44,14 @@ public class RedisTokenRevocationService implements ITokenRevocationService {
                     .invoke(redissonClient, REVOKED_KEY_PREFIX + jti);
             return (boolean) bucket.getClass().getMethod("isExists").invoke(bucket);
         } catch (Exception e) {
-            log.error("[RedisTokenRevocationService] failed to check jti:{}", jti, e);
-            return false;
+            // Fail closed: treat Redis errors as revoked so logout/blacklist cannot be bypassed.
+            log.error("[RedisTokenRevocationService] failed to check jti:{} - denying token", jti, e);
+            return true;
         }
     }
 
     @Override
     public long size() {
-        return -1; // Expensive in Redis; use prometheus metrics instead
+        return -1;
     }
 }

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -271,6 +272,7 @@ public class ChatbotController {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private String callDeepSeek(String userMessage, String apiKey) {
         String baseUrl = platformConfigService.getValue("chatbot", "baseUrl", deepseekBaseUrl);
         String model   = platformConfigService.getValue("chatbot", "model",   deepseekModel);
@@ -290,7 +292,12 @@ public class ChatbotController {
         body.put("stream", false);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                entity,
+                new ParameterizedTypeReference<Map<String, Object>>() {
+                });
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");

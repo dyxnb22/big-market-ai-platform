@@ -1,15 +1,11 @@
 package com.dyx.market.domain.strategy.model.valobj;
 
-import com.dyx.market.types.common.Constants;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥

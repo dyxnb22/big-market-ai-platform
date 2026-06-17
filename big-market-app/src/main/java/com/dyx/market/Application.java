@@ -8,6 +8,13 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+/**
+ * Legacy monolith launcher kept for integration tests and historical comparison.
+ * Use the microservice launchers in {@code docker-compose.yml} for the supported path.
+ *
+ * @deprecated See {@code big-market-app/README.md}.
+ */
+@Deprecated
 @SpringBootApplication
 @Configurable
 @EnableScheduling

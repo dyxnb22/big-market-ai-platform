@@ -3,7 +3,6 @@ package com.dyx.market.domain.award.service.distribute.impl;
 import com.dyx.market.domain.award.adapter.port.IAwardPort;
 import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
-import com.dyx.market.domain.award.service.IAwardService;
 import com.dyx.market.domain.award.service.distribute.IDistributeAward;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;

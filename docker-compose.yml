@@ -32,6 +32,9 @@ services:
       - APP_AUTH_DEV_USERS=${APP_AUTH_DEV_USERS:-xiaofuge:demo,admin:admin}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TOKEN_REVOCATION_REDIS_ENABLED=true
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -59,6 +62,9 @@ services:
       - ADMIN_USER_IDS=${ADMIN_USER_IDS:-admin}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TOKEN_REVOCATION_REDIS_ENABLED=true
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
     volumes:
@@ -130,6 +136,7 @@ services:
       - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - TOKEN_REVOCATION_REDIS_ENABLED=true
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=${RABBITMQ_USER:-admin}

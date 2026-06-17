@@ -9,24 +9,27 @@ Code paths:
 - `big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/AuthService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/ITokenRevocationService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/config/TokenRevocationConfig.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/util/JwtTokenUtils.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java`
 
 `AuthAccessController.login` validates configured learning users from
 `app.auth.dev-users`, calls `AuthService.createToken`, and returns a JWT with
 `openId`, `jti`, `iat`, `exp`, and `subject`. `verify` checks token validity.
-`logout` extracts `jti` and records token revocation when the revocation
-service is available.
+`logout` extracts `jti` and records token revocation in the shared
+`ITokenRevocationService` bean (in-memory locally, Redis when
+`token-revocation.redis.enabled=true` in Docker).
 
 ## User Authorization
 
 User APIs are guarded by `TokenAuthInterceptor`:
 
 - `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
-- `big-market-app/src/main/java/com/dyx/market/config/TokenAuthInterceptor.java`
 
-The interceptor validates `Authorization`, writes `userId` into the request,
-and token-aware controller methods use that value instead of trusting request
-body user ids.
+The legacy monolith copy under `big-market-app` is deprecated; see
+`big-market-app/README.md`. The interceptor validates `Authorization`, writes
+`userId` into the request, and token-aware controller methods use that value
+instead of trusting request body user ids.
 
 Typical protected APIs:
 

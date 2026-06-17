@@ -103,7 +103,7 @@ public class DefaultCredentialGuard implements InitializingBean {
     }
 
     private void check(String propertyName, String value, Set<String> violations) {
-        if (value == null || value.isBlank()) return;
+        if (value == null || value.trim().isEmpty()) return;
         for (String pattern : DANGEROUS_PATTERNS) {
             if (value.equalsIgnoreCase(pattern) || value.contains(pattern)) {
                 violations.add("  - " + propertyName + " contains default: '" + pattern + "'");

@@ -1,6 +1,5 @@
 package com.dyx.market.domain.award.adapter.port;
 
-import java.io.IOException;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥

@@ -4,7 +4,6 @@ import com.dyx.market.types.event.BaseEvent;
 import com.dyx.market.types.common.OrderIdGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.util.Date;
 

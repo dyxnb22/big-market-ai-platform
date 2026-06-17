@@ -38,6 +38,7 @@ public class CreatePartakeOrderAggregate {
     /**
      * 是否存在月账户
      */
+    @Builder.Default
     private boolean isExistAccountMonth = true;
 
     /**
@@ -48,6 +49,7 @@ public class CreatePartakeOrderAggregate {
     /**
      * 是否存在日账户
      */
+    @Builder.Default
     private boolean isExistAccountDay = true;
 
     /**

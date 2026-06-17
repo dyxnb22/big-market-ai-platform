@@ -19,6 +19,10 @@ app:
     token: ${ADMIN_TOKEN:admin-dev-token}
     user-ids: ${ADMIN_USER_IDS:admin}
 
+token-revocation:
+  redis:
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+
 spring:
   rabbitmq:
     addresses: ${RABBITMQ_HOST:127.0.0.1}

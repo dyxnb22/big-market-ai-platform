@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,8 +68,9 @@ public class RateLimiterConfig {
                 if (!enabled) {
                     return chain.filter(exchange);
                 }
-                String ip = exchange.getRequest().getRemoteAddress() != null
-                        ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()
+                InetSocketAddress remoteAddress = exchange.getRequest().getRemoteAddress();
+                String ip = remoteAddress != null && remoteAddress.getAddress() != null
+                        ? remoteAddress.getAddress().getHostAddress()
                         : "unknown";
                 String path = exchange.getRequest().getURI().getPath();
                 String[] segments = path.split("/");

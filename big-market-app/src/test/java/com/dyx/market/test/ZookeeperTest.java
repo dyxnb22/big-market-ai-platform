@@ -41,7 +41,6 @@ public class ZookeeperTest {
     @Test
     public void createNode() throws Exception {
         String path = "/big-market-dcc/config/downgradeSwitch/test/a";
-        String data = "0";
         if (null == curatorFramework.checkExists().forPath(path)) {
             curatorFramework.create().creatingParentsIfNeeded().forPath(path);
         }
@@ -141,7 +140,7 @@ public class ZookeeperTest {
         String path = "/big-market-dcc/config/downgradeSwitch";
         String fullClassName = "";
         String jsonStr = new String(curatorFramework.getData().forPath(path), StandardCharsets.UTF_8);
-        Class clazz = Class.forName(fullClassName);
+        Class<?> clazz = Class.forName(fullClassName);
         log.info("测试结果：{}", JSON.parseObject(jsonStr, clazz));
     }
     

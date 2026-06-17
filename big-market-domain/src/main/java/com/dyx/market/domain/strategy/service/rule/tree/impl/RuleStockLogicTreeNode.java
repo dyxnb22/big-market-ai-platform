@@ -6,7 +6,6 @@ import com.dyx.market.domain.strategy.repository.IStrategyRepository;
 import com.dyx.market.domain.strategy.service.armory.IStrategyDispatch;
 import com.dyx.market.domain.strategy.service.rule.tree.ILogicTreeNode;
 import com.dyx.market.domain.strategy.service.rule.tree.factory.DefaultTreeFactory;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

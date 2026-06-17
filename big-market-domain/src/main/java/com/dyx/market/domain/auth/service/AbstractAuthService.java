@@ -1,5 +1,6 @@
 package com.dyx.market.domain.auth.service;
 
+import com.dyx.market.domain.auth.util.JwtTokenUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
@@ -73,7 +74,7 @@ public abstract class AbstractAuthService implements IAuthService {
                 // 设置签名的秘钥
                 .setSigningKey(base64EncodedSecretKey)
                 // 设置需要解析的 jwt
-                .parseClaimsJws(jwtToken)
+                .parseClaimsJws(JwtTokenUtils.extractToken(jwtToken))
                 .getBody();
     }
 

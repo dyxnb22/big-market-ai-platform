@@ -1,6 +1,5 @@
 package com.dyx.market.trigger.job;
 
-import com.dyx.market.domain.activity.model.valobj.ActivitySkuStockKeyVO;
 import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.domain.strategy.service.IRaffleAward;
 import com.dyx.market.domain.strategy.service.IRaffleStock;
@@ -9,7 +8,6 @@ import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

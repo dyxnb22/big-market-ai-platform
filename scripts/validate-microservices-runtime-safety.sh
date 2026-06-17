@@ -179,6 +179,20 @@ for f in "${COMPOSE_FILES[@]}"; do
 done
 
 echo ""
+echo "── 1.2.1 Docker stack enables shared Redis token revocation ──"
+
+COMPOSE_MAIN="$REPO_ROOT/docker-compose.yml"
+if [[ -f "$COMPOSE_MAIN" ]]; then
+  for svc in big-market-auth-service big-market-admin-service big-market-market-service; do
+    if awk -v svc="$svc" '$0 ~ "^  "svc":" {found=1} found && /TOKEN_REVOCATION_REDIS_ENABLED=true/ {exit 0} found && /^  [a-z]/ && $0 !~ "^  "svc":" {exit 1}' "$COMPOSE_MAIN"; then
+      pass "docker-compose enables Redis token revocation: $svc"
+    else
+      fail "docker-compose missing TOKEN_REVOCATION_REDIS_ENABLED=true for $svc"
+    fi
+  done
+fi
+
+echo ""
 echo "── 1.3 DefaultCredentialGuard class presence ──"
 
 # Guard was moved to big-market-domain so it is auto-discovered by all services
@@ -283,8 +297,9 @@ echo "── 3. Token revocation infrastructure ──"
 
 REVOKE_IFACE="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/service/ITokenRevocationService.java"
 REVOKE_IMPL="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/service/InMemoryTokenRevocationService.java"
-REVOKE_CONFIG="$REPO_ROOT/big-market-auth-service/src/main/java/com/dyx/market/auth/service/config/TokenRevocationConfig.java"
-REVOKE_REDIS="$REPO_ROOT/big-market-auth-service/src/main/java/com/dyx/market/auth/service/config/RedisTokenRevocationService.java"
+REVOKE_CONFIG="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/config/TokenRevocationConfig.java"
+REVOKE_REDIS="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/service/RedisTokenRevocationService.java"
+JWT_UTILS="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/util/JwtTokenUtils.java"
 REVOKE_TEST="$REPO_ROOT/big-market-domain/src/test/java/com/dyx/market/domain/auth/service/TokenRevocationServiceTest.java"
 
 assert_file "ITokenRevocationService.java exists" "$REVOKE_IFACE"
@@ -301,6 +316,10 @@ assert_pattern_present "TokenRevocationConfig creates ITokenRevocationService be
 
 assert_file "RedisTokenRevocationService.java exists (optional)" "$REVOKE_REDIS"
 assert_pattern_present "RedisTokenRevocationService implements interface" "$REVOKE_REDIS" 'implements ITokenRevocationService'
+assert_pattern_present "RedisTokenRevocationService fails closed on Redis errors" "$REVOKE_REDIS" 'return true'
+
+assert_file "JwtTokenUtils.java exists" "$JWT_UTILS"
+assert_pattern_present "JwtTokenUtils strips Bearer prefix" "$JWT_UTILS" 'BEARER_PREFIX'
 
 assert_file "TokenRevocationServiceTest.java exists" "$REVOKE_TEST"
 

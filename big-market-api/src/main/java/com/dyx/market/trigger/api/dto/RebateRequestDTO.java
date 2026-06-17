@@ -1,6 +1,5 @@
 package com.dyx.market.trigger.api.dto;
 
-import com.dyx.market.trigger.api.request.Request;
 import lombok.*;
 
 import java.io.Serializable;

@@ -291,8 +291,10 @@ public class ActivityRepository implements IActivityRepository {
         String lockKey = cacheKey + Constants.UNDERLINE + surplus;
         long expireMillis = endDateTime.getTime() - System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1);
         Boolean lock = redisService.setNx(lockKey, expireMillis, TimeUnit.MILLISECONDS);
-        if (!lock) {
-            log.info("活动sku库存加锁失败 {}", lockKey);
+        if (!Boolean.TRUE.equals(lock)) {
+            log.warn("活动sku库存加锁失败，回滚扣减 surplus:{} lockKey:{}", surplus, lockKey);
+            redisService.incr(cacheKey);
+            return false;
         }
 
         if (surplus == 0) {
@@ -300,7 +302,7 @@ public class ActivityRepository implements IActivityRepository {
             eventPublisher.publish(activitySkuStockZeroMessageEvent.topic(), activitySkuStockZeroMessageEvent.buildEventMessage(sku));
         }
 
-        return lock;
+        return true;
     }
 
     @Override
@@ -467,7 +469,6 @@ public class ActivityRepository implements IActivityRepository {
         try {
             String userId = createPartakeOrderAggregate.getUserId();
             Long activityId = createPartakeOrderAggregate.getActivityId();
-            ActivityAccountEntity activityAccountEntity = createPartakeOrderAggregate.getActivityAccountEntity();
             ActivityAccountMonthEntity activityAccountMonthEntity = createPartakeOrderAggregate.getActivityAccountMonthEntity();
             ActivityAccountDayEntity activityAccountDayEntity = createPartakeOrderAggregate.getActivityAccountDayEntity();
             UserRaffleOrderEntity userRaffleOrderEntity = createPartakeOrderAggregate.getUserRaffleOrderEntity();
@@ -604,7 +605,7 @@ public class ActivityRepository implements IActivityRepository {
             RaffleActivityAccountDay raffleActivityAccountDay = new RaffleActivityAccountDay();
             raffleActivityAccountDay.setActivityId(activityId);
             raffleActivityAccountDay.setUserId(userId);
-            raffleActivityAccountDay.setDay(raffleActivityAccountDay.currentDay());
+            raffleActivityAccountDay.setDay(RaffleActivityAccountDay.currentDay());
             Integer dayPartakeCount = raffleActivityAccountDayDao.queryRaffleActivityAccountDayPartakeCount(raffleActivityAccountDay);
             // 当日未参与抽奖则为0次
             return null == dayPartakeCount ? 0 : dayPartakeCount;

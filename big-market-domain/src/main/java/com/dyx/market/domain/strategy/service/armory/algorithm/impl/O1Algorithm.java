@@ -1,12 +1,9 @@
 package com.dyx.market.domain.strategy.service.armory.algorithm.impl;
 
 import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
-import com.dyx.market.domain.strategy.service.armory.AbstractStrategyAlgorithm;
 import com.dyx.market.domain.strategy.service.armory.algorithm.AbstractAlgorithm;
-import com.dyx.market.domain.strategy.service.armory.algorithm.IAlgorithm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -50,10 +47,15 @@ public class O1Algorithm extends AbstractAlgorithm {
     @Override
     public Integer dispatchAlgorithm(String key) {
         log.info("抽奖算法 O(1) 抽奖计算 key:{}", key);
-        // 分布式部署下，不一定为当前应用做的策略装配。也就是值不一定会保存到本应用，而是分布式应用，所以需要从 Redis 中获取。
         int rateRange = repository.getRateRange(key);
-        // 通过生成的随机值，获取概率值奖品查找表的结果
-        return repository.getStrategyAwardAssemble(key, secureRandom.nextInt(rateRange));
+        if (rateRange <= 0) {
+            throw new IllegalStateException("抽奖概率表未装配或为空 key:" + key);
+        }
+        Integer awardId = repository.getStrategyAwardAssemble(key, secureRandom.nextInt(rateRange));
+        if (awardId == null) {
+            throw new IllegalStateException("抽奖概率表索引未命中 key:" + key + " rateRange:" + rateRange);
+        }
+        return awardId;
     }
 
 }

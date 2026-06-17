@@ -1,3 +1,6 @@
+# Maven Build and Docker Image CI
+# Legacy monolith image (big-market-app). Primary deployment uses root docker-compose.yml.
+
 name: Maven Build and Docker Image CI
 
 on:

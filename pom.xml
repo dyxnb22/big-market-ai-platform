@@ -8,7 +8,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>big-market-app</module>
         <module>big-market-domain</module>
         <module>big-market-trigger</module>
         <module>big-market-infrastructure</module>
@@ -29,6 +28,8 @@
         <module>big-market-fulfillment-service</module>
         <module>big-market-rebate-service</module>
         <module>big-market-strategy-service</module>
+        <!-- Legacy monolith launcher — tests only; see big-market-app/README.md -->
+        <module>big-market-app</module>
     </modules>
 
     <properties>
@@ -36,7 +37,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <lombok.version>1.18.38</lombok.version>
     </properties>
 
     <developers>

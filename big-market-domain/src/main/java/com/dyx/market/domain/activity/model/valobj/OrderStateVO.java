@@ -1,7 +1,6 @@
 package com.dyx.market.domain.activity.model.valobj;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 
 /**

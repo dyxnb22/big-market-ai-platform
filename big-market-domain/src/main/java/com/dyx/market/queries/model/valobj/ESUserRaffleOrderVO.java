@@ -2,7 +2,6 @@ package com.dyx.market.queries.model.valobj;
 
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 
 import java.util.Date;

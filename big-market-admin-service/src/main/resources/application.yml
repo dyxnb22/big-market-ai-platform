@@ -11,6 +11,24 @@ app:
     token: ${ADMIN_TOKEN:admin-dev-token}
     user-ids: ${ADMIN_USER_IDS:admin}
 
+token-revocation:
+  redis:
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+
+redis:
+  sdk:
+    config:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+      pool-size: 10
+      min-idle-size: 5
+      idle-timeout: 30000
+      connect-timeout: 5000
+      retry-attempts: 3
+      retry-interval: 1000
+      ping-interval: 60000
+      keep-alive: true
+
 management:
   endpoints:
     web:
