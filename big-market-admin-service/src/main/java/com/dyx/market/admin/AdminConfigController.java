@@ -1,6 +1,7 @@
 package com.dyx.market.admin;
 
 import com.dyx.market.management.config.PlatformConfigService;
+import com.dyx.market.trigger.api.dto.ActivityDisplayConfigResponseDTO;
 import com.dyx.market.trigger.api.dto.AdminConfigRequestDTO;
 import com.dyx.market.trigger.api.dto.AdminConfigResponseDTO;
 import com.dyx.market.trigger.api.response.Response;
@@ -65,6 +66,36 @@ public class AdminConfigController {
         } catch (Exception e) {
             return Response.<AdminConfigResponseDTO>builder().code(ResponseCode.UN_ERROR.getCode()).info(ResponseCode.UN_ERROR.getInfo()).build();
         }
+    }
+
+    /**
+     * 用户端公开只读：活动展示配置与 AI 开关（无需管理员鉴权）。
+     */
+    @RequestMapping(value = "public/display", method = RequestMethod.GET)
+    public Response<ActivityDisplayConfigResponseDTO> publicDisplay(@RequestParam Long activityId) {
+        if (activityId == null) {
+            return Response.<ActivityDisplayConfigResponseDTO>builder()
+                    .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                    .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                    .build();
+        }
+        String ns = "activity." + activityId;
+        String title = platformConfigService.getValue(ns, "title", "幸运轮盘活动");
+        String copy = platformConfigService.getValue(ns, "copy", "登录参与抽奖，AI 帮你解读活动权益。");
+        String state = platformConfigService.getValue(ns, "state", "online");
+        boolean chatbotEnabled = !"false".equalsIgnoreCase(
+                platformConfigService.getValue("chatbot", "enabled", "true"));
+        return Response.<ActivityDisplayConfigResponseDTO>builder()
+                .code(ResponseCode.SUCCESS.getCode())
+                .info(ResponseCode.SUCCESS.getInfo())
+                .data(ActivityDisplayConfigResponseDTO.builder()
+                        .activityId(activityId)
+                        .title(title)
+                        .copy(copy)
+                        .state(state)
+                        .chatbotEnabled(chatbotEnabled)
+                        .build())
+                .build();
     }
 
     @RequestMapping(value = "delete", method = RequestMethod.POST)

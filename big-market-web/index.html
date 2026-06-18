@@ -6,8 +6,17 @@
   <title>Lucky Draw AI - 智能抽奖平台</title>
   <link rel="stylesheet" href="./styles.css?v=__APP_VERSION__" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 </head>
 <body data-page="user">
+
+<!-- ====== VERIFYING (token present, checking session) ====== -->
+<div id="verifyingView" class="verifying-page" style="display:none">
+  <div class="verifying-card">
+    <div class="spinner"></div>
+    <p>正在验证登录状态...</p>
+  </div>
+</div>
 
 <!-- ====== LANDING (not logged in) ====== -->
 <div id="landingView" class="landing-page" style="display:none">
@@ -124,7 +133,11 @@
     <div class="drawer-body">
       <div class="wheel-card">
         <div class="wheel-head">
-          <div><span>当前活动</span><strong id="activityLabel">100301</strong></div>
+          <div>
+            <span>当前活动</span>
+            <strong id="activityLabel">加载中...</strong>
+            <p id="activityCopy" class="activity-copy"></p>
+          </div>
           <button id="refreshCampaignBtn" class="text-btn" type="button">刷新</button>
         </div>
         <div class="wheel-wrap">
@@ -172,16 +185,24 @@
       <div class="user-actions">
         <button id="ucSignInBtn" class="action-btn primary" type="button">每日签到 +10 积分</button>
         <button id="ucExchangeBtn" class="action-btn" type="button">积分兑换抽奖次数</button>
-        <p id="ucExchangeHint" style="font-size:11px;color:var(--muted);text-align:center;display:none;"></p>
+        <p id="ucExchangeHint" class="drawer-hint" style="display:none;"></p>
       </div>
-      <div style="margin-top:16px; padding:10px; border:1px solid var(--line); border-radius:var(--radius-sm); background:var(--sidebar-bg)">
-        <div style="font-size:13px; font-weight:600; margin-bottom:6px;">积分规则</div>
-        <div style="font-size:12px; color:var(--muted); line-height:1.8;">
+      <div class="credits-rules-card">
+        <div class="credits-rules-title">积分规则</div>
+        <div class="credits-rules-body">
           每日签到 +10 积分<br>
           AI 对话每次消耗 1 积分<br>
           抽奖消耗 1 次机会<br>
           积分可兑换抽奖次数
         </div>
+      </div>
+      <div class="history-panel">
+        <h4>最近抽奖</h4>
+        <div id="drawHistoryList" class="history-list"><p class="history-empty">暂无记录</p></div>
+      </div>
+      <div class="history-panel">
+        <h4>积分流水</h4>
+        <div id="creditLedgerList" class="history-list"><p class="history-empty">暂无记录</p></div>
       </div>
       <div class="user-footer">
         <button id="logoutBtn" class="logout-btn" type="button">退出登录</button>

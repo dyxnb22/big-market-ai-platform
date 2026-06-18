@@ -49,7 +49,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(adminAuthInterceptor)
                 .addPathPatterns("/api/*/admin/**")
                 .addPathPatterns("/api/*/raffle/erp/**")
-                .addPathPatterns("/api/*/raffle/dcc/**");
+                .addPathPatterns("/api/*/raffle/dcc/**")
+                .excludePathPatterns("/api/*/admin/config/public/**");
     }
 
 }

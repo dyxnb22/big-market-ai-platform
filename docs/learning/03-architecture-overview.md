@@ -1,9 +1,8 @@
-# 03 Architecture Overview
+# 03 架构总览
 
-## Runtime Shape
+## 运行时形态
 
-The repository is organized as independently deployable service launchers plus
-shared library modules. The service launchers are:
+仓库由可独立部署的服务启动器与共享库模块组成。服务启动器包括：
 
 - `big-market-gateway`
 - `big-market-auth-service`
@@ -16,23 +15,23 @@ shared library modules. The service launchers are:
 - `big-market-rebate-service`
 - `big-market-strategy-service`
 
-Shared libraries include `big-market-domain`, `big-market-infrastructure`,
-`big-market-api`, `big-market-types`, `big-market-starter-db-router`,
-`big-market-starter-dcc`, and `big-market-starter-ratelimiter`.
+共享库包括 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types`、`big-market-starter-db-router`、`big-market-starter-dcc` 和 `big-market-starter-ratelimiter`。
 
-## Architecture Diagram
+用户端 `big-market-web` 为原生 HTML/CSS/JS 静态前端（非 React），经 Nginx 或 `server.py` 提供页面，API 统一走网关 `8080`。面向桌面/Web 布局，无独立移动端导航。
+
+## 架构图
 
 ```mermaid
 flowchart TD
-    Web["big-market-web"] --> Gateway["gateway:8080"]
+    Web["big-market-web\n(HTML/CSS/JS)"] --> Gateway["gateway:8080"]
     Gateway --> Auth["auth-service:8081"]
     Gateway --> Admin["admin-service:8082"]
     Gateway --> Market["market-service:8083"]
     Gateway --> Chatbot["chatbot-service:8084"]
     Market --> Account["account-service:8086"]
     Market --> Fulfillment["fulfillment-service:8087"]
-    Market -->|"Dubbo RPC\n(embedded by default)"| Rebate["rebate-service:8088"]
-    Market -->|"Dubbo RPC\n(embedded by default)"| Strategy["strategy-service:8089"]
+    Market -->|"Dubbo RPC\n(默认 embedded)"| Rebate["rebate-service:8088"]
+    Market -->|"Dubbo RPC\n(默认 embedded)"| Strategy["strategy-service:8089"]
     Market --> MQ["RabbitMQ"]
     MQ --> MessageJob["message-job-service:8085"]
     MessageJob --> XXL["XXL-Job Admin"]
@@ -46,22 +45,26 @@ flowchart TD
 
 > **说明：** `rebate-service` 和 `strategy-service` 在默认配置下以 **embedded provider** 模式运行于 `market-service` 进程内（`rebate.embedded-rpc-provider.enabled=true`），docker-compose 默认栈不需要单独启动这两个容器。将 `embedded-rpc-provider.enabled` 改为 `false` 并启动对应服务容器，即可切换为独立进程 Dubbo RPC 模式。
 
-## Main Responsibilities
+## 主要职责
 
-- Gateway: `big-market-gateway/src/main/resources/application.yml` defines path
-  routing and circuit-breaker fallback.
-- Auth: `big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
-  issues and verifies JWTs.
-- Market: `big-market-trigger/src/main/java/com/dyx/market/trigger/http`
-  exposes the raffle, activity, strategy, ERP, and DCC APIs.
-- Message jobs: `big-market-message-job-service/src/main/java/com/dyx/market/message/job`
-  runs outbox dispatch and RabbitMQ/XXL-Job infrastructure.
-- Account/Fulfillment/Rebate/Strategy: provider modules expose Dubbo service
-  contracts defined in `big-market-api/src/main/java/com/dyx/market/trigger/api`.
+- **Gateway**：`big-market-gateway/src/main/resources/application.yml` 定义路径路由与熔断降级 fallback。
+- **Auth**：`big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java` 签发与校验 JWT。
+- **Market**：`big-market-trigger/src/main/java/com/dyx/market/trigger/http` 暴露 raffle、activity、strategy、ERP、DCC 等 API。
+- **Admin**：`big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java` 管理平台配置；`GET /api/v1/admin/config/public/display?activityId=` 为公开只读接口（无需管理员鉴权，走现有 `/admin/**` 网关路由，无需改 gateway 配置）。
+- **Message jobs**：`big-market-message-job-service/src/main/java/com/dyx/market/message/job` 运行 outbox 派发与 RabbitMQ/XXL-Job 基础设施。
+- **Account/Fulfillment/Rebate/Strategy**：provider 模块暴露 `big-market-api/src/main/java/com/dyx/market/trigger/api` 中定义的 Dubbo 服务契约。
+- **big-market-web**：`index.html` / `login.html` / `admin.html` 等页面；`app.js` 编排活动 ID 解析、展示配置、抽奖、Chatbot、本地历史记录等。
 
-## Infrastructure
+## 前端与公开配置
 
-Local infrastructure is defined in
-`docs/dev-ops/docker-compose-environment.yml`: MySQL, Redis, RabbitMQ, Nacos,
-Elasticsearch, XXL-Job Admin, Prometheus, Grafana, and support UIs. Application
-containers are defined in `docker-compose.yml`.
+`big-market-web` 启动流程要点：
+
+1. 调用 `query_stage_activity_id` 按渠道/来源解析 `activityId`。
+2. 调用 `GET /api/v1/admin/config/public/display?activityId=` 获取活动标题、文案、`chatbotEnabled` 等展示配置。
+3. 根据 `chatbotEnabled` 控制 Chatbot 入口；消息渲染使用 DOMPurify 防 XSS。
+4. 抽奖记录与积分流水保存在浏览器 `localStorage`；抽奖/用户中心侧栏抽屉互斥打开。
+5. 未登录落地页支持整页滚动；主应用聊天区消息居中布局。
+
+## 基础设施
+
+本地基础设施定义在 `docs/dev-ops/docker-compose-environment.yml`：MySQL、Redis、RabbitMQ、Nacos、Elasticsearch、XXL-Job Admin、Prometheus、Grafana 及配套 UI。应用容器定义在 `docker-compose.yml`。

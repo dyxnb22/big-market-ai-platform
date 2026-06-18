@@ -1,10 +1,10 @@
-# 05 Authentication And Authorization
+# 05 鉴权与授权
 
-## User Authentication
+## 用户鉴权
 
-JWT authentication is implemented in the auth service.
+JWT 鉴权在 auth 服务实现。
 
-Code paths:
+代码路径：
 
 - `big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/AuthService.java`
@@ -13,43 +13,30 @@ Code paths:
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/util/JwtTokenUtils.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java`
 
-`AuthAccessController.login` validates configured learning users from
-`app.auth.dev-users`, calls `AuthService.createToken`, and returns a JWT with
-`openId`, `jti`, `iat`, `exp`, and `subject`. `verify` checks token validity.
-`logout` extracts `jti` and records token revocation in the shared
-`ITokenRevocationService` bean:
+`AuthAccessController.login` 校验 `app.auth.dev-users` 中的学习账号，调用 `AuthService.createToken`，返回含 `openId`、`jti`、`iat`、`exp`、`subject` 的 JWT。`verify` 校验 token 有效性。`logout` 提取 `jti` 并写入共享 `ITokenRevocationService`：
 
-| Mode | When | Behavior |
+| 模式 | 场景 | 行为 |
 | --- | --- | --- |
-| In-memory | `token-revocation.redis.enabled=false` (default local `mvn spring-boot:run`) | Per-process blacklist; logout does **not** sync across services |
-| Redis | `TOKEN_REVOCATION_REDIS_ENABLED=true` (Docker stack for auth/admin/market) | Shared Redis blacklist via `RedisTokenRevocationService` |
+| 内存 | `token-revocation.redis.enabled=false`（本地默认 `mvn spring-boot:run`） | 进程内黑名单；注销**不会**跨服务同步 |
+| Redis | `TOKEN_REVOCATION_REDIS_ENABLED=true`（Docker 栈 auth/admin/market） | 通过 `RedisTokenRevocationService` 共享 Redis 黑名单 |
 
-Redis mode safety rules:
+Redis 模式安全规则：
 
-- **Startup fail-fast:** if Redis mode is enabled but `RedissonClient` is missing,
-  `TokenRevocationConfig` throws `IllegalStateException` — it does **not** silently
-  fall back to in-memory (which would break cross-service logout).
-- **Logout fail-visible:** `RedisTokenRevocationService.revoke()` throws on Redis
-  write failure; `AuthAccessController.logout` returns an error instead of
-  pretending success.
-- **Verify fail-closed:** `RedisTokenRevocationService.isRevoked()` returns `true`
-  when Redis read fails, so tokens cannot bypass the blacklist during outages.
+- **启动 fail-fast**：Redis 模式开启但缺少 `RedissonClient` 时，`TokenRevocationConfig` 抛出 `IllegalStateException`——**不会**静默回退内存模式（否则跨服务注销失效）。
+- **注销失败可见**：`RedisTokenRevocationService.revoke()` 在 Redis 写入失败时抛错；`AuthAccessController.logout` 返回错误而非假成功。
+- **校验 fail-closed**：`RedisTokenRevocationService.isRevoked()` 在 Redis 读取失败时返回 `true`，故障期间 token 无法绕过黑名单。
 
-`JwtTokenUtils` normalizes `Authorization` headers, accepting either a raw JWT or
-`Bearer <jwt>`.
+`JwtTokenUtils` 规范化 `Authorization` 头，接受裸 JWT 或 `Bearer <jwt>`。
 
-## User Authorization
+## 用户授权
 
-User APIs are guarded by `TokenAuthInterceptor`:
+用户 API 由 `TokenAuthInterceptor` 保护：
 
 - `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
 
-The legacy monolith copy has been removed. The interceptor validates
-`Authorization`, writes
-`userId` into the request, and token-aware controller methods use that value
-instead of trusting request body user ids.
+历史单体副本已移除。拦截器校验 `Authorization`，将 `userId` 写入 request；带 token 的控制器方法使用该值，不信任请求体中的 userId。
 
-Typical protected APIs:
+典型受保护 API：
 
 - `/api/v1/raffle/activity/draw_by_token`
 - `/api/v1/raffle/activity/calendar_sign_rebate_by_token`
@@ -58,36 +45,43 @@ Typical protected APIs:
 - `/api/v1/raffle/activity/credit_pay_exchange_sku_by_token`
 - `/api/v1/raffle/strategy/query_raffle_award_list_by_token`
 
-## Admin Authorization
+## 管理员授权
 
-Admin APIs are guarded by JWT admin allow-lists or a configured admin token.
+管理员 API 由 JWT 管理员白名单或配置的 admin token 保护。
 
-Code paths:
+代码路径：
 
 - `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/AdminAuthInterceptor.java`
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/WebMvcConfig.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/ErpOperateController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/DCCController.java`
 
-Admin config APIs use `AdminAuthInterceptor`. ERP and DCC endpoints accept
-`X-Admin-Token` or an admin JWT whose `openId` is listed in
-`app.admin.user-ids`.
+Admin 配置 API 使用 `AdminAuthInterceptor`。ERP 与 DCC 端点接受 `X-Admin-Token` 或 `openId` 在 `app.admin.user-ids` 中的管理员 JWT。
+
+## 公开只读接口（无管理员鉴权）
+
+`GET /api/v1/admin/config/public/display?activityId=` 供用户端拉取活动展示配置与 Chatbot 开关，**不需要**管理员 token。
+
+- 入口：`AdminConfigController.publicDisplay`
+- 排除规则：`WebMvcConfig` 中 `.excludePathPatterns("/api/*/admin/config/public/**")`
+- 网关：走现有 `/admin/**` 路由至 `admin-service`，**无需**修改 gateway 配置
+- 前端：`big-market-web/app.js` 的 `loadDisplayConfig()` 在解析 `activityId` 后调用
 
 ```mermaid
 flowchart TD
-    Client["Client"] --> Login["/api/v1/auth/login"]
+    Client["Client / big-market-web"] --> Login["/api/v1/auth/login"]
     Login --> Token["JWT with openId + jti + exp"]
     Token --> UserApi["TokenAuthInterceptor"]
     Token --> AdminApi["AdminAuthInterceptor"]
     UserApi --> Market["Market user API"]
     AdminApi --> Admin["Admin/ERP/DCC API"]
+    WebPublic["GET public/display"] --> AdminPublic["AdminConfigController\n无 AdminAuth"]
     Logout["/api/v1/auth/logout"] --> Revocation["ITokenRevocationService"]
     Revocation --> Redis["Redis jti blacklist (Docker)"]
     Token --> CheckRevoked["AuthService.checkToken"]
     CheckRevoked --> Revocation
 ```
 
-## Learning Notes
+## 学习说明
 
-`app.auth.dev-users` is a local learning credential source. The guard in
-`DefaultCredentialGuard` prevents unsafe default credentials in non-development
-profiles. A real production identity system is outside this portfolio scope.
+`app.auth.dev-users` 是本地学习用凭证源。`DefaultCredentialGuard` 在非开发 profile 下阻止不安全默认凭证。真实生产身份体系超出本作品集范围。

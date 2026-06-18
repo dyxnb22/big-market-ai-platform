@@ -40,7 +40,14 @@
       <div class="form-grid">
         <label>活动 ID<input id="activityIdInput" value="100301" /></label>
         <label>活动标题<input id="activityTitleInput" value="幸运轮盘活动" /></label>
-        <label>活动状态<input id="activityStateInput" value="online" /></label>
+        <label>活动状态
+          <select id="activityStateInput">
+            <option value="online">online（上架中）</option>
+            <option value="active">active</option>
+            <option value="create">create</option>
+            <option value="expire">expire</option>
+          </select>
+        </label>
         <label>展示文案<input id="activityCopyInput" value="登录参与抽奖，AI 帮你解读活动权益。" /></label>
       </div>
       <div class="button-row">
@@ -94,13 +101,13 @@
       </div>
 
       <!-- Service Health Table -->
-      <h3 style="font-size:14px;margin:16px 0 8px;">服务健康状态</h3>
+      <h3 class="admin-section-title">服务健康状态</h3>
       <div class="data-table" id="opsHealthTable">
         <table><thead><tr><th>服务</th><th>状态</th><th>响应</th></tr></thead><tbody id="opsHealthBody"></tbody></table>
       </div>
 
       <!-- Service Diagnostics -->
-      <h3 style="font-size:14px;margin:16px 0 8px;">服务诊断</h3>
+      <h3 class="admin-section-title">服务诊断</h3>
       <div id="opsDiagnostics" class="ops-diagnostics">
         <div class="diag-item" id="diagGateway"><span class="diag-label">Gateway /actuator/health</span><span class="diag-result">检测中...</span></div>
         <div class="diag-item" id="diagLogin"><span class="diag-label">Auth /api/v1/auth/login (OPTIONS)</span><span class="diag-result">检测中...</span></div>

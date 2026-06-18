@@ -1,17 +1,17 @@
-# 06 High-Concurrency Scenarios
+# 06 高并发场景
 
-## Implemented Mechanisms
+## 已实现机制
 
-- Redis atomic decrement for SKU and award stock.
-- Redisson locks for account and task concurrency.
-- MySQL unique indexes for idempotency.
-- User-id based DB/table routing through `big-market-starter-db-router`.
-- RabbitMQ listener prefetch and retry behavior.
-- XXL-Job handlers guarded by Redisson locks.
+- Redis 原子递减用于 SKU 与奖品库存。
+- Redisson 锁保护账户与任务并发。
+- MySQL 唯一索引保证幂等。
+- 基于 userId 的库表路由（`big-market-starter-db-router`）。
+- RabbitMQ 监听器 prefetch 与重试行为。
+- XXL-Job 处理器由 Redisson 锁保护。
 
-## Raffle Quota Consumption
+## 抽奖额度消耗
 
-Code paths:
+代码路径：
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java`
@@ -20,44 +20,41 @@ Code paths:
 
 ```mermaid
 flowchart TD
-    A["Concurrent draw requests"] --> B["Route by userId"]
-    B --> C["Find reusable created order"]
-    C --> D{"Order exists?"}
-    D -->|Yes| E["Reuse order"]
-    D -->|No| F["Decrement total/month/day quota"]
-    F --> G["Insert user_raffle_order"]
-    G --> H["Unique keys and transaction protect consistency"]
+    A["并发抽奖请求"] --> B["按 userId 路由"]
+    B --> C["查找可复用 created 订单"]
+    C --> D{"订单已存在?"}
+    D -->|是| E["复用订单"]
+    D -->|否| F["扣减 total/month/day 额度"]
+    F --> G["插入 user_raffle_order"]
+    G --> H["唯一键与事务保证一致性"]
 ```
 
-## SKU And Award Stock
+## SKU 与奖品库存
 
-SKU exchange uses Redis counters and a stock-zero message. Award stock is
-deducted by strategy logic and later synchronized by jobs.
+SKU 兑换使用 Redis 计数器与库存归零消息。奖品库存由策略逻辑扣减，后续由 Job 同步。
 
-Code paths:
+代码路径：
 
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityRepository.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateActivitySkuStockJob.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateAwardStockJob.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/ActivitySkuStockZeroConsumer.java`
 
-## Credit Account Concurrency
+## 积分账户并发
 
-Credit writes use business ids, Redisson locks, and conditional DB updates to
-avoid double deduction or negative balances.
+积分写入使用业务 ID、Redisson 锁与条件更新，避免重复扣减或余额为负。
 
-Code paths:
+代码路径：
 
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/CreditRepository.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountCreditServiceRPC.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/credit/model/aggregate/TradeAggregate.java`
 
-## MQ And Task Concurrency
+## MQ 与任务并发
 
-Duplicate messages are handled through message ids, business ids, and duplicate
-key handling. Jobs use locks before scanning task rows.
+重复消息通过 message id、business id 与重复键处理消化。Job 扫描任务行前先加锁。
 
-Code paths:
+代码路径：
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`

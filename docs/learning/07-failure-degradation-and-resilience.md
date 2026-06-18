@@ -1,11 +1,10 @@
-# 07 Failure, Degradation, And Rollback
+# 07 故障、降级与回滚
 
-## Gateway Resilience
+## 网关韧性
 
-Gateway circuit breakers return a consistent JSON response when a downstream
-service is unavailable.
+网关熔断在下游不可用时返回统一 JSON 响应。
 
-Code paths:
+代码路径：
 
 - `big-market-gateway/src/main/resources/application.yml`
 - `big-market-gateway/src/main/java/com/dyx/market/gateway/fallback/FallbackController.java`
@@ -13,32 +12,30 @@ Code paths:
 
 ```mermaid
 flowchart TD
-    Client["Client"] --> Gateway["Gateway route"]
-    Gateway --> Healthy{"Downstream healthy?"}
-    Healthy -->|Yes| Service["Downstream service"]
-    Healthy -->|No| Fallback["FallbackController code=0007"]
+    Client["Client / big-market-web"] --> Gateway["Gateway route"]
+    Gateway --> Healthy{"下游健康?"}
+    Healthy -->|是| Service["下游服务"]
+    Healthy -->|否| Fallback["FallbackController code=0007"]
 ```
 
-## Draw Rollback
+前端 `big-market-web` 在网关或业务错误时通过 toast 提示；`loadDisplayConfig` 失败时回退默认活动标题，不阻断主流程。
 
-If draw orchestration fails after quota is consumed, the application service
-records the failed order path and restores quota through the configured account
-port.
+## 抽奖回滚
 
-Code paths:
+抽奖编排失败且额度已消耗时，应用服务记录失败订单路径，并通过配置的账户端口恢复额度。
+
+代码路径：
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/adapter/port/IActivityAccountPort.java`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port/LocalActivityAccountPort.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java`
 
-## Task Retry And MQ Failure
+## 任务重试与 MQ 失败
 
-Repositories write task/outbox rows with the business transaction. MQ send
-success marks the row complete; send failure leaves a retryable task state for
-XXL-Job scanning.
+Repository 在业务事务中写入 task/outbox 行。MQ 发送成功则标记完成；发送失败保留可重试 task 状态供 XXL-Job 扫描。
 
-Code paths:
+代码路径：
 
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/CreditRepository.java`
@@ -46,45 +43,39 @@ Code paths:
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/SendMessageTaskJob.java`
 - `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/RabbitMQDlqConfig.java`
 
-## Credit Refund
+## 积分退款
 
-Chatbot charging uses explicit refund on AI call failure. The refund request
-uses `chat_refund_{requestId}` as the idempotency key.
+Chatbot 扣费在 AI 调用失败时显式退款。退款请求以 `chat_refund_{requestId}` 为幂等键。
 
-Code paths:
+代码路径：
 
 - `big-market-chatbot-service/src/main/java/com/dyx/market/chatbot/ChatbotController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleActivityController.java`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/CreditRepository.java`
 
-## Operational Rollback
+前端在 Chatbot 返回扣费信息时更新本地积分流水（`localStorage`），与后端账本互补展示。
 
-For local learning, rollback means returning configuration to the default local
-development values, stopping dispatch jobs before changing outbox behavior, and
-rerunning smoke checks. Detailed steps are in `docs/operations-checklist.md`
-and `docs/production-readiness-learning.md`.
+## 运营回滚
 
-## Risky Change Areas
+本地学习场景下，回滚指将配置恢复为默认本地开发值、在修改 outbox 行为前停止派发 Job，并重新跑冒烟检查。详细步骤见 `docs/operations-checklist.md` 与 `docs/production-readiness-learning.md`。
 
-The project is kept stable for learning. Changes that alter credit, quota,
-award, or rebate semantics need DDL review, smoke tests, idempotency checks,
-and rollback verification before they are treated as complete.
+## 高风险变更区域
 
-| Area | Why risky | Learning treatment |
+项目为学习稳定而维护。涉及积分、额度、奖品或返利语义的变更，需 DDL 评审、冒烟测试、幂等检查与回滚验证后方可视为完成。
+
+| 区域 | 风险原因 | 学习处理方式 |
 | --- | --- | --- |
-| Remote quota decrement | Draw depends on exactly-once quota consumption | Keep ledger idempotency and rollback paths documented and testable |
-| Award-credit outbox | Award completion moves from direct write to async dispatch | Keep DDL, dispatcher, and duplicate-key behavior documented |
-| Per-domain task outboxes | Changes task ownership and retry surfaces | Keep outbox DDL references and shared task dispatch paths documented |
-| DLQ replay | Automatic replay can duplicate credit or award effects | Keep DLQ logging; require manual idempotency review before replay |
-| Real user system | Replaces config users with persistent accounts | Outside current portfolio scope |
+| 远程额度扣减 | 抽奖依赖恰好一次的额度消耗 | 保持账本幂等与回滚路径可文档化、可测试 |
+| Award-credit outbox | 奖品完成从直写变为异步派发 | 保持 DDL、dispatcher 与重复键行为有文档 |
+| 各领域 task outbox | 改变任务归属与重试面 | 保持 outbox DDL 引用与共享 task 派发路径有文档 |
+| DLQ 重放 | 自动重放可能重复积分或发奖 | 保持 DLQ 日志；重放前需人工幂等评审 |
+| 真实用户体系 | 用持久化账号替换配置用户 | 超出当前作品集范围 |
 
-Rollback principles:
+回滚原则：
 
-- Prefer config rollback for service route and write-adapter choices.
-- Preserve idempotency keys: `out_business_no`, `award_order_id`,
-  `message_id`, `requestId`, and quota ledger keys.
-- Stop dispatch jobs before changing outbox ownership.
-- Verify account balances, quota surplus, award records, and task state after
-  any retry or rollback exercise.
+- 服务路由与写适配器选择优先用配置回滚。
+- 保留幂等键：`out_business_no`、`award_order_id`、`message_id`、`requestId` 及额度账本键。
+- 修改 outbox 归属前先停止派发 Job。
+- 任何重试或回滚练习后，核对账户余额、额度剩余、中奖记录与 task 状态。
 
-See also `docs/data-and-outbox.md` and `archive/risky-changes-remediation.md`.
+另见 `docs/data-and-outbox.md` 与 `archive/risky-changes-remediation.md`。

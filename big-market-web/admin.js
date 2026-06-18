@@ -108,6 +108,10 @@ async function loadActivity() {
   var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST"});
   var stage = (stageRes.data || []).find(function(item) { return String(item.activityId) === String(activityId); });
   dom.activityStateInput.value = stage?.state || "online";
+  if (dom.activityStateInput.tagName === "SELECT") {
+    var opt = dom.activityStateInput.querySelector('option[value="' + (stage?.state || "online") + '"]');
+    if (!opt) dom.activityStateInput.value = "online";
+  }
   renderSkuTable(skuRes.data || []);
   toast("已读取活动 " + activityId + "，SKU 数量：" + (skuRes.data?.length || 0));
 }
@@ -341,8 +345,7 @@ async function initializeAdmin() {
     location.replace(adminLoginUrl());
     return;
   }
-  // loadConfigs() both verifies admin privilege (via adminRequest) and loads data.
-  // On 0008/0009 it triggers the appropriate redirect internally.
+  bindAdminNav();
   await loadConfigs();
   await Promise.all([
     loadActivity().catch(function(e) { toast("活动数据加载失败: " + (e.message || "")); }),
@@ -356,3 +359,26 @@ initializeAdmin().catch(function(error) {
     toast(error.message || "管理后台初始化失败");
   }
 });
+
+function bindAdminNav() {
+  var links = document.querySelectorAll(".admin-sidebar nav a[href^='#']");
+  var scrollRoot = document.querySelector(".admin-main");
+  if (!links.length || !scrollRoot) return;
+  var sections = [];
+  links.forEach(function(link) {
+    var id = link.getAttribute("href").slice(1);
+    var sec = document.getElementById(id);
+    if (sec) sections.push({ link: link, sec: sec });
+  });
+  function setActive() {
+    var y = scrollRoot.scrollTop + 100;
+    var current = sections[0];
+    sections.forEach(function(item) {
+      if (item.sec.offsetTop <= y) current = item;
+    });
+    links.forEach(function(l) { l.classList.remove("active"); });
+    if (current) current.link.classList.add("active");
+  }
+  scrollRoot.addEventListener("scroll", setActive, { passive: true });
+  setActive();
+}

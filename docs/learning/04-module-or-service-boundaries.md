@@ -1,49 +1,45 @@
-# 04 Module And Service Boundaries
+# 04 模块与服务边界
 
-## Service Modules
+## 服务模块
 
-| Module | Boundary |
+| 模块 | 边界 |
 | --- | --- |
-| `big-market-gateway` | Gateway routing, trace propagation, response fallback |
-| `big-market-auth-service` | Login, token verification, logout revocation |
-| `big-market-admin-service` | Platform configuration APIs |
-| `big-market-market-service` | Raffle/activity HTTP API and local orchestration |
-| `big-market-chatbot-service` | Chatbot API and credit charge/refund integration |
-| `big-market-message-job-service` | MQ consumers, XXL-Job handlers, retry dispatch |
-| `big-market-account-service` | Credit and quota RPC provider |
-| `big-market-fulfillment-service` | Award fulfillment RPC provider |
-| `big-market-rebate-service` | Rebate create/read RPC provider |
-| `big-market-strategy-service` | Strategy read RPC provider |
+| `big-market-gateway` | 网关路由、trace 透传、响应 fallback |
+| `big-market-auth-service` | 登录、token 校验、注销撤销 |
+| `big-market-admin-service` | 平台配置 API（含公开只读 `public/display`） |
+| `big-market-market-service` | Raffle/activity HTTP API 与本地编排 |
+| `big-market-chatbot-service` | Chatbot API 与积分扣退集成 |
+| `big-market-message-job-service` | MQ 消费者、XXL-Job 处理器、重试派发 |
+| `big-market-account-service` | 积分与额度 RPC provider |
+| `big-market-fulfillment-service` | 奖品履约 RPC provider |
+| `big-market-rebate-service` | 返利创建/读取 RPC provider |
+| `big-market-strategy-service` | 策略读取 RPC provider |
 
-## Shared Libraries
+## 前端模块
 
-- `big-market-trigger`: HTTP controllers, RabbitMQ listeners, and XXL-Job
-  handlers. Scanned by `market-service` and `message-job-service`; not a
-  standalone deployable service.
-- `big-market-domain`: activity, strategy, award, credit, rebate, auth, and task
-  domain models/services/ports.
-- `big-market-infrastructure`: MyBatis DAOs, repository adapters, Redis, ES,
-  MQ publishing, and local port implementations.
-- `big-market-api`: Dubbo API contracts and DTOs.
-- `big-market-types`: common response codes, exceptions, annotations, and
-  constants.
-- `big-market-management`: platform configuration helpers consumed by
-  `admin-service` and `chatbot-service` (`PlatformConfigService`).
-- Starter modules: DB router, DCC, and rate limiter.
+| 模块 | 边界 |
+| --- | --- |
+| `big-market-web` | 用户端与管理端静态页面（原生 HTML/CSS/JS，非 React）；`app.js` 用户抽奖/Chatbot；`admin.js` 管理配置；API 经网关，桌面/Web 优先 |
 
-## Removed Legacy Modules
+## 共享库
 
-- Historical monolith launcher: removed after the project switched to the 10
-  microservice launchers above.
+- `big-market-trigger`：HTTP 控制器、RabbitMQ 监听器、XXL-Job 处理器。由 `market-service` 与 `message-job-service` 扫描；**不是**独立可部署服务。
+- `big-market-domain`：activity、strategy、award、credit、rebate、auth、task 等领域模型/服务/端口。
+- `big-market-infrastructure`：MyBatis DAO、repository 适配器、Redis、ES、MQ 发布与本地端口实现。
+- `big-market-api`：Dubbo API 契约与 DTO。
+- `big-market-types`：通用响应码、异常、注解与常量。
+- `big-market-management`：平台配置辅助，供 `admin-service` 与 `chatbot-service` 使用（`PlatformConfigService`）。
+- Starter 模块：DB router、DCC、rate limiter。
 
-## Boundary Rules
+## 已移除的遗留模块
 
-Service APIs are kept in `big-market-api`. Domain ports isolate cross-domain
-calls. Repository adapters hide MyBatis DAOs behind domain interfaces. Shared
-library reuse is intentional for this learning project and keeps the local
-portfolio stack compact while still showing service ownership.
+- 历史单体启动器：项目切换为上述 10 个微服务启动器后已移除。
 
-Key files:
+## 边界规则
+
+服务 API 集中在 `big-market-api`。领域端口隔离跨域调用。Repository 适配器将 MyBatis DAO 隐藏在领域接口之后。本学习项目有意复用共享库，在保持服务归属清晰的同时让本地作品集栈更紧凑。
+
+关键文件：
 
 - `pom.xml`
 - `docs/microservices-dao-ownership.md`
@@ -52,3 +48,5 @@ Key files:
 - `big-market-domain/src/main/java/com/dyx/market/domain/credit/adapter/port`
 - `big-market-domain/src/main/java/com/dyx/market/domain/rebate/adapter/port`
 - `big-market-domain/src/main/java/com/dyx/market/domain/strategy/adapter/port`
+- `big-market-web/app.js`
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/WebMvcConfig.java`（`public/display` 排除管理员鉴权）

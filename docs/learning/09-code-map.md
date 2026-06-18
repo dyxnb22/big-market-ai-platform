@@ -1,4 +1,4 @@
-# 09 Code Map
+# 09 代码地图
 
 ## Gateway
 
@@ -17,6 +17,7 @@
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java`
 - `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
 - `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/AdminAuthInterceptor.java`
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/WebMvcConfig.java`
 
 ## Raffle
 
@@ -65,6 +66,16 @@
 
 ## Admin And Chatbot
 
-- `big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java`
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java`（含 `public/display`）
 - `big-market-management/src/main/java/com/dyx/market/management/config/PlatformConfigService.java`
 - `big-market-chatbot-service/src/main/java/com/dyx/market/chatbot/ChatbotController.java`
+
+## Frontend (big-market-web)
+
+- `big-market-web/index.html` — 用户主应用（抽奖 + Chatbot）
+- `big-market-web/login.html` / `login.js` — 登录页
+- `big-market-web/admin.html` / `admin.js` — 管理端配置
+- `big-market-web/app.js` — 活动 ID 解析、`loadDisplayConfig`、抽奖、Chatbot 门控、抽屉互斥、本地历史
+- `big-market-web/api-client.js` — 网关 API 封装与 JWT 存储
+- `big-market-web/config.js` — API 基址与渠道参数
+- `big-market-web/styles.css` — 聊天居中、落地页滚动、桌面/Web 布局

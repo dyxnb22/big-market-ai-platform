@@ -4,7 +4,7 @@
 
 ## 语言说明
 
-部分架构文档（`00`、`03`~`09`）为英文，业务流程、面试、数据模型等文档为中文。阅读时以代码路径为准；英文文档标题已在下方链接中标注。
+**本目录文档均已译为中文。** 阅读时以代码路径为准；归档的英文维护文档见 `archive/`。
 
 ## 推荐学习顺序
 
@@ -14,8 +14,8 @@
 
 **第一阶段：建立整体认知**
 
-1. [03-architecture-overview.md](03-architecture-overview.md) - 整体架构与服务拓扑（英文）
-2. [04-module-or-service-boundaries.md](04-module-or-service-boundaries.md) - 模块职责与服务边界（英文）
+1. [03-architecture-overview.md](03-architecture-overview.md) - 整体架构与服务拓扑
+2. [04-module-or-service-boundaries.md](04-module-or-service-boundaries.md) - 模块职责与服务边界
 3. [13-ddd-and-design-patterns.md](13-ddd-and-design-patterns.md) - DDD 四层架构与设计模式（重点）
 
 **第二阶段：理解业务流程**
@@ -28,10 +28,10 @@
 **第三阶段：理解技术实现**
 
 8. [15-data-model.md](15-data-model.md) - 数据库表结构与状态机（读 `docs/data-and-outbox.md` 前先读）
-9. [06-high-concurrency-scenarios.md](06-high-concurrency-scenarios.md) - 高并发与幂等设计（英文）
-10. [07-failure-degradation-and-resilience.md](07-failure-degradation-and-resilience.md) - 降级与回滚（英文）
-11. [05-authentication-and-authorization.md](05-authentication-and-authorization.md) - 鉴权体系（英文）
-12. [08-technical-stack.md](08-technical-stack.md) - 技术栈全览（英文）
+9. [06-high-concurrency-scenarios.md](06-high-concurrency-scenarios.md) - 高并发与幂等设计
+10. [07-failure-degradation-and-resilience.md](07-failure-degradation-and-resilience.md) - 降级与回滚
+11. [05-authentication-and-authorization.md](05-authentication-and-authorization.md) - 鉴权体系
+12. [08-technical-stack.md](08-technical-stack.md) - 技术栈全览
 
 **第四阶段：面试备考**
 
@@ -41,7 +41,7 @@
 **参考工具**
 
 - [00-learning-guide.md](00-learning-guide.md) - 学习路径总览（10 步 + 验收标准）
-- [09-code-map.md](09-code-map.md) - 代码跳转地图（英文）
+- [09-code-map.md](09-code-map.md) - 代码跳转地图
 - [10-troubleshooting.md](10-troubleshooting.md) - 常见问题排查
 - [archive/](archive/) - 已归档的英文维护文档（日常学习可跳过）
 
@@ -50,6 +50,7 @@
 | 维度 | 内容 |
 |------|------|
 | 语言/框架 | Java 8 + Spring Boot 2.7.12 |
+| 前端 | `big-market-web`：原生 HTML/CSS/JS（桌面/Web，非 React） |
 | 架构 | DDD 四层 + 10 个微服务 |
 | 遗留模块 | 历史单体已移除，主路径只保留微服务启动器 |
 | 核心技术 | Dubbo、Nacos、RabbitMQ、Redis/Redisson、MySQL、XXL-Job、ES |
@@ -57,7 +58,9 @@
 
 关键代码入口：
 
+- `big-market-web/app.js`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleActivityController.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/AbstractRaffleStrategy.java`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`
+- `big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java`

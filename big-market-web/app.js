@@ -1,38 +1,58 @@
 var auth = readAuth();
 var CHAT_KEY = "lucky-draw-chats-" + (auth.userId || "anon");
+var DRAW_HISTORY_KEY = function(uid) { return "lucky-draw-history-" + (uid || "anon"); };
+var CREDIT_LEDGER_KEY = function(uid) { return "lucky-draw-credit-" + (uid || "anon"); };
+
+function showLanding() {
+  document.body.classList.add("page-landing");
+  document.body.classList.remove("page-verifying");
+  document.getElementById("landingView").style.display = "";
+  document.getElementById("appView").style.display = "none";
+  var v = document.getElementById("verifyingView");
+  if (v) v.style.display = "none";
+}
+
+function showVerifying() {
+  document.body.classList.add("page-verifying");
+  document.body.classList.remove("page-landing");
+  document.getElementById("landingView").style.display = "none";
+  document.getElementById("appView").style.display = "none";
+  var v = document.getElementById("verifyingView");
+  if (v) v.style.display = "";
+}
 
 // ===== Auth gate =====
 if (!auth.token) {
   showLanding();
 } else {
-  showLanding();
-  // Verify token — only enter app on success
+  showVerifying();
   apiRequest("/auth/verify", {}, {
     onAuthExpired: function() {
       clearAuth();
       toast("登录已过期，请重新登录");
+      showLanding();
     }
   }).then(function() {
     initApp();
   }).catch(function(e) {
-    // onAuthExpired already handles 0009 (expired token).
-    // For other API errors clear the token; for network errors (no code) keep it.
     if (e.code && e.code !== "0009") {
       clearAuth();
       toast("服务暂时不可用，请稍后再试");
+      showLanding();
+    } else if (!e.code) {
+      toast("网络异常，请稍后刷新重试");
+      showLanding();
     }
   });
 }
 
-function showLanding() {
-  document.getElementById("landingView").style.display = "";
-  document.getElementById("appView").style.display = "none";
-}
-
 // ===== Main App =====
 function initApp() {
+  document.body.classList.remove("page-landing", "page-verifying");
   document.getElementById("landingView").style.display = "none";
   document.getElementById("appView").style.display = "";
+  var verifying = document.getElementById("verifyingView");
+  if (verifying) verifying.style.display = "none";
 
   // DOM references
   var d = {
@@ -83,7 +103,13 @@ function initApp() {
     exchangeBtn:     qs("#exchangeBtn"),
     ucSignInBtn:     qs("#ucSignInBtn"),
     ucExchangeBtn:   qs("#ucExchangeBtn"),
-    ucExchangeHint:  qs("#ucExchangeHint")
+    ucExchangeHint:  qs("#ucExchangeHint"),
+    activityLabel:   qs("#activityLabel"),
+    activityCopy:    qs("#activityCopy"),
+    drawHistoryList: qs("#drawHistoryList"),
+    creditLedgerList: qs("#creditLedgerList"),
+    composer:        qs("#chatForm"),
+    composerDisabledMsg: null
   };
 
   function qs(sel) { return document.querySelector(sel); }
@@ -99,9 +125,180 @@ function initApp() {
     {awardTitle: "加赠奖励", awardId: 106}
   ];
   var rotation = 0;
-  var loadCampaignSeq = 0; // monotonic counter to guard stale responses
+  var loadCampaignSeq = 0;
   var ctxTargetId = null;
   var signedToday = false;
+  var chatbotEnabled = true;
+  var metricsLoading = true;
+  var pendingAssistant = false;
+
+  function readHistory(keyFn, fallback) {
+    return readJson(keyFn(auth.userId), fallback);
+  }
+  function saveHistory(keyFn, data) {
+    localStorage.setItem(keyFn(auth.userId), JSON.stringify(data));
+  }
+
+  function pushDrawHistory(awardTitle, awardId) {
+    var list = readHistory(DRAW_HISTORY_KEY, []);
+    list.unshift({ awardTitle: awardTitle || "奖品", awardId: awardId, at: Date.now() });
+    if (list.length > 30) list.length = 30;
+    saveHistory(DRAW_HISTORY_KEY, list);
+    renderHistories();
+  }
+
+  function updateLatestDrawHistory(awardTitle) {
+    var list = readHistory(DRAW_HISTORY_KEY, []);
+    if (list.length) {
+      list[0].awardTitle = awardTitle;
+      saveHistory(DRAW_HISTORY_KEY, list);
+      renderHistories();
+    }
+  }
+
+  function isRandomCreditAward(title) {
+    return title && String(title).indexOf("随机积分") >= 0;
+  }
+
+  function currentCreditBalance() {
+    var v = parseFloat(d.creditMetric && d.creditMetric.textContent);
+    if (!isNaN(v) && !isMetricPlaceholder(d.creditMetric.textContent)) return v;
+    v = parseFloat(d.ucCredit && d.ucCredit.textContent);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function pollRandomCreditGain(beforeBalance, attempts, onDone) {
+    if (attempts <= 0) { onDone(null); return; }
+    apiRequest("/raffle/activity/query_user_credit_account_by_token", {
+      method: "POST", body: "{}"
+    }).then(function(r) {
+      var after = parseFloat(r.data);
+      if (!isNaN(after) && after > beforeBalance + 0.001) {
+        onDone(Math.round((after - beforeBalance) * 10) / 10);
+      } else {
+        setTimeout(function() { pollRandomCreditGain(beforeBalance, attempts - 1, onDone); }, 600);
+      }
+    }).catch(function() { onDone(null); });
+  }
+
+  function postJson(path, extra) {
+    return apiRequest(path, Object.assign({ method: "POST", body: "{}" }, extra || {}));
+  }
+
+  function pushCreditLedger(delta, balance, note) {
+    var list = readHistory(CREDIT_LEDGER_KEY, []);
+    list.unshift({ delta: delta, balance: balance, note: note || "", at: Date.now() });
+    if (list.length > 40) list.length = 40;
+    saveHistory(CREDIT_LEDGER_KEY, list);
+    renderHistories();
+  }
+
+  function formatTime(ts) {
+    try { return new Date(ts).toLocaleString(); } catch (e) { return ""; }
+  }
+
+  function renderHistories() {
+    var draws = readHistory(DRAW_HISTORY_KEY, []);
+    if (d.drawHistoryList) {
+      d.drawHistoryList.innerHTML = draws.length
+        ? draws.map(function(item) {
+            return '<div class="history-item"><strong>' + esc(item.awardTitle) + '</strong><span>' + esc(formatTime(item.at)) + '</span></div>';
+          }).join("")
+        : '<p class="history-empty">暂无记录</p>';
+    }
+    var ledger = readHistory(CREDIT_LEDGER_KEY, []);
+    if (d.creditLedgerList) {
+      d.creditLedgerList.innerHTML = ledger.length
+        ? ledger.map(function(item) {
+            var sign = item.delta > 0 ? "+" : "";
+            return '<div class="history-item"><strong>' + sign + item.delta + ' 积分</strong><span>' + esc(item.note || "") + ' · ' + esc(formatTime(item.at)) + (item.balance != null ? ' · 余额 ' + item.balance : '') + '</span></div>';
+          }).join("")
+        : '<p class="history-empty">暂无记录</p>';
+    }
+  }
+
+  function applyChatbotGate() {
+    var disabled = !chatbotEnabled;
+    if (d.msgInput) {
+      d.msgInput.disabled = disabled;
+      d.msgInput.placeholder = disabled ? "AI 对话已在管理端关闭" : "给 AI 发送消息...";
+    }
+    if (d.sendBtn) d.sendBtn.disabled = disabled;
+    if (d.chatForm) d.chatForm.classList.toggle("disabled-hint", disabled);
+    var hint = d.chatForm && d.chatForm.querySelector(".composer-disabled-msg");
+    if (disabled) {
+      if (!hint && d.chatForm) {
+        hint = document.createElement("p");
+        hint.className = "composer-disabled-msg";
+        d.chatForm.insertBefore(hint, d.chatForm.firstChild);
+      }
+      if (hint) hint.textContent = "AI 对话入口已关闭，请联系管理员或稍后再试。";
+    } else if (hint) {
+      hint.remove();
+    }
+  }
+
+  function resolveActivityId() {
+    return apiRequest("/raffle/activity/query_stage_activity_id?channel=" + encodeURIComponent(CONFIG.CHANNEL) + "&source=" + encodeURIComponent(CONFIG.SOURCE), {
+      method: "GET"
+    }).then(function(r) {
+      var staged = (r.data && Number(r.data) > 0) ? Number(r.data) : null;
+      // 上架活动 ID 与演示账户数据可能不一致（如 stage=100401、演示=100301），仅匹配时采用动态值
+      CONFIG.ACTIVITY_ID = (staged === CONFIG.DEFAULT_ACTIVITY_ID) ? staged : CONFIG.DEFAULT_ACTIVITY_ID;
+      return CONFIG.ACTIVITY_ID;
+    }).catch(function() {
+      CONFIG.ACTIVITY_ID = CONFIG.DEFAULT_ACTIVITY_ID;
+      return CONFIG.ACTIVITY_ID;
+    });
+  }
+
+  function isMetricPlaceholder(text) {
+    if (text == null) return true;
+    var t = String(text).trim();
+    return t === "" || t === "-" || t === "加载中" || t === "加载中...";
+  }
+
+  function setMetricsLoading(loading) {
+    metricsLoading = loading;
+    if (!loading) {
+      [d.surplusMetric, d.dayMetric, d.creditMetric, d.ucCredit, d.ucSurplus].forEach(function(el) {
+        if (el) el.classList.remove("loading");
+      });
+      return;
+    }
+    [d.surplusMetric, d.dayMetric, d.creditMetric, d.ucCredit, d.ucSurplus].forEach(function(el) {
+      if (!el) return;
+      if (isMetricPlaceholder(el.textContent)) {
+        el.textContent = "加载中";
+        el.classList.add("loading");
+      }
+    });
+    if (d.creditDisplay) {
+      var cur = d.creditDisplay.textContent.replace(/^积分:\s*/, "");
+      if (isMetricPlaceholder(cur)) d.creditDisplay.textContent = "积分: ...";
+    }
+  }
+
+  function loadDisplayConfig() {
+    return fetch(CONFIG.API_BASE + "/admin/config/public/display?activityId=" + CONFIG.ACTIVITY_ID)
+      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        if (r.code !== "0000" || !r.data) return;
+        var data = r.data;
+        if (d.activityLabel) {
+          d.activityLabel.textContent = data.title || ("活动 " + CONFIG.ACTIVITY_ID);
+        }
+        if (d.activityCopy) {
+          d.activityCopy.textContent = data.copy || "";
+          d.activityCopy.style.display = data.copy ? "" : "none";
+        }
+        chatbotEnabled = data.chatbotEnabled !== false;
+        applyChatbotGate();
+      })
+      .catch(function() {
+        if (d.activityLabel) d.activityLabel.textContent = "活动 " + CONFIG.ACTIVITY_ID;
+      });
+  }
 
   function readJson(key, fallback) {
     try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
@@ -185,6 +382,7 @@ function initApp() {
   /** Returns a Promise that resolves when all campaign data has been refreshed. */
   function loadCampaign() {
     var seq = ++loadCampaignSeq;
+    setMetricsLoading(true);
     var proms = [];
 
     // Armory (fire-and-forget, may fail silently)
@@ -209,7 +407,7 @@ function initApp() {
 
     // User credit account
     proms.push(
-      apiRequest("/raffle/activity/query_user_credit_account_by_token", {method:"POST"}).then(function(r) {
+      apiRequest("/raffle/activity/query_user_credit_account_by_token", {method:"POST", body: "{}"}).then(function(r) {
         if (seq !== loadCampaignSeq) return;
         setConnStatus(true);
         d.creditMetric.textContent = r.data ?? 0;
@@ -221,7 +419,7 @@ function initApp() {
 
     // Sign-in status
     proms.push(
-      apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+      apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST", body: "{}"}).then(function(r) {
         if (seq !== loadCampaignSeq) return;
         setConnStatus(true);
         if (r.data === true) {
@@ -261,26 +459,63 @@ function initApp() {
       }).catch(function() { setConnStatus(false, "加载奖品列表失败"); })
     );
 
-    return Promise.all(proms);
+    return Promise.all(proms).finally(function() {
+      if (seq === loadCampaignSeq) setMetricsLoading(false);
+      updateExchangeBtn();
+    });
   }
 
   // ---- Draw ----
   function draw() {
     busy(d.drawBtn, true);
     if (d.drawBtn) d.drawBtn.textContent = "抽奖中...";
+    var creditBefore = currentCreditBalance();
     apiRequest("/raffle/activity/draw_by_token", {
       method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
     }).then(function(r) {
+      var title = r.data?.awardTitle || "奖品";
       var idx = Math.max(0, awards.findIndex(function(a){return a.awardId===r.data?.awardId;}));
       var seg = 360 / awards.length;
       rotation = (rotation + 1440 + (360 - idx*seg - seg/2)) % 5760;
       if (d.wheel) d.wheel.style.transform = "rotate("+rotation+"deg)";
-      if (d.drawResult) d.drawResult.textContent = "恭喜获得：" + (r.data?.awardTitle||"奖品");
-      addMsg("assistant", "抽奖完成，你获得了：" + (r.data?.awardTitle||"奖品"));
-      setTimeout(function(){ loadCampaign().catch(function(){}); }, 1200);
+      var pendingTitle = isRandomCreditAward(title) ? "随机积分（发放中…）" : title;
+      if (d.drawResult) d.drawResult.textContent = "恭喜获得：" + pendingTitle;
+      pushDrawHistory(pendingTitle, r.data?.awardId);
+
+      function finishDraw(displayTitle) {
+        if (d.drawResult) d.drawResult.textContent = "恭喜获得：" + displayTitle;
+        updateLatestDrawHistory(displayTitle);
+        addMsg("assistant", "抽奖完成，你获得了：" + displayTitle);
+      }
+
+      if (isRandomCreditAward(title)) {
+        pollRandomCreditGain(creditBefore, 12, function(gain) {
+          var displayTitle = gain != null ? ("随机积分 +" + gain) : title;
+          finishDraw(displayTitle);
+          loadCampaign().catch(function(){});
+          if (gain != null) {
+            var bal = creditBefore + gain;
+            pushCreditLedger(gain, bal, "抽奖奖励");
+          }
+        });
+      } else {
+        finishDraw(title);
+        setTimeout(function(){ loadCampaign().catch(function(){}); }, 1200);
+      }
     }).catch(function(e) {
       toast(e.message);
     }).finally(function() { busy(d.drawBtn, false); if (d.drawBtn) d.drawBtn.textContent = "GO"; });
+  }
+
+  function requestSignIn(retry) {
+    return postJson("/raffle/activity/calendar_sign_rebate_by_token").catch(function(e) {
+      if (!retry && (e.code === "0001" || e.code === "0007")) {
+        return new Promise(function(resolve) {
+          setTimeout(function() { resolve(requestSignIn(true)); }, 800);
+        });
+      }
+      throw e;
+    });
   }
 
   // ---- Sign In ----
@@ -289,7 +524,7 @@ function initApp() {
     busy(d.signInBtn, true); busy(d.ucSignInBtn, true);
     if (d.signInBtn) d.signInBtn.textContent = "签到中...";
     if (d.ucSignInBtn) d.ucSignInBtn.textContent = "签到中...";
-    apiRequest("/raffle/activity/calendar_sign_rebate_by_token", {method:"POST"}).then(function(r) {
+    requestSignIn(false).then(function(r) {
       var data = r.data || {};
       signedToday = true;
       if (d.signInBtn) { d.signInBtn.textContent = "今日已签到"; d.signInBtn.classList.add("done"); }
@@ -297,13 +532,15 @@ function initApp() {
       if (d.signInStatus) d.signInStatus.textContent = data.message || "签到成功！";
       if (d.ucSigned) d.ucSigned.textContent = "是";
       toast(data.message || "签到成功，+10 积分");
-      // Refresh credit display from response
       if (data.creditBalance !== undefined && data.creditBalance !== null) {
-        var bal = data.creditBalance;
+        var bal = parseFloat(data.creditBalance);
+        var prev = currentCreditBalance();
         d.creditMetric.textContent = bal;
         d.ucCredit.textContent = bal;
         d.creditDisplay.textContent = "积分: " + bal;
         if (creditMobile) creditMobile.textContent = "积分: " + bal;
+        var reward = data.rewardCredit != null ? parseFloat(data.rewardCredit) : (bal > prev ? bal - prev : 0);
+        if (reward > 0) pushCreditLedger(reward, bal, "每日签到");
       }
       loadCampaign().catch(function(){});
     }).catch(function(e) {
@@ -360,7 +597,7 @@ function initApp() {
     });
 
     d.msgList.innerHTML = "";
-    if (active.messages.length === 0) {
+    if (active.messages.length === 0 && !pendingAssistant) {
       d.msgList.innerHTML =
         '<div class="welcome-message">'+
         '<h1>你好，'+esc(auth.userId||"用户")+'</h1>'+
@@ -381,13 +618,20 @@ function initApp() {
         el.className = "message "+m.role;
         var content;
         if (m.role === "assistant") {
-          content = marked.parse(m.content, {breaks: true, gfm: true});
+          var raw = marked.parse(m.content, {breaks: true, gfm: true});
+          content = (typeof DOMPurify !== "undefined") ? DOMPurify.sanitize(raw) : raw;
         } else {
           content = esc(m.content);
         }
         el.innerHTML = '<div class="avatar">'+(m.role==="user"?"我":"AI")+'</div><div class="bubble">'+content+'</div>';
         d.msgList.appendChild(el);
       });
+    }
+    if (pendingAssistant) {
+      var typing = document.createElement("div");
+      typing.className = "message assistant typing";
+      typing.innerHTML = '<div class="avatar">AI</div><div class="bubble"><span class="typing-dots">思考中...</span></div>';
+      d.msgList.appendChild(typing);
     }
     d.msgList.scrollTop = d.msgList.scrollHeight;
   }
@@ -401,8 +645,11 @@ function initApp() {
 
   function ask(text) {
     text = text.trim(); if (!text) return;
+    if (!chatbotEnabled) { toast("AI 对话已在管理端关闭"); return; }
     addMsg("user", text);
     d.msgInput.value = ""; d.msgInput.style.height = "auto";
+    pendingAssistant = true;
+    renderChats();
     busy(d.sendBtn, true);
     d.sendBtn.textContent = "...";
     var requestId = crypto.randomUUID();
@@ -410,7 +657,14 @@ function initApp() {
       method:"POST",
       body: JSON.stringify({requestId: requestId, activityId:CONFIG.ACTIVITY_ID, message:text})
     }).then(function(r) {
+      pendingAssistant = false;
       var data = r.data || {};
+      if (data.success === false || data.toolName === "disabled") {
+        chatbotEnabled = false;
+        applyChatbotGate();
+        addMsg("assistant", data.answer || "AI 对话当前不可用。");
+        return;
+      }
       var answer = data.answer || r.info || "已处理。";
       if (data.creditDeducted && data.creditDeducted > 0) {
         answer += "\n\n---\n*本次消耗 " + data.creditDeducted + " 积分*";
@@ -423,6 +677,9 @@ function initApp() {
         d.creditMetric.textContent = bal;
         d.ucCredit.textContent = bal;
         if (creditMobile) creditMobile.textContent = "积分: " + bal;
+        if (data.creditDeducted && data.creditDeducted > 0) {
+          pushCreditLedger(-Number(data.creditDeducted), bal, "AI 对话");
+        }
       }
     }).catch(function(e) {
       if (e.code === "0003" || (e.message && e.message.indexOf("积分不足") >= 0)) {
@@ -431,6 +688,7 @@ function initApp() {
         addMsg("assistant", "请求失败：" + (e.message || "未知错误"));
       }
     }).finally(function() {
+      pendingAssistant = false;
       busy(d.sendBtn, false);
       d.sendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     });
@@ -443,6 +701,7 @@ function initApp() {
   }
 
   function deleteConv(id) {
+    if (!confirm("确定删除该对话吗？")) return;
     if (chatState.conversations.length <= 1) {
       chatState.conversations[0].messages = [];
       chatState.conversations[0].title = "新的对话";
@@ -463,12 +722,17 @@ function initApp() {
   }
 
   // ---- Drawers ----
-  function openDrawer(drawer) { drawer.classList.add("open"); d.drawerOverlay.classList.add("open"); }
+  function openDrawer(drawer) {
+    if (drawer !== d.lotteryDrawer) closeDrawer(d.lotteryDrawer);
+    if (drawer !== d.userCenterDrawr) closeDrawer(d.userCenterDrawr);
+    drawer.classList.add("open");
+    d.drawerOverlay.classList.add("open");
+  }
   function closeDrawer(drawer) { drawer.classList.remove("open"); d.drawerOverlay.classList.remove("open"); }
   function closeAll() { closeDrawer(d.lotteryDrawer); closeDrawer(d.userCenterDrawr); }
   function openLottery() { openDrawer(d.lotteryDrawer); loadCampaign().catch(function(){}); loadExchangeSku(); }
   function closeLottery() { closeDrawer(d.lotteryDrawer); }
-  function openUserCenter() { openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); loadExchangeSku(); }
+  function openUserCenter() { openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); loadExchangeSku(); renderHistories(); }
   function closeUserCenter() { closeDrawer(d.userCenterDrawr); }
 
   // ---- Credit Exchange ----
@@ -527,6 +791,9 @@ function initApp() {
       body: JSON.stringify({ sku: exchangeSku.sku })
     }).then(function() {
       toast("兑换成功，获得 1 次抽奖机会");
+      var cost = exchangeSku ? (exchangeSku.productAmount || 0) : 0;
+      var bal = parseFloat(d.creditMetric.textContent) || 0;
+      if (cost > 0) pushCreditLedger(-cost, bal, "兑换抽奖次数");
       loadCampaign().catch(function(){});
     }).catch(function(e) {
       toast(e.message || "兑换失败");
@@ -552,7 +819,18 @@ function initApp() {
   d.closeUcBtn.onclick = closeUserCenter;
   d.drawerOverlay.onclick = closeAll;
   d.drawBtn.onclick = draw;
-  d.refreshCampaign.onclick = function() { loadCampaign().then(function(){toast("已刷新");}).catch(function(e){toast(e.message);}); };
+  d.refreshCampaign.onclick = function() {
+    if (d.refreshCampaign) {
+      d.refreshCampaign.classList.add("refreshing");
+      d.refreshCampaign.textContent = "刷新中";
+    }
+    loadCampaign().then(function(){ toast("已刷新"); }).catch(function(e){ toast(e.message); }).finally(function() {
+      if (d.refreshCampaign) {
+        d.refreshCampaign.classList.remove("refreshing");
+        d.refreshCampaign.textContent = "刷新";
+      }
+    });
+  };
   d.logoutBtn.onclick = logout;
   if (d.exchangeBtn) d.exchangeBtn.onclick = doExchange;
   if (d.signInBtn) d.signInBtn.onclick = signIn;
@@ -584,6 +862,7 @@ function initApp() {
   // Chat
   d.newChatBtn.onclick = newChat;
   d.clearChatBtn.onclick = function() {
+    if (!confirm("确定清空当前对话吗？")) return;
     var a = activeConv(); a.messages = []; a.title = "新的对话"; saveChats(); renderChats();
   };
   d.chatForm.onsubmit = function(e) { e.preventDefault(); ask(d.msgInput.value); };
@@ -601,7 +880,11 @@ function initApp() {
   // Init
   renderWheel();
   renderChats();
+  renderHistories();
   healthCheck();
-  loadCampaign().catch(function(){});
+  resolveActivityId()
+    .then(function() { return loadDisplayConfig(); })
+    .then(function() { return loadCampaign(); })
+    .catch(function(){});
   setInterval(healthCheck, 8000);
 }

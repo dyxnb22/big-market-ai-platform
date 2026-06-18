@@ -1,5 +1,18 @@
 # 01 URL 请求流程
 
+## big-market-web 页面
+
+用户端与管理端为原生 HTML/CSS/JS（非 React），桌面/Web 布局，无独立移动端导航。
+
+| 页面 | 文件 | 说明 |
+| --- | --- | --- |
+| 用户主应用 | `big-market-web/index.html` + `app.js` | 登录后抽奖、Chatbot、用户中心；活动 ID 由 `query_stage_activity_id` 解析 |
+| 登录 | `big-market-web/login.html` + `login.js` | 调用 `/api/v1/auth/login` |
+| 管理端 | `big-market-web/admin.html` + `admin.js` | 平台配置、活动文案、Chatbot 开关 |
+| 管理登录 | `big-market-web/admin-login.html` | 管理员入口 |
+
+前端在解析 `activityId` 后调用公开展示配置 API，并根据 `chatbotEnabled` 控制 Chatbot 入口。
+
 ## URL 总览
 
 | URL | Method | 入口 | 鉴权 | 主业务 |
@@ -23,6 +36,7 @@
 | `/api/v1/raffle/erp/*` | GET/POST | `ErpOperateController` | `X-Admin-Token` 或管理员 JWT | 运营查询/上架 |
 | `/api/v1/raffle/dcc/update_config` | GET | `DCCController.updateConfig` | `X-Admin-Token` 或管理员 JWT | 动态配置 |
 | `/api/v1/admin/config/*` | GET/POST | `AdminConfigController` | AdminAuthInterceptor | 平台配置 |
+| `/api/v1/admin/config/public/display` | GET | `AdminConfigController.publicDisplay` | 无（`WebMvcConfig` 排除 AdminAuth） | 活动展示配置与 Chatbot 开关（`activityId` 查询参数） |
 | `/api/v1/chatbot/ask` | POST | `ChatbotController.ask` | 有扣费时需要 token | AI Chat |
 
 ## 网关请求流
@@ -214,11 +228,35 @@ sequenceDiagram
     end
 ```
 
+## 公开展示配置流
+
+- URL: `/api/v1/admin/config/public/display?activityId={id}`
+- Entry: `AdminConfigController.publicDisplay`
+- 鉴权: 无管理员 token；`WebMvcConfig` 排除 `/api/*/admin/config/public/**`
+- 网关: 走现有 `/admin/**` 路由，无需修改 gateway
+- 前端: `big-market-web/app.js` 的 `resolveActivityId()` → `loadDisplayConfig()`
+- 响应字段: `title`、`copy`、`state`、`chatbotEnabled`
+
+```mermaid
+sequenceDiagram
+    participant W as big-market-web
+    participant G as Gateway
+    participant M as market-service
+    participant A as admin-service
+    W->>G: GET query_stage_activity_id
+    G->>M: 解析 activityId
+    M-->>W: activityId
+    W->>G: GET admin/config/public/display?activityId=
+    G->>A: publicDisplay
+    A-->>W: title/copy/chatbotEnabled
+    W->>W: applyChatbotGate + 更新活动标题
+```
+
 ## ERP / DCC / Admin 配置流
 
 - ERP: `ErpOperateController` 使用 `X-Admin-Token` 或管理员 JWT。
 - DCC: `DCCController` 使用 `X-Admin-Token` 或管理员 JWT，写 Zookeeper `/big-market-dcc/config/{key}`。
-- Admin Config: `AdminConfigController` 由 `AdminAuthInterceptor` 拦截，读写 `PlatformConfigService`。
+- Admin Config: `AdminConfigController` 由 `AdminAuthInterceptor` 拦截，读写 `PlatformConfigService`（`public/display` 除外）。
 
 ```mermaid
 flowchart TD

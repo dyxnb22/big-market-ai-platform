@@ -46,6 +46,7 @@ curl -fsS "$API/admin/config/list" \
 echo
 echo "Chatbot"
 curl -fsS "$API/chatbot/ask" \
+  -H "Authorization: $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d "{\"token\":\"$TOKEN\",\"activityId\":100301,\"message\":\"帮我查询活动100301还能抽几次\"}" | sed 's/,/,\n/g'
+  -d "{\"requestId\":\"smoke-$(date +%s)\",\"activityId\":100301,\"message\":\"帮我查询活动100301还能抽几次\"}" | sed 's/,/,\n/g'
 echo
