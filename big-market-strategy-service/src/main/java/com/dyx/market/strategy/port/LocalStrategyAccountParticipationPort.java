@@ -8,23 +8,21 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Component;
 
 /**
- * Account-participation port backed by IAccountQuotaService via Dubbo.
- *
- * strategy-service has no direct access to the activity/account domain tables.
- * This port delegates to account-service (IAccountQuotaService) using an
- * existing API contract — no new cross-domain import is introduced.
- *
- * check=false: startup succeeds even when account-service is not registered in Nacos.
- * On failure, both methods return 0 (conservative default), which is identical to
- * the StrategyReadServiceRPC default implementation behavior before The remote strategy
- * read path must remain disabled (strategy.service.remote-read.enabled=false) until
- * account-service is confirmed reachable from strategy-service .
+ * 账户参与次数端口：通过 Dubbo 调用 {@link IAccountQuotaService} 实现。
+ * <p>
+ * strategy-service 无法直接访问 activity/account 领域表；本端口委托 account-service，
+ * 复用现有 API 契约，不引入新的跨域依赖。
+ * <p>
+ * {@code check=false}：account-service 未注册到 Nacos 时仍可启动。
+ * 失败时两方法均返回 0（保守默认值），与远程策略读路径禁用前行为一致。
+ * 远程策略读路径须保持 {@code strategy.service.remote-read.enabled=false}，
+ * 直至确认 strategy-service 可访问 account-service。
  */
 @Slf4j
 @Component
 public class LocalStrategyAccountParticipationPort implements IStrategyAccountParticipationPort {
 
-    // check=false: startup succeeds even when account-service is not registered.
+    // check=false：account-service 未注册时仍可启动
     @DubboReference(version = "1.0", check = false)
     private IAccountQuotaService accountQuotaService;
 

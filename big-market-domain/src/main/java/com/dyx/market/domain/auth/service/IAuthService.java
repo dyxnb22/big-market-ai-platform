@@ -1,9 +1,7 @@
 package com.dyx.market.domain.auth.service;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 认证
- * @create 2024-10-07 17:54
+ * 认证服务契约：Token 签发、校验与用户标识解析。
  */
 public interface IAuthService {
 
@@ -14,14 +12,12 @@ public interface IAuthService {
     String openid(String token);
 
     /**
-     * Extract the jti (JWT ID) claim from a token. Returns null if the token
-     * is invalid or the jti claim is absent.
+     * 从 Token 提取 jti（JWT ID）；Token 无效或缺少 jti 时返回 null。
      */
     String extractJti(String token);
 
     /**
-     * Extract the expiration time from a token in epoch millis.
-     * Returns 0 if the token is invalid or has no expiration.
+     * 从 Token 提取过期时间（epoch 毫秒）；无效或无过期声明时返回 0。
      */
     long extractExpiration(String token);
 }

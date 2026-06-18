@@ -18,6 +18,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+/**
+ * 活动配额写路径路由：按 {@code account.service.remote-quota-write.enabled} 在远程与本地间切换。
+ * <p>
+ * 覆盖创建未支付订单、更新发货订单；远程失败时回退本地 {@code IRaffleActivityAccountQuotaService}。
+ */
 @Slf4j
 @Component
 public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter {

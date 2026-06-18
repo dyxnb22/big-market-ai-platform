@@ -13,11 +13,16 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 
 /**
- * Local (in-process) implementation of IAwardCreditWritePort.
+ * {@link IAwardCreditWritePort} 的本地（进程内）实现。
  *
- * Preserves AwardRepository's behavior: caller owns Redis locking,
- * dbRouter, transactionTemplate, and the account.award-credit-outbox flag; this
- * adapter only performs the same DAO operations that were previously inline.
+ * <p>保持 {@code AwardRepository} 原有行为：调用方负责 Redis 锁、
+ * {@code dbRouter}、{@code transactionTemplate} 以及
+ * {@code account.award-credit-outbox} 开关；本适配器仅执行原先内联的相同 DAO 操作。</p>
+ *
+ * <p>激活条件：无远程替代实现时始终使用本本地端口（当前无对应远程 Bean）。</p>
+ *
+ * <p>Outbox 说明：当 {@code account.award-credit-outbox} 开启时，
+ * {@code insertCreditAwardTask} 在同一事务边界内写入积分发奖任务行，由调用方协调事务与 Outbox 一致性。</p>
  */
 @Slf4j
 @Component

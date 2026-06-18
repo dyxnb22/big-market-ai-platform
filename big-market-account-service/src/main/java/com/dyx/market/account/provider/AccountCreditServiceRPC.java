@@ -19,10 +19,10 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 
 /**
- * Dubbo provider for credit account operations.
- *
- * provider is registered but receives no traffic.
- * Delegates to the existing ICreditAdjustService domain service unchanged.
+ * 积分账户 Dubbo Provider：创建交易单、查询余额。
+ * <p>
+ * 将 {@link IAccountCreditService} RPC 请求转交 {@link ICreditAdjustService}
+ * 领域服务处理，负责参数校验与 DTO/值对象转换。
  */
 @Slf4j
 @DubboService(version = "1.0")

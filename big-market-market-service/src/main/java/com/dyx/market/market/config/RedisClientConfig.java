@@ -20,6 +20,9 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 
+/**
+ * Redisson 客户端配置，绑定 {@link RedisClientConfigProperties}（前缀 {@code redis.sdk.config}）。
+ */
 @Configuration
 @EnableConfigurationProperties(RedisClientConfigProperties.class)
 public class RedisClientConfig {

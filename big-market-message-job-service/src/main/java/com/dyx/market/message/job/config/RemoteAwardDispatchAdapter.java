@@ -11,15 +11,14 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
- * remote award dispatch adapter for message-job-service.
- * Active only when account.fulfillment.remote-award.enabled=true.
- * Registered as @Bean by WriteAdapterLocalConfig — do NOT add @Component.
- *
- * Calls the fulfillment-service Dubbo provider via the API contract
- * {@link IFulfillmentAwardService} from big-market-api.
- *
- * RpcException is logged and re-thrown; award dispatch failure must surface.
- * No local fallback — unlike read adapters, a silent swallow here would lose award delivery.
+ * 远程发奖派发适配器（message-job-service）。
+ * <p>
+ * 仅在 {@code account.fulfillment.remote-award.enabled=true} 时激活；
+ * 由 {@link WriteAdapterLocalConfig} 注册为 {@code @Bean}，勿加 {@code @Component}。
+ * <p>
+ * 经 big-market-api 契约 {@link IFulfillmentAwardService} 调用 fulfillment-service Dubbo Provider。
+ * RpcException 记录日志后重新抛出——发奖失败须向上暴露；与读适配器不同，无本地回退，
+ * 静默吞掉会导致奖品丢失。
  */
 @Slf4j
 public class RemoteAwardDispatchAdapter implements IAwardDispatchAdapter {

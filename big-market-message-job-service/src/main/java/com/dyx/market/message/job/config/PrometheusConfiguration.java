@@ -11,6 +11,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
+/**
+ * Prometheus / Micrometer 指标配置。
+ * <p>
+ * 注册 {@link PrometheusMeterRegistry} 与 {@link TimedAspect}、{@link CountedAspect}，
+ * 支持 {@code @Timed}、{@code @Counted} 注解采集方法耗时与调用次数。
+ */
 @EnableAspectJAutoProxy
 @Configuration
 public class PrometheusConfiguration {

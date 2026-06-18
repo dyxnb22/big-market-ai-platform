@@ -7,16 +7,14 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * Strategy service: Dubbo provider for read-only strategy queries.
- *
- * Default implementation: the market-service provider remains active for local learning runs.
- * Draw execution (performRaffle), stock mutation, and armory assembly remain in
- * market-service for this learning architecture. This launcher exposes only IStrategyReadService.
- *
- * Scan boundary: strategy module + strategy domain + infrastructure only.
- * No HTTP controllers, MQ listeners, or job handlers are included.
- * Draw execution, activity orchestration, rebate, credit, and auth domains
- * are outside the scan scope of this launcher.
+ * 策略服务启动入口：对外提供只读策略查询的 Dubbo RPC。
+ * <p>
+ * 默认实现：本地学习运行时 market-service Provider 仍保持活跃。
+ * 抽奖执行（performRaffle）、库存变更、军械库组装仍留在 market-service。
+ * 本启动器仅暴露 {@code IStrategyReadService}。
+ * <p>
+ * 扫描边界：strategy 模块 + strategy 领域 + infrastructure，不含 HTTP 控制器、
+ * MQ 监听器或 Job 处理器；抽奖执行、活动编排、返利、积分、认证等领域不在扫描范围内。
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.strategy",

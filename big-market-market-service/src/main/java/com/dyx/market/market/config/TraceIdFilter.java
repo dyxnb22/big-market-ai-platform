@@ -11,6 +11,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
 
+/**
+ * 全链路追踪：为每个 HTTP 请求注入 {@code X-Trace-Id} 并写入 MDC，便于日志关联。
+ * <p>
+ * 请求无该头时生成 UUID；在响应头中回显，请求结束后清理 MDC。
+ */
 @Component
 public class TraceIdFilter extends OncePerRequestFilter {
 
@@ -29,6 +34,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } finally {
+            // 防止线程池复用时 traceId 泄漏到后续请求
             MDC.remove(MDC_KEY);
         }
     }

@@ -12,8 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.Resource;
 
 /**
- * Subscribes chatbot-service to Nacos platform config changes published by admin-service.
- * Active only when NacosConfigSyncService is in the context (nacos.config.sync.enabled=true).
+ * 订阅 admin-service 发布的 Nacos 平台配置变更。
+ * <p>
+ * 仅当上下文中存在 {@link NacosConfigSyncService} 时生效（{@code nacos.config.sync.enabled=true}）。
  */
 @Slf4j
 @Configuration

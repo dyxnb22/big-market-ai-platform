@@ -10,11 +10,14 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Local (in-process) implementation of IAwardFulfillmentPort.
+ * {@link IAwardFulfillmentPort} 的本地（进程内）实现。
  *
- * delegates directly to the existing IAwardService bean, preserving
- * identical behavior to the pre-5-E direct injection in RaffleApplicationService.
- * No network hop. No remote flag. No transaction behavior change.
+ * <p>直接委托给现有 {@code IAwardService} Bean，行为与 5-E 之前
+ * {@code RaffleApplicationService} 中的直接注入完全一致：无网络跳转、
+ * 无远程开关、无事务行为变更。</p>
+ *
+ * <p>激活条件：默认通过 {@code @ConditionalOnMissingBean} 生效——
+ * 若未注册其他 {@code IAwardFulfillmentPort} Bean，则使用本实现。</p>
  */
 @Slf4j
 @Component

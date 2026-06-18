@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * 管理端平台配置 HTTP 接口：列表、查询、保存、删除。
+ * <p>
+ * 路径前缀 {@code /api/{api-version}/admin/config/}，由 {@link PlatformConfigService} 提供数据。
+ */
 @RestController
 @CrossOrigin("${app.config.cross-origin}")
 @RequestMapping("/api/${app.config.api-version}/admin/config/")

@@ -4,12 +4,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Chatbot service: rule-based / DeepSeek-backed assistant.
- * Uses PlatformConfigService (file-backed in-memory); no DB or Redis required.
+ * 聊天机器人服务启动入口：基于规则 / DeepSeek 的智能助手。
+ * <p>
+ * 使用 {@code PlatformConfigService}（文件持久化内存配置），无需数据库或 Redis。
  */
 @SpringBootApplication(scanBasePackages = {
-        "com.dyx.market.chatbot.service",  // this module's config (RestTemplateConfig)
-        "com.dyx.market.chatbot",          // big-market-chatbot ChatbotController
+        "com.dyx.market.chatbot.service",  // 本模块配置（RestTemplateConfig）
+        "com.dyx.market.chatbot",          // ChatbotController
         "com.dyx.market.management"        // PlatformConfigService
 })
 public class ChatbotServiceApplication {

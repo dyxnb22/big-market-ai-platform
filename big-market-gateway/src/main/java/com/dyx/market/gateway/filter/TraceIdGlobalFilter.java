@@ -11,15 +11,19 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 /**
- * Propagates X-Trace-Id through the gateway. Generates a new ID if the
- * incoming request does not carry one, then forwards it to downstream
- * services and echoes it back on the response.
+ * 全链路追踪：为每个请求注入 {@code X-Trace-Id}。
+ * <p>
+ * 请求无该头时生成 UUID；写入转发给下游的请求头，并在响应头中回显，
+ * 便于在网关与各微服务日志中关联同一次调用。
  */
 @Component
 public class TraceIdGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String TRACE_HEADER = "X-Trace-Id";
 
+    /**
+     * 尽量靠前执行，确保后续路由过滤器、下游转发都能拿到 trace id。
+     */
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE;
@@ -33,6 +37,7 @@ public class TraceIdGlobalFilter implements GlobalFilter, Ordered {
         }
         final String tid = traceId;
 
+        // 不可变请求需 mutate 后替换 exchange 中的 request
         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                 .header(TRACE_HEADER, tid)
                 .build();
@@ -41,6 +46,7 @@ public class TraceIdGlobalFilter implements GlobalFilter, Ordered {
                 .request(mutatedRequest)
                 .build();
 
+        // 响应提交前把 trace id 写回，客户端也能拿到
         mutatedExchange.getResponse().beforeCommit(() -> {
             mutatedExchange.getResponse().getHeaders().set(TRACE_HEADER, tid);
             return Mono.empty();

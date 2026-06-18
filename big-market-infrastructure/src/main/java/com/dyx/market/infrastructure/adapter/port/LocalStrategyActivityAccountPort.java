@@ -12,14 +12,16 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Local (in-process) implementation of IStrategyActivityAccountPort.
+ * {@link IStrategyActivityAccountPort} 的本地（进程内）实现。
  *
- * prep (AL-2/AL-3): StrategyRepository previously injected
- * IRaffleActivityAccountDao and IRaffleActivityAccountDayDao directly.
- * This port encapsulates those reads behind the strategy domain boundary.
+ * <p>预备工作（AL-2/AL-3）：原先 {@code StrategyRepository} 直接注入
+ * {@code IRaffleActivityAccountDao} 与 {@code IRaffleActivityAccountDayDao}；
+ * 本端口将这些读操作封装在策略域边界之后。</p>
  *
- * Shard routing follows the same pattern as the original StrategyRepository
- * methods: doRouter(userId) + finally clear(). Semantics are identical.
+ * <p>分片路由沿用原 {@code StrategyRepository} 方法的模式：
+ * {@code doRouter(userId)}，并在 {@code finally} 中 {@code clear()}，语义完全一致。</p>
+ *
+ * <p>激活条件：无远程替代实现时始终使用本本地端口（当前无对应远程 Bean）。</p>
  */
 @Slf4j
 @Component

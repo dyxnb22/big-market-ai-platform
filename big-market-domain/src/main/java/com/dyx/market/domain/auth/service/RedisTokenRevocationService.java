@@ -3,11 +3,10 @@ package com.dyx.market.domain.auth.service;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Redis-backed token revocation shared across auth, market, and admin services.
- *
- * Uses reflection so domain does not require a compile-time Redisson dependency.
- * A {@code org.redisson.api.RedissonClient} bean must be present when
- * {@code token-revocation.redis.enabled=true}.
+ * 基于 Redis 的 Token 吊销存储，供 auth、market、admin 等服务共享。
+ * <p>
+ * 通过反射调用 Redisson，避免 domain 模块编译期依赖 Redisson。
+ * 启用 {@code token-revocation.redis.enabled=true} 时需提供 {@code org.redisson.api.RedissonClient} Bean。
  */
 @Slf4j
 public class RedisTokenRevocationService implements ITokenRevocationService {
@@ -44,7 +43,7 @@ public class RedisTokenRevocationService implements ITokenRevocationService {
                     .invoke(redissonClient, REVOKED_KEY_PREFIX + jti);
             return (boolean) bucket.getClass().getMethod("isExists").invoke(bucket);
         } catch (Exception e) {
-            // Fail closed: treat Redis errors as revoked so logout/blacklist cannot be bypassed.
+            // 失败即拒绝：Redis 异常时视为已吊销，防止绕过登出/黑名单
             log.error("[RedisTokenRevocationService] failed to check jti:{} - denying token", jti, e);
             return true;
         }

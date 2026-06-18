@@ -16,8 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Replaces fields annotated with {@link DCCValue} from Zookeeper and updates
- * them when the corresponding config node changes.
+ * 从 Zookeeper 读取 {@link DCCValue} 标注字段的初始值，并在配置节点变更时热更新。
  */
 @Slf4j
 public class DccValueBeanPostProcessor implements BeanPostProcessor {
@@ -26,6 +25,7 @@ public class DccValueBeanPostProcessor implements BeanPostProcessor {
     private static final String BASE_CONFIG_PATH_CONFIG = BASE_CONFIG_PATH + "/config";
 
     private final CuratorFramework client;
+    /** 配置路径与 Bean 实例的映射，用于节点变更时回写字段。 */
     private final Map<String, Object> dccObjectGroup = new ConcurrentHashMap<>();
 
     public DccValueBeanPostProcessor(CuratorFramework client) throws Exception {
@@ -43,6 +43,7 @@ public class DccValueBeanPostProcessor implements BeanPostProcessor {
         }
     }
 
+    /** 监听配置根路径下的节点变更，触发字段热更新。 */
     private void listenForConfigChanges() {
         CuratorCache curatorCache = CuratorCache.build(client, BASE_CONFIG_PATH_CONFIG);
         curatorCache.start();

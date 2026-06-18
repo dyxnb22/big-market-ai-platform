@@ -16,21 +16,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Provides a custom IpPathRateLimit GatewayFilterFactory for rate limiting
- * per (client IP + path prefix) using an in-memory token bucket.
- *
- * Usage in application.yml:
- *   filters:
- *     - name: IpPathRateLimit
- *       args:
- *         replenishRate: 20
- *         burstCapacity: 40
- *
- * This is a lightweight alternative to the Spring Cloud Gateway
- * RequestRateLimiter which requires Redis (spring-boot-starter-data-redis-reactive).
- *
- * SAFETY: Does not touch existing circuit breaker config.
- * DISABLE: Remove the filter from route definitions.
+ * 自定义路由级限流过滤器 {@code IpPathRateLimit}（内存令牌桶）。
+ * <p>
+ * 按「客户端 IP + 路径前缀（如 /api/v1）」限流，无需 Redis。
+ * 在 application-docker.yml 中挂到 auth/market 路由；总开关为
+ * {@code gateway.rate-limiter.enabled}（默认 false，dev 环境通常不限流）。
+ * <p>
+ * yml 用法：
+ * <pre>
+ * filters:
+ *   - name: IpPathRateLimit
+ *     args:
+ *       replenishRate: 20
+ *       burstCapacity: 40
+ * </pre>
  */
 @Configuration
 public class RateLimiterConfig {
@@ -42,13 +41,13 @@ public class RateLimiterConfig {
     }
 
     /**
-     * Custom GatewayFilterFactory that applies an in-memory token-bucket
-     * rate limit per key derived from client IP + path prefix.
+     * 类名去掉 {@code GatewayFilterFactory} 后缀后即为 yml 中的过滤器名：IpPathRateLimit。
      */
     public static class IpPathRateLimitGatewayFilterFactory
             extends AbstractGatewayFilterFactory<IpPathRateLimitGatewayFilterFactory.Config> {
 
         private static final Log log = LogFactory.getLog(IpPathRateLimitGatewayFilterFactory.class);
+        /** 每个限流 key 对应一个令牌桶，仅当前网关进程有效，多实例不共享 */
         private final ConcurrentHashMap<String, TokenBucket> buckets = new ConcurrentHashMap<>();
         private final boolean enabled;
 
@@ -74,6 +73,7 @@ public class RateLimiterConfig {
                         : "unknown";
                 String path = exchange.getRequest().getURI().getPath();
                 String[] segments = path.split("/");
+                // 例：/api/v1/auth/login → /api/v1，同 IP 下同版本 API 共享配额
                 String route = segments.length >= 3 ? "/" + segments[1] + "/" + segments[2] : path;
                 String key = ip + ":" + route;
 
@@ -91,6 +91,7 @@ public class RateLimiterConfig {
             };
         }
 
+        /** 路由 yml 中的 replenishRate / burstCapacity 会绑定到此 */
         public static class Config {
             private int replenishRate = 10;
             private int burstCapacity = 20;
@@ -101,6 +102,7 @@ public class RateLimiterConfig {
             public void setBurstCapacity(int burstCapacity) { this.burstCapacity = burstCapacity; }
         }
 
+        /** 令牌桶：capacity 为突发上限，replenishRatePerSec 为每秒补充速率 */
         static class TokenBucket {
             final long capacity;
             final double refillRatePerMs;

@@ -3,10 +3,10 @@ package com.dyx.market.domain.award.adapter.port;
 import com.dyx.market.domain.award.model.entity.TaskEntity;
 
 /**
- * Award-dispatch task outbox boundary.
- *
- * Default local implementation preserves the shared task table until
- * award_dispatch_task_outbox DDL and routing flags are validated for local learning.
+ * 发奖任务发件箱边界。
+ * <p>
+ * 默认本地实现沿用共享 task 表，待 award_dispatch_task_outbox DDL 与路由开关
+ * 在本地学习环境验证后再切换。
  */
 public interface IAwardDispatchTaskOutboxPort {
 

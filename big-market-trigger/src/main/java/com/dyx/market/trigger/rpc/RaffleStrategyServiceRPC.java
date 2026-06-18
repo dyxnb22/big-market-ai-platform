@@ -16,15 +16,16 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * default strategy Dubbo provider hosted by market-service.
- *
- * Keeps the HTTP controller registered while making the default Dubbo provider
- * configurable for local service-oriented runs.
+ * market-service 内置的默认抽奖策略 Dubbo 提供者。
+ * <p>
+ * HTTP Controller 保持注册的同时，通过 {@code strategy.embedded-rpc-provider.enabled}
+ * 控制是否对外暴露 Dubbo 接口，便于本地单体与服务化模式切换。
  */
 @DubboService(version = "1.0")
 @ConditionalOnProperty(name = "strategy.embedded-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RaffleStrategyServiceRPC implements IRaffleStrategyService {
 
+    // Dubbo 入口复用 HTTP Controller，避免重复实现业务逻辑
     @Resource
     private RaffleStrategyController raffleStrategyController;
 

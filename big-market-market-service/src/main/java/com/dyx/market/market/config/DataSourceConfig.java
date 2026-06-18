@@ -13,9 +13,13 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
 
+/**
+ * 数据源配置：分别注册 Elasticsearch 与 MySQL 的 MyBatis {@link SqlSessionFactory}。
+ */
 @Configuration
 public class DataSourceConfig {
 
+    /** Elasticsearch SQL 查询（策略 ES 相关 Mapper） */
     @Configuration
     @MapperScan(basePackages = "com.dyx.market.infrastructure.elasticsearch", sqlSessionFactoryRef = "elasticsearchSqlSessionFactory")
     static class ElasticsearchMyBatisConfig {
@@ -35,6 +39,7 @@ public class DataSourceConfig {
         }
     }
 
+    /** MySQL 主库，挂载分库分表动态路由插件 */
     @Configuration
     @MapperScan(basePackages = "com.dyx.market.infrastructure.dao", sqlSessionFactoryRef = "mysqlSqlSessionFactory")
     static class MysqlMyBatisConfig {

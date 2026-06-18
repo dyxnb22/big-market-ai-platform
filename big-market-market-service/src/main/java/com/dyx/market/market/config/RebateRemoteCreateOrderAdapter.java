@@ -19,20 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Routes calendarSignRebate createOrder to big-market-rebate-service via Dubbo when enabled.
- *
- * Flag: rebate.service.remote-create-order.enabled (default false).
- * This bean overrides LocalRebateOrderAdapter (@ConditionalOnMissingBean) in market-service.
- *
- * When flag=false: falls through to the local IBehaviorRebateService.createOrder path.
- * When flag=true and remote call succeeds: returns an empty list (IRebateService.rebate returns
- *   Boolean, not order IDs; callers only log the size — empty is safe and idempotent).
- * When flag=true and remote call fails: logs the error and falls back to local.
- *
- * Do not enable until:
- *   - default trigger.rpc IRebateService provider in market-service is disabled (duplicate risk)
- *   - shared task outbox ownership is clarified
- *   - local validation passes for rebate-service
+ * 返利建单路径路由：按 {@code rebate.service.remote-create-order.enabled} 调用 rebate-service 或本地领域服务。
+ * <p>
+ * 远程成功时返回空列表（{@code IRebateService.rebate} 返回 Boolean，调用方仅打日志，空列表安全且幂等）。
+ * 远程失败时回退本地 {@code IBehaviorRebateService.createOrder}。
  */
 @Slf4j
 @Component
@@ -50,7 +40,7 @@ public class RebateRemoteCreateOrderAdapter implements IRebateOrderAdapter {
     @Resource
     private Map<String, String> appTokenMap;
 
-    // check=false: startup succeeds even when rebate-service is not registered in Nacos.
+    // check=false：rebate-service 未注册到 Nacos 时仍可启动
     @DubboReference(version = "1.0", check = false)
     private IRebateService rebateService;
 
@@ -70,7 +60,7 @@ public class RebateRemoteCreateOrderAdapter implements IRebateOrderAdapter {
                 if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
                     log.info("[RebateRemoteCreateOrderAdapter] createOrder remote success userId:{} outBusinessNo:{}",
                             behaviorEntity.getUserId(), behaviorEntity.getOutBusinessNo());
-                    // IRebateService.rebate returns Boolean not order IDs; return empty list — safe for log-only callers.
+                    // rebate 接口返回 Boolean 而非订单 ID；返回空列表对仅打日志的调用方安全
                     return Collections.emptyList();
                 }
                 log.warn("[RebateRemoteCreateOrderAdapter] createOrder remote non-success code:{} userId:{} outBusinessNo:{}",

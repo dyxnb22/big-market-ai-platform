@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 权限认证
- * @create 2024-10-07 17:54
+ * 鉴权抽象基类：基于 HS256 的 JWT 签发、解析与校验。
+ * <p>
+ * 子类实现 {@link IAuthService} 的业务入口；本类封装 encode/decode 及 jti、过期时间等载荷提取。
  */
 @Slf4j
 public abstract class AbstractAuthService implements IAuthService {
@@ -28,21 +28,10 @@ public abstract class AbstractAuthService implements IAuthService {
     }
 
     /**
-     * 这里就是产生jwt字符串的地方
-     * jwt字符串包括三个部分
-     * 1. header
-     * -当前字符串的类型，一般都是"JWT"
-     * -哪种算法加密，"HS256"或者其他的加密算法
-     * 所以一般都是固定的，没有什么变化
-     * 2. payload
-     * 一般有四个最常见的标准字段（下面有）
-     * iat：签发时间，也就是这个jwt什么时候生成的
-     * jti：JWT的唯一标识
-     * iss：签发人，一般都是username或者userId
-     * exp：过期时间
+     * 签发 JWT 字符串，包含 header、payload（iat/jti/iss/exp 等）与签名三部分。
      */
     protected String encode(String issuer, long ttlMillis, Map<String, Object> claims) {
-        // iss签发人，ttlMillis生存时间，claims是指还想要在jwt中存储的一些非隐私信息
+        // iss 签发人，ttlMillis 生存时间，claims 为荷载中的扩展非隐私字段
         if (claims == null) {
             claims = new HashMap<>();
         }
@@ -51,11 +40,11 @@ public abstract class AbstractAuthService implements IAuthService {
         JwtBuilder builder = Jwts.builder()
                 // 荷载部分
                 .setClaims(claims)
-                // 这个是JWT的唯一标识，一般设置成唯一的，这个方法可以生成唯一标识
+                // JWT 唯一标识
                 .setId(UUID.randomUUID().toString())//2.
                 // 签发时间
                 .setIssuedAt(new Date(nowMillis))
-                // 签发人，也就是JWT是给谁的（逻辑上一般都是username或者userId）
+                // 签发人（逻辑上一般为 username 或 userId）
                 .setSubject(issuer)
                 .signWith(SignatureAlgorithm.HS256, base64EncodedSecretKey);//这个地方是生成jwt使用的算法和秘钥
         if (ttlMillis >= 0) {
@@ -66,8 +55,7 @@ public abstract class AbstractAuthService implements IAuthService {
         return builder.compact();
     }
 
-    // 相当于encode的方向，传入jwtToken生成对应的username和password等字段。Claim就是一个map
-    // 也就是拿到荷载部分所有的键值对
+    // 解析 jwtToken，得到荷载部分所有键值对（Claim 即 map）
     protected Claims decode(String jwtToken) {
         // 得到 DefaultJwtParser
         return Jwts.parser()
@@ -78,7 +66,7 @@ public abstract class AbstractAuthService implements IAuthService {
                 .getBody();
     }
 
-    // 判断jwtToken是否合法（使用 jjwt 统一实现，替代 auth0）
+    // 判断 jwtToken 是否合法（使用 jjwt 统一实现，替代 auth0）
     protected boolean isVerify(String jwtToken) {
         try {
             decode(jwtToken);

@@ -12,11 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Local (in-process) implementation of ICreditAwardTaskDispatchPort.
+ * {@link ICreditAwardTaskDispatchPort} 的本地（进程内）实现。
  *
- * prep (AL-7): DispatchCreditAwardTaskJob previously injected
- * ICreditAwardTaskDao directly. This port preserves the same DAO calls while
- * hiding the infra DAO from message-job-service.
+ * <p>预备工作（AL-7）：原先 {@code DispatchCreditAwardTaskJob} 直接注入
+ * {@code ICreditAwardTaskDao}；本端口保持相同的 DAO 调用，同时将基础设施 DAO
+ * 对 message-job-service 隐藏。</p>
+ *
+ * <p>激活条件：无远程替代实现时始终使用本本地端口（当前无对应远程 Bean）。</p>
  */
 @Slf4j
 @Component

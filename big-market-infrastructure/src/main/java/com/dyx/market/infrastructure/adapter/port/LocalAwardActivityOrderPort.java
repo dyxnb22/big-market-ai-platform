@@ -9,12 +9,14 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Local (in-process) implementation of IAwardActivityOrderPort.
+ * {@link IAwardActivityOrderPort} 的本地（进程内）实现。
  *
- * prep (AL-5): AwardRepository previously injected
- * IUserRaffleOrderDao directly. This port encapsulates the same guarded
- * user_raffle_order state transition without changing transaction or routing
- * behavior; AwardRepository still controls dbRouter and transactionTemplate.
+ * <p>预备工作（AL-5）：原先 {@code AwardRepository} 直接注入
+ * {@code IUserRaffleOrderDao}；本端口封装相同的、带守卫的
+ * {@code user_raffle_order} 状态流转，不改变事务或路由行为——
+ * {@code AwardRepository} 仍控制 {@code dbRouter} 与 {@code transactionTemplate}。</p>
+ *
+ * <p>激活条件：无远程替代实现时始终使用本本地端口（当前无对应远程 Bean）。</p>
  */
 @Slf4j
 @Component

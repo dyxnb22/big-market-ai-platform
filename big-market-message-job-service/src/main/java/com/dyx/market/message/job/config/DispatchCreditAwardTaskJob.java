@@ -20,17 +20,17 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * outbox consumer for award credit dispatch.
- *
- * Active ONLY when account.award-credit-outbox.enabled=true. When false (default) this bean
- * is never instantiated and the @XxlJob handlers are never registered — no DB access occurs.
- *
- * When enabled, polls credit_award_task rows in each shard DB and dispatches pending credits
- * via IAccountCreditWriteAdapter.createOrder(). Uses award_order_id as outBusinessNo so the
- * account-service deduplicates duplicate dispatch attempts.
- *
- * Pre-requisite: credit_award_task_000..003 tables must exist in big_market_01 and big_market_02
- * (apply docs/sql/credit-award-task-outbox.sql) when this feature flag is true.
+ * 发奖积分派发 Outbox 消费者。
+ * <p>
+ * 仅在 {@code account.award-credit-outbox.enabled=true} 时激活；为 false（默认）时
+ * 本 Bean 不会实例化，{@code @XxlJob} 处理器也不会注册——不会访问数据库。
+ * <p>
+ * 启用后，轮询各分片库中的 credit_award_task 待处理行，经
+ * {@link IAccountCreditWriteAdapter#createOrder} 派发；以 award_order_id 作为
+ * outBusinessNo，account-service 据此幂等去重。
+ * <p>
+ * 前置条件：启用本开关时，big_market_01 / big_market_02 须存在 credit_award_task_000..003 表
+ * （执行 docs/sql/credit-award-task-outbox.sql）。
  */
 @Slf4j
 @Component
@@ -92,7 +92,7 @@ public class DispatchCreditAwardTaskJob {
                     .outBusinessNo(task.getAwardOrderId())
                     .build();
             accountCreditWriteAdapter.createOrder(trade);
-            // Mark dispatched; duplicate-credit on account-service is guarded by outBusinessNo idempotency.
+            // 标记已派发；account-service 侧以 outBusinessNo 保证幂等，防止重复入账
             dbRouter.doRouter(task.getUserId());
             creditAwardTaskDispatchPort.updateDispatched(task);
             log.info("[DispatchCreditAwardTaskJob] dispatched userId:{} awardOrderId:{}", task.getUserId(), task.getAwardOrderId());

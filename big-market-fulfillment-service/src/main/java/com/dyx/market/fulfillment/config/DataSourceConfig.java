@@ -13,6 +13,12 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
 
+/**
+ * 多数据源 MyBatis 配置：Elasticsearch SQL JDBC 与 MySQL 各一套 SqlSessionFactory。
+ * <p>
+ * ES 数据源绑定 {@code spring.elasticsearch.datasource}；MySQL 使用 Spring Boot
+ * 默认 {@link DataSource}，并挂载分库路由插件 {@code dbRouterDynamicMybatisPlugin}。
+ */
 @Configuration
 public class DataSourceConfig {
 

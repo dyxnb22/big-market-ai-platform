@@ -8,6 +8,11 @@ import org.springframework.context.annotation.Configuration;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+/**
+ * Retrofit2 HTTP 客户端配置，用于调用 OpenAI 账户相关外部 API。
+ * <p>
+ * 基础地址来自 {@link Retrofit2ConfigProperties#getApiHost()}。
+ */
 @Slf4j
 @Configuration
 @EnableConfigurationProperties(Retrofit2ConfigProperties.class)

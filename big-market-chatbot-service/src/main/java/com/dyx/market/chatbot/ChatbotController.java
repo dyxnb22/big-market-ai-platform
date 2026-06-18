@@ -25,6 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * 聊天机器人 HTTP 接口：AI 问答，支持本地规则回复与 DeepSeek 调用。
+ * <p>
+ * 路径前缀 {@code /api/{api-version}/chatbot/}；可配置积分扣减，经网关调用 market-service 积分 API。
+ */
 @Slf4j
 @RestController
 @CrossOrigin("${app.config.cross-origin}")
@@ -43,11 +48,11 @@ public class ChatbotController {
     @Value("${chatbot.deepseek.model:deepseek-chat}")
     private String deepseekModel;
 
-    /** Cost in credits per successful AI ask. Default 1. Set to 0 for free mode. */
+    /** 每次成功 AI 问答消耗的积分数，默认 1；设为 0 为免费模式，绑定 {@code chatbot.cost-per-ask}。 */
     @Value("${chatbot.cost-per-ask:1}")
     private int costPerAsk;
 
-    /** Gateway base URL for calling market-service credit APIs */
+    /** 调用 market-service 积分 API 的网关基址，绑定 {@code chatbot.gateway-url}。 */
     @Value("${chatbot.gateway-url:http://127.0.0.1:8080}")
     private String gatewayUrl;
 
@@ -98,7 +103,7 @@ public class ChatbotController {
                         .build();
             }
 
-            // Credit check (skip only in free mode)
+            // 积分校验（免费模式跳过）
             if (effectiveCost > 0) {
                 BigDecimal balance = fetchCreditBalance(token);
                 if (balance.compareTo(BigDecimal.valueOf(effectiveCost)) < 0) {
@@ -118,7 +123,7 @@ public class ChatbotController {
             String message = request.getMessage();
             String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
 
-            // Deduct credit BEFORE AI call, so the user is charged before we incur AI compute cost
+            // AI 调用前先扣积分，避免产生 AI 算力成本后用户余额不足
             BigDecimal deducted = BigDecimal.ZERO;
             BigDecimal newBalance = BigDecimal.ZERO;
             if (effectiveCost > 0) {
@@ -197,7 +202,7 @@ public class ChatbotController {
         }
     }
 
-    /** Fetch credit balance from market-service via gateway. */
+    /** 经网关从 market-service 查询积分余额。 */
     private BigDecimal fetchCreditBalance(String token) {
         if (StringUtils.isBlank(token)) return BigDecimal.ZERO;
         try {
@@ -220,7 +225,7 @@ public class ChatbotController {
         throw new IllegalStateException("查询积分失败");
     }
 
-    /** Refund credit for a failed AI chat call. Best-effort — logs failures but doesn't throw. */
+    /** AI 调用失败时退还积分，尽力而为——失败仅记录日志不抛异常。 */
     private void refundCredit(String token, int amount, String originalRequestId) {
         String url = gatewayUrl.replaceAll("/$", "")
                 + "/api/v1/raffle/activity/chat_credit_refund_by_token?amount=" + amount
@@ -236,7 +241,7 @@ public class ChatbotController {
         }
     }
 
-    /** Deduct credit for AI chat via market-service gateway. Returns new balance. */
+    /** 经网关扣减 AI 对话积分，返回扣减后余额。 */
     private BigDecimal deductCredit(String token, int amount, String requestId) {
         String url = gatewayUrl.replaceAll("/$", "")
                 + "/api/v1/raffle/activity/chat_credit_deduct_by_token?amount=" + amount
@@ -309,7 +314,7 @@ public class ChatbotController {
                 }
             }
         }
-        // Non-2xx or empty body — let caller handle refund
+        // 非 2xx 或空响应体——由调用方处理退款
         throw new RuntimeException("DeepSeek returned unexpected response: " + response.getStatusCode());
     }
 

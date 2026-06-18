@@ -12,20 +12,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * provides local write adapter beans for message-job-service.
- *
- * Using @Bean + @ConditionalOnMissingBean in a @Configuration class (rather than
- * @Component on the adapter classes themselves) ensures reliable evaluation order:
- * the @ConditionalOnProperty-guarded remote adapters are evaluated during component
- * scanning; by the time this @Configuration's @Bean methods are processed, the
- * remote adapter beans are either registered (flag=true) or absent (flag=false).
- *
- * When remote adapters are absent (default, flag=false), these @Bean methods fire
- * and register the local service-delegate adapters. When remote adapters are present
- * (flag=true), @ConditionalOnMissingBean suppresses these methods.
- *
- * Spring's CommonAnnotationBeanPostProcessor processes @Resource fields on beans
- * created here exactly as it would for @Component-registered beans.
+ * 本地写适配器 Bean 提供者（message-job-service）。
+ * <p>
+ * 使用 {@code @Bean} + {@code @ConditionalOnMissingBean} 的 {@code @Configuration} 类
+ * （而非在适配器类上加 {@code @Component}），确保评估顺序可靠：
+ * 带 {@code @ConditionalOnProperty} 的远程适配器在组件扫描阶段评估；
+ * 本配置类的 {@code @Bean} 方法执行时，远程 Bean 已注册（flag=true）或不存在（flag=false）。
+ * <p>
+ * 远程适配器不存在时（默认 flag=false），本类方法注册本地服务委托适配器；
+ * 远程适配器存在时（flag=true），{@code @ConditionalOnMissingBean} 抑制本类方法。
  */
 @Configuration
 public class WriteAdapterLocalConfig {

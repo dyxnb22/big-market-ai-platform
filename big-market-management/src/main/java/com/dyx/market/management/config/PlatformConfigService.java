@@ -23,11 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Lightweight configuration store for the learning/productized version.
- *
- * <p>The original project used Zookeeper DCC for runtime switches. This service
- * gives the admin and chatbot modules a local, visible configuration source
- * that can later be replaced by MySQL or a formal config center.</p>
+ * 平台运行时配置的轻量存储（学习/产品化版本）。
+ * <p>
+ * 原项目使用 Zookeeper DCC 做运行时开关；本服务为 admin、chatbot 等模块提供
+ * 本地可见的配置源，后续可替换为 MySQL 或正式配置中心。
  */
 @Service
 public class PlatformConfigService implements InitializingBean {
@@ -51,7 +50,7 @@ public class PlatformConfigService implements InitializingBean {
         putDefault("system",  "degradeSwitch",    "close", "Global raffle degrade switch");
         putDefault("system",  "rateLimiterSwitch","close", "Global rate limiter switch");
         loadFromDisk();
-        // Nacos is source-of-truth: override disk state with latest remote config on startup
+        // 启动时以 Nacos 为权威源：用远端最新配置覆盖本地磁盘快照
         if (nacosConfigSyncService != null) {
             String nacosContent = nacosConfigSyncService.fetchCurrent(3000);
             if (nacosContent != null && !nacosContent.isEmpty()) {

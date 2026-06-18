@@ -4,14 +4,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Auth service: stateless JWT login and token validation.
- * Scans only auth controller and domain.auth packages to avoid pulling
- * unresolvable beans from other domain sub-packages.
+ * 认证服务启动入口：无状态 JWT 登录与 Token 校验。
+ * <p>
+ * 仅扫描 auth 控制器与 domain.auth 包，避免引入其他领域子包中无法解析的 Bean。
  */
 @SpringBootApplication(scanBasePackages = {
-        "com.dyx.market.auth.service",   // this module's own config
-        "com.dyx.market.auth",           // big-market-auth-access controller
-        "com.dyx.market.domain.auth"     // stateless JWT AuthService in domain
+        "com.dyx.market.auth.service",   // 本模块配置
+        "com.dyx.market.auth",           // AuthAccessController
+        "com.dyx.market.domain.auth"     // 无状态 JWT AuthService
 })
 public class AuthServiceApplication {
 

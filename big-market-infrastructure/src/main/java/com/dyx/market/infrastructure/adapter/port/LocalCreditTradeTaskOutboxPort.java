@@ -10,10 +10,15 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Legacy local credit-trade outbox adapter.
+ * 积分交易任务 Outbox 的遗留本地适配器。
  *
- * Delegates to ITaskDao intentionally so can remove direct repository
- * DAO coupling without switching physical tables before DBA-applied DDL.
+ * <p>实现 {@link ICreditTradeTaskOutboxPort}，有意委托给 {@code ITaskDao}，
+ * 以便在 DBA 执行 DDL 切换物理表之前，解除仓储层对 DAO 的直接耦合。</p>
+ *
+ * <p>激活条件：无远程替代实现时始终使用本本地端口（当前无对应远程 Bean）。</p>
+ *
+ * <p>Outbox 说明：通过 {@code task} 表记录消息发送状态（插入、标记完成、标记失败），
+ * 幂等性由调用方传入的 {@code messageId} 与 DAO 层更新语义共同保障。</p>
  */
 @Component
 public class LocalCreditTradeTaskOutboxPort implements ICreditTradeTaskOutboxPort {

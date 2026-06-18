@@ -7,6 +7,9 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Guava 本地缓存配置，用于短时热点数据（默认写后 3 秒过期）。
+ */
 @Configuration
 public class GuavaConfig {
 

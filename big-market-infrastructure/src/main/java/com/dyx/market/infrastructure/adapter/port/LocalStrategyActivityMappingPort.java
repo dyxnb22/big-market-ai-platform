@@ -8,15 +8,15 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * Local (in-process) implementation of IStrategyActivityMappingPort.
+ * {@link IStrategyActivityMappingPort} 的本地（进程内）实现。
  *
- * (AL-1): StrategyRepository previously injected IRaffleActivityDao
- * directly. This port encapsulates those ID-mapping reads behind the strategy
- * domain boundary without altering behavior.
+ * <p>预备工作（AL-1）：原先 {@code StrategyRepository} 直接注入
+ * {@code IRaffleActivityDao}；本端口将这些 ID 映射读操作封装在策略域边界之后，不改变行为。</p>
  *
- * No shard routing is required: raffle_activity is not sharded; both queries
- * are simple primary-key lookups identical to the original StrategyRepository
- * delegate calls.
+ * <p>无需分片路由：{@code raffle_activity} 未分片，两次查询均为与原
+ * {@code StrategyRepository} 委托调用相同的主键查找。</p>
+ *
+ * <p>激活条件：无远程替代实现时始终使用本本地端口（当前无对应远程 Bean）。</p>
  */
 @Slf4j
 @Component

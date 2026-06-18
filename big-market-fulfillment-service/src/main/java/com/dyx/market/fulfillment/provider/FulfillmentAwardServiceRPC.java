@@ -16,17 +16,13 @@ import org.apache.dubbo.config.annotation.DubboService;
 import javax.annotation.Resource;
 
 /**
- * Dubbo provider wrapping the award domain service.
- *
- * Implements the API contract {@link IFulfillmentAwardService} from big-market-api.
- * Internally delegates to the domain {@link IAwardService} — no logic lives here.
- *
- * The provider exposes the award fulfillment contract for service-oriented learning runs.
- *
- * Safety constraint: UserCreditRandomAward writes user_credit_account directly in a
- * shared local transaction with user_award_record. This must be routed through
- * account-service via the outbox BEFORE any final routing to fulfillment-service.
- * See docs/data-and-outbox.md.
+ * 发奖履约 Dubbo Provider：封装发奖领域服务，实现 {@link IFulfillmentAwardService} 契约。
+ * <p>
+ * 内部委托 {@link IAwardService}，本类不含业务逻辑，仅做参数校验与 DTO 转换。
+ * <p>
+ * 安全约束：UserCreditRandomAward 会在与 user_award_record 同一本地事务中直接写
+ * user_credit_account，此类写操作须先经 outbox 路由到 account-service，再最终路由到
+ * fulfillment-service。详见 docs/data-and-outbox.md。
  */
 @Slf4j
 @DubboService(version = "1.0")

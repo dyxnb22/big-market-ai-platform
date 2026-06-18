@@ -8,31 +8,28 @@ import com.dyx.market.trigger.api.dto.RaffleStrategyRuleWeightResponseDTO;
 import java.util.List;
 
 /**
- * Strategy read adapter boundary.
- *
- * Matches the two read methods in IStrategyReadService. Local implementation
- * delegates to IRaffleAward, IRaffleRule, and IAccountReadAdapter. Remote
- * implementation (StrategyRemoteReadAdapter in market-service) proxies to
- * big-market-strategy-service via Dubbo when strategy.service.remote-read.enabled=true.
- *
- * introduced so RaffleStrategyController no longer calls strategy
- * domain services directly for the two pure read endpoints.
+ * 抽奖策略读查询适配器契约。
+ * <p>
+ * 对应 IStrategyReadService 的两个读方法。本地实现委托 IRaffleAward、IRaffleRule 与 IAccountReadAdapter；
+ * 远程实现（market-service 中的 StrategyRemoteReadAdapter）在
+ * {@code strategy.service.remote-read.enabled=true} 时经 Dubbo 代理 big-market-strategy-service。
+ * 引入此契约后，RaffleStrategyController 不再直接调用策略领域服务处理两个纯读接口。
  */
 public interface IStrategyReadAdapter {
 
     /**
-     * Query award list with unlock status for a given activity and user.
+     * 查询指定活动与用户的奖品列表及解锁状态。
      *
      * @param request userId + activityId
-     * @return ordered award list with lock-count metadata
+     * @return 有序奖品列表，含锁定次数元数据
      */
     List<RaffleAwardListResponseDTO> queryRaffleAwardList(RaffleAwardListRequestDTO request);
 
     /**
-     * Query rule-weight unlock progress for a given activity and user.
+     * 查询指定活动与用户的规则权重解锁进度。
      *
      * @param request userId + activityId
-     * @return weight rule list with user's current unlock counts
+     * @return 权重规则列表及用户当前解锁次数
      */
     List<RaffleStrategyRuleWeightResponseDTO> queryRaffleStrategyRuleWeight(RaffleStrategyRuleWeightRequestDTO request);
 

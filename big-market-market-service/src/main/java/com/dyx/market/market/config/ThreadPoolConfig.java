@@ -9,6 +9,11 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.concurrent.*;
 
+/**
+ * 通用线程池配置，绑定 {@link ThreadPoolConfigProperties}（前缀 {@code thread.pool.executor.config}）。
+ * <p>
+ * 若容器中尚无 {@link ThreadPoolExecutor} Bean，则按配置创建（供 {@code @Async} 等使用）。
+ */
 @Slf4j
 @EnableAsync
 @Configuration

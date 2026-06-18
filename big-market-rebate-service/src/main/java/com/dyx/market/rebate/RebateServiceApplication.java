@@ -7,11 +7,10 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * Rebate service: Dubbo provider for behavior rebate creation.
- *
- * default implementation: the existing market-service provider remains active.
- * This launcher gives the rebate bounded context its own service boundary before
- * any caller or final routing is attempted.
+ * 返利服务启动入口：对外提供行为返利创建的 Dubbo RPC。
+ * <p>
+ * 默认实现：现有 market-service Provider 仍保持活跃；本启动器为返利限界上下文
+ * 提供独立服务边界，便于后续调用方或路由切换。
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.rebate",

@@ -8,10 +8,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * In-memory token revocation store for local development and tests.
- *
- * Expired entries are cleaned periodically to bound memory. Not suitable for
- * multi-instance production (use RedisTokenRevocationService in that case).
+ * 内存版 Token 吊销存储，用于本地开发与测试。
+ * <p>
+ * 定期清理过期条目以控制内存占用；多实例生产环境请使用 RedisTokenRevocationService。
  */
 @Slf4j
 public class InMemoryTokenRevocationService implements ITokenRevocationService {

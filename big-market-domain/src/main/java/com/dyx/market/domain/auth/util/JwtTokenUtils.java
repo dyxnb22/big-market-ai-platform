@@ -3,7 +3,7 @@ package com.dyx.market.domain.auth.util;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Shared JWT header helpers used by auth controllers and {@link com.dyx.market.domain.auth.service.AbstractAuthService}.
+ * JWT 请求头解析工具，供鉴权控制器与 {@link com.dyx.market.domain.auth.service.AbstractAuthService} 共用。
  */
 public final class JwtTokenUtils {
 
@@ -13,7 +13,7 @@ public final class JwtTokenUtils {
     }
 
     /**
-     * Accepts either a raw JWT or a standard {@code Authorization: Bearer <jwt>} value.
+     * 支持裸 JWT 或标准 {@code Authorization: Bearer <jwt>} 格式。
      */
     public static String extractToken(String authHeader) {
         if (StringUtils.isBlank(authHeader)) {

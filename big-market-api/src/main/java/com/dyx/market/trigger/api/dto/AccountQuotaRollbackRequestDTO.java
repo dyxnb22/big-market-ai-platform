@@ -8,10 +8,9 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * Request DTO for the quota rollback (saga compensation) RPC.
+ * 额度回滚（Saga 补偿）RPC 请求对象。
  *
- * Requires the account-service idempotency ledger DDL and smoke validation when
- * service-oriented quota decrement mode is enabled.
+ * <p>启用服务化额度扣减模式时，需 account-service 幂等台账 DDL 及冒烟验证。</p>
  */
 @Data
 @Builder
@@ -19,11 +18,13 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class AccountQuotaRollbackRequestDTO implements Serializable {
 
+    /** 用户 ID */
     private String userId;
 
+    /** 活动 ID */
     private Long activityId;
 
-    /** Idempotency key — same value used in the matching decrementQuota call. */
+    /** 幂等键，与对应 decrementQuota 调用使用的值相同 */
     private String outBusinessNo;
 
 }

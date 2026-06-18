@@ -7,8 +7,14 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
+/**
+ * 发奖派发的本地进程内实现。
+ * <p>
+ * 无其他 {@link IAwardDispatchAdapter} Bean 时注册，直接委托本地 {@link IAwardService}，
+ * 不经 Dubbo、不依赖远程开关。
+ */
 @Service
-@ConditionalOnMissingBean(IAwardDispatchAdapter.class)
+@ConditionalOnMissingBean(IAwardDispatchAdapter.class) // 远程适配器未注册时的本地回退
 public class LocalAwardDispatchAdapter implements IAwardDispatchAdapter {
 
     @Resource

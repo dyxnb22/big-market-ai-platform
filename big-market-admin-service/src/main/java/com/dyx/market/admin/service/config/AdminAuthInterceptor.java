@@ -14,6 +14,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * 管理员鉴权拦截器：校验 Bearer Token 并确认用户属于管理员白名单。
+ * <p>
+ * 管理员 ID 列表绑定 {@code app.admin.user-ids}（默认 {@code admin}，逗号分隔）。
+ * 校验通过后把 {@code userId} 写入请求属性。
+ */
 @Component
 public class AdminAuthInterceptor implements HandlerInterceptor {
 
@@ -36,6 +42,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        // 兼容带或不带 "Bearer " 前缀的 Token
         String token = authHeader.startsWith(BEARER_PREFIX)
                 ? authHeader.substring(BEARER_PREFIX.length())
                 : authHeader;

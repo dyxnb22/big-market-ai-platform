@@ -16,18 +16,9 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * Routes isCalendarSignRebate reads to big-market-rebate-service via Dubbo when enabled.
- *
- * Flag: rebate.service.remote-read.enabled (default false).
- * This bean overrides LocalRebateReadAdapter (@ConditionalOnMissingBean) in market-service.
- *
- * When flag=false: falls through to local IBehaviorRebateService.queryOrderByOutBusinessNo path.
- * When flag=true and remote call succeeds: returns the boolean from IRebateService.isCalendarSignRebate.
- * When flag=true and remote call fails: logs the error and falls back to local.
- *
- * Do not enable until:
- *   - default trigger.rpc IRebateService provider in market-service is disabled
- *   - local validation passes for rebate-service
+ * 返利读路径路由：按 {@code rebate.service.remote-read.enabled} 查询日历签到返利状态。
+ * <p>
+ * 远程失败时回退本地 {@code IBehaviorRebateService.queryOrderByOutBusinessNo}。
  */
 @Slf4j
 @Component
@@ -45,7 +36,7 @@ public class RebateRemoteReadAdapter implements IRebateReadAdapter {
     @Resource
     private Map<String, String> appTokenMap;
 
-    // check=false: startup succeeds even when rebate-service is not registered in Nacos.
+    // check=false：rebate-service 未注册到 Nacos 时仍可启动
     @DubboReference(version = "1.0", check = false)
     private IRebateService rebateService;
 

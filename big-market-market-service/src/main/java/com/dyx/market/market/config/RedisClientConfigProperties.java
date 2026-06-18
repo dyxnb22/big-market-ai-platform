@@ -3,6 +3,9 @@ package com.dyx.market.market.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Redis 连接参数，绑定配置前缀 {@code redis.sdk.config}。
+ */
 @Data
 @ConfigurationProperties(prefix = "redis.sdk.config", ignoreInvalidFields = true)
 public class RedisClientConfigProperties {

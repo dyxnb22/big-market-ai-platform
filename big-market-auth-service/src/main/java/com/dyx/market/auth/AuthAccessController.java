@@ -17,6 +17,11 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 认证 HTTP 接口：登录、Token 校验、登出（吊销）。
+ * <p>
+ * 路径前缀 {@code /api/{api-version}/auth/}。
+ */
 @Slf4j
 @RestController
 @CrossOrigin("${app.config.cross-origin}")
@@ -28,13 +33,13 @@ public class AuthAccessController {
     @Resource
     private IAuthService authService;
 
-    /** Injected from shared {@link com.dyx.market.domain.auth.config.TokenRevocationConfig}. */
+    /** 由共享 {@link com.dyx.market.domain.auth.config.TokenRevocationConfig} 注入。 */
     @Resource
     private ITokenRevocationService tokenRevocationService;
 
     /**
-     * Dev/test-only credential source for the local demo frontend.
-     * Format: userId:password,userId2:password2
+     * 开发/测试用凭证来源，供本地 Demo 前端登录。
+     * 格式：userId:password,userId2:password2，绑定 {@code app.auth.dev-users}。
      */
     @Value("${app.auth.dev-users:xiaofuge:demo,admin:admin}")
     private String devUsers;
@@ -101,10 +106,9 @@ public class AuthAccessController {
     }
 
     /**
-     * Revoke/logout: adds the token's jti to the blacklist so subsequent
-     * verify() calls will reject it.
-     *
-     * Idempotent - revoking an already-revoked token returns SUCCESS.
+     * 登出 / 吊销：将 Token 的 jti 加入黑名单，后续 verify() 将拒绝该 Token。
+     * <p>
+     * 幂等——重复吊销已吊销的 Token 仍返回 SUCCESS。
      */
     @RequestMapping(value = "logout", method = RequestMethod.POST)
     public Response<String> logout(@RequestHeader("Authorization") String token) {
@@ -120,7 +124,7 @@ public class AuthAccessController {
             if (expiresAt > 0) {
                 tokenRevocationService.revoke(jti, expiresAt);
             } else {
-                // Token has no expiration; revoke with a long TTL as safety net
+                // Token 无过期时间时，以较长 TTL 吊销作为兜底
                 tokenRevocationService.revoke(jti, System.currentTimeMillis() + TOKEN_TTL_SECONDS * 1000);
             }
             log.info("[AuthAccessController] token revoked jti:{}", jti);

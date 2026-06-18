@@ -2,15 +2,25 @@ package com.dyx.market.starter.dcc.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * 动态配置中心（DCC）Zookeeper 连接配置。
+ *
+ * <p>绑定前缀：{@code zookeeper.sdk.config}</p>
+ */
 @ConfigurationProperties(prefix = "zookeeper.sdk.config", ignoreInvalidFields = true)
 public class DccProperties {
 
-    /** Whether the Zookeeper based dynamic configuration center is enabled. */
+    /** 是否启用基于 Zookeeper 的动态配置中心。 */
     private boolean enable;
+    /** Zookeeper 连接地址，如 127.0.0.1:2181。 */
     private String connectString;
+    /** 重试基础休眠时间（毫秒）。 */
     private int baseSleepTimeMs;
+    /** 最大重试次数。 */
     private int maxRetries;
+    /** 会话超时时间（毫秒）。 */
     private int sessionTimeoutMs;
+    /** 连接超时时间（毫秒）。 */
     private int connectionTimeoutMs;
 
     public boolean isEnable() {

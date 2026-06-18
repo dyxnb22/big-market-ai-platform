@@ -18,19 +18,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Local-only implementation of IStrategyReadAdapter.
- *
- * Registered only when no other IStrategyReadAdapter bean is present, such as in
- * services that do not supply StrategyRemoteReadAdapter
- * from market-service.
- *
- * Preserves the exact read semantics that RaffleStrategyController used before 
- * award lock status from IRaffleAward + IRaffleRule; day/total partake counts from IAccountReadAdapter.
- * No DubboReference, no feature flag.
+ * 抽奖策略读查询的本地进程内实现。
+ * <p>
+ * 无其他 {@link IStrategyReadAdapter} Bean 时注册（例如未提供 market-service 中
+ * StrategyRemoteReadAdapter 的服务实例）。
+ * 保持 RaffleStrategyController 重构前的读语义：奖品锁定状态来自 IRaffleAward + IRaffleRule，
+ * 日/总参与次数来自 IAccountReadAdapter。不经 DubboReference、不依赖功能开关。
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(IStrategyReadAdapter.class)
+@ConditionalOnMissingBean(IStrategyReadAdapter.class) // 远程适配器未注册时的本地回退
 public class LocalStrategyReadAdapter implements IStrategyReadAdapter {
 
     @Resource

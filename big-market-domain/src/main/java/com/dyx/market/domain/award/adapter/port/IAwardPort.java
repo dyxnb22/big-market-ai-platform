@@ -1,10 +1,7 @@
 package com.dyx.market.domain.award.adapter.port;
 
-
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 奖品对接接口
- * @create 2024-10-06 11:26
+ * 奖品对接端口：对外部奖品账户执行额度调整。
  */
 public interface IAwardPort {
 

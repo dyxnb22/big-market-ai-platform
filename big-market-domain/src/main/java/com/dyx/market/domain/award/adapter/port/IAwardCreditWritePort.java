@@ -3,33 +3,15 @@ package com.dyx.market.domain.award.adapter.port;
 import java.math.BigDecimal;
 
 /**
- * Domain port isolating AwardRepository from direct credit-account and
- * credit-award outbox DAO writes.
- *
- * prep (AL-6/AL-11): fulfillment keeps the existing local transaction,
- * lock, and shard routing, while the credit table writes are hidden behind this
- * narrow boundary. The local implementation delegates to IUserCreditAccountDao
- * and ICreditAwardTaskDao without enabling remote traffic.
+ * 领域端口：隔离 AwardRepository 对积分账户与积分发奖发件箱 DAO 的直接写入。
+ * <p>
+ * （AL-6/AL-11）履约保留现有本地事务、锁与分片路由，积分表写入隐藏在本窄边界之后；
+ * 本地实现委托 IUserCreditAccountDao 与 ICreditAwardTaskDao，不启用远程流量。
  */
 public interface IAwardCreditWritePort {
 
-    /**
-     * Create the user credit account or add the award amount to an existing
-     * account. Same affected-row and DuplicateKeyException behavior as the
-     * previous AwardRepository direct DAO calls.
-     *
-     * @param userId user identifier; routing is owned by caller
-     * @param creditAmount credit amount to add
-     */
     void updateOrCreateCreditAccount(String userId, BigDecimal creditAmount);
 
-    /**
-     * Insert the credit-award outbox task for the currently selected shard.
-     *
-     * @param userId user identifier; routing is owned by caller
-     * @param awardOrderId award order id used as idempotency key
-     * @param creditAmount credit amount to dispatch
-     */
     void insertCreditAwardTask(String userId, String awardOrderId, BigDecimal creditAmount);
 
 }

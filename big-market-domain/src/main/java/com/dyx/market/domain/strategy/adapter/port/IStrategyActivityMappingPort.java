@@ -1,36 +1,18 @@
 package com.dyx.market.domain.strategy.adapter.port;
 
 /**
- * Domain port isolating StrategyRepository from direct activity DAO access
- * for the activityId <-> strategyId mapping.
- *
- * (AL-1): StrategyRepository must not import IRaffleActivityDao.
- * The raffle_activity table is owned by activity-service; this port expresses
- * the two read projections strategy-service legitimately needs.
- *
- * Local path (default): LocalStrategyActivityMappingPort delegates directly
- * to IRaffleActivityDao. No shard routing is required — raffle_activity is not
- * sharded; both queries are simple primary-key lookups.
- *
- * Remote path (configurable): ActivityRemoteStrategyActivityMappingPort
- * will call activity-service read API once read endpoints are wired.
+ * 领域端口：隔离 StrategyRepository 对活动 DAO 的直接依赖，提供 activityId 与 strategyId 的双向映射查询。
+ * <p>
+ * （AL-1）StrategyRepository 不得直接依赖 IRaffleActivityDao；raffle_activity 表归 activity-service 所有，
+ * 本端口表达 strategy-service 合法需要的两种读投影。
+ * <p>
+ * 本地路径（默认）：LocalStrategyActivityMappingPort 直接委托 IRaffleActivityDao，无需分片路由。
+ * 远程路径（可配置）：ActivityRemoteStrategyActivityMappingPort 在读接口就绪后调用 activity-service API。
  */
 public interface IStrategyActivityMappingPort {
 
-    /**
-     * Look up the strategyId for a given activityId.
-     *
-     * @param activityId activity identifier
-     * @return strategyId associated with the activity, or null if not found
-     */
     Long queryStrategyIdByActivityId(Long activityId);
 
-    /**
-     * Look up the activityId for a given strategyId.
-     *
-     * @param strategyId strategy identifier
-     * @return activityId associated with the strategy, or null if not found
-     */
     Long queryActivityIdByStrategyId(Long strategyId);
 
 }

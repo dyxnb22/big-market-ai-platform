@@ -1,28 +1,16 @@
 package com.dyx.market.domain.award.adapter.port;
 
 /**
- * Domain port isolating AwardRepository from direct activity-order DAO access.
- *
- * prep (AL-5): AwardRepository must not import IUserRaffleOrderDao.
- * The user_raffle_order table is owned by activity-service; fulfillment only
- * needs the guarded create -> used state transition by userId and orderId.
- *
- * Local path (default): LocalAwardActivityOrderPort delegates directly to
- * IUserRaffleOrderDao.updateUserRaffleOrderStateUsed. The caller keeps the
- * existing shard routing and transaction boundary.
- *
- * Remote path (configurable): activity-service API can replace the local
- * implementation once activity-service owns draw/order writes.
+ * 领域端口：隔离 AwardRepository 对活动订单 DAO 的直接依赖。
+ * <p>
+ * （AL-5）AwardRepository 不得直接依赖 IUserRaffleOrderDao；user_raffle_order 表归 activity-service 所有，
+ * 履约仅需按 userId 与 orderId 将 create 状态安全流转为 used。
+ * <p>
+ * 本地路径（默认）：LocalAwardActivityOrderPort 直接委托 IUserRaffleOrderDao.updateUserRaffleOrderStateUsed。
+ * 远程路径（可配置）：activity-service 接管订单写入后可替换本地实现。
  */
 public interface IAwardActivityOrderPort {
 
-    /**
-     * Mark the raffle order used if it is still in create state.
-     *
-     * @param userId  user identifier (shard key; routing is owned by caller)
-     * @param orderId raffle order id
-     * @return affected row count; same semantics as IUserRaffleOrderDao
-     */
     int markUserRaffleOrderUsed(String userId, String orderId);
 
 }

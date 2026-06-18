@@ -7,17 +7,19 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * Core market service: HTTP APIs, Dubbo RPC provider for rebate service.
- * MQ consumers and XXL-Job handlers have moved to big-market-message-job-service.
- *
- * Scans only what is needed for HTTP + Dubbo:
- *   - own config (com.dyx.market.market)
- *   - trigger.http  — REST controllers
- *   - trigger.rpc   — Dubbo RPC provider (RebateServiceRPC)
- *   - domain        — domain services
- *   - infrastructure — DAOs, repositories, Redis, EventPublisher
- *
- * Does NOT scan trigger.job or trigger.listener — those are owned by message-job-service.
+ * 核心市场服务：对外提供 HTTP API，并作为返利等能力的 Dubbo RPC 提供方。
+ * <p>
+ * MQ 消费者与 XXL-Job 任务已迁移至 {@code big-market-message-job-service}。
+ * <p>
+ * 仅扫描 HTTP + Dubbo 所需组件：
+ * <ul>
+ *   <li>{@code com.dyx.market.market} — 本服务配置</li>
+ *   <li>{@code trigger.http} — REST 控制器</li>
+ *   <li>{@code trigger.rpc} — Dubbo RPC 提供方（如 RebateServiceRPC）</li>
+ *   <li>{@code domain} — 领域服务</li>
+ *   <li>{@code infrastructure} — DAO、仓储、Redis、事件发布</li>
+ * </ul>
+ * 不扫描 {@code trigger.job}、{@code trigger.listener}，由 message-job-service 负责。
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.market",

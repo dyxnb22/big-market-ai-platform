@@ -12,6 +12,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+/**
+ * Token 鉴权拦截器：校验 {@code Authorization} 头中的 Bearer Token，并将 {@code userId} 写入请求属性。
+ * <p>
+ * 校验失败时返回统一 JSON 错误响应（HTTP 200 + 业务错误码），不继续进入 Controller。
+ */
 @Component
 public class TokenAuthInterceptor implements HandlerInterceptor {
 
@@ -31,6 +36,7 @@ public class TokenAuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        // 兼容带或不带 "Bearer " 前缀的 Token
         String token = authHeader.startsWith(BEARER_PREFIX)
                 ? authHeader.substring(BEARER_PREFIX.length())
                 : authHeader;

@@ -14,6 +14,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+/**
+ * 积分写路径路由：按 {@code account.service.remote-credit-write.enabled} 在远程 account-service 与本地领域服务间切换。
+ * <p>
+ * 远程调用失败时记录日志并回退到本地 {@link com.dyx.market.domain.credit.service.ICreditAdjustService}。
+ */
 @Slf4j
 @Component
 public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapter {

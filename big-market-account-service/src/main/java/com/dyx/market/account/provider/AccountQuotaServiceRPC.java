@@ -23,10 +23,10 @@ import org.apache.dubbo.config.annotation.DubboService;
 import javax.annotation.Resource;
 
 /**
- * Dubbo provider for activity account quota operations.
- *
- * provider is registered but receives no traffic.
- * Delegates to the existing IRaffleActivityAccountQuotaService domain service unchanged.
+ * 活动账户额度 Dubbo Provider：下单、查额度、扣减与回滚。
+ * <p>
+ * 将 {@link IAccountQuotaService} RPC 请求转交 {@link IRaffleActivityAccountQuotaService}
+ * 领域服务处理，DTO 与领域实体之间做参数校验与映射。
  */
 @Slf4j
 @DubboService(version = "1.0")
@@ -224,9 +224,7 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> decrementQuota(AccountQuotaDecrementRequestDTO request) {
-        // Idempotent service-oriented quota decrement implementation.
-        // Ledger table (raffle_quota_decrement_ledger) must be applied to the shard DBs
-        // when this mode is enabled in a shared environment.
+        // 面向服务的幂等扣减；共享环境启用前需在分库执行 raffle_quota_decrement_ledger DDL
         if (request == null
                 || StringUtils.isBlank(request.getUserId())
                 || request.getActivityId() == null
@@ -275,10 +273,7 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
 
     @Override
     public Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request) {
-        // real ledger-guarded rollback implementation.
-        // Ledger status update (applied → rolled_back) and quota restore in one transaction.
-        // Idempotent: safe to call even if the matching decrementQuota was never applied.
-        // Requires raffle_quota_decrement_ledger DDL applied to the shard DBs.
+        // 账本守卫回滚：同一事务内更新流水状态（applied → rolled_back）并恢复额度；幂等，未扣减也可安全调用
         if (request == null
                 || StringUtils.isBlank(request.getUserId())
                 || request.getActivityId() == null

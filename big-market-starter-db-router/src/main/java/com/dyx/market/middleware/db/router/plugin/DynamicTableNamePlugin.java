@@ -13,15 +13,16 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 
 /**
- * MyBatis plugin that appends the routed table suffix for sharded mappers.
+ * MyBatis 插件：为分片 Mapper 追加路由后的物理表后缀。
  *
- * <p>This is intentionally compact so the routing idea is visible while learning.
- * It handles the table names used by this project and leaves SQL untouched when
- * the mapper is not annotated with {@link DBRouterStrategy#splitTable()}.</p>
+ * <p>实现刻意保持精简，便于学习路由原理。
+ * 仅处理本项目涉及的分片表名；若 Mapper 未标注
+ * {@link DBRouterStrategy#splitTable()}，则原样放行 SQL。</p>
  */
 @Intercepts(@Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class}))
 public class DynamicTableNamePlugin implements Interceptor {
 
+    /** 需要分片的逻辑表名列表。 */
     private static final String[] SHARDED_TABLES = {
             "raffle_activity_order",
             "user_award_record",

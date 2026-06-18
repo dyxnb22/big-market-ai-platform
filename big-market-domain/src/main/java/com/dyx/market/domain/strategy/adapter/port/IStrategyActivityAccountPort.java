@@ -1,40 +1,18 @@
 package com.dyx.market.domain.strategy.adapter.port;
 
 /**
- * Domain port isolating StrategyRepository from direct activity-account DAO access.
- *
- * prep (AL-2/AL-3): StrategyRepository must not import
- * IRaffleActivityAccountDao or IRaffleActivityAccountDayDao.
- *
- * Both methods require shard routing by userId — callers pass the resolved
- * activityId (obtained via IRaffleActivityDao, AL-1 still allowed) so that
- * StrategyRepository stays stateless with respect to account storage.
- *
- * Local path (default): LocalStrategyActivityAccountPort delegates directly to
- * IRaffleActivityAccountDao / IRaffleActivityAccountDayDao with IDBRouterStrategy.
- *
- * Remote path (configurable): AccountRemoteStrategyActivityAccountPort
- * will call account-service read API once read endpoints are wired.
+ * 领域端口：隔离 StrategyRepository 对活动账户 DAO 的直接依赖。
+ * <p>
+ * （AL-2/AL-3）StrategyRepository 不得直接依赖 IRaffleActivityAccountDao 或 IRaffleActivityAccountDayDao。
+ * 两个方法均需按 userId 分片路由；调用方传入已解析的 activityId，使 StrategyRepository 与账户存储解耦。
+ * <p>
+ * 本地路径（默认）：LocalStrategyActivityAccountPort 经 IDBRouterStrategy 委托上述 DAO。
+ * 远程路径（可配置）：AccountRemoteStrategyActivityAccountPort 在读接口就绪后调用 account-service API。
  */
 public interface IStrategyActivityAccountPort {
 
-    /**
-     * Count how many times a user has raffled today for the given activity.
-     *
-     * @param userId     user identifier (shard key)
-     * @param activityId activity identifier (resolved by caller from strategyId)
-     * @return today's use count; 0 if no day account row exists
-     */
     Integer queryTodayRaffleCount(String userId, Long activityId);
 
-    /**
-     * Count how many total raffle quota units the user has consumed for the
-     * given activity (allotted minus remaining).
-     *
-     * @param userId     user identifier (shard key)
-     * @param activityId activity identifier (resolved by caller from strategyId)
-     * @return total use count
-     */
     Integer queryTotalUseCount(String userId, Long activityId);
 
 }

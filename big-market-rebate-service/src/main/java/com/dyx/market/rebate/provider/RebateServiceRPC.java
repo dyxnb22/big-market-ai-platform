@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * rebate RPC provider hosted by big-market-rebate-service.
- * The implementation mirrors the existing market-service provider while keeping
- * the new service boundary isolated from trigger.http, trigger.listener, and
- * trigger.job packages.
+ * 返利 Dubbo Provider：由 big-market-rebate-service 托管。
+ * <p>
+ * 实现与 market-service 中现有 Provider 一致，但与 trigger.http、trigger.listener、
+ * trigger.job 包隔离，保持新服务边界独立。
  */
 @Slf4j
 @DubboService(version = "1.0")

@@ -4,7 +4,9 @@ import com.dyx.market.middleware.db.router.DBContextHolder;
 import com.dyx.market.middleware.db.router.config.DBRouterProperties;
 
 /**
- * Simple hash router used by the learning version of the platform.
+ * 基于哈希取模的简单分库分表路由策略。
+ *
+ * <p>适用于平台学习版本的默认路由实现。</p>
  */
 public class HashDBRouterStrategy implements IDBRouterStrategy {
 

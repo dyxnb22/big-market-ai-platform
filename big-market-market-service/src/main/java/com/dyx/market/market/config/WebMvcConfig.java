@@ -12,6 +12,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import javax.annotation.Resource;
 import java.util.Arrays;
 
+/**
+ * Web MVC 配置：CORS 跨域与 Token 鉴权拦截器注册。
+ * <p>
+ * 仅对带 {@code _by_token} 后缀的抽奖/策略接口启用鉴权，登录相关路径排除。
+ */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 

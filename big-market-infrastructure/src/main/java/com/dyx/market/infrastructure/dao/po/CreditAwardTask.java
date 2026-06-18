@@ -6,34 +6,32 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * Outbox row for award credit dispatch — default implementation.
- *
- * One row is inserted inside the same transactionTemplate block as updateAwardRecordCompletedState
- * when account.award-credit-outbox.enabled=true. The outbox poller (DispatchCreditAwardTaskJob)
- * reads pending rows and calls IAccountCreditWriteAdapter.createOrder() using awardOrderId as
- * outBusinessNo. On idempotent success or duplicate-key the row is marked dispatched; on
- * repeated failure it is marked failed after max retries.
- *
- * Table: credit_award_task_000 .. credit_award_task_003 (same shard as user_award_record).
+ * 积分发奖 Outbox 行（默认实现）。
+ * <p>
+ * 在 {@code account.award-credit-outbox.enabled=true} 时，与 {@code updateAwardRecordCompletedState}
+ * 同事务插入；轮询 Job 读取 pending 行并调用 {@code IAccountCreditWriteAdapter.createOrder()}，
+ * 以 {@code awardOrderId} 作为 {@code outBusinessNo} 保证幂等。
+ * <p>
+ * 表：{@code credit_award_task_000..003}（与用户中奖记录同分片）。
  */
 @Data
 public class CreditAwardTask {
 
-    /** Auto-increment row id */
+    /** 自增主键 */
     private Long id;
-    /** User id (shard key, matches user_award_record shard) */
+    /** 用户 ID（分片键，与 user_award_record 一致） */
     private String userId;
-    /** Idempotency key: orderId from UserAwardRecordEntity; unique per award dispatch */
+    /** 幂等键：UserAwardRecordEntity 的 orderId，每次发奖唯一 */
     private String awardOrderId;
-    /** Credit amount to issue */
+    /** 待发放积分数量 */
     private BigDecimal creditAmount;
-    /** pending | dispatched | failed */
+    /** 状态：pending | dispatched | failed */
     private String state;
-    /** Number of failed dispatch attempts */
+    /** 派发失败重试次数 */
     private Integer retryCount;
-    /** Row creation time */
+    /** 创建时间 */
     private Date createTime;
-    /** Last update time */
+    /** 最后更新时间 */
     private Date updateTime;
 
 }

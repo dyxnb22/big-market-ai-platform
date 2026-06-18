@@ -9,6 +9,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Redisson 客户端配置，用于 Token 吊销黑名单（需 {@code token-revocation.redis.enabled=true}）。
+ * <p>
+ * 连接参数来自 {@link RedisClientConfigProperties}；Bean 名 {@code redissonClient}。
+ */
 @Configuration
 @ConditionalOnProperty(name = "token-revocation.redis.enabled", havingValue = "true")
 @EnableConfigurationProperties(RedisClientConfigProperties.class)

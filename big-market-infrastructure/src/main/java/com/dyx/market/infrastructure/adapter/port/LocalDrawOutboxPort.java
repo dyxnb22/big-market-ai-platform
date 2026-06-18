@@ -7,22 +7,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.stereotype.Component;
 
 /**
- * Local (in-process) no-op implementation of IDrawOutboxPort.
+ * {@link IDrawOutboxPort} 的本地（进程内）空操作实现。
  *
- * no additional outbox write is needed in the local path because
- * AwardRepository.saveUserAwardRecord already writes the task outbox row
- * inside the same DB transaction as user_award_record. Durability is provided
- * by that existing local transaction; this adapter merely logs the saga step
- * for observability.
+ * <p>本地路径无需额外写入 Outbox：{@code AwardRepository.saveUserAwardRecord}
+ * 已在与 {@code user_award_record} 同一数据库事务内写入任务 Outbox 行。
+ * 持久性由既有本地事务保证；本适配器仅记录 Saga 步骤日志以供可观测性使用。</p>
  *
- * Active by default via @ConditionalOnMissingBean. A configured remote
- * ActivityDrawOutboxPort (guarded by activity.service.draw-outbox.enabled=false)
- * would take precedence when that flag is true. That remote implementation is
- * documented extension point.
+ * <p>激活条件：默认通过 {@code @ConditionalOnMissingBean} 生效。当
+ * {@code activity.service.draw-outbox.enabled=true} 时，
+ * 配置的远程 {@code ActivityDrawOutboxPort}（由该开关守卫）将优先生效；
+ * 该远程实现为文档化的扩展点。</p>
  *
- * NOTE: IDrawOutboxPort is not yet injected into RaffleApplicationService.
- * This class exists as a default implementation. Wiring it into the draw hot-path requires
- * outbox DDL to be applied and routing approval.
+ * <p>注意：{@code IDrawOutboxPort} 尚未注入 {@code RaffleApplicationService}，
+ * 本类作为默认实现存在。将其接入抽奖热路径需先应用 Outbox DDL 并获得路由审批。</p>
  */
 @Slf4j
 @Component

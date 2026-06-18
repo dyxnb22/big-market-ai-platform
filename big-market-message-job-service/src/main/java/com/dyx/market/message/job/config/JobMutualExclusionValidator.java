@@ -9,18 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Prevents DispatchCreditAwardTaskJob and SendMessageTaskJob from running
- * simultaneously when both could process the same task rows.
- *
- * When account.award-credit-outbox.enabled=true, DispatchCreditAwardTaskJob
- * scans credit_award_task tables. If SendMessageTaskJob also scans the shared
- * task table and finds the same work items, duplicate dispatch occurs.
- *
- * This validator refuses startup when the outbox is enabled but the shared
- * shared task dispatch is not explicitly disabled, or vice versa.
- *
- * SAFETY: Read-only check. Never modifies config.
- * ROLLBACK: Set JOB_MUTUAL_EXCLUSION_GUARD_ENABLED=false to disable.
+ * Job 互斥校验：防止 DispatchCreditAwardTaskJob 与 SendMessageTaskJob 同时处理相同任务行。
+ * <p>
+ * 当 {@code account.award-credit-outbox.enabled=true} 时，DispatchCreditAwardTaskJob
+ * 会扫描 credit_award_task 表；若 SendMessageTaskJob 也扫描共享 task 表并处理相同工作项，
+ * 将导致重复派发。
+ * <p>
+ * 本校验器在 outbox 已启用但共享 task 派发未显式禁用时拒绝启动（反之亦然）。
+ * <p>
+ * 安全：只读检查，不修改配置。回滚：设 {@code JOB_MUTUAL_EXCLUSION_GUARD_ENABLED=false} 可禁用。
  */
 @Slf4j
 @Component
@@ -33,8 +30,8 @@ public class JobMutualExclusionValidator implements CommandLineRunner {
     private boolean awardCreditOutboxEnabled;
 
     /**
-     * When true, the shared task dispatcher (SendMessageTaskJob) does not
-     * process credit-award tasks while the dedicated outbox dispatcher owns them.
+     * 为 true 时，共享 task 派发器（SendMessageTaskJob）不处理发奖积分任务，
+     * 由专用 outbox 派发器独占。绑定 {@code job.shared-task-dispatch.credit-award-disabled}。
      */
     @Value("${job.shared-task-dispatch.credit-award-disabled:false}")
     private boolean sharedTaskCreditAwardDisabled;
@@ -51,9 +48,7 @@ public class JobMutualExclusionValidator implements CommandLineRunner {
 
         List<String> violations = new ArrayList<>();
 
-        // If outbox is enabled but shared task dispatch is not explicitly disabled,
-        // DispatchCreditAwardTaskJob and SendMessageTaskJob could both process
-        // credit-award tasks from the shared task table.
+        // outbox 已启用但共享 task 派发未显式禁用时，两个 Job 可能同时处理发奖积分任务
         if (awardCreditOutboxEnabled && !sharedTaskCreditAwardDisabled) {
             violations.add("account.award-credit-outbox.enabled=true BUT "
                     + "job.shared-task-dispatch.credit-award-disabled=false — "
@@ -62,8 +57,7 @@ public class JobMutualExclusionValidator implements CommandLineRunner {
                     + "or keep outbox disabled.");
         }
 
-        // If remote credit write is enabled but outbox is not, the credit write
-        // path is incomplete (outbox is the safe async dispatch mechanism).
+        // 远程积分写已启用但 outbox 未启用时，积分写路径不完整（outbox 才是安全的异步派发机制）
         if (remoteCreditWrite && !awardCreditOutboxEnabled) {
             log.warn("[JobMutualExclusionValidator] remote-credit-write=true but "
                     + "award-credit-outbox=false — direct synchronous credit writes without "

@@ -19,9 +19,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * remote quota write adapter for message-job-service.
- * Active only when account.service.remote-quota-write.enabled=true.
- * Falls back to local IRaffleActivityAccountQuotaService on remote exception or non-success response.
+ * 远程活动额度写适配器（message-job-service）。
+ * <p>
+ * 仅在 {@code account.service.remote-quota-write.enabled=true} 时激活；
+ * 远程异常或非成功响应时回退到本地 {@link IRaffleActivityAccountQuotaService}。
  */
 @Slf4j
 @Component

@@ -19,14 +19,10 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 
 /**
- * Routes account read queries to either the local domain service (default) or
- * account-service via Dubbo, controlled by account.service.remote-read.enabled.
- *
- * read-only adapter. Write paths (createOrder, quota decrement,
- * rebate, award) are NOT routed here and remain on local domain services.
- *
- * When remote-read is enabled and the remote call fails, this adapter logs the
- * error and falls back to the local domain service transparently.
+ * 账户读路径路由：按 {@code account.service.remote-read.enabled} 在 account-service（Dubbo）与本地领域服务间切换。
+ * <p>
+ * 仅负责只读查询（积分余额、活动配额、参与次数）；写路径不走此适配器。
+ * 远程失败时透明回退本地实现。
  */
 @Slf4j
 @Component
@@ -41,7 +37,7 @@ public class AccountRemoteReadAdapter implements IAccountReadAdapter {
     @Resource
     private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
 
-    // check=false: startup succeeds even when account-service is not registered in Nacos.
+    // check=false：account-service 未注册到 Nacos 时仍可启动
     @DubboReference(version = "1.0", check = false)
     private IAccountCreditService accountCreditService;
 
@@ -49,9 +45,8 @@ public class AccountRemoteReadAdapter implements IAccountReadAdapter {
     private IAccountQuotaService accountQuotaService;
 
     /**
-     * Query a user's current credit balance.
-     * Remote path: IAccountCreditService.queryUserCreditAccount
-     * Local path: ICreditAdjustService.queryUserCreditAccount
+     * 查询用户当前积分余额。
+     * 远程：{@code IAccountCreditService.queryUserCreditAccount}；本地：{@code ICreditAdjustService}。
      */
     public BigDecimal queryUserCreditAccount(String userId) {
         if (remoteReadEnabled) {
@@ -72,9 +67,7 @@ public class AccountRemoteReadAdapter implements IAccountReadAdapter {
     }
 
     /**
-     * Query a user's total/day/month quota account for an activity.
-     * Remote path: IAccountQuotaService.queryActivityAccountEntity
-     * Local path: IRaffleActivityAccountQuotaService.queryActivityAccountEntity
+     * 查询用户在活动下的总/日/月配额账户。
      */
     public ActivityAccountEntity queryActivityAccountEntity(Long activityId, String userId) {
         if (remoteReadEnabled) {
@@ -105,9 +98,7 @@ public class AccountRemoteReadAdapter implements IAccountReadAdapter {
     }
 
     /**
-     * Query total partake count consumed by a user for an activity.
-     * Remote path: IAccountQuotaService.queryRaffleActivityAccountPartakeCount
-     * Local path: IRaffleActivityAccountQuotaService.queryRaffleActivityAccountPartakeCount
+     * 查询用户在活动下的累计参与次数。
      */
     public Integer queryRaffleActivityAccountPartakeCount(Long activityId, String userId) {
         if (remoteReadEnabled) {
@@ -127,9 +118,7 @@ public class AccountRemoteReadAdapter implements IAccountReadAdapter {
     }
 
     /**
-     * Query day partake count consumed by a user for an activity.
-     * Remote path: IAccountQuotaService.queryRaffleActivityAccountDayPartakeCount
-     * Local path: IRaffleActivityAccountQuotaService.queryRaffleActivityAccountDayPartakeCount
+     * 查询用户在活动下的当日参与次数。
      */
     public Integer queryRaffleActivityAccountDayPartakeCount(Long activityId, String userId) {
         if (remoteReadEnabled) {

@@ -9,15 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Startup validator that prevents dangerous dual-path configurations.
- *
- * If BOTH a service-oriented routing flag AND its corresponding embedded provider
- * flag are enabled simultaneously, the application refuses to start because
- * this would cause double-writes, double-dispatch, or duplicate provider
- * registration.
- *
- * SAFETY: Read-only check. Never modifies config.
- * ROLLBACK: Set FLAG_MUTUAL_EXCLUSION_GUARD_ENABLED=false to disable.
+ * 启动期互斥校验：防止危险的双路径配置同时生效。
+ * <p>
+ * 若「远程服务路由」与「嵌入式 Provider」两类开关同时为 true，则拒绝启动，
+ * 避免重复写库、重复派发或 Dubbo Provider 重复注册。
+ * <p>
+ * 仅做只读检查，不修改配置。可通过 {@code flag-mutual-exclusion-guard.enabled=false} 关闭。
  */
 @Slf4j
 @Component
@@ -26,31 +23,29 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
     @Value("${flag-mutual-exclusion-guard.enabled:true}")
     private boolean guardEnabled;
 
-    // Account credit write
+    // 账户积分写
     @Value("${account.service.remote-credit-write.enabled:false}")
     private boolean remoteCreditWrite;
-    // Credit writes use the local implementation unless service-oriented
-    // execution is explicitly enabled.
 
-    // Account quota write
+    // 账户配额写
     @Value("${account.service.remote-quota-write.enabled:false}")
     private boolean remoteQuotaWrite;
 
-    // Account quota decrement
+    // 账户配额扣减
     @Value("${account.service.remote-quota-decrement.enabled:false}")
     private boolean remoteQuotaDecrement;
 
-    // Fulfillment
+    // 发奖履约
     @Value("${account.fulfillment.remote-award.enabled:false}")
     private boolean remoteAward;
 
-    // Rebate
+    // 返利
     @Value("${rebate.service.remote-create-order.enabled:false}")
     private boolean rebateRemoteCreateOrder;
     @Value("${rebate.embedded-rpc-provider.enabled:true}")
     private boolean rebateEmbeddedProvider;
 
-    // Strategy
+    // 策略
     @Value("${strategy.service.remote-read.enabled:false}")
     private boolean strategyRemoteRead;
     @Value("${strategy.embedded-rpc-provider.enabled:true}")
@@ -65,21 +60,21 @@ public class FlagMutualExclusionValidator implements CommandLineRunner {
 
         List<String> violations = new ArrayList<>();
 
-        // Rebate: service create-order + embedded provider = duplicate provider risk
+        // 返利：远程建单 + 嵌入式 Provider 同时开启 → 重复注册风险
         if (rebateRemoteCreateOrder && rebateEmbeddedProvider) {
             violations.add("rebate.service.remote-create-order.enabled=true AND "
                     + "rebate.embedded-rpc-provider.enabled=true — duplicate IRebateService provider risk. "
                     + "Run either the embedded provider or the dedicated rebate service provider.");
         }
 
-        // Strategy: service read + embedded provider = duplicate provider risk
+        // 策略：远程读 + 嵌入式 Provider 同时开启 → 重复注册风险
         if (strategyRemoteRead && strategyEmbeddedProvider) {
             violations.add("strategy.service.remote-read.enabled=true AND "
                     + "strategy.embedded-rpc-provider.enabled=true — duplicate IRaffleStrategyService provider risk. "
                     + "Run either the embedded provider or the dedicated strategy service provider.");
         }
 
-        // Quota: remote decrement + remote quota write both on = unclear path
+        // 配额：远程扣减与远程写同时开启时仅告警，需确保每条操作只走一条路径
         if (remoteQuotaDecrement && remoteQuotaWrite) {
             log.warn("[FlagMutualExclusionValidator] remote-quota-decrement AND remote-quota-write "
                     + "both enabled — ensure only one path is active per quota operation");

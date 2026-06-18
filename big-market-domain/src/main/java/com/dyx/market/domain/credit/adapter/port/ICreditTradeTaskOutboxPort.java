@@ -3,10 +3,10 @@ package com.dyx.market.domain.credit.adapter.port;
 import com.dyx.market.domain.credit.model.entity.TaskEntity;
 
 /**
- * Credit-trade task outbox boundary.
- *
- * Default local implementation preserves the shared task table until
- * credit_trade_task_outbox DDL and routing flags are validated for local learning.
+ * 积分交易任务发件箱边界。
+ * <p>
+ * 默认本地实现沿用共享 task 表，待 credit_trade_task_outbox DDL 与路由开关
+ * 在本地学习环境验证后再切换。
  */
 public interface ICreditTradeTaskOutboxPort {
 

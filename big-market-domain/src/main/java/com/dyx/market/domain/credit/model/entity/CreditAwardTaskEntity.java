@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * Credit-award outbox task projection used by the dispatch job boundary.
+ * 积分发奖 Outbox 任务投影，供派发任务 Job 边界使用。
  */
 @Data
 public class CreditAwardTaskEntity {

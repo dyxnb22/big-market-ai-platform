@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * 外部网关 HTTP 调用的统一响应包装。
+ */
 @Data
 @Builder
 @NoArgsConstructor

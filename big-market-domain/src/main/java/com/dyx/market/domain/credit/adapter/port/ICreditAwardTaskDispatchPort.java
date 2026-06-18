@@ -5,42 +5,20 @@ import com.dyx.market.domain.credit.model.entity.CreditAwardTaskEntity;
 import java.util.List;
 
 /**
- * Domain port isolating DispatchCreditAwardTaskJob from direct credit-award
- * outbox DAO access.
- *
- * prep (AL-7): message-job-service must not import
- * ICreditAwardTaskDao directly. The credit_award_task table is owned by the
- * account/credit boundary; the job only needs pending reads and state updates.
- *
- * Local path (default): LocalCreditAwardTaskDispatchPort delegates directly to
- * ICreditAwardTaskDao. The job keeps the existing DB/TB routing and flag gate.
- *
- * Remote path (configurable): account-service API can replace the local
- * implementation before account-service owns credit outbox dispatch at runtime.
+ * 领域端口：隔离 DispatchCreditAwardTaskJob 对积分发奖发件箱 DAO 的直接依赖。
+ * <p>
+ * （AL-7）message-job-service 不得直接依赖 ICreditAwardTaskDao；credit_award_task 表归 account/credit 边界，
+ * 任务调度仅需待处理任务的读取与状态更新。
+ * <p>
+ * 本地路径（默认）：LocalCreditAwardTaskDispatchPort 直接委托 ICreditAwardTaskDao，保留现有 DB/TB 路由与开关。
+ * 远程路径（可配置）：account-service 在运行时接管发件箱调度后可替换本地实现。
  */
 public interface ICreditAwardTaskDispatchPort {
 
-    /**
-     * Query pending credit-award outbox tasks for the currently selected DB/TB shard.
-     *
-     * @return pending tasks; same ordering, limit, and retry filter as the mapper
-     */
     List<CreditAwardTaskEntity> queryPendingTasks();
 
-    /**
-     * Mark a task as dispatched.
-     *
-     * @param task task carrying userId and awardOrderId
-     * @return affected row count; same semantics as ICreditAwardTaskDao
-     */
     int updateDispatched(CreditAwardTaskEntity task);
 
-    /**
-     * Increment retry count and mark failed when the retry ceiling is reached.
-     *
-     * @param task task carrying userId and awardOrderId
-     * @return affected row count; same semantics as ICreditAwardTaskDao
-     */
     int updateRetryFailed(CreditAwardTaskEntity task);
 
 }

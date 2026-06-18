@@ -9,19 +9,23 @@ import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Message-job service: owns all MQ consumers and XXL-Job scheduled handlers.
- * Extracted from big-market-market-service in 
- *
- * Scans only the packages required for job and listener execution:
- *   - own config (this package)
- *   - trigger.job  — XXL-Job handlers
- *   - trigger.listener — RabbitMQ consumers
- *   - domain  — domain services (called by consumers/jobs)
- *   - infrastructure — DAOs, repositories, Redis, EventPublisher
- *
- * Does NOT scan:
- *   - trigger.http  — HTTP controllers (stay in market-service)
- *   - trigger.rpc   — Dubbo RPC provider (stays in market-service)
+ * 消息与定时任务服务启动入口：托管全部 MQ 消费者与 XXL-Job 定时处理器。
+ * <p>
+ * 从 big-market-market-service 拆分而来。
+ * <p>
+ * 组件扫描范围：
+ * <ul>
+ *   <li>{@code com.dyx.market.message.job} — 本服务配置</li>
+ *   <li>{@code com.dyx.market.trigger.job} — XXL-Job 处理器</li>
+ *   <li>{@code com.dyx.market.trigger.listener} — RabbitMQ 消费者</li>
+ *   <li>{@code com.dyx.market.domain} — 领域服务（供消费者/Job 调用）</li>
+ *   <li>{@code com.dyx.market.infrastructure} — DAO、仓储、Redis、EventPublisher</li>
+ * </ul>
+ * 不扫描：
+ * <ul>
+ *   <li>{@code trigger.http} — HTTP 控制器（保留在 market-service）</li>
+ *   <li>{@code trigger.rpc} — Dubbo RPC Provider（保留在 market-service）</li>
+ * </ul>
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.message.job",

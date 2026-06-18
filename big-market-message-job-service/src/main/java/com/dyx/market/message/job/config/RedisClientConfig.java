@@ -20,6 +20,11 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 
+/**
+ * Redisson 客户端配置，连接参数来自 {@link RedisClientConfigProperties}。
+ * <p>
+ * 使用 JsonJacksonCodec 序列化，单机模式；Bean 名 {@code redissonClient}。
+ */
 @Configuration
 @EnableConfigurationProperties(RedisClientConfigProperties.class)
 public class RedisClientConfig {
@@ -41,6 +46,7 @@ public class RedisClientConfig {
         return Redisson.create(config);
     }
 
+    /** 自定义 FastJSON 编解码器（当前主配置使用 JsonJacksonCodec，此类备用）。 */
     static class RedisCodec extends BaseCodec {
 
         private final Encoder encoder = in -> {

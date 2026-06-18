@@ -12,18 +12,15 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 
 /**
- * Local development implementation of IAccountReadAdapter.
- *
- * Registered only when no other IAccountReadAdapter bean is present, such as
- * in services that do not provide
- * AccountRemoteReadAdapter from market-service.
- *
- * Always delegates to local domain services. No Dubbo calls, no feature flag.
- * This keeps local market-service mode running without account-service.
+ * 只读账户查询的本地进程内实现。
+ * <p>
+ * 无其他 {@link IAccountReadAdapter} Bean 时注册（例如未提供 market-service 中
+ * AccountRemoteReadAdapter 的服务实例）。
+ * 始终委托本地领域服务，不经 Dubbo、不依赖功能开关，保证本地 market-service 模式无需 account-service 即可运行。
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(IAccountReadAdapter.class)
+@ConditionalOnMissingBean(IAccountReadAdapter.class) // 远程适配器未注册时的本地回退
 public class LocalAccountReadAdapter implements IAccountReadAdapter {
 
     @Resource

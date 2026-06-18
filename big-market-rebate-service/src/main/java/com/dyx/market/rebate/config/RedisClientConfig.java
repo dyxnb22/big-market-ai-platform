@@ -9,6 +9,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Redisson 客户端配置，连接参数来自 {@link RedisClientConfigProperties}。
+ * <p>
+ * 使用 JsonJacksonCodec 序列化，单机模式；Bean 名 {@code redissonClient}。
+ */
 @Configuration
 @EnableConfigurationProperties(RedisClientConfigProperties.class)
 public class RedisClientConfig {

@@ -12,18 +12,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Fail-fast startup guard that refuses to boot when a non-dev profile is
- * active and any well-known default credential/secret is still in place.
- *
- * Dev profiles (dev, local, docker) are deliberately excluded so local
- * development and docker-compose stacks remain runnable without external
- * secret injection.
- *
- * Moved to big-market-domain so it is auto-discovered by any service that
- * scans com.dyx.market.domain.auth (market-service, admin-service, auth-service).
- *
- * SAFETY: This is a read-only startup check. It never modifies config.
- * ROLLBACK: Set DEFAULT_CREDENTIAL_GUARD_ENABLED=false to disable.
+ * 启动时凭据守卫：非 dev 环境若仍使用已知默认密钥/口令则拒绝启动。
+ * <p>
+ * dev、local、docker 配置档除外，便于本地开发与 docker-compose 无需注入外部密钥即可运行。
+ * 置于 big-market-domain，供扫描 {@code com.dyx.market.domain.auth} 的各服务自动发现。
+ * <p>
+ * 只读检查，不修改配置。可通过 {@code DEFAULT_CREDENTIAL_GUARD_ENABLED=false} 关闭。
  */
 @Slf4j
 @Component

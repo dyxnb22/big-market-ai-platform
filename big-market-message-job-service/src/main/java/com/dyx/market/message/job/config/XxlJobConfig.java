@@ -6,6 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * XXL-Job 执行器配置。
+ * <p>
+ * 调度中心地址等参数绑定 {@code xxl.job.*} 前缀（如 {@code xxl.job.admin.addresses}）。
+ */
 @Slf4j
 @Configuration
 public class XxlJobConfig {

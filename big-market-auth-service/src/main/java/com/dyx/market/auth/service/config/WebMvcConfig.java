@@ -9,6 +9,11 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 
+/**
+ * Web MVC 配置：CORS 跨域。
+ * <p>
+ * 允许来源绑定 {@code app.cors.allowed-origins}（默认 {@code *}）。
+ */
 @Configuration
 public class WebMvcConfig {
 

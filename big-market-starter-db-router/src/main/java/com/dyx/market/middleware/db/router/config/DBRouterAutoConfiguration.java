@@ -17,10 +17,16 @@ import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 数据库分库分表路由自动配置。
+ *
+ * <p>注册动态数据源、哈希路由策略、MyBatis 分表插件及事务管理器。</p>
+ */
 @Configuration
 @EnableConfigurationProperties(DBRouterProperties.class)
 public class DBRouterAutoConfiguration {
 
+    /** 构建多数据源路由入口，按配置加载各 db 的 Hikari 连接池。 */
     @Bean("mysqlDataSource")
     public DataSource mysqlDataSource(DBRouterProperties properties, Environment environment) {
         DynamicRoutingDataSource routingDataSource = new DynamicRoutingDataSource();
@@ -38,21 +44,25 @@ public class DBRouterAutoConfiguration {
         return routingDataSource;
     }
 
+    /** 注册哈希取模路由策略。 */
     @Bean
     public IDBRouterStrategy dbRouterStrategy(DBRouterProperties properties) {
         return new HashDBRouterStrategy(properties);
     }
 
+    /** 注册 MyBatis 动态表名拦截插件。 */
     @Bean("dbRouterDynamicMybatisPlugin")
     public Interceptor dbRouterDynamicMybatisPlugin() {
         return new DynamicTableNamePlugin();
     }
 
+    /** 绑定动态数据源的事务管理器。 */
     @Bean("transactionManager")
     public DataSourceTransactionManager transactionManager(DataSource mysqlDataSource) {
         return new DataSourceTransactionManager(mysqlDataSource);
     }
 
+    /** 编程式事务模板。 */
     @Bean
     public TransactionTemplate transactionTemplate(DataSourceTransactionManager transactionManager) {
         return new TransactionTemplate(transactionManager);

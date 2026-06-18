@@ -24,15 +24,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * strategy read RPC provider hosted by big-market-strategy-service.
- *
- * read-only surface for strategy award list and rule-weight queries.
- * No draw execution, no stock mutation, no activity/account cross-domain calls.
- *
- * Unlock-status enrichment (isAwardUnlock, waitUnLockCount) requires the account
- * participation count, which crosses into the activity/account domain. 
- * supplies those counts through IStrategyAccountParticipationPort, backed by the
- * existing IAccountQuotaService API contract with conservative fallback to 0.
+ * 策略读服务 Dubbo Provider：由 big-market-strategy-service 托管。
+ * <p>
+ * 只读接口，提供策略奖品列表与规则权重查询；不含抽奖执行、库存变更或活动/账户跨域调用。
+ * <p>
+ * 解锁状态 enrichment（isAwardUnlock、waitUnLockCount）需要账户参与次数，
+ * 通过 {@link IStrategyAccountParticipationPort} 从 account-service 获取，失败时保守回退为 0。
  */
 @Slf4j
 @DubboService(version = "1.0")
@@ -64,8 +61,8 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
 
             Map<String, Integer> ruleLockCountMap = raffleRule.queryAwardRuleLockCount(treeIds);
 
-            // real day partake count from account-service via IStrategyAccountParticipationPort.
-            // Falls back to 0 if account-service is unreachable (conservative — all locked awards remain locked).
+            // 经 IStrategyAccountParticipationPort 从 account-service 获取当日参与次数；
+            // 不可达时回退为 0（保守策略——所有锁定奖品保持锁定）
             int dayPartakeCount = strategyAccountParticipationPort
                     .queryRaffleActivityAccountDayPartakeCount(request.getActivityId(), request.getUserId());
 
@@ -113,8 +110,8 @@ public class StrategyReadServiceRPC implements IStrategyReadService {
                 throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
             }
 
-            // real total use count from account-service via IStrategyAccountParticipationPort.
-            // Falls back to 0 if account-service is unreachable (conservative — unlock thresholds appear unmet).
+            // 经 IStrategyAccountParticipationPort 从 account-service 获取累计使用次数；
+            // 不可达时回退为 0（保守策略——解锁阈值视为未满足）
             int userActivityAccountTotalUseCount = strategyAccountParticipationPort
                     .queryRaffleActivityAccountPartakeCount(request.getActivityId(), request.getUserId());
 

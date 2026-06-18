@@ -8,11 +8,9 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 
 /**
- * Persistent object for raffle_quota_decrement_ledger_{000..003}.
- *
- * idempotency ledger for AccountQuotaServiceRPC.decrementQuota.
- * The UNIQUE KEY (user_id, activity_id, out_business_no) is the guard against
- * double-decrement on duplicate RPC calls.
+ * 活动配额扣减幂等账本 PO：{@code raffle_quota_decrement_ledger_{000..003}}。
+ * <p>
+ * 唯一键 {@code (user_id, activity_id, out_business_no)} 防止重复 RPC 导致二次扣减。
  */
 @Data
 @Builder
@@ -22,15 +20,15 @@ public class RaffleQuotaDecrementLedger {
 
     private Long id;
 
-    /** Shard key — must match the user's raffle_activity_account shard. */
+    /** 分片键，须与用户活动账户表分片一致 */
     private String userId;
 
     private Long activityId;
 
-    /** Idempotency key — equals the raffle order's outBusinessNo. */
+    /** 幂等键，等于抽奖订单的 outBusinessNo */
     private String outBusinessNo;
 
-    /** applied | rolled_back */
+    /** 状态：applied | rolled_back */
     private String status;
 
     private Date createTime;

@@ -11,14 +11,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Dead-letter queue configuration for the 4 MQ consumers that run in this service.
- *
- * Main queues declare x-dead-letter-exchange=dlx via @RabbitListener @Argument.
- * This class provides the DLX DirectExchange, the four *.dlq queues, and the
- * bindings that route dead-lettered messages into those queues.
- *
- * DLQ consumers only log — no automatic replay. Manual inspection or external
- * tooling is needed to replay dead-lettered messages.
+ * RabbitMQ 死信队列（DLQ）配置：本服务运行的 4 个 MQ 消费者。
+ * <p>
+ * 主队列通过 {@code @RabbitListener @Argument} 声明 {@code x-dead-letter-exchange=dlx}；
+ * 本类提供 DLX DirectExchange、四个 *.dlq 队列及绑定，将死信路由到对应 DLQ。
+ * <p>
+ * DLQ 消费者仅记录日志，不自动重放；须人工检查或通过外部工具重放死信消息。
  */
 @Slf4j
 @Configuration
@@ -26,14 +24,14 @@ public class RabbitMQDlqConfig {
 
     static final String DLX = "dlx";
 
-    // ─── DLX exchange ────────────────────────────────────────────────────────
+    // DLX 交换机
 
     @Bean
     public DirectExchange dlxExchange() {
         return new DirectExchange(DLX, true, false);
     }
 
-    // ─── DLQ queues ──────────────────────────────────────────────────────────
+    // DLQ 队列
 
     @Bean
     public Queue activitySkuStockZeroDlq() {
@@ -55,7 +53,7 @@ public class RabbitMQDlqConfig {
         return QueueBuilder.durable("send_award.dlq").build();
     }
 
-    // ─── Bindings: DLQ → DLX (routing key = original queue name) ────────────
+    // 绑定：DLQ → DLX（routing key = 原队列名）
 
     @Bean
     public Binding activitySkuStockZeroDlqBinding() {
@@ -77,7 +75,7 @@ public class RabbitMQDlqConfig {
         return BindingBuilder.bind(sendAwardDlq()).to(dlxExchange()).with("send_award");
     }
 
-    // ─── DLQ monitoring consumers (log-only — manual replay required) ────────
+    // DLQ 监控消费者（仅日志，须人工重放）
 
     @RabbitListener(queues = "activity_sku_stock_zero.dlq")
     public void onActivitySkuStockZeroDlq(String message) {

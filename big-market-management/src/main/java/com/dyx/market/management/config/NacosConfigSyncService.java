@@ -17,9 +17,10 @@ import org.springframework.stereotype.Service;
 import java.util.Properties;
 
 /**
- * Optional Nacos config sync bridge.
- * Enabled by setting nacos.config.sync.enabled=true.
- * Admin-service uses publish(); chatbot-service registers a listener via addListener().
+ * 可选的 Nacos 配置同步桥接。
+ * <p>
+ * 通过 {@code nacos.config.sync.enabled=true} 启用；
+ * admin-service 调用 {@link #publish} 推送，chatbot-service 通过 {@link #addListener} 订阅变更。
  */
 @Service
 @ConditionalOnProperty(value = "nacos.config.sync.enabled", havingValue = "true")

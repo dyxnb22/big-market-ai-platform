@@ -14,19 +14,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Remote (Dubbo) implementation of IActivityAccountPort.
- *
- * default implementation. Active only when:
- *   account.service.remote-quota-decrement.enabled=true
- *
- * This bean is NOT activated by default — LocalActivityAccountPort (in
- * big-market-infrastructure) is used instead, preserving existing behavior.
- *
- * Do NOT set remote-quota-decrement.enabled=true until:
- *   1. Idempotency ledger DDL is applied to the local account-service DB.
- *   2. AccountQuotaServiceRPC.decrementQuota is fully implemented (not UN_ERROR stub).
- *   3. RaffleActivityPartakeService is rewired to call IActivityAccountPort.
- *   4. End-to-end idempotency validation passes .
+ * {@link com.dyx.market.domain.activity.adapter.port.IActivityAccountPort} 的远程（Dubbo）实现。
+ * <p>
+ * 仅在 {@code account.service.remote-quota-decrement.enabled=true} 时激活；
+ * 默认使用 infrastructure 中的 {@code LocalActivityAccountPort}，保持嵌入式行为不变。
+ * <p>
+ * 启用前需确认：幂等账本 DDL 已落库、AccountQuotaServiceRPC 已实现、
+ * 端到端幂等校验通过。
  */
 @Slf4j
 @Component
@@ -67,9 +61,7 @@ public class AccountRemoteActivityAccountPort implements IActivityAccountPort {
 
     @Override
     public BigDecimal queryUserCreditAccountAmount(String userId) {
-        // Extension point for dedicated account-service credit-balance reads.
-        // This bean is only active when account.service.remote-quota-decrement.enabled=true,
-        // while the local development default handles credit reads in the embedded path.
+        // 积分余额读的扩展点；本 Bean 仅在远程配额扣减开启时激活，开发环境默认走本地路径
         log.warn("[AccountRemoteActivityAccountPort] credit-balance read uses local development default; userId:{}", userId);
         return BigDecimal.ZERO;
     }

@@ -3,6 +3,9 @@ package com.dyx.market.market.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * 线程池参数，绑定配置前缀 {@code thread.pool.executor.config}。
+ */
 @Data
 @ConfigurationProperties(prefix = "thread.pool.executor.config", ignoreInvalidFields = true)
 public class ThreadPoolConfigProperties {

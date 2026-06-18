@@ -7,9 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 鉴权服务
- * @create 2024-10-07 17:55
+ * 鉴权服务：签发与校验 JWT，并在可用时检查吊销黑名单。
  */
 @Slf4j
 @Service
@@ -17,7 +15,7 @@ public class AuthService extends AbstractAuthService {
 
     private static final long TOKEN_TTL_MILLIS = 24 * 60 * 60 * 1000L;
 
-    /** Optional for legacy launchers; microservices get this from TokenRevocationConfig. */
+    /** 兼容旧启动器；微服务场景由 TokenRevocationConfig 注入。 */
     @Autowired(required = false)
     private ITokenRevocationService tokenRevocationService;
 
@@ -37,7 +35,7 @@ public class AuthService extends AbstractAuthService {
         if (!isVerify(token)) {
             return false;
         }
-        // check revocation blacklist if service is available
+        // 吊销黑名单检查（服务可用时）
         if (tokenRevocationService != null) {
             String jti = extractJti(token);
             if (jti != null && tokenRevocationService.isRevoked(jti)) {

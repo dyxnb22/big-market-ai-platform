@@ -24,20 +24,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Routes strategy read queries to big-market-strategy-service via Dubbo when enabled.
- *
- * Flag: strategy.service.remote-read.enabled (default false).
- * This bean overrides LocalStrategyReadAdapter (@ConditionalOnMissingBean) in market-service.
- *
- * When flag=false: falls through to local IRaffleAward / IRaffleRule / IAccountReadAdapter path.
- * When flag=true and remote call succeeds: returns data from IStrategyReadService.
- * When flag=true and remote call fails or returns non-success: logs and falls back to local.
- *
- * Do NOT enable until:
- *   - big-market-strategy-service is registered  Nacos
- *   - IStrategyAccountParticipationPort in strategy-service returns real counts from account-service
- *   - end-to-end local validation passes
- *   - DBA + Ops + Engineering + Oncall sign off (approval gate)
+ * 策略读路径路由：按 {@code strategy.service.remote-read.enabled} 调用 strategy-service（Dubbo）或本地领域服务。
+ * <p>
+ * 覆盖奖品列表、规则权重查询；远程失败时回退本地组装逻辑。
+ * 启用前需确认 strategy-service 已注册且端到端校验通过。
  */
 @Slf4j
 @Component
@@ -55,7 +45,7 @@ public class StrategyRemoteReadAdapter implements IStrategyReadAdapter {
     @Resource
     private IAccountReadAdapter accountReadAdapter;
 
-    // check=false: startup succeeds even when strategy-service is not registered in Nacos.
+    // check=false：strategy-service 未注册到 Nacos 时仍可启动
     @DubboReference(version = "1.0", check = false)
     private IStrategyReadService strategyReadService;
 

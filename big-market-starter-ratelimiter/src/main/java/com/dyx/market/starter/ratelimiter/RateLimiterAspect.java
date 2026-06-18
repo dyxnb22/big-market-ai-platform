@@ -20,17 +20,26 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 基于 Guava RateLimiter 的接口限流切面。
+ *
+ * <p>拦截 {@link RateLimiterAccessInterceptor} 标注的方法，
+ * 按 key 维度限流；超限时可调用 fallback 方法或进入黑名单。</p>
+ */
 @Slf4j
 @Aspect
 public class RateLimiterAspect {
 
+    /** DCC 开关：close 时跳过限流逻辑。 */
     @DCCValue("rateLimiterSwitch:close")
     private String rateLimiterSwitch;
 
+    /** 各限流 key 对应的令牌桶，1 分钟无访问后过期。 */
     private final Cache<String, RateLimiter> accessRecord = CacheBuilder.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
             .build();
 
+    /** 超限计数黑名单，24 小时后过期。 */
     private final Cache<String, Long> blacklist = CacheBuilder.newBuilder()
             .expireAfterWrite(24, TimeUnit.HOURS)
             .build();
@@ -39,6 +48,9 @@ public class RateLimiterAspect {
     public void rateLimiterPoint() {
     }
 
+    /**
+     * 限流拦截：开关关闭则放行；否则按 key 限流，超限走 fallback 或黑名单。
+     */
     @Around("rateLimiterPoint() && @annotation(rateLimiterAccessInterceptor)")
     public Object intercept(ProceedingJoinPoint jp, RateLimiterAccessInterceptor rateLimiterAccessInterceptor) throws Throwable {
         if (StringUtils.isBlank(rateLimiterSwitch) || "close".equals(rateLimiterSwitch)) {

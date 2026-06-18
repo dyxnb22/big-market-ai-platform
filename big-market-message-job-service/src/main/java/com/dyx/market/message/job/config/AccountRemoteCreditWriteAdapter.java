@@ -15,9 +15,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * remote credit write adapter for message-job-service.
- * Active only when account.service.remote-credit-write.enabled=true.
- * Falls back to local ICreditAdjustService on remote exception or non-success response.
+ * 远程积分写适配器（message-job-service）。
+ * <p>
+ * 仅在 {@code account.service.remote-credit-write.enabled=true} 时激活；
+ * 远程异常或非成功响应时回退到本地 {@link ICreditAdjustService}。
  */
 @Slf4j
 @Component

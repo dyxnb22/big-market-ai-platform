@@ -11,12 +11,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Shared token-revocation bean for every service that scans {@code com.dyx.market.domain.auth}.
- *
- * <ul>
- *   <li>Default: in-memory (single instance / local dev)</li>
- *   <li>Redis: set {@code token-revocation.redis.enabled=true} and provide a RedissonClient bean</li>
- * </ul>
+ * 共享 Token 吊销 Bean 配置，供扫描 {@code com.dyx.market.domain.auth} 的各服务使用。
+ * <p>
+ * 默认内存实现（单实例/本地开发）；设置 {@code token-revocation.redis.enabled=true}
+ * 并提供 RedissonClient Bean 时切换为 Redis 实现。
  */
 @Slf4j
 @Configuration

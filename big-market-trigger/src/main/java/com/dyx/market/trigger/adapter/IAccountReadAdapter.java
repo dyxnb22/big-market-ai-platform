@@ -5,13 +5,11 @@ import com.dyx.market.domain.activity.model.entity.ActivityAccountEntity;
 import java.math.BigDecimal;
 
 /**
- * Read-only account query adapter interface.
- *
- * Implementations route queries to either the local domain service or
- * account-service via Dubbo, controlled by account.service.remote-read.enabled.
- *
- * only read operations are routed here. Write paths (createOrder,
- * quota decrement, rebate, award) remain on local domain services.
+ * 只读账户查询适配器契约。
+ * <p>
+ * 实现类根据 {@code account.service.remote-read.enabled} 将查询路由到本地领域服务，
+ * 或经 Dubbo 访问 account-service。
+ * 仅读操作经此契约路由；写路径（createOrder、配额扣减、返利、发奖）仍走本地领域服务。
  */
 public interface IAccountReadAdapter {
 

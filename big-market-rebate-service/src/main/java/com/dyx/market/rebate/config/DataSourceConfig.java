@@ -10,6 +10,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
 
+/**
+ * MySQL 数据源 MyBatis 配置。
+ * <p>
+ * 使用 Spring Boot 默认 {@link DataSource}，挂载分库路由插件 {@code dbRouterDynamicMybatisPlugin}。
+ */
 @Configuration
 public class DataSourceConfig {
 

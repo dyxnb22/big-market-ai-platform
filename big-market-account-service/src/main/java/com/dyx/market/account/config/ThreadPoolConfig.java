@@ -9,6 +9,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.concurrent.*;
 
+/**
+ * 通用 {@link ThreadPoolExecutor} 配置，供 {@code @Async} 等异步任务使用。
+ * <p>
+ * 参数来自 {@link ThreadPoolConfigProperties}；仅当容器中尚无
+ * {@link ThreadPoolExecutor} Bean 时注册，避免覆盖其他模块定义。
+ */
 @Slf4j
 @EnableAsync
 @Configuration
@@ -19,6 +25,7 @@ public class ThreadPoolConfig {
     @ConditionalOnMissingBean(ThreadPoolExecutor.class)
     public ThreadPoolExecutor threadPoolExecutor(ThreadPoolConfigProperties properties) {
         RejectedExecutionHandler handler;
+        // 拒绝策略与 JDK 内置 Handler 名称一一对应
         switch (properties.getPolicy()) {
             case "AbortPolicy":         handler = new ThreadPoolExecutor.AbortPolicy(); break;
             case "DiscardPolicy":       handler = new ThreadPoolExecutor.DiscardPolicy(); break;
