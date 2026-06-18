@@ -1,0 +1,15 @@
+# Docker Compose: infra containers on the dev-ops network.
+token-revocation:
+  redis:
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:true}
+
+redis:
+  sdk:
+    config:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+
+nacos:
+  config:
+    sync:
+      serverAddr: ${NACOS_HOST:nacos}:${NACOS_PORT:8848}

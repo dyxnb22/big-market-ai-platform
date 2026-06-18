@@ -1,3 +1,7 @@
+spring:
+  profiles:
+    active: dev
+
 server:
   port: ${SERVER_PORT:8084}
 
@@ -9,11 +13,18 @@ app:
 chatbot:
   provider: ${CHATBOT_PROVIDER:local}
   cost-per-ask: ${CHATBOT_COST_PER_ASK:1}
-  gateway-url: ${CHATBOT_GATEWAY_URL:http://big-market-gateway:8080}
   deepseek:
     api-key: ${DEEPSEEK_API_KEY:}
     base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
     model: ${DEEPSEEK_MODEL:deepseek-v4-flash}
+
+nacos:
+  config:
+    sync:
+      enabled: true
+      dataId: big-market-platform-config
+      group: DEFAULT_GROUP
+      namespace: ""
 
 management:
   endpoints:
@@ -23,15 +34,6 @@ management:
   endpoint:
     health:
       show-details: always
-
-nacos:
-  config:
-    sync:
-      enabled: true
-      serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
-      dataId: big-market-platform-config
-      group: DEFAULT_GROUP
-      namespace: ""
 
 logging:
   level:

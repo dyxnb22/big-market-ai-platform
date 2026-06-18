@@ -1,3 +1,7 @@
+spring:
+  profiles:
+    active: dev
+
 server:
   port: ${SERVER_PORT:8082}
 
@@ -11,15 +15,9 @@ app:
     token: ${ADMIN_TOKEN:admin-dev-token}
     user-ids: ${ADMIN_USER_IDS:admin}
 
-token-revocation:
-  redis:
-    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
-
 redis:
   sdk:
     config:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:16379}
       pool-size: 10
       min-idle-size: 5
       idle-timeout: 30000
@@ -29,6 +27,14 @@ redis:
       ping-interval: 60000
       keep-alive: true
 
+nacos:
+  config:
+    sync:
+      enabled: true
+      dataId: big-market-platform-config
+      group: DEFAULT_GROUP
+      namespace: ""
+
 management:
   endpoints:
     web:
@@ -37,15 +43,6 @@ management:
   endpoint:
     health:
       show-details: always
-
-nacos:
-  config:
-    sync:
-      enabled: true
-      serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
-      dataId: big-market-platform-config
-      group: DEFAULT_GROUP
-      namespace: ""
 
 logging:
   level:

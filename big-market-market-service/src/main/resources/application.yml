@@ -19,14 +19,13 @@ app:
     token: ${ADMIN_TOKEN:admin-dev-token}
     user-ids: ${ADMIN_USER_IDS:admin}
 
-token-revocation:
-  redis:
-    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
-
 spring:
+  profiles:
+    active: dev
+  cloud:
+    zookeeper:
+      enabled: false
   rabbitmq:
-    addresses: ${RABBITMQ_HOST:127.0.0.1}
-    port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:admin}
     password: ${RABBITMQ_PASS:admin}
     listener:
@@ -40,10 +39,6 @@ spring:
       credit_adjust_success: credit_adjust_success
   elasticsearch.datasource:
     driverClassName: org.elasticsearch.xpack.sql.jdbc.EsDriver
-    url: jdbc:es://http://${ELASTICSEARCH_HOST:127.0.0.1}:${ELASTICSEARCH_PORT:9200}
-  cloud:
-    zookeeper:
-      enabled: false
 
 thread:
   pool:
@@ -65,7 +60,6 @@ mini-db-router:
       list: db01,db02
       db00:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
         username: ${MYSQL_USER:root}
         password: ${MYSQL_PASS:123456}
         type-class-name: com.zaxxer.hikari.HikariDataSource
@@ -80,7 +74,6 @@ mini-db-router:
           connection-test-query: SELECT 1
       db01:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_01?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
         username: ${MYSQL_USER:root}
         password: ${MYSQL_PASS:123456}
         type-class-name: com.zaxxer.hikari.HikariDataSource
@@ -95,7 +88,6 @@ mini-db-router:
           connection-test-query: SELECT 1
       db02:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_02?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
         username: ${MYSQL_USER:root}
         password: ${MYSQL_PASS:123456}
         type-class-name: com.zaxxer.hikari.HikariDataSource
@@ -116,8 +108,6 @@ mybatis:
 redis:
   sdk:
     config:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:16379}
       pool-size: 10
       min-idle-size: 5
       idle-timeout: 30000
@@ -131,9 +121,6 @@ dubbo:
   application:
     name: big-market
     version: 1.0
-  registry:
-    id: nacos-registry
-    address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
   protocol:
     name: dubbo
     port: -1
@@ -144,7 +131,6 @@ zookeeper:
   sdk:
     config:
       enable: false
-      connect-string: ${ZOOKEEPER_HOST:127.0.0.1}:2181
       base-sleep-time-ms: 1000
       max-retries: 3
       session-timeout-ms: 18000
@@ -153,8 +139,6 @@ zookeeper:
 xxl:
   job:
     accessToken: ${XXL_JOB_TOKEN:default_token}
-    admin:
-      addresses: http://${XXL_JOB_HOST:127.0.0.1}:${XXL_JOB_PORT:9090}/xxl-job-admin
     executor:
       address:
       appname: big-market-job
@@ -166,53 +150,35 @@ xxl:
 gateway:
   config:
     enable: true
-    apiHost: http://${GATEWAY_API_HOST:127.0.0.1}:8080
     big-market-appId: ${GATEWAY_APP_ID:big-market}
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
 
 account:
   service:
     remote-read:
-      # Service-oriented read mode for account queries via Dubbo.
-      # Default false keeps the local domain service path for local development.
       enabled: ${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:false}
     remote-credit-write:
-      # Service-oriented credit write mode. Default false keeps local development writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
     remote-quota-write:
-      # Service-oriented quota write mode. Default false keeps local development writes local.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
     remote-quota-decrement:
-      # Service-oriented quota decrement mode. Default false uses LocalActivityAccountPort.
-      # Requires local DDL and smoke validation when this mode is enabled.
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
 strategy:
   embedded-rpc-provider:
-    # Embedded IRaffleStrategyService Dubbo provider for local development.
-    # Disable when the dedicated strategy service is the selected provider.
     enabled: ${STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:true}
   service:
     remote-read:
-      # Service-oriented strategy read mode via big-market-strategy-service.
-      # Default false uses local domain services for local development.
       enabled: ${STRATEGY_SERVICE_REMOTE_READ_ENABLED:false}
 
 rebate:
   embedded-rpc-provider:
-    # Embedded IRebateService Dubbo provider for local development.
-    # Disable when the dedicated rebate service is the selected provider.
     enabled: ${REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:true}
   service:
     remote-create-order:
-      # Service-oriented rebate order creation mode via big-market-rebate-service.
-      # Default false uses local IBehaviorRebateService for local development.
       enabled: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:false}
-      # IRebateService requires appId/appToken. Token value is resolved from appTokenMap.
       app-id: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_APP_ID:chatgpt-data}
     remote-read:
-      # Service-oriented rebate read mode via big-market-rebate-service.
-      # Default false uses local IBehaviorRebateService for local development.
       enabled: ${REBATE_SERVICE_REMOTE_READ_ENABLED:false}
       app-id: ${REBATE_SERVICE_REMOTE_READ_APP_ID:chatgpt-data}
 

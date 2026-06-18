@@ -1,3 +1,7 @@
+spring:
+  profiles:
+    active: dev
+
 server:
   port: ${SERVER_PORT:8081}
 
@@ -17,18 +21,14 @@ app:
     # "admin:admin" or "xiaofuge:demo" are still present.
     dev-users: ${APP_AUTH_DEV_USERS:xiaofuge:demo,admin:admin}
 
-# ── Token revocation ──
-# In-memory by default. Set token-revocation.redis.enabled=true when
-# RedissonClient is available for multi-instance consistency.
-token-revocation:
-  redis:
-    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+# ── Default credential guard () ──
+# Set DEFAULT_CREDENTIAL_GUARD_ENABLED=false only in dev environments.
+default-credential-guard:
+  enabled: ${DEFAULT_CREDENTIAL_GUARD_ENABLED:true}
 
 redis:
   sdk:
     config:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:16379}
       pool-size: 10
       min-idle-size: 5
       idle-timeout: 30000
@@ -37,11 +37,6 @@ redis:
       retry-interval: 1000
       ping-interval: 60000
       keep-alive: true
-
-# ── Default credential guard () ──
-# Set DEFAULT_CREDENTIAL_GUARD_ENABLED=false only in dev environments.
-default-credential-guard:
-  enabled: ${DEFAULT_CREDENTIAL_GUARD_ENABLED:true}
 
 management:
   endpoints:

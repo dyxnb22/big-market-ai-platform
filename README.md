@@ -25,9 +25,8 @@ Shared modules such as `big-market-domain`, `big-market-infrastructure`,
 `big-market-api`, `big-market-types`, and starter modules are reused as JAR
 dependencies.
 
-> **Legacy note:** `big-market-app` is the pre-split monolith launcher kept for
-> integration tests only. Do not use it for new work — see
-> [big-market-app/README.md](big-market-app/README.md).
+> **Legacy note:** the pre-split monolith launcher has been removed. Use the
+> microservice stack above for local development and tests.
 
 > **Deployment note:** `big-market-rebate-service` and `big-market-strategy-service` are not
 > included in the default `docker-compose.yml` stack. By default, `big-market-market-service`

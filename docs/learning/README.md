@@ -51,6 +51,7 @@
 |------|------|
 | 语言/框架 | Java 8 + Spring Boot 2.7.12 |
 | 架构 | DDD 四层 + 10 个微服务 |
+| 遗留模块 | 历史单体已移除，主路径只保留微服务启动器 |
 | 核心技术 | Dubbo、Nacos、RabbitMQ、Redis/Redisson、MySQL、XXL-Job、ES |
 | 关键设计 | 责任链+规则树抽奖、Outbox 消息可靠投递、分库分表、适配器灰度切换 |
 

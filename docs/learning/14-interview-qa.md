@@ -245,7 +245,11 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 2. **管理员鉴权：** ERP 和 DCC 接口支持两种方式：`X-Admin-Token` 静态 token 比对（配置在 yml 中），或 JWT 中的 `openId` 在 `app.admin.user-ids` 白名单内。
 
-3. **JWT 注销：** `logout` 接口提取 JWT 的 `jti`（唯一标识），存入 `ITokenRevocationService`（内存实现），后续请求验证时检查 `jti` 是否已被注销。
+3. **JWT 注销：** `logout` 提取 JWT 的 `jti`，写入共享的 `ITokenRevocationService`：
+   - **本地 `mvn spring-boot:run`（默认）：** 各进程使用 `InMemoryTokenRevocationService`，注销**不跨服务**同步。
+   - **Docker 栈（`TOKEN_REVOCATION_REDIS_ENABLED=true`）：** auth / market / admin 共用 Redis 黑名单（`RedisTokenRevocationService`），`AuthService.checkToken()` 在各服务统一校验 `jti`。
+   - **安全策略：** Redis 模式开启但拿不到 `RedissonClient` 时 **fail-fast 启动失败**（不会静默退回内存黑名单）；Redis 写入注销失败时 `logout` **返回错误**（不假装成功）；Redis 读取失败时 **fail-closed**（拒绝 token）。
+   - `JwtTokenUtils` 支持 `Authorization: Bearer <jwt>` 格式。
 
 ---
 

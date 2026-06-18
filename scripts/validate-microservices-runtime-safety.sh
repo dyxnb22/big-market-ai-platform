@@ -71,11 +71,12 @@ echo "── 1. Default credentials — non-dev config files ──"
 # Files that could be used as production or staging config templates.
 # Dev/docker profiles are excluded — those may legitimately carry dev defaults.
 NON_DEV_CONFIGS=()
-for f in \
-  "$REPO_ROOT/big-market-app/src/main/resources/application-prod.yml" \
-  "$REPO_ROOT/big-market-app/src/main/resources/application-test.yml"; do
-  [[ -f "$f" ]] && NON_DEV_CONFIGS+=("$f")
-done
+while IFS= read -r f; do
+  NON_DEV_CONFIGS+=("$f")
+done < <(find "$REPO_ROOT" -path '*/src/main/resources/application-prod.yml' \
+           -o -path '*/src/main/resources/application-test.yml' 2>/dev/null \
+           | grep -v '/target/' \
+           | sort)
 
 # Also audit every microservice application.yml (default profile) and
 # spring-config-token.xml for hardcoded secrets that would be dangerous in prod.
@@ -84,7 +85,7 @@ ALL_TOKEN_XMLS=()
 while IFS= read -r f; do
   ALL_SVC_YMLS+=("$f")
 done < <(find "$REPO_ROOT" -path '*/src/main/resources/application.yml' \
-           ! -path '*/target/*' ! -path '*/big-market-app/*' 2>/dev/null | sort)
+           ! -path '*/target/*' 2>/dev/null | sort)
 while IFS= read -r f; do
   ALL_TOKEN_XMLS+=("$f")
 done < <(find "$REPO_ROOT" -path '*/src/main/resources/spring/spring-config-token.xml' \
@@ -130,12 +131,16 @@ assert_pattern_absent \
   '12qw!@QW|admin-test-token' \
   "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
 
-for f in "${NON_DEV_CONFIGS[@]}"; do
-  assert_pattern_present "RabbitMQ username env-injected in $(basename "$f")" "$f" 'username:[[:space:]]*\$\{RABBITMQ_USER\}'
-  assert_pattern_present "RabbitMQ password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{RABBITMQ_PASS\}'
-  assert_pattern_present "MySQL username env-injected in $(basename "$f")" "$f" 'username:[[:space:]]*\$\{MYSQL_USER\}'
-  assert_pattern_present "MySQL password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{MYSQL_PASS\}'
-done
+if [[ ${#NON_DEV_CONFIGS[@]} -gt 0 ]]; then
+  for f in "${NON_DEV_CONFIGS[@]}"; do
+    assert_pattern_present "RabbitMQ username env-injected in $(basename "$f")" "$f" 'username:[[:space:]]*\$\{RABBITMQ_USER\}'
+    assert_pattern_present "RabbitMQ password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{RABBITMQ_PASS\}'
+    assert_pattern_present "MySQL username env-injected in $(basename "$f")" "$f" 'username:[[:space:]]*\$\{MYSQL_USER\}'
+    assert_pattern_present "MySQL password env-injected in $(basename "$f")" "$f" 'password:[[:space:]]*\$\{MYSQL_PASS\}'
+  done
+else
+  pass "No non-dev config templates to audit"
+fi
 
 
 # 1f. Microservice application.yml files must not carry bare change-me-in-dev-only
@@ -213,8 +218,7 @@ echo "── 2.1 Mutual-exclusion: embedded provider vs service provider ──"
 # Rebate: embedded provider must NOT be default-true WHILE service create is default-true
 REBATE_EMBEDDED_DEFAULT_TRUE=0
 REBATE_REMOTE_DEFAULT_TRUE=0
-for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
-           "$REPO_ROOT"/big-market-app/src/main/resources; do
+for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources; do
   [[ -d "$dir" ]] || continue
   if grep -RqE 'REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true|rebate\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
     REBATE_EMBEDDED_DEFAULT_TRUE=1
@@ -232,8 +236,7 @@ fi
 # Strategy: embedded provider must NOT be default-true WHILE remote read is default-true
 STRATEGY_EMBEDDED_DEFAULT_TRUE=0
 STRATEGY_REMOTE_DEFAULT_TRUE=0
-for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources \
-           "$REPO_ROOT"/big-market-app/src/main/resources; do
+for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources; do
   [[ -d "$dir" ]] || continue
   if grep -RqE 'STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:-true|strategy\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
     STRATEGY_EMBEDDED_DEFAULT_TRUE=1
@@ -313,10 +316,12 @@ assert_pattern_present "InMemoryTokenRevocationService has eviction" "$REVOKE_IM
 assert_file "TokenRevocationConfig.java exists" "$REVOKE_CONFIG"
 assert_pattern_present "TokenRevocationConfig is @Configuration" "$REVOKE_CONFIG" '@Configuration'
 assert_pattern_present "TokenRevocationConfig creates ITokenRevocationService bean" "$REVOKE_CONFIG" 'ITokenRevocationService'
+assert_pattern_present "TokenRevocationConfig fail-fast when Redis enabled without Redisson" "$REVOKE_CONFIG" 'IllegalStateException'
 
 assert_file "RedisTokenRevocationService.java exists (optional)" "$REVOKE_REDIS"
 assert_pattern_present "RedisTokenRevocationService implements interface" "$REVOKE_REDIS" 'implements ITokenRevocationService'
-assert_pattern_present "RedisTokenRevocationService fails closed on Redis errors" "$REVOKE_REDIS" 'return true'
+assert_pattern_present "RedisTokenRevocationService fails closed on Redis read errors" "$REVOKE_REDIS" 'return true'
+assert_pattern_present "RedisTokenRevocationService throws on Redis revoke failure" "$REVOKE_REDIS" 'Failed to revoke token in Redis'
 
 assert_file "JwtTokenUtils.java exists" "$JWT_UTILS"
 assert_pattern_present "JwtTokenUtils strips Bearer prefix" "$JWT_UTILS" 'BEARER_PREFIX'
@@ -358,21 +363,22 @@ assert_pattern_present "RateLimiterConfig has IpPathRateLimit factory" "$RATE_LI
 assert_pattern_present "RateLimiterConfig uses token bucket" "$RATE_LIMITER" 'TokenBucket|token.*bucket|tryConsume'
 
 GATEWAY_YML="$REPO_ROOT/big-market-gateway/src/main/resources/application.yml"
-assert_pattern_present "Gateway yml references IpPathRateLimit" "$GATEWAY_YML" 'IpPathRateLimit'
+GATEWAY_DOCKER_YML="$REPO_ROOT/big-market-gateway/src/main/resources/application-docker.yml"
+assert_pattern_present "Gateway base yml defines active profile" "$GATEWAY_YML" 'profiles:'
+assert_pattern_present "Gateway docker yml references IpPathRateLimit" "$GATEWAY_DOCKER_YML" 'IpPathRateLimit'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 5: Shared mapper copy presence
+# Section 5: Service mapper copy presence
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 5. Shared mapper copies still present ──"
+echo "── 5. Service mapper copies still present ──"
 
-# Old-path cleanup inventory - shared mapper copies used by local learning modes.
+# Shared mapper copies used by local learning modes.
 check_mapper_copy() {
   local label="$1" relpath="$2"
   assert_file "$label present" "$REPO_ROOT/$relpath"
 }
 
-check_mapper_copy "big-market-app task_mapper.xml"            "big-market-app/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 check_mapper_copy "big-market-market-service task_mapper.xml" "big-market-market-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 check_mapper_copy "big-market-message-job-service task_mapper.xml" "big-market-message-job-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 check_mapper_copy "big-market-account-service raffle_activity_account_mapper.xml" "big-market-account-service/src/main/resources/mybatis/mapper/mysql/raffle_activity_account_mapper.xml"

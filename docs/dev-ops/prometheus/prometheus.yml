@@ -2,11 +2,14 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'big-market-app'
+  - job_name: 'big-market-services'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets:
-          - 'big-market-app-01:8091'
-          - 'big-market-app-02:8092'
+          - 'big-market-auth-service:8081'
+          - 'big-market-admin-service:8082'
+          - 'big-market-market-service:8083'
+          - 'big-market-chatbot-service:8084'
+          - 'big-market-message-job-service:8085'
         labels:
-          app: 'big-market-app'
+          app: 'big-market'

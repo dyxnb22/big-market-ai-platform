@@ -28,8 +28,6 @@
         <module>big-market-fulfillment-service</module>
         <module>big-market-rebate-service</module>
         <module>big-market-strategy-service</module>
-        <!-- Legacy monolith launcher — tests only; see big-market-app/README.md -->
-        <module>big-market-app</module>
     </modules>
 
     <properties>

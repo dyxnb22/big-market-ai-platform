@@ -104,6 +104,11 @@ docker compose up --build -d
 
 > **注意：** `rebate-service` 和 `strategy-service` 默认以 embedded 模式内嵌在 `market-service` 中运行，不需要单独启动对应容器。
 
+> **Token 注销：** Docker 栈为 `auth-service`、`admin-service`、`market-service` 设置了
+> `TOKEN_REVOCATION_REDIS_ENABLED=true`，logout 写入 Redis 黑名单后三服务均可校验。
+> 若用方式二单独 `mvn spring-boot:run` 且未开启 Redis 注销，各进程使用内存黑名单，
+> **logout 不会跨服务生效**。
+
 ### 方式二：只启动核心服务（节省资源）
 
 最小化启动顺序（先后顺序很重要）：
@@ -149,6 +154,17 @@ curl "http://127.0.0.1:8080/api/v1/raffle/strategy/strategy_armory?strategyId=10
 
 # API 接口冒烟测试（需要完整环境 + 预热）
 ./scripts/smoke-api.sh
+```
+
+可选：验证 logout 跨服务生效（Docker 栈 + Redis 注销已开启）：
+
+```bash
+TOKEN=$(curl -s -X POST http://127.0.0.1:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"xiaofuge","password":"demo"}' | jq -r '.data.token')
+curl -s -X POST http://127.0.0.1:8080/api/v1/auth/logout -H "Authorization: Bearer $TOKEN"
+curl -s -X POST http://127.0.0.1:8080/api/v1/auth/verify -H "Authorization: Bearer $TOKEN"
+# 第二次应返回 TOKEN_ERROR
 ```
 
 ---

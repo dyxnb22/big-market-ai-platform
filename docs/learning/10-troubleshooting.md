@@ -23,6 +23,28 @@ Gateway 日志 → 目标 Service 日志 → Domain 日志 → 数据库/Redis �
 
 ---
 
+## 场景 1.1：logout 后仍能访问受保护接口
+
+**现象：** 调用 `/api/v1/auth/logout` 返回成功，但 `draw_by_token` 仍可通过。
+
+**排查路径：**
+
+1. 确认运行的是 Docker 栈（`docker compose up`），而非多个独立的 `mvn spring-boot:run` 进程。
+2. 检查 `docker-compose.yml` 中 auth / market / admin 是否设置了 `TOKEN_REVOCATION_REDIS_ENABLED=true`。
+3. 检查 Redis 是否可达（`redis-cli -p 16379 ping` 或容器内 `redis:6379`）。
+4. 若 Redis 模式开启但服务启动失败，查看是否报 `RedissonClient is not on classpath` — 这是 **fail-fast**，不会退回内存黑名单。
+5. 若 `logout` 返回 `Token revocation failed`，说明 Redis 写入失败，注销**未生效**（不会假装成功）。
+
+---
+
+## 场景 1.2：verify / logout 带 Bearer 前缀失败
+
+**现象：** 请求头为 `Authorization: Bearer <jwt>` 时鉴权失败。
+
+**说明：** `JwtTokenUtils` 已在 `AbstractAuthService` 中统一剥离 `Bearer` 前缀。若仍失败，检查 JWT 是否过期或已被注销。
+
+---
+
 ## 场景 2：抽奖返回"活动不存在"或"活动未开启"
 
 **现象：** `draw_by_token` 返回 `ACTIVITY_STATE_ERROR` 或 `ACTIVITY_DATE_ERROR`。

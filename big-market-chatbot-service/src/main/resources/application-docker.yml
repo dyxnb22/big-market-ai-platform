@@ -1,0 +1,8 @@
+# Docker Compose.
+chatbot:
+  gateway-url: ${CHATBOT_GATEWAY_URL:http://big-market-gateway:8080}
+
+nacos:
+  config:
+    sync:
+      serverAddr: ${NACOS_HOST:nacos}:${NACOS_PORT:8848}

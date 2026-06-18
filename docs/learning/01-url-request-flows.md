@@ -65,6 +65,34 @@ sequenceDiagram
     A-->>C: LoginResponseDTO
 ```
 
+## 注销流程
+
+- URL: `/api/v1/auth/logout`
+- Entry: `AuthAccessController.logout`
+- Domain: `ITokenRevocationService.revoke(jti, expiresAt)`
+- Auth header: 支持 `Bearer <jwt>`（`JwtTokenUtils` 统一解析）
+- 数据写入: Redis key `jwt:revoked:{jti}`（Docker 栈）或进程内 Map（本地默认）
+- 失败行为: Redis 写入失败时 `logout` 返回错误，不返回成功；Redis 模式但无 `RedissonClient` 时服务启动 fail-fast
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as AuthAccessController
+    participant R as ITokenRevocationService
+    participant Redis as Redis
+    participant M as market-service AuthService
+    C->>A: POST /auth/logout Authorization Bearer jwt
+    A->>A: extractJti + expiresAt
+    A->>R: revoke(jti, expiresAt)
+    R->>Redis: SET jwt:revoked:{jti} TTL
+    A-->>C: SUCCESS
+    Note over C,M: 后续请求
+    C->>M: POST draw_by_token Authorization
+    M->>R: isRevoked(jti) via checkToken
+    R-->>M: true
+    M-->>C: TOKEN_ERROR
+```
+
 ## 抽奖流程
 
 - URL: `/api/v1/raffle/activity/draw_by_token`

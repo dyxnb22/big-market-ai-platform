@@ -1,0 +1,15 @@
+# Local development: infra on mapped host ports.
+token-revocation:
+  redis:
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+
+redis:
+  sdk:
+    config:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+
+nacos:
+  config:
+    sync:
+      serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}

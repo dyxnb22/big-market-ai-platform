@@ -15,11 +15,11 @@ import java.math.BigDecimal;
  * Local development implementation of IAccountReadAdapter.
  *
  * Registered only when no other IAccountReadAdapter bean is present, such as
- * in the embedded big-market-app or any service that does not provide
+ * in services that do not provide
  * AccountRemoteReadAdapter from market-service.
  *
  * Always delegates to local domain services. No Dubbo calls, no feature flag.
- * This keeps big-market-app compiling and running without account-service.
+ * This keeps local market-service mode running without account-service.
  */
 @Slf4j
 @Component

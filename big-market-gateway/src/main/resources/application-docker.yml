@@ -1,0 +1,52 @@
+# Docker Compose: downstream services by container name.
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://${AUTH_SERVICE_HOST:big-market-auth-service}:${AUTH_SERVICE_PORT:8081}
+          predicates:
+            - Path=/api/*/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-cb
+                fallbackUri: forward:/fallback/auth-service
+            - name: IpPathRateLimit
+              args:
+                replenishRate: ${GATEWAY_RATE_LIMITER_REPLENISH:20}
+                burstCapacity: ${GATEWAY_RATE_LIMITER_BURST:40}
+        - id: admin-service
+          uri: http://${ADMIN_SERVICE_HOST:big-market-admin-service}:${ADMIN_SERVICE_PORT:8082}
+          predicates:
+            - Path=/api/*/admin/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: admin-cb
+                fallbackUri: forward:/fallback/admin-service
+        - id: chatbot-service
+          uri: http://${CHATBOT_SERVICE_HOST:big-market-chatbot-service}:${CHATBOT_SERVICE_PORT:8084}
+          predicates:
+            - Path=/api/*/chatbot/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: chatbot-cb
+                fallbackUri: forward:/fallback/chatbot-service
+        - id: market-service
+          uri: http://${MARKET_SERVICE_HOST:big-market-market-service}:${MARKET_SERVICE_PORT:8083}
+          predicates:
+            - Path=/api/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: market-cb
+                fallbackUri: forward:/fallback/market-service
+            - name: IpPathRateLimit
+              args:
+                replenishRate: ${GATEWAY_RATE_LIMITER_REPLENISH:20}
+                burstCapacity: ${GATEWAY_RATE_LIMITER_BURST:40}
+
+server:
+  port: ${SERVER_PORT:8080}

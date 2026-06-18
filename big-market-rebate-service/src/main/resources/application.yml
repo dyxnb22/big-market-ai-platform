@@ -1,12 +1,9 @@
-server:
-  port: ${SERVER_PORT:8088}
-
 spring:
+  profiles:
+    active: dev
   application:
     name: big-market-rebate-service
   rabbitmq:
-    addresses: ${RABBITMQ_HOST:127.0.0.1}
-    port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:admin}
     password: ${RABBITMQ_PASS:admin}
     listener:
@@ -18,6 +15,9 @@ spring:
   cloud:
     zookeeper:
       enabled: false
+
+server:
+  port: ${SERVER_PORT:8088}
 
 thread:
   pool:
@@ -39,7 +39,6 @@ mini-db-router:
       list: db01,db02
       db00:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
         username: ${MYSQL_USER:root}
         password: ${MYSQL_PASS:123456}
         type-class-name: com.zaxxer.hikari.HikariDataSource
@@ -54,7 +53,6 @@ mini-db-router:
           connection-test-query: SELECT 1
       db01:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_01?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
         username: ${MYSQL_USER:root}
         password: ${MYSQL_PASS:123456}
         type-class-name: com.zaxxer.hikari.HikariDataSource
@@ -69,7 +67,6 @@ mini-db-router:
           connection-test-query: SELECT 1
       db02:
         driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_02?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
         username: ${MYSQL_USER:root}
         password: ${MYSQL_PASS:123456}
         type-class-name: com.zaxxer.hikari.HikariDataSource
@@ -90,8 +87,6 @@ mybatis:
 redis:
   sdk:
     config:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:16379}
       pool-size: 10
       min-idle-size: 5
       idle-timeout: 30000
@@ -106,8 +101,6 @@ dubbo:
     name: big-market-rebate
     version: 1.0
   registry:
-    id: nacos-registry
-    address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
     check: false
   protocol:
     name: dubbo

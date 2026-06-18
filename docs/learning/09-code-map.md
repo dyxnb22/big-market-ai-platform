@@ -10,6 +10,11 @@
 
 - `big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/AuthService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/config/TokenRevocationConfig.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/RedisTokenRevocationService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/InMemoryTokenRevocationService.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/util/JwtTokenUtils.java`
+- `big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java`
 - `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
 - `big-market-admin-service/src/main/java/com/dyx/market/admin/service/config/AdminAuthInterceptor.java`
 

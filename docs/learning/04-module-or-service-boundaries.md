@@ -31,11 +31,10 @@
   `admin-service` and `chatbot-service` (`PlatformConfigService`).
 - Starter modules: DB router, DCC, and rate limiter.
 
-## Legacy / Non-Primary Modules
+## Removed Legacy Modules
 
-- `big-market-app`: historical monolith launcher. The current learning path uses
-  the 10 microservice launchers above; keep this module only for legacy tests
-  or historical comparison.
+- Historical monolith launcher: removed after the project switched to the 10
+  microservice launchers above.
 
 ## Boundary Rules
 

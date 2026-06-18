@@ -17,8 +17,26 @@ Code paths:
 `app.auth.dev-users`, calls `AuthService.createToken`, and returns a JWT with
 `openId`, `jti`, `iat`, `exp`, and `subject`. `verify` checks token validity.
 `logout` extracts `jti` and records token revocation in the shared
-`ITokenRevocationService` bean (in-memory locally, Redis when
-`token-revocation.redis.enabled=true` in Docker).
+`ITokenRevocationService` bean:
+
+| Mode | When | Behavior |
+| --- | --- | --- |
+| In-memory | `token-revocation.redis.enabled=false` (default local `mvn spring-boot:run`) | Per-process blacklist; logout does **not** sync across services |
+| Redis | `TOKEN_REVOCATION_REDIS_ENABLED=true` (Docker stack for auth/admin/market) | Shared Redis blacklist via `RedisTokenRevocationService` |
+
+Redis mode safety rules:
+
+- **Startup fail-fast:** if Redis mode is enabled but `RedissonClient` is missing,
+  `TokenRevocationConfig` throws `IllegalStateException` — it does **not** silently
+  fall back to in-memory (which would break cross-service logout).
+- **Logout fail-visible:** `RedisTokenRevocationService.revoke()` throws on Redis
+  write failure; `AuthAccessController.logout` returns an error instead of
+  pretending success.
+- **Verify fail-closed:** `RedisTokenRevocationService.isRevoked()` returns `true`
+  when Redis read fails, so tokens cannot bypass the blacklist during outages.
+
+`JwtTokenUtils` normalizes `Authorization` headers, accepting either a raw JWT or
+`Bearer <jwt>`.
 
 ## User Authorization
 
@@ -26,8 +44,8 @@ User APIs are guarded by `TokenAuthInterceptor`:
 
 - `big-market-market-service/src/main/java/com/dyx/market/market/config/TokenAuthInterceptor.java`
 
-The legacy monolith copy under `big-market-app` is deprecated; see
-`big-market-app/README.md`. The interceptor validates `Authorization`, writes
+The legacy monolith copy has been removed. The interceptor validates
+`Authorization`, writes
 `userId` into the request, and token-aware controller methods use that value
 instead of trusting request body user ids.
 
@@ -63,6 +81,9 @@ flowchart TD
     UserApi --> Market["Market user API"]
     AdminApi --> Admin["Admin/ERP/DCC API"]
     Logout["/api/v1/auth/logout"] --> Revocation["ITokenRevocationService"]
+    Revocation --> Redis["Redis jti blacklist (Docker)"]
+    Token --> CheckRevoked["AuthService.checkToken"]
+    CheckRevoked --> Revocation
 ```
 
 ## Learning Notes
