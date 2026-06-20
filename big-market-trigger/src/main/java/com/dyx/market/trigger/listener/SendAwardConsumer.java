@@ -36,7 +36,7 @@ public class SendAwardConsumer {
             value = "${spring.rabbitmq.topic.send_award}",
             arguments = @Argument(name = "x-dead-letter-exchange", value = "dlx")
     ))
-    public void listener(String message) throws Exception {
+    public void listener(String message) {
         try {
             log.info("监听用户奖品发送消息，发奖开始 topic: {} message: {}", topic, message);
             BaseEvent.EventMessage<SendAwardMessageEvent.SendAwardMessage> eventMessage = JSON.parseObject(message, new TypeReference<BaseEvent.EventMessage<SendAwardMessageEvent.SendAwardMessage>>() {

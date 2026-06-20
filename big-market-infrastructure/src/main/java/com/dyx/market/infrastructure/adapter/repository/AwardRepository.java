@@ -1,33 +1,13 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
-import com.dyx.market.domain.award.adapter.port.IAwardActivityOrderPort;
-import com.dyx.market.domain.award.adapter.port.IAwardCreditWritePort;
-import com.dyx.market.domain.award.adapter.port.IAwardDispatchTaskOutboxPort;
 import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.domain.award.model.aggregate.GiveOutPrizesAggregate;
 import com.dyx.market.domain.award.model.aggregate.UserAwardRecordAggregate;
-import com.dyx.market.domain.award.model.entity.TaskEntity;
-import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
-import com.dyx.market.domain.award.model.entity.UserCreditAwardEntity;
 import com.dyx.market.infrastructure.dao.IAwardDao;
-import com.dyx.market.infrastructure.dao.IUserAwardRecordDao;
-import com.dyx.market.infrastructure.event.EventPublisher;
-import com.dyx.market.infrastructure.dao.po.UserAwardRecord;
-import com.dyx.market.infrastructure.redis.IRedisService;
-import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
-import com.dyx.market.types.common.Constants;
-import com.dyx.market.types.enums.ResponseCode;
-import com.dyx.market.types.exception.AppException;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -35,101 +15,19 @@ import java.util.concurrent.TimeUnit;
  * @create 2024-04-06 10:09
  */
 @Slf4j
-@Component
+@Repository
 public class AwardRepository implements IAwardRepository {
 
     @Resource
     private IAwardDao awardDao;
     @Resource
-    private IUserAwardRecordDao userAwardRecordDao;
+    private AwardDispatchSupport awardDispatchSupport;
     @Resource
-    private IAwardActivityOrderPort awardActivityOrderPort;
-    @Resource
-    private IAwardCreditWritePort awardCreditWritePort;
-    @Resource
-    private IAwardDispatchTaskOutboxPort awardDispatchTaskOutboxPort;
-    @Resource
-    private IDBRouterStrategy dbRouter;
-    @Resource
-    private TransactionTemplate transactionTemplate;
-    @Resource
-    private EventPublisher eventPublisher;
-    @Resource
-    private IRedisService redisService;
-
-    /**
-     * feature flag (default false).
-     * When false: saveGiveOutPrizesAggregate behaves exactly as before B6 — direct local
-     *             user_credit_account write inside the same transaction as user_award_record.
-     * When true:  inserts a credit_award_task outbox row instead of calling updateOrCreateCreditAccount.
-     *             The outbox poller (DispatchCreditAwardTaskJob) dispatches the credit asynchronously.
-     *             Requires credit_award_task tables to be present in the database.
-     */
-    @Value("${account.award-credit-outbox.enabled:false}")
-    private boolean awardCreditOutboxEnabled;
+    private AwardCreditGrantSupport awardCreditGrantSupport;
 
     @Override
     public void saveUserAwardRecord(UserAwardRecordAggregate userAwardRecordAggregate) {
-
-        UserAwardRecordEntity userAwardRecordEntity = userAwardRecordAggregate.getUserAwardRecordEntity();
-        TaskEntity taskEntity = userAwardRecordAggregate.getTaskEntity();
-        String userId = userAwardRecordEntity.getUserId();
-        Long activityId = userAwardRecordEntity.getActivityId();
-        Integer awardId = userAwardRecordEntity.getAwardId();
-
-        UserAwardRecord userAwardRecord = new UserAwardRecord();
-        userAwardRecord.setUserId(userAwardRecordEntity.getUserId());
-        userAwardRecord.setActivityId(userAwardRecordEntity.getActivityId());
-        userAwardRecord.setStrategyId(userAwardRecordEntity.getStrategyId());
-        userAwardRecord.setOrderId(userAwardRecordEntity.getOrderId());
-        userAwardRecord.setAwardId(userAwardRecordEntity.getAwardId());
-        userAwardRecord.setAwardTitle(userAwardRecordEntity.getAwardTitle());
-        userAwardRecord.setAwardTime(userAwardRecordEntity.getAwardTime());
-        userAwardRecord.setAwardState(userAwardRecordEntity.getAwardState().getCode());
-
-        try {
-            dbRouter.doRouter(userId);
-            transactionTemplate.execute(status -> {
-                try {
-                    // 写入记录
-                    userAwardRecordDao.insert(userAwardRecord);
-                    // 写入任务
-                    awardDispatchTaskOutboxPort.insert(taskEntity);
-                    // 更新抽奖单
-                    int count = awardActivityOrderPort.markUserRaffleOrderUsed(
-                            userAwardRecordEntity.getUserId(),
-                            userAwardRecordEntity.getOrderId());
-                    if (1 != count) {
-                        status.setRollbackOnly();
-                        log.error("写入中奖记录，用户抽奖单已使用过，不可重复抽奖 userId: {} activityId: {} awardId: {}", userId, activityId, awardId);
-                        throw new AppException(ResponseCode.ACTIVITY_ORDER_ERROR.getCode(), ResponseCode.ACTIVITY_ORDER_ERROR.getInfo());
-                    }
-                    return 1;
-                } catch (DuplicateKeyException e) {
-                    status.setRollbackOnly();
-                    log.error("写入中奖记录，唯一索引冲突 userId: {} activityId: {} awardId: {}", userId, activityId, awardId, e);
-                    throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
-                }
-            });
-        } finally {
-            dbRouter.clear();
-        }
-
-        try {
-            // 发送消息【在事务外执行，如果失败还有任务补偿】
-            eventPublisher.publish(taskEntity.getTopic(), taskEntity.getMessage());
-            // 更新数据库记录，task 任务表
-            dbRouter.doRouter(userId);
-            awardDispatchTaskOutboxPort.markSendMessageCompleted(taskEntity);
-            log.info("写入中奖记录，发送MQ消息完成 userId: {} orderId:{} topic: {}", userId, userAwardRecordEntity.getOrderId(), taskEntity.getTopic());
-        } catch (Exception e) {
-            log.error("写入中奖记录，发送MQ消息失败 userId: {} topic: {}", userId, taskEntity.getTopic());
-            dbRouter.doRouter(userId);
-            awardDispatchTaskOutboxPort.markSendMessageFail(taskEntity);
-        } finally {
-            dbRouter.clear();
-        }
-
+        awardDispatchSupport.saveUserAwardRecord(userAwardRecordAggregate);
     }
 
     @Override
@@ -139,76 +37,7 @@ public class AwardRepository implements IAwardRepository {
 
     @Override
     public void saveGiveOutPrizesAggregate(GiveOutPrizesAggregate giveOutPrizesAggregate) {
-        String userId = giveOutPrizesAggregate.getUserId();
-        UserCreditAwardEntity userCreditAwardEntity = giveOutPrizesAggregate.getUserCreditAwardEntity();
-        UserAwardRecordEntity userAwardRecordEntity = giveOutPrizesAggregate.getUserAwardRecordEntity();
-
-        UserAwardRecord userAwardRecordReq = new UserAwardRecord();
-        userAwardRecordReq.setUserId(userId);
-        userAwardRecordReq.setOrderId(userAwardRecordEntity.getOrderId());
-        userAwardRecordReq.setAwardState(userAwardRecordEntity.getAwardState().getCode());
-
-        // Both credit-account and award-record writes share one transaction — do not split until
-        // a distributed transaction strategy (saga/outbox) is in place. See design note.
-        // when outbox flag=true the credit_award_task row replaces the direct write.
-        RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + userId);
-        try {
-            lock.lock(3, TimeUnit.SECONDS);
-            dbRouter.doRouter(giveOutPrizesAggregate.getUserId());
-            if (awardCreditOutboxEnabled) {
-                // Outbox path (flag=true): insert outbox row inside the same transaction as
-                // updateAwardRecordCompletedState. credit_award_task tables MUST exist before
-                // running this mode with docs/sql/credit-award-task-outbox.sql applied.
-                // The DispatchCreditAwardTaskJob poller will dispatch the credit asynchronously.
-                transactionTemplate.execute(status -> {
-                    try {
-                        int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
-                        if (0 == updateAwardCount) {
-                            log.warn("更新中奖记录，重复更新拦截(outbox) userId:{}", userId);
-                            status.setRollbackOnly();
-                            return 1;
-                        }
-                        awardCreditWritePort.insertCreditAwardTask(
-                                userId,
-                                userAwardRecordEntity.getOrderId(),
-                                userCreditAwardEntity.getCreditAmount());
-                        return 1;
-                    } catch (DuplicateKeyException e) {
-                        // DuplicateKeyException on credit_award_task means the outbox row already
-                        // exists (retry scenario). Treat as already-processed — roll back and let
-                        // the caller handle idempotently.
-                        status.setRollbackOnly();
-                        log.error("更新中奖记录，outbox唯一索引冲突(已处理) userId:{}", userId, e);
-                        throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
-                    }
-                });
-            } else {
-                // Default path (flag=false): direct local credit-account write unchanged.
-                // Redis lock, dbRouter, and transactionTemplate all behave identically to pre-B6.
-                transactionTemplate.execute(status -> {
-                    try {
-                        awardCreditWritePort.updateOrCreateCreditAccount(
-                                userCreditAwardEntity.getUserId(),
-                                userCreditAwardEntity.getCreditAmount());
-                        int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
-                        if (0 == updateAwardCount) {
-                            log.warn("更新中奖记录，重复更新拦截 userId:{} giveOutPrizesAggregate:{}", userId, JSON.toJSONString(giveOutPrizesAggregate));
-                            status.setRollbackOnly();
-                        }
-                        return 1;
-                    } catch (DuplicateKeyException e) {
-                        status.setRollbackOnly();
-                        log.error("更新中奖记录，唯一索引冲突 userId: {} ", userId, e);
-                        throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
-                    }
-                });
-            }
-        } finally {
-            dbRouter.clear();
-            if (lock.isLocked() && lock.isHeldByCurrentThread()) {
-                lock.unlock();
-            }
-        }
+        awardCreditGrantSupport.saveGiveOutPrizesAggregate(giveOutPrizesAggregate);
     }
 
     @Override

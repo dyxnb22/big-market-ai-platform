@@ -1,4 +1,10 @@
 # Local development: infra on mapped host ports.
+#
+# NOTE: Redis is now required at startup (big-market-starter-web always creates
+# RedissonClient when redis.sdk.config.host is present). Ensure a Redis instance
+# is reachable at REDIS_HOST:REDIS_PORT before starting this service.
+# token-revocation.redis.enabled still controls whether revoked JTIs are stored
+# in Redis; set it to true to enable token blacklisting.
 token-revocation:
   redis:
     enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}

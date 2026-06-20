@@ -116,14 +116,7 @@ function initApp() {
   var creditMobile = null; // mobile topbar removed
 
   var chatState = readJson(CHAT_KEY, defaultChats());
-  var awards = [
-    {awardTitle: "积分礼包", awardId: 101},
-    {awardTitle: "抽奖次数", awardId: 102},
-    {awardTitle: "体验权益", awardId: 103},
-    {awardTitle: "谢谢参与", awardId: 104},
-    {awardTitle: "专属折扣", awardId: 105},
-    {awardTitle: "加赠奖励", awardId: 106}
-  ];
+  var awards = [];
   var rotation = 0;
   var loadCampaignSeq = 0;
   var ctxTargetId = null;
@@ -618,8 +611,11 @@ function initApp() {
         el.className = "message "+m.role;
         var content;
         if (m.role === "assistant") {
-          var raw = marked.parse(m.content, {breaks: true, gfm: true});
-          content = (typeof DOMPurify !== "undefined") ? DOMPurify.sanitize(raw) : raw;
+          if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+            content = DOMPurify.sanitize(marked.parse(m.content, {breaks: true, gfm: true}));
+          } else {
+            content = esc(m.content);
+          }
         } else {
           content = esc(m.content);
         }

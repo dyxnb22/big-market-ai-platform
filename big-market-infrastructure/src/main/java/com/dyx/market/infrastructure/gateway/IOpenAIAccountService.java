@@ -2,7 +2,7 @@ package com.dyx.market.infrastructure.gateway;
 
 import com.dyx.market.infrastructure.gateway.dto.AdjustQuotaRequestDTO;
 import com.dyx.market.infrastructure.gateway.dto.AdjustQuotaResponseDTO;
-import com.dyx.market.infrastructure.gateway.response.Response;
+import com.dyx.market.types.common.Response;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;

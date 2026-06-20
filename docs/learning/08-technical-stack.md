@@ -15,12 +15,16 @@
 | RabbitMQ | listeners 与 Rabbit 配置 | 异步消息 |
 | XXL-Job | job 配置与 `@XxlJob` 处理器 | 定时补偿 |
 | Elasticsearch | ES mapper 与 dev compose | 运营查询模型 |
-| JWT | `AuthService` | 用户/管理员鉴权 |
-| Micrometer Prometheus | actuator 配置 | 指标 |
+| JWT | `AuthService` / jjwt 0.11.x | 用户/管理员鉴权 |
+| big-market-starter-web | `TraceIdFilter`、`CorsAutoConfiguration`（基于 `CorsSettings`）、`RedissonSingleServerSupport`、线程池优雅关闭 | 全链路 trace、统一 CORS、Redis 连接复用 |
+| `CorsSettings`（types） | 网关 `CorsConfig` 与 starter-web 共用来源解析 | 避免 CORS 规则漂移 |
+| big-market-starter-data | `ThreadPoolAutoConfiguration` | 各服务共用异步线程池配置 |
+| 网关限流 | `RateLimiterConfig`（内存令牌桶） | IP+路径前缀限流 |
+| Micrometer Prometheus | actuator 配置（`show-details: when_authorized`） | 指标 |
 | Grafana | `docs/dev-ops/grafana` | 仪表盘学习环境 |
 | Docker Compose | `docker-compose.yml` | 本地运行时 |
 | HTML/CSS/JS | `big-market-web/` | 用户端与管理端前端（原生，非 React） |
-| DOMPurify | `big-market-web/index.html` + `app.js` | Chatbot 消息 HTML 净化 |
+| DOMPurify | `big-market-web/index.html` + `app.js` | Chatbot 消息 HTML 净化（CDN 不可用时回退纯文本） |
 | localStorage | `big-market-web/app.js` | 本地对话、抽奖记录、积分流水 |
 | Playwright | `tests/e2e` | 前端/API 流程测试 |
 

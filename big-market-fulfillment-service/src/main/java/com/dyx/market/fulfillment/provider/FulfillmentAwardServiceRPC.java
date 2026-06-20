@@ -1,143 +1,40 @@
 package com.dyx.market.fulfillment.provider;
 
-import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
-import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
-import com.dyx.market.domain.award.model.valobj.AwardStateVO;
-import com.dyx.market.domain.award.service.IAwardService;
+import com.dyx.market.fulfillment.application.FulfillmentAwardApplicationService;
 import com.dyx.market.trigger.api.IFulfillmentAwardService;
 import com.dyx.market.trigger.api.dto.FulfillmentDistributeAwardRequestDTO;
 import com.dyx.market.trigger.api.dto.FulfillmentSaveUserAwardRecordRequestDTO;
 import com.dyx.market.trigger.api.response.Response;
+import com.dyx.market.trigger.api.support.ApiResponses;
 import com.dyx.market.types.enums.ResponseCode;
-import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
 
-/**
- * 发奖履约 Dubbo Provider：封装发奖领域服务，实现 {@link IFulfillmentAwardService} 契约。
- * <p>
- * 内部委托 {@link IAwardService}，本类不含业务逻辑，仅做参数校验与 DTO 转换。
- * <p>
- * 安全约束：UserCreditRandomAward 会在与 user_award_record 同一本地事务中直接写
- * user_credit_account，此类写操作须先经 outbox 路由到 account-service，再最终路由到
- * fulfillment-service。详见 docs/data-and-outbox.md。
- */
 @Slf4j
 @DubboService(version = "1.0")
 public class FulfillmentAwardServiceRPC implements IFulfillmentAwardService {
 
     @Resource
-    private IAwardService awardService;
+    private FulfillmentAwardApplicationService fulfillmentAwardApplicationService;
 
     @Override
     public Response<Void> saveUserAwardRecord(FulfillmentSaveUserAwardRecordRequestDTO request) {
-        log.info("[FulfillmentAwardServiceRPC] saveUserAwardRecord userId:{} orderId:{}",
-                request == null ? null : request.getUserId(),
-                request == null ? null : request.getOrderId());
-        try {
-            if (request == null
-                    || isBlank(request.getUserId())
-                    || request.getActivityId() == null
-                    || request.getStrategyId() == null
-                    || isBlank(request.getOrderId())
-                    || request.getAwardId() == null
-                    || isBlank(request.getAwardState())) {
-                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
-            }
-            AwardStateVO awardState = AwardStateVO.getByCode(request.getAwardState());
-            if (awardState == null) {
-                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
-            }
-
-            UserAwardRecordEntity entity = UserAwardRecordEntity.builder()
-                    .userId(request.getUserId())
-                    .activityId(request.getActivityId())
-                    .strategyId(request.getStrategyId())
-                    .orderId(request.getOrderId())
-                    .awardId(request.getAwardId())
-                    .awardTitle(request.getAwardTitle())
-                    .awardTime(request.getAwardTime())
-                    .awardState(awardState)
-                    .awardConfig(request.getAwardConfig())
-                    .build();
-
-            awardService.saveUserAwardRecord(entity);
-
-            return Response.<Void>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info(ResponseCode.SUCCESS.getInfo())
-                    .build();
-        } catch (AppException e) {
-            log.error("[FulfillmentAwardServiceRPC] saveUserAwardRecord error userId:{} orderId:{}",
-                    request == null ? null : request.getUserId(),
-                    request == null ? null : request.getOrderId(), e);
-            return Response.<Void>builder()
-                    .code(e.getCode())
-                    .info(e.getInfo())
-                    .build();
-        } catch (Exception e) {
-            log.error("[FulfillmentAwardServiceRPC] saveUserAwardRecord failed userId:{} orderId:{}",
-                    request == null ? null : request.getUserId(),
-                    request == null ? null : request.getOrderId(), e);
-            return Response.<Void>builder()
-                    .code(ResponseCode.UN_ERROR.getCode())
-                    .info(ResponseCode.UN_ERROR.getInfo())
-                    .build();
+        if (request == null) {
+            return ApiResponses.of(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo(), null);
         }
+        log.info("fulfillment saveUserAwardRecord userId:{} orderId:{}", request.getUserId(), request.getOrderId());
+        return ApiResponses.executeVoid(() -> fulfillmentAwardApplicationService.saveUserAwardRecord(request));
     }
 
     @Override
     public Response<Void> distributeAward(FulfillmentDistributeAwardRequestDTO request) {
-        log.info("[FulfillmentAwardServiceRPC] distributeAward userId:{} orderId:{} awardId:{}",
-                request == null ? null : request.getUserId(),
-                request == null ? null : request.getOrderId(),
-                request == null ? null : request.getAwardId());
-        try {
-            if (request == null
-                    || isBlank(request.getUserId())
-                    || isBlank(request.getOrderId())
-                    || request.getAwardId() == null) {
-                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
-            }
-
-            DistributeAwardEntity entity = DistributeAwardEntity.builder()
-                    .userId(request.getUserId())
-                    .orderId(request.getOrderId())
-                    .awardId(request.getAwardId())
-                    .awardConfig(request.getAwardConfig())
-                    .build();
-
-            awardService.distributeAward(entity);
-
-            return Response.<Void>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info(ResponseCode.SUCCESS.getInfo())
-                    .build();
-        } catch (AppException e) {
-            log.error("[FulfillmentAwardServiceRPC] distributeAward error userId:{} orderId:{} awardId:{}",
-                    request == null ? null : request.getUserId(),
-                    request == null ? null : request.getOrderId(),
-                    request == null ? null : request.getAwardId(), e);
-            return Response.<Void>builder()
-                    .code(e.getCode())
-                    .info(e.getInfo())
-                    .build();
-        } catch (Exception e) {
-            log.error("[FulfillmentAwardServiceRPC] distributeAward failed userId:{} orderId:{} awardId:{}",
-                    request == null ? null : request.getUserId(),
-                    request == null ? null : request.getOrderId(),
-                    request == null ? null : request.getAwardId(), e);
-            return Response.<Void>builder()
-                    .code(ResponseCode.UN_ERROR.getCode())
-                    .info(ResponseCode.UN_ERROR.getInfo())
-                    .build();
+        if (request == null) {
+            return ApiResponses.of(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo(), null);
         }
+        log.info("fulfillment distributeAward userId:{} orderId:{} awardId:{}",
+                request.getUserId(), request.getOrderId(), request.getAwardId());
+        return ApiResponses.executeVoid(() -> fulfillmentAwardApplicationService.distributeAward(request));
     }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
 }

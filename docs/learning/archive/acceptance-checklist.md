@@ -30,6 +30,6 @@ guardrails without requiring Docker or network access.
 ## Monitoring And Investigation
 
 Use `docs/operations-checklist.md` for startup, interface, task, message, log,
-and metric checks. Key code paths are `TraceIdGlobalFilter`, service
-`TraceIdFilter` classes, `RabbitMQDlqConfig`, and Prometheus configuration
+and metric checks. Key code paths are `TraceIdGlobalFilter`, `big-market-starter-web`
+`TraceIdFilter`, `RabbitMQDlqConfig`, and Prometheus configuration
 files under `docs/dev-ops/prometheus` and `docs/dev-ops/grafana`.

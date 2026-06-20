@@ -25,11 +25,11 @@
 
 - `big-market-trigger`：HTTP 控制器、RabbitMQ 监听器、XXL-Job 处理器。由 `market-service` 与 `message-job-service` 扫描；**不是**独立可部署服务。
 - `big-market-domain`：activity、strategy、award、credit、rebate、auth、task 等领域模型/服务/端口。
-- `big-market-infrastructure`：MyBatis DAO、repository 适配器、Redis、ES、MQ 发布与本地端口实现。
+- `big-market-infrastructure`：MyBatis DAO、repository 适配器（含 `MysqlMybatisConfiguration` 共享 MySQL 配置）、Redis、ES、MQ 发布与本地端口实现。
 - `big-market-api`：Dubbo API 契约与 DTO。
 - `big-market-types`：通用响应码、异常、注解与常量。
 - `big-market-management`：平台配置辅助，供 `admin-service` 与 `chatbot-service` 使用（`PlatformConfigService`）。
-- Starter 模块：DB router、DCC、rate limiter。
+- Starter 模块：DB router、DCC、rate limiter、**web**（TraceId、**CorsAutoConfiguration**、Redis 连接封装）、**data**（共享线程池）。
 
 ## 已移除的遗留模块
 

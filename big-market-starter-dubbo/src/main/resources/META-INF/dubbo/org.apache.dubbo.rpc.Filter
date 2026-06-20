@@ -1,0 +1,2 @@
+internalAuthProvider=com.dyx.market.starter.dubbo.auth.DubboInternalAuthProviderFilter
+internalAuthConsumer=com.dyx.market.starter.dubbo.auth.DubboInternalAuthConsumerFilter

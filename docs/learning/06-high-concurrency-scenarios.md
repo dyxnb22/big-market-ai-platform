@@ -15,7 +15,8 @@
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java`
-- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityRepository.java`
+- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityPartakeOrderSupport.java`
+- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityQuotaLedgerSupport.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java`
 
 ```mermaid
@@ -35,8 +36,7 @@ SKU 兑换使用 Redis 计数器与库存归零消息。奖品库存由策略逻
 
 代码路径：
 
-- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityRepository.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateActivitySkuStockJob.java`
+- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivitySkuStockCacheSupport.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateAwardStockJob.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/ActivitySkuStockZeroConsumer.java`
 

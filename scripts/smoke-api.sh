@@ -17,6 +17,7 @@ ADMIN_LOGIN_RESPONSE="$(curl -fsS "$API/auth/login" \
   -H 'Content-Type: application/json' \
   -d '{"userId":"admin","password":"admin"}')"
 ADMIN_TOKEN="$(printf '%s' "$ADMIN_LOGIN_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
+ADMIN_DEV_TOKEN="${ADMIN_DEV_TOKEN:-admin-dev-token}"
 
 echo "Token length: ${#TOKEN}"
 test -n "$TOKEN"
@@ -29,7 +30,13 @@ curl -fsS "$API/auth/verify" -H "Authorization: $TOKEN" | sed 's/,/,\n/g'
 echo
 
 echo "Activity armory"
-curl -fsS "$API/raffle/activity/armory?activityId=100301" | sed 's/,/,\n/g'
+curl -fsS -H "X-Admin-Token: $ADMIN_DEV_TOKEN" \
+  "$API/raffle/activity/armory?activityId=100301" | sed 's/,/,\n/g'
+echo
+
+echo "Strategy armory"
+curl -fsS -H "X-Admin-Token: $ADMIN_DEV_TOKEN" \
+  "$API/raffle/strategy/strategy_armory?strategyId=100006" | sed 's/,/,\n/g'
 echo
 
 echo "User activity account"

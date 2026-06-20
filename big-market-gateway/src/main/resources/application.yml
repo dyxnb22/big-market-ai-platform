@@ -26,7 +26,7 @@ management:
         include: health,info,circuitbreakers
   endpoint:
     health:
-      show-details: always
+      show-details: when_authorized
 
 resilience4j:
   timelimiter:

@@ -18,6 +18,9 @@ app:
   admin:
     token: ${ADMIN_TOKEN:admin-dev-token}
     user-ids: ${ADMIN_USER_IDS:admin}
+  internal-rpc:
+    token: ${APP_INTERNAL_RPC_TOKEN:big-market-internal-dev}
+    enforce: ${APP_INTERNAL_RPC_ENFORCE:false}
 
 spring:
   profiles:
@@ -171,6 +174,14 @@ strategy:
     remote-read:
       enabled: ${STRATEGY_SERVICE_REMOTE_READ_ENABLED:false}
 
+activity:
+  embedded-rpc-provider:
+    enabled: ${ACTIVITY_EMBEDDED_RPC_PROVIDER_ENABLED:true}
+
+erp:
+  embedded-rpc-provider:
+    enabled: ${ERP_EMBEDDED_RPC_PROVIDER_ENABLED:true}
+
 rebate:
   embedded-rpc-provider:
     enabled: ${REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:true}
@@ -189,7 +200,7 @@ management:
         include: health,info,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when_authorized
   metrics:
     export:
       prometheus:

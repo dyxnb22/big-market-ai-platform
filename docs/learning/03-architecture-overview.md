@@ -15,7 +15,7 @@
 - `big-market-rebate-service`
 - `big-market-strategy-service`
 
-共享库包括 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types`、`big-market-starter-db-router`、`big-market-starter-dcc` 和 `big-market-starter-ratelimiter`。
+共享库包括 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types`、`big-market-starter-db-router`、`big-market-starter-dcc`、`big-market-starter-ratelimiter`、`big-market-starter-web` 和 `big-market-starter-data`。
 
 用户端 `big-market-web` 为原生 HTML/CSS/JS 静态前端（非 React），经 Nginx 或 `server.py` 提供页面，API 统一走网关 `8080`。面向桌面/Web 布局，无独立移动端导航。
 

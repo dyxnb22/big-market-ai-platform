@@ -7,7 +7,7 @@
 ## 前置条件
 
 | 工具 | 版本要求 |
-|------|---------|
+| ------ | --------- |
 | Docker Desktop | 4.x+，建议分配内存 ≥ 8 GB |
 | JDK | 8（`java -version` 确认） |
 | Maven | 3.6+（`mvn -version` 确认） |
@@ -25,7 +25,7 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 这个命令启动以下容器：
 
 | 容器 | 端口 | 用途 | 账密 |
-|------|------|------|------|
+| ------ | ------ | ------ | ------ |
 | mysql | 13306 | 业务数据库（自动初始化 DDL） | root / 123456 |
 | phpmyadmin | 8899 | MySQL Web 管理 | root / 123456 |
 | redis | 16379 | 缓存 + 分布式锁 | 无密码 |
@@ -90,7 +90,7 @@ docker compose up --build -d
 查看各服务端口：
 
 | 服务 | 端口 | 说明 |
-|------|------|------|
+| ------ | ------ | ------ |
 | big-market-gateway | 8080 | API 网关（所有请求入口） |
 | big-market-auth-service | 8081 | 登录鉴权 |
 | big-market-admin-service | 8082 | 管理配置 |
@@ -99,11 +99,11 @@ docker compose up --build -d
 | big-market-message-job-service | 8085 | MQ 消费 + XXL-Job |
 | big-market-account-service | 8086 | 积分/额度 RPC |
 | big-market-fulfillment-service | 8087 | 发奖 RPC |
-| big-market-rebate-service | 8088 | 返利 RPC（默认 embedded，可不启动）|
-| big-market-strategy-service | 8089 | 策略 RPC（默认 embedded，可不启动）|
+| big-market-rebate-service | 8088 | 返利 RPC（默认 embedded，可不启动） |
+| big-market-strategy-service | 8089 | 策略 RPC（默认 embedded，可不启动） |
 
 > **注意：** `rebate-service` 和 `strategy-service` 默认以 embedded 模式内嵌在 `market-service` 中运行，不需要单独启动对应容器。
-
+>
 > **Token 注销：** Docker 栈为 `auth-service`、`admin-service`、`market-service` 设置了
 > `TOKEN_REVOCATION_REDIS_ENABLED=true`，logout 写入 Redis 黑名单后三服务均可校验。
 > 若用方式二单独 `mvn spring-boot:run` 且未开启 Redis 注销，各进程使用内存黑名单，
@@ -134,11 +134,20 @@ cd big-market-message-job-service && mvn spring-boot:run &
 启动后，抽奖前必须先调用 armory 接口预热缓存，否则抽奖会因策略数据不在 Redis 而失败。
 
 ```bash
-# 预热活动（activityId=100301 是测试活动）
-curl "http://127.0.0.1:8080/api/v1/raffle/activity/armory?activityId=100301"
+# 预热活动（activityId=100301 是测试活动；需管理员凭证）
+curl -H "X-Admin-Token: admin-dev-token" \
+  "http://127.0.0.1:8080/api/v1/raffle/activity/armory?activityId=100301"
+
+# 或使用管理员 JWT（先登录 admin/admin）
+ADMIN_TOKEN=$(curl -s -X POST http://127.0.0.1:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"admin","password":"admin"}' | jq -r '.data.token')
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8080/api/v1/raffle/activity/armory?activityId=100301"
 
 # 预热策略（strategyId=100006）
-curl "http://127.0.0.1:8080/api/v1/raffle/strategy/strategy_armory?strategyId=100006"
+curl -H "X-Admin-Token: admin-dev-token" \
+  "http://127.0.0.1:8080/api/v1/raffle/strategy/strategy_armory?strategyId=100006"
 ```
 
 ---
@@ -183,35 +192,41 @@ open http://127.0.0.1:5173/login.html
 ## 常见启动问题
 
 ### 问题 1：Nacos 启动报错 "wait for mysql"
+
 MySQL healthcheck 未通过。等待 30 秒后再看，或检查 MySQL 日志：
+
 ```bash
 docker logs mysql --tail 30
 ```
 
 ### 问题 2：应用报 "No provider available" (Dubbo)
+
 Nacos 未就绪或 market-service 的 embedded provider 配置未生效。检查：
+
 ```bash
 # 确认 rebate.embedded-rpc-provider.enabled=true（默认已开启）
 grep "embedded-rpc-provider" big-market-market-service/src/main/resources/application.yml
 ```
 
 ### 问题 3：抽奖返回 "活动未开启" 或策略数据为空
-未执行预热。重新执行第五步的 armory 接口调用。
+
+未执行预热，或 armory 未带管理员凭证。重新执行第五步的 armory 调用（需 `X-Admin-Token` 或管理员 JWT）。若返回 `0008`，见 `10-troubleshooting.md` 场景 1.3。
 
 ### 问题 4：XXL-Job 任务不执行
-访问 `http://127.0.0.1:9090/xxl-job-admin`（admin/123456），在"执行器管理"确认 `big-market` 执行器已注册并在线。
+
+访问 <http://127.0.0.1:9090/xxl-job-admin>（admin/123456），在"执行器管理"确认 `big-market` 执行器已注册并在线。
 
 ---
 
 ## 管理界面速查
 
 | 界面 | 地址 | 账密 |
-|------|------|------|
-| phpMyAdmin（MySQL） | http://127.0.0.1:8899 | root / 123456 |
-| Redis Commander | http://127.0.0.1:18081 | admin / admin |
-| RabbitMQ Management | http://127.0.0.1:15672 | admin / admin |
-| Nacos Console | http://127.0.0.1:8848/nacos | nacos / nacos |
-| XXL-Job Admin | http://127.0.0.1:9090/xxl-job-admin | admin / 123456 |
-| Kibana（ES） | http://127.0.0.1:5601 | 无密码 |
-| Prometheus | http://127.0.0.1:9091 | 无密码 |
-| Grafana | http://127.0.0.1:4000 | — |
+| ------ | ------ | ------ |
+| phpMyAdmin（MySQL） | <http://127.0.0.1:8899> | root / 123456 |
+| Redis Commander | <http://127.0.0.1:18081> | admin / admin |
+| RabbitMQ Management | <http://127.0.0.1:15672> | admin / admin |
+| Nacos Console | <http://127.0.0.1:8848/nacos> | nacos / nacos |
+| XXL-Job Admin | <http://127.0.0.1:9090/xxl-job-admin> | admin / 123456 |
+| Kibana（ES） | <http://127.0.0.1:5601> | 无密码 |
+| Prometheus | <http://127.0.0.1:9091> | 无密码 |
+| Grafana | <http://127.0.0.1:4000> | — |

@@ -49,7 +49,14 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-domain</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-types</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.plugin</groupId>
+            <artifactId>x-pack-sql-jdbc</artifactId>
+        </dependency>
 
     </dependencies>
 

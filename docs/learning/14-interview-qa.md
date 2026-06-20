@@ -13,6 +13,7 @@
 Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层架构，拆分为 10 个微服务。核心功能包括：用户登录鉴权、活动抽奖、积分体系（签到/兑换/消费）、奖品异步发放、AI Chat 集成。
 
 技术亮点：
+
 - **抽奖策略**：责任链（前置规则过滤）+ 规则树（后置奖品过滤）两阶段设计
 - **高并发**：Redis 原子操作做库存控制，分库分表（2库×4表）按 userId 路由
 - **数据一致性**：Outbox 模式（task 表 + MQ + XXL-Job 补偿）保证消息可靠投递
@@ -25,6 +26,7 @@ Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层�
 **参考回答：**
 
 项目分四层：
+
 1. **trigger 层**（`big-market-trigger`）：接收 HTTP 请求、MQ 消息、定时 Job，做参数校验和鉴权，不含业务逻辑。
 2. **application 层**（`domain/.../application`）：编排领域服务，`RaffleApplicationService.executeDraw()` 串联了"参与活动→策略抽奖→写中奖记录"三步。
 3. **domain 层**（`big-market-domain`）：核心业务规则，包含聚合根、实体、值对象、领域服务。通过 port 接口与外部交互，不依赖任何框架实现。
@@ -43,11 +45,13 @@ Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层�
 抽奖分两阶段：
 
 **第一阶段（责任链）：** 决定抽哪个奖品 ID。
+
 - 黑名单节点（`rule_blacklist`）：检查用户是否在黑名单，是则直接返回兜底奖品。
 - 权重节点（`rule_weight`）：根据用户累计消耗积分，匹配对应的奖品子集，在子集内抽取。
 - 默认节点（`rule_default`）：从预装配的 10000 格概率表中随机取位置，返回奖品 ID。
 
 **第二阶段（规则树）：** 对抽出的奖品做"能不能给"的过滤。
+
 - 次数锁节点（`rule_lock`）：用户今日抽奖次数未达解锁门槛，换成兜底奖品。
 - 库存节点（`rule_stock`）：Redis DECR 扣减库存，库存不足换兜底奖品。
 - 兜底节点（`rule_luck_award`）：返回配置的兜底奖品（通常是随机积分）。
@@ -61,6 +65,7 @@ Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层�
 **参考回答：**
 
 两者解决的问题不同：
+
 - **责任链**：解决"抽什么"的问题，是前置规则，节点间是线性的，后一个节点只在前一个放行时才执行。
 - **规则树**：解决"能不能给"的问题，是后置规则，节点间有条件分支（ALLOW/TAKE_OVER 决定走哪条边），能表达"满足 A 且满足 B"这样的复合条件。
 
@@ -73,6 +78,7 @@ Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层�
 **参考回答：**
 
 `StrategyArmoryDispatch.assembleLotteryStrategy()` 在预热时：
+
 1. 从数据库读取策略下所有奖品及概率（如一等奖 1%、二等奖 5%、三等奖 94%）。
 2. 将概率乘以 10000 展开成整数权重，生成 10000 格数组（一等奖占 100 格，二等奖占 500 格…）。
 3. Fisher-Yates 洗牌算法打乱顺序，存入 Redis（Key: `strategy_award_count_{strategyId}`）。
@@ -126,7 +132,7 @@ WHERE user_id = #{userId}
 项目中所有写操作都有幂等设计，统一通过 `outBusinessNo` + 数据库唯一索引实现：
 
 | 操作 | outBusinessNo 规则 | 唯一索引 |
-|------|-------------------|---------|
+| ------ | ------------------- | --------- |
 | 日历签到 | `userId + yyyyMMdd` | `user_behavior_rebate_order(user_id, out_business_no)` |
 | AI Chat 扣费 | `"chat_" + requestId` | `user_credit_order(out_business_no)` |
 | AI Chat 退款 | `"chat_refund_" + requestId` | 同上 |
@@ -145,6 +151,7 @@ WHERE user_id = #{userId}
 自研 `big-market-starter-db-router` 组件，基于 MyBatis 插件 + Spring AOP + ThreadLocal 实现。
 
 路由算法（`HashDBRouterStrategy`）：
+
 ```java
 int hash = userId.hashCode() & Integer.MAX_VALUE;  // 正整数 hash
 int dbIdx = hash % dbCount + 1;    // 库号（1 或 2）
@@ -162,6 +169,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 **参考回答：**
 
 两级防护：
+
 1. **Redis 原子操作（`DECR`）：** `RuleStockLogicTreeNode` 中调用 `strategyDispatch.subtractionAwardStock()`，Redis DECR 操作是单线程原子执行，返回值 >= 0 才认为扣减成功，不会出现超卖。
 2. **异步同步 MySQL：** 扣减成功后写入 Redis 延迟队列，`UpdateAwardStockJob` 异步读队列批量更新 MySQL 的 `stock_count_surplus`，减少 MySQL 写压力。
 
@@ -176,7 +184,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 按业务领域和数据所有权拆分，共 10 个服务：
 
 | 服务 | 职责 | 拆分原因 |
-|------|------|---------|
+| ------ | ------ | --------- |
 | gateway | 路由、熔断 | 统一入口，独立扩缩容 |
 | auth-service | JWT 鉴权 | 安全职责独立 |
 | market-service | 抽奖核心 | 最核心业务域 |
@@ -215,6 +223,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 **参考回答：**
 
 三个用途：
+
 1. **分布式锁：** `CreditRepository` 中用 `RLock` 防止同一用户并发积分操作（key 为 `userId`）。
 2. **Redis 操作封装：** `RedissonService` 提供 `getValue`/`setValue`/`addToMap`/`getFromMap` 等封装，统一管理 Redis 操作。
 3. **计数器：** 活动 SKU 库存、策略奖品概率表均通过 Redisson 管理的 Redis 结构存储。
@@ -226,6 +235,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 **参考回答：**
 
 四个 Job：
+
 1. **`SendMessageTaskJob`：** 扫描 `task` 表中 state=create 的记录，补偿重发 MQ（outbox 兜底）。
 2. **`UpdateAwardStockJob`：** 消费 Redis 延迟队列，将奖品库存扣减同步到 MySQL。
 3. **`UpdateActivitySkuStockJob`：** 同步 SKU 库存到 MySQL（类似 UpdateAwardStockJob）。
@@ -243,7 +253,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 1. **用户 JWT 鉴权：** `TokenAuthInterceptor` 拦截所有 `*_by_token` 接口，从 `Authorization` 头解析 JWT，验签并提取 `userId` 写入 request attribute。控制器从 attribute 取 `userId`，不信任请求体中的 userId，防止身份伪造。
 
-2. **管理员鉴权：** ERP 和 DCC 接口支持两种方式：`X-Admin-Token` 静态 token 比对（配置在 yml 中），或 JWT 中的 `openId` 在 `app.admin.user-ids` 白名单内。
+2. **管理员鉴权：** ERP、DCC、armory 由 market-service 的 `OperationalAuthInterceptor` 拦截；平台配置由 admin-service 的 `AdminAuthInterceptor` 拦截。统一校验逻辑在 `AdminAccessService`：支持 `X-Admin-Token` 静态比对，或 JWT 的 `openId` 在 `app.admin.user-ids` 白名单内。
 
 3. **JWT 注销：** `logout` 提取 JWT 的 `jti`，写入共享的 `ITokenRevocationService`：
    - **本地 `mvn spring-boot:run`（默认）：** 各进程使用 `InMemoryTokenRevocationService`，注销**不跨服务**同步。
@@ -260,6 +270,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 有，通过 `big-market-starter-ratelimiter` 自研限流组件实现，基于 Guava `RateLimiter`。
 
 在 Controller 方法上标注（业务代码中已有类似结构）：
+
 - `key`：以 userId 为维度限流（每个用户独立计数）
 - `permitsPerSecond`：每秒允许的请求数
 - `blacklistCount`：超过该次数被限流后，将用户加入黑名单 24 小时
@@ -271,7 +282,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 **参考回答：**
 
-DCC（Dynamic Configuration Center）使用 ZooKeeper 实现。`DCCController.updateConfig()` 向 ZooKeeper 的 `/big-market-dcc/config/{key}` 节点写入新值。应用启动时，`@DCCValue("degradeSwitch:close")` 注解的字段会监听对应 ZK 节点，节点值变更时自动更新字段值（反射注入），无需重启服务。
+DCC（Dynamic Configuration Center）使用 ZooKeeper 实现。推荐 `POST /api/v1/raffle/dcc/update_config?key=&value=`（`GET` 仍兼容但已 `@Deprecated`）。`DCCController.updateConfig()` 向 ZooKeeper 的 `/big-market-dcc/config/{key}` 节点写入新值。应用启动时，`@DCCValue("degradeSwitch:close")` 注解的字段会监听对应 ZK 节点，节点值变更时自动更新字段值（反射注入），无需重启服务。
 
 `degradeSwitch` 是典型应用：紧急情况下通过 DCC 将其设为 `open`，`RaffleActivityController.draw()` 会立即返回熔断响应，关闭所有抽奖请求。
 
@@ -279,19 +290,20 @@ DCC（Dynamic Configuration Center）使用 ZooKeeper 实现。`DCCController.up
 
 ## 项目深度类
 
-### Q19：聚合根的作用是什么？举个例子。
+### Q19：聚合根的作用是什么？举个例子
 
 **参考回答：**
 
 聚合根是 DDD 中保证数据一致性的边界。以 `CreatePartakeOrderAggregate` 为例：
 
 用户参与一次抽奖需要：
+
 - 扣减 `raffle_activity_account`（总账户 surplus - 1）
 - 扣减 `raffle_activity_account_month`（月账户）
 - 扣减 `raffle_activity_account_day`（日账户）
 - 插入 `user_raffle_order`（抽奖单）
 
-这四步必须在同一事务内完成，任何一步失败都要全部回滚。聚合根 `CreatePartakeOrderAggregate` 将这四个对象封装成一个整体，`ActivityRepository.saveCreatePartakeOrderAggregate()` 接收整体后在单个 `@Transactional` 方法内完成所有操作，外部调用方无需关心事务细节。
+这四步必须在同一事务内完成，任何一步失败都要全部回滚。聚合根 `CreatePartakeOrderAggregate` 将这四个对象封装成一个整体，`ActivityPartakeOrderSupport.saveCreatePartakeOrderAggregate()` 在单个编程式事务内完成所有操作，由 `ActivityRepository` 门面委托，外部调用方无需关心事务细节。
 
 ---
 

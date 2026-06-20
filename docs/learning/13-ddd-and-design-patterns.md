@@ -4,7 +4,7 @@
 
 本项目严格遵循 DDD（领域驱动设计）分层架构，理解这一点是读懂整个项目的钥匙。
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │  trigger 层（触发器层）                              │
 │  big-market-trigger / 各微服务 controller           │
@@ -15,6 +15,7 @@
 │  big-market-domain/.../application/                 │
 │  职责：编排领域服务，串联一次完整的业务流程          │
 │  代表：RaffleApplicationService.executeDraw()       │
+│        CreditPayExchangeApplicationService          │
 ├─────────────────────────────────────────────────────┤
 │  domain 层（领域层）— 核心                          │
 │  big-market-domain/                                 │
@@ -31,11 +32,11 @@
 ### 四层的具体对应关系
 
 | 层 | 模块 | 典型类 |
-|----|------|--------|
-| trigger | `big-market-trigger` | `RaffleActivityController`、`SendAwardConsumer`、`SendMessageTaskJob` |
-| application | `big-market-domain/.../application` | `RaffleApplicationService` |
-| domain | `big-market-domain` | `AbstractRaffleActivityPartake`、`DefaultRaffleStrategy`、`BehaviorRebateService` |
-| infrastructure | `big-market-infrastructure` | `ActivityRepository`、`CreditRepository`、`AwardRepository` |
+| --- | --- | --- |
+| trigger | `big-market-trigger` | `RaffleActivityController`、`SendAwardConsumer`、`GlobalExceptionHandler`、`DubboRpcAuthSupport` |
+| application | `big-market-domain/.../application` + `big-market-trigger/.../application` + chatbot | `RaffleDrawApplicationService`、`RaffleStrategyQueryApplicationService`、`ErpOperateApplicationService`、`ChatbotApplicationService` 等 |
+| domain | `big-market-domain` | `AbstractRaffleActivityPartake`、`DefaultRaffleStrategy`、`BehaviorRebateService`、`AdminAccessService` |
+| infrastructure | `big-market-infrastructure` | `ActivityRepository`、`ActivityQuerySupport`、`ActivityPartakeOrderSupport`、`ActivityQuotaOrderSupport`、`ActivityQuotaLedgerSupport`、`StrategyRepository`、`StrategyAwardCacheSupport`、`StrategyRuleTreeSupport`、`AwardRepository`、`AwardDispatchSupport`、`AwardCreditGrantSupport`、`MysqlMybatisConfiguration`、`ElasticsearchMybatisConfiguration` |
 
 ---
 
@@ -43,7 +44,7 @@
 
 每个业务域（activity、strategy、award、credit、rebate）在 domain 层内部结构一致：
 
-```
+```text
 domain/activity/
 ├── adapter/
 │   ├── port/          ← 领域需要调用外部能力时，定义的接口（防腐层）
@@ -73,8 +74,9 @@ domain/activity/
 必须在同一事务中操作，通过聚合根确保一致性。
 
 ```java
-// ActivityRepository.saveCreatePartakeOrderAggregate()
+// ActivityPartakeOrderSupport.saveCreatePartakeOrderAggregate()
 // 在一个本地事务内完成：扣减总/日/月额度 + 插入抽奖单
+// ActivityRepository 仅作门面委托，便于按职责继续拆分
 ```
 
 ### Port 接口的作用（防腐层）
@@ -152,6 +154,7 @@ current.appendNext(applicationContext.getBean("rule_default", ILogicChain.class)
 ```
 
 **三个节点的职责：**
+
 - `BlackListLogicChain`（rule_blacklist）：用户在黑名单中，直接返回兜底奖品，不再往下传
 - `RuleWeightLogicChain`（rule_weight）：按用户积分匹配权重范围，命中则接管，否则放行
 - `DefaultLogicChain`（rule_default）：按概率表随机抽奖，责任链的终点
@@ -180,6 +183,7 @@ while (null != nextNode) {
 ```
 
 **三个树节点的职责：**
+
 - `RuleLockLogicTreeNode`（rule_lock）：检查用户今日抽奖次数是否达到解锁门槛，未达到则 TAKE_OVER（拦截，走向兜底奖品）
 - `RuleStockLogicTreeNode`（rule_stock）：Redis 扣减奖品库存，扣减成功则 TAKE_OVER（返回该奖品），库存不足则 ALLOW（放行，走向下一节点）
 - `RuleLuckAwardLogicTreeNode`（rule_luck_award）：兜底节点，返回配置的兜底奖品
@@ -187,7 +191,7 @@ while (null != nextNode) {
 **与责任链的区别（面试高频）：**
 
 | 维度 | 责任链 | 规则树 |
-|------|--------|--------|
+| --- | --- | --- |
 | 结构 | 线性链表 | 有向无环图（树形） |
 | 时机 | 抽奖**前**：决定抽哪个奖品 | 抽奖**后**：对已抽出的奖品做过滤/替换 |
 | 分支 | 接管即终止，否则顺序传递 | 根据 ALLOW/TAKE_OVER 走不同的树边 |
@@ -243,11 +247,14 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
 ```
 
 **项目中共有 5 组适配器：**
+
 - `IAccountReadAdapter`：账户读取（本地域/远程 account-service）
 - `IAccountCreditWriteAdapter`：积分写入
 - `IAccountQuotaWriteAdapter`：额度写入
 - `IRebateOrderAdapter`：返利订单创建
 - `IRebateReadAdapter`：返利签到查询
+
+**Dubbo Provider 瘦身（account / fulfillment / rebate / strategy）：** RPC 类仅做日志与 `com.dyx.market.trigger.api.support.ApiResponses` 包装；业务与校验下沉至各服务或 domain 的 `application` 包。HTTP 与嵌入式 RPC 共用 `RaffleActivityFacade`。
 
 ---
 
@@ -259,7 +266,7 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
 
 **实现：** 将 MQ 消息先存入同库的 `task` 表（与业务数据同一本地事务），事务提交后再异步发送 MQ。发送成功后更新 task 状态为 completed；发送失败则 task 保持 create 状态，由 `SendMessageTaskJob` 定时扫描重发。
 
-```
+```text
 ┌──────────────────────────────────────────┐
 │  本地事务（同一数据库）                   │
 │  ① 写业务表（user_award_record）          │
@@ -273,5 +280,6 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
 ```
 
 **代码位置：**
+
 - `AwardRepository.saveUserAwardRecord()`：写 `user_award_record` + `task`，事务提交后调用 `eventPublisher` 发 MQ
 - `SendMessageTaskJob.java`：扫描 status=create 的 task，补偿重发

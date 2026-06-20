@@ -29,7 +29,9 @@ flowchart TD
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/adapter/port/IActivityAccountPort.java`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port/LocalActivityAccountPort.java`
+- `big-market-account-service/src/main/java/com/dyx/market/account/application/AccountQuotaApplicationService.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java`
+- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/application/FulfillmentAwardApplicationService.java`
 
 ## 任务重试与 MQ 失败
 

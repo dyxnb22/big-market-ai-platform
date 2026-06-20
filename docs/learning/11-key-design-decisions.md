@@ -9,6 +9,7 @@
 **选择：** account-service、fulfillment-service、rebate-service、strategy-service 均通过 Dubbo RPC 暴露接口。
 
 **理由：**
+
 1. **接口契约强绑定：** Dubbo 以 Java 接口为契约（`big-market-api` 模块），编译期就能发现接口不匹配，而 HTTP/JSON 只在运行时才报错。
 2. **负载均衡和注册中心内置：** Dubbo 与 Nacos 集成，自动服务发现和负载均衡，无需手写服务地址管理。
 3. **本项目特点：** 服务均为 Java，内网调用，Dubbo 的序列化效率优于 JSON HTTP。
@@ -22,6 +23,7 @@
 **选择：** `AwardRepository.saveUserAwardRecord()` 在同一事务内写 `user_award_record` 和 `task`，事务提交后再发 MQ。
 
 **理由：** 分布式系统中数据库写入和 MQ 发送是两个独立操作，无法用单一事务保证原子性：
+
 - 先写库再发 MQ：库已写但 MQ 宕机 → **消息永久丢失**，奖品不发
 - 先发 MQ 再写库：消息已发但库失败 → **重复发奖**
 
@@ -46,12 +48,14 @@ Outbox 模式的关键：task 表和业务数据**在同一数据库同一事务
 **选择：** `big-market-starter-db-router` 按 `userId` 哈希路由到 db01/db02 两个库，每库 4 张分表。
 
 **理由：** 用户抽奖记录、额度账户、积分账户等都以 `userId` 为核心查询条件。单库在用户量增大时会遇到：
+
 - 单表行数过多，B+ 树索引层高，查询变慢
 - 单库并发写入形成瓶颈
 
 分库分表后，同一用户的所有数据路由到同一库同一表，保证**同用户操作在同一数据库内可以用本地事务**，不引入分布式事务。
 
 **路由算法（`HashDBRouterStrategy`）：**
+
 ```java
 int hash = routeKey.hashCode() & Integer.MAX_VALUE;  // 取正整数
 int dbIdx = hash % dbCount + 1;                       // 库号：1 或 2
@@ -64,9 +68,10 @@ int tbIdx = (hash / dbCount) % tbCount;               // 表号：0~3
 
 ## 决策 5：为什么 rebate-service 和 strategy-service 默认 embedded 在 market-service 内？
 
-**选择：** `RaffleStrategyServiceRPC` 和 `RebateServiceRPC` 在 `big-market-trigger` 中，`@ConditionalOnProperty(matchIfMissing = true)` 表示默认激活，嵌入 market-service 进程内运行。
+**选择：** `RaffleStrategyServiceRPC`、`RebateServiceRPC`、`RaffleActivityServiceRPC`、`ErpOperateServiceRPC` 在 `big-market-trigger` 中，`@ConditionalOnProperty(matchIfMissing = true)` 表示默认激活，嵌入 market-service 进程内运行。HTTP Controller **不再**直接标注 `@DubboService`，RPC 与 HTTP 分离注册。
 
 **理由：**
+
 1. **学习环境简化：** 不需要启动 10 个进程，减少本地资源消耗。
 2. **渐进式演进：** 业务验证阶段先在单进程内调通，稳定后再剥离为独立服务，降低风险。
 3. **Dubbo 的透明性：** 无论是 embedded 还是独立服务，调用方（market-service 的 Consumer）代码完全一致，切换只改配置。
@@ -88,3 +93,13 @@ int tbIdx = (hash / dbCount) % tbCount;               // 表号：0~3
 **选择：** `RaffleApplicationService.executeDraw()` 异常时调用 `activityRepository.compensatePartakeQuota()`，内部用条件 UPDATE（`WHERE order_state = 'create'`）。
 
 **理由：** 在高并发场景下，同一个 `orderId` 可能被多个线程同时尝试回滚（网络重试、Job 扫描），直接 `UPDATE quota SET surplus = surplus + 1` 会导致重复加回。CAS 写法确保只有当订单处于 `create` 态时才执行回滚，幂等安全。
+
+---
+
+## 决策 8：为什么 Dubbo 无 token 重载要显式拒绝？
+
+**选择：** `RaffleActivityServiceRPC`、`ErpOperateServiceRPC` 对 `draw(request)`、`armory`、`creditPayExchangeSku(request)` 等无鉴权参数的重载调用 `DubboRpcAuthSupport.rejectInternalRpc()`；ERP 带 token 重载则 `requireAdmin()` 后再委托 Controller。
+
+**理由：** HTTP 路径有 `TokenAuthInterceptor` / `OperationalAuthInterceptor` 保护，但 Dubbo 直连会绕过 Servlet 过滤器。若保留无 token 重载并直接调 Controller，内网任意消费者可冒充用户抽奖或运营操作。
+
+**代价：** 旧版仅通过 Dubbo 无 token 调用的集成需要改为 HTTP 网关或携带 token 的 RPC 重载。

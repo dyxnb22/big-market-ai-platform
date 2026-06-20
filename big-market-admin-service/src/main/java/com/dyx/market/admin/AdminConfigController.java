@@ -23,10 +23,20 @@ import java.util.List;
 @RequestMapping("/api/${app.config.api-version}/admin/config/")
 public class AdminConfigController {
 
+    private static final String DEFAULT_ACTIVITY_TITLE = "幸运轮盘活动";
+    private static final String DEFAULT_ACTIVITY_COPY  = "登录参与抽奖，AI 帮你解读活动权益。";
+    private static final String DEFAULT_ACTIVITY_STATE = "online";
+
     @Resource
     private PlatformConfigService platformConfigService;
 
-    @RequestMapping(value = "list", method = RequestMethod.GET)
+    private void requireValidRequest(AdminConfigRequestDTO request) {
+        if (null == request || StringUtils.isBlank(request.getNamespace()) || StringUtils.isBlank(request.getConfigKey())) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+    }
+
+    @GetMapping("list")
     public Response<List<AdminConfigResponseDTO>> list(@RequestParam(required = false) String namespace) {
         return Response.<List<AdminConfigResponseDTO>>builder()
                 .code(ResponseCode.SUCCESS.getCode())
@@ -35,13 +45,10 @@ public class AdminConfigController {
                 .build();
     }
 
-    @RequestMapping(value = "get", method = RequestMethod.GET)
+    @GetMapping("get")
     public Response<AdminConfigResponseDTO> get(@RequestParam String namespace, @RequestParam String configKey) {
         if (StringUtils.isBlank(namespace) || StringUtils.isBlank(configKey)) {
-            return Response.<AdminConfigResponseDTO>builder()
-                    .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
-                    .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
-                    .build();
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
         return Response.<AdminConfigResponseDTO>builder()
                 .code(ResponseCode.SUCCESS.getCode())
@@ -50,39 +57,25 @@ public class AdminConfigController {
                 .build();
     }
 
-    @RequestMapping(value = "save", method = RequestMethod.POST)
+    @PostMapping("save")
     public Response<AdminConfigResponseDTO> save(@RequestBody AdminConfigRequestDTO request) {
-        try {
-            if (null == request || StringUtils.isBlank(request.getNamespace()) || StringUtils.isBlank(request.getConfigKey())) {
-                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
-            }
-            return Response.<AdminConfigResponseDTO>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info(ResponseCode.SUCCESS.getInfo())
-                    .data(platformConfigService.save(request))
-                    .build();
-        } catch (AppException e) {
-            return Response.<AdminConfigResponseDTO>builder().code(e.getCode()).info(e.getInfo()).build();
-        } catch (Exception e) {
-            return Response.<AdminConfigResponseDTO>builder().code(ResponseCode.UN_ERROR.getCode()).info(ResponseCode.UN_ERROR.getInfo()).build();
-        }
+        requireValidRequest(request);
+        return Response.<AdminConfigResponseDTO>builder()
+                .code(ResponseCode.SUCCESS.getCode())
+                .info(ResponseCode.SUCCESS.getInfo())
+                .data(platformConfigService.save(request))
+                .build();
     }
 
     /**
      * 用户端公开只读：活动展示配置与 AI 开关（无需管理员鉴权）。
      */
-    @RequestMapping(value = "public/display", method = RequestMethod.GET)
-    public Response<ActivityDisplayConfigResponseDTO> publicDisplay(@RequestParam Long activityId) {
-        if (activityId == null) {
-            return Response.<ActivityDisplayConfigResponseDTO>builder()
-                    .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
-                    .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
-                    .build();
-        }
+    @GetMapping("public/display")
+    public Response<ActivityDisplayConfigResponseDTO> publicDisplay(@RequestParam long activityId) {
         String ns = "activity." + activityId;
-        String title = platformConfigService.getValue(ns, "title", "幸运轮盘活动");
-        String copy = platformConfigService.getValue(ns, "copy", "登录参与抽奖，AI 帮你解读活动权益。");
-        String state = platformConfigService.getValue(ns, "state", "online");
+        String title = platformConfigService.getValue(ns, "title", DEFAULT_ACTIVITY_TITLE);
+        String copy  = platformConfigService.getValue(ns, "copy",  DEFAULT_ACTIVITY_COPY);
+        String state = platformConfigService.getValue(ns, "state", DEFAULT_ACTIVITY_STATE);
         boolean chatbotEnabled = !"false".equalsIgnoreCase(
                 platformConfigService.getValue("chatbot", "enabled", "true"));
         return Response.<ActivityDisplayConfigResponseDTO>builder()
@@ -98,23 +91,15 @@ public class AdminConfigController {
                 .build();
     }
 
-    @RequestMapping(value = "delete", method = RequestMethod.POST)
+    @PostMapping("delete")
     public Response<Boolean> delete(@RequestBody AdminConfigRequestDTO request) {
-        try {
-            if (null == request || StringUtils.isBlank(request.getNamespace()) || StringUtils.isBlank(request.getConfigKey())) {
-                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
-            }
-            platformConfigService.delete(request.getNamespace(), request.getConfigKey());
-            return Response.<Boolean>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info(ResponseCode.SUCCESS.getInfo())
-                    .data(true)
-                    .build();
-        } catch (AppException e) {
-            return Response.<Boolean>builder().code(e.getCode()).info(e.getInfo()).build();
-        } catch (Exception e) {
-            return Response.<Boolean>builder().code(ResponseCode.UN_ERROR.getCode()).info(ResponseCode.UN_ERROR.getInfo()).build();
-        }
+        requireValidRequest(request);
+        platformConfigService.delete(request.getNamespace(), request.getConfigKey());
+        return Response.<Boolean>builder()
+                .code(ResponseCode.SUCCESS.getCode())
+                .info(ResponseCode.SUCCESS.getInfo())
+                .data(true)
+                .build();
     }
 
 }

@@ -1,26 +1,18 @@
 package com.dyx.market.trigger.http;
 
-import com.dyx.market.domain.auth.service.IAuthService;
 import com.dyx.market.trigger.api.IDCCService;
 import com.dyx.market.types.enums.ResponseCode;
+import com.dyx.market.types.exception.AppException;
 import com.dyx.market.trigger.api.response.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.data.Stat;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 /**
- * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 动态配置管理
- * @create 2024-07-13 08:57
+ * 动态配置管理（HTTP 鉴权由 {@code OperationalAuthInterceptor} 统一处理）。
  */
 @Slf4j
 @RestController()
@@ -28,92 +20,56 @@ import java.util.Arrays;
 @RequestMapping("/api/${app.config.api-version}/raffle/dcc/")
 public class DCCController implements IDCCService {
 
-    @Autowired(required = false)
-    private CuratorFramework client;
-
-    @Value("${dcc.admin.token:${app.admin.token:admin-dev-token}}")
-    private String adminToken;
-
-    @Value("${app.admin.user-ids:admin}")
-    private String adminUserIds;
-
-    @Resource
-    private IAuthService authService;
-
-    @Autowired(required = false)
-    private HttpServletRequest httpRequest;
+    private final CuratorFramework client;
 
     private static final String BASE_CONFIG_PATH = "/big-market-dcc";
     private static final String BASE_CONFIG_PATH_CONFIG = BASE_CONFIG_PATH + "/config";
 
+    public DCCController(@org.springframework.beans.factory.annotation.Autowired(required = false) CuratorFramework client) {
+        this.client = client;
+    }
+
     @Override
     public Response<Boolean> updateConfig(String key, String value) {
-        return updateConfig(key, value, null);
+        return doUpdateConfig(key, value);
+    }
+
+    @PostMapping("update_config")
+    public Response<Boolean> updateConfigPost(@RequestParam String key, @RequestParam String value,
+                                              @RequestHeader(value = "X-Admin-Token", required = false) String token) {
+        return doUpdateConfig(key, value);
     }
 
     /**
-     * 更新配置
-     * <p>
-     * curl --request GET --url 'http://localhost:8080/api/v1/raffle/dcc/update_config?key=degradeSwitch&value=open'
-     * curl --request GET --url 'http://localhost:8080/api/v1/raffle/dcc/update_config?key=rateLimiterSwitch&value=open'
+     * @deprecated 请使用 POST {@link #updateConfigPost(String, String, String)}
      */
-    @RequestMapping(value = "update_config", method = RequestMethod.GET)
+    @Deprecated
+    @SuppressWarnings("java:S1133")
+    @GetMapping("update_config")
     @Override
     public Response<Boolean> updateConfig(@RequestParam String key, @RequestParam String value,
                                           @RequestHeader(value = "X-Admin-Token", required = false) String token) {
+        return doUpdateConfig(key, value);
+    }
+
+    private Response<Boolean> doUpdateConfig(String key, String value) {
+        log.info("DCC 动态配置值变更开始 key:{} value:{}", key, value);
+        if (null == client) {
+            log.warn("DCC 动态配置值变更拒绝，CuratorFramework 未初始化启动「配置未开启」 key:{} value:{}", key, value);
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), ResponseCode.UN_ERROR.getInfo());
+        }
         try {
-            if (!hasAdminAccess(token)) {
-                log.warn("DCC 动态配置值变更拒绝，非法token key:{} value:{}", key, value);
-                return Response.<Boolean>builder()
-                        .code(ResponseCode.APP_TOKEN_ERROR.getCode())
-                        .info(ResponseCode.APP_TOKEN_ERROR.getInfo())
-                        .build();
-            }
-            log.info("DCC 动态配置值变更开始 key:{} value:{}", key, value);
-            if (null == client){
-                log.warn("DCC 动态配置值变更拒绝，CuratorFramework 未初始化启动「配置未开启」 key:{} value:{}", key, value);
-                return Response.<Boolean>builder()
-                        .code(ResponseCode.UN_ERROR.getCode())
-                        .info(ResponseCode.UN_ERROR.getInfo())
-                        .build();
-            }
             String keyPath = BASE_CONFIG_PATH_CONFIG.concat("/").concat(key);
             if (null == client.checkExists().forPath(keyPath)) {
                 client.create().creatingParentsIfNeeded().forPath(keyPath);
                 log.info("DCC 节点监听 base node {} not absent create new done!", keyPath);
             }
             Stat stat = client.setData().forPath(keyPath, value.getBytes(StandardCharsets.UTF_8));
-            log.info("DCC 动态配置值变更完成 key:{} value:{} time:{}", key, value, stat.getCtime());
-            return Response.<Boolean>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info(ResponseCode.SUCCESS.getInfo())
-                    .build();
+            log.info("DCC 动态配置值变更完成 key:{} value:{} time:{}", key, value, stat.getMtime());
+            return TriggerApiResponses.ok(true);
         } catch (Exception e) {
             log.error("DCC 动态配置值变更失败 key:{} value:{}", key, value, e);
-            return Response.<Boolean>builder()
-                    .code(ResponseCode.UN_ERROR.getCode())
-                    .info(ResponseCode.UN_ERROR.getInfo())
-                    .build();
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), ResponseCode.UN_ERROR.getInfo());
         }
     }
-
-    private boolean hasAdminAccess(String xAdminToken) {
-        if (StringUtils.isNotBlank(xAdminToken) && adminToken.equals(xAdminToken)) return true;
-        if (httpRequest == null) return false;
-        String authHeader = httpRequest.getHeader("Authorization");
-        if (StringUtils.isBlank(authHeader)) return false;
-        String jwtToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
-        try {
-            if (!authService.checkToken(jwtToken)) return false;
-            String openid = authService.openid(jwtToken);
-            return Arrays.stream(adminUserIds.split(","))
-                    .map(String::trim)
-                    .filter(StringUtils::isNotBlank)
-                    .anyMatch(id -> id.equals(openid));
-        } catch (Exception e) {
-            log.warn("DCC hasAdminAccess JWT check failed: {}", e.getMessage());
-            return false;
-        }
-    }
-
 }

@@ -78,6 +78,10 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-starter-dubbo</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -7,9 +7,9 @@
 | 页面 | 文件 | 说明 |
 | --- | --- | --- |
 | 用户主应用 | `big-market-web/index.html` + `app.js` | 登录后抽奖、Chatbot、用户中心；活动 ID 由 `query_stage_activity_id` 解析 |
-| 登录 | `big-market-web/login.html` + `login.js` | 调用 `/api/v1/auth/login` |
+| 登录 | `big-market-web/login.html` + `login.js` + `login-common.js` | 调用 `/api/v1/auth/login` |
 | 管理端 | `big-market-web/admin.html` + `admin.js` | 平台配置、活动文案、Chatbot 开关 |
-| 管理登录 | `big-market-web/admin-login.html` | 管理员入口 |
+| 管理登录 | `big-market-web/admin-login.html` + `admin-login.js` + `login-common.js` | 管理员入口 |
 
 前端在解析 `activityId` 后调用公开展示配置 API，并根据 `chatbotEnabled` 控制 Chatbot 入口。
 
@@ -21,7 +21,7 @@
 | `/api/v1/auth/verify` | GET | `AuthAccessController.verify` | Authorization | 校验 JWT |
 | `/api/v1/auth/logout` | POST | `AuthAccessController.logout` | Authorization | 撤销 jti |
 | `/api/v1/raffle/activity/query_stage_activity_id` | GET | `RaffleActivityController.queryStageActivityId` | 未见拦截 | 渠道/来源查上架活动 |
-| `/api/v1/raffle/activity/armory` | GET | `RaffleActivityController.armory` | 未见拦截 | 活动和策略预热 |
+| `/api/v1/raffle/activity/armory` | GET | `RaffleActivityController.armory` | OperationalAuthInterceptor | 活动和策略预热 |
 | `/api/v1/raffle/activity/draw_by_token` | POST | `RaffleActivityController.draw` | TokenAuthInterceptor | 抽奖 |
 | `/api/v1/raffle/activity/calendar_sign_rebate_by_token` | POST | `RaffleActivityController.calendarSignRebateByToken` | TokenAuthInterceptor | 签到返利 |
 | `/api/v1/raffle/activity/is_calendar_sign_rebate_by_token` | POST | `RaffleActivityController.isCalendarSignRebateByToken` | TokenAuthInterceptor | 查今日是否签到 |
@@ -31,10 +31,10 @@
 | `/api/v1/raffle/activity/credit_pay_exchange_sku_by_token` | POST | `RaffleActivityController.creditPayExchangeSku` | TokenAuthInterceptor | 积分兑换抽奖次数 |
 | `/api/v1/raffle/activity/chat_credit_deduct_by_token` | POST | `RaffleActivityController.chatCreditDeductByToken` | TokenAuthInterceptor | AI Chat 扣积分 |
 | `/api/v1/raffle/activity/chat_credit_refund_by_token` | POST | `RaffleActivityController.chatCreditRefundByToken` | TokenAuthInterceptor | AI Chat 退积分 |
-| `/api/v1/raffle/strategy/strategy_armory` | GET | `RaffleStrategyController.strategyArmory` | 未见拦截 | 策略装配 |
+| `/api/v1/raffle/strategy/strategy_armory` | GET | `RaffleStrategyController.strategyArmory` | OperationalAuthInterceptor | 策略装配 |
 | `/api/v1/raffle/strategy/query_raffle_award_list_by_token` | POST | `RaffleStrategyController.queryRaffleAwardListByToken` | TokenAuthInterceptor | 查奖品和解锁状态 |
-| `/api/v1/raffle/erp/*` | GET/POST | `ErpOperateController` | `X-Admin-Token` 或管理员 JWT | 运营查询/上架 |
-| `/api/v1/raffle/dcc/update_config` | GET | `DCCController.updateConfig` | `X-Admin-Token` 或管理员 JWT | 动态配置 |
+| `/api/v1/raffle/erp/*` | GET/POST | `ErpOperateController` | OperationalAuthInterceptor + Controller 内 `AdminAccessService` | 运营查询/上架 |
+| `/api/v1/raffle/dcc/update_config` | POST（推荐）/ GET（兼容） | `DCCController.updateConfig` | OperationalAuthInterceptor + Controller 内 `AdminAccessService` | 动态配置 |
 | `/api/v1/admin/config/*` | GET/POST | `AdminConfigController` | AdminAuthInterceptor | 平台配置 |
 | `/api/v1/admin/config/public/display` | GET | `AdminConfigController.publicDisplay` | 无（`WebMvcConfig` 排除 AdminAuth） | 活动展示配置与 Chatbot 开关（`activityId` 查询参数） |
 | `/api/v1/chatbot/ask` | POST | `ChatbotController.ask` | 有扣费时需要 token | AI Chat |
@@ -113,7 +113,7 @@ sequenceDiagram
 - Entry: `RaffleActivityController.draw(String token, ActivityDrawRequestDTO)`
 - Application: `RaffleApplicationService.executeDraw`
 - Domain: `IRaffleActivityPartakeService.createOrder`、`IStrategyDecisionPort.performRaffle`、`IAwardFulfillmentPort.saveUserAwardRecord`
-- Repository: `ActivityRepository.saveCreatePartakeOrderAggregate`、`AwardRepository.saveUserAwardRecord`
+- Repository: `ActivityPartakeOrderSupport.saveCreatePartakeOrderAggregate`、`AwardRepository.saveUserAwardRecord`
 - Storage/MQ: MySQL、Redis、RabbitMQ `send_award`
 - Auth: `TokenAuthInterceptor` 校验 JWT，将 `userId` 放入 request attribute。
 
@@ -176,7 +176,7 @@ flowchart TD
     G --> H["RebateMessageConsumer"]
     H --> I{"rebateType"}
     I -->|integral| J["CreditRepository 增积分"]
-    I -->|sku| K["ActivityRepository 增额度"]
+    I -->|sku| K["ActivityQuotaOrderSupport 增额度"]
     J --> L["返回签到成功"]
     K --> L
 ```
@@ -186,7 +186,7 @@ flowchart TD
 - URL: `/api/v1/raffle/activity/credit_pay_exchange_sku_by_token`
 - Entry: `RaffleActivityController.creditPayExchangeSku`
 - Domain/Adapter: `IAccountQuotaWriteAdapter.createOrder`、`IAccountCreditWriteAdapter.createOrder`、`IAccountQuotaWriteAdapter.updateOrder`
-- Repository: `ActivityRepository.doSaveCreditPayOrder`、`CreditRepository.saveUserCreditTradeOrder`
+- Repository: `ActivityQuotaOrderSupport.doSaveCreditPayOrder`、`CreditRepository.saveUserCreditTradeOrder`
 - 重要机制: SKU 库存扣减、积分扣减、扣减失败恢复 SKU 库存、发货失败由 MQ 补偿。
 
 ```mermaid
@@ -254,17 +254,18 @@ sequenceDiagram
 
 ## ERP / DCC / Admin 配置流
 
-- ERP: `ErpOperateController` 使用 `X-Admin-Token` 或管理员 JWT。
-- DCC: `DCCController` 使用 `X-Admin-Token` 或管理员 JWT，写 Zookeeper `/big-market-dcc/config/{key}`。
-- Admin Config: `AdminConfigController` 由 `AdminAuthInterceptor` 拦截，读写 `PlatformConfigService`（`public/display` 除外）。
+- ERP/DCC/armory：由 **market-service** 的 `OperationalAuthInterceptor` 拦截；支持 `X-Admin-Token` 或 `openId` 在 `app.admin.user-ids` 中的管理员 JWT。Controller 内通过 `AdminAccessService` 复用同一套校验（含 Dubbo 无 HTTP 拦截时的兜底）。
+- Admin Config：`AdminAuthInterceptor` 仅在 **admin-service** 拦截 `/api/*/admin/**`；`AdminConfigController` 读写 `PlatformConfigService`（`public/display` 除外）。
 
 ```mermaid
 flowchart TD
-    A["管理员请求"] --> B{"鉴权方式"}
-    B -->|X-Admin-Token| C["静态 token 比对"]
-    B -->|Authorization JWT| D["AuthService.checkToken + adminUserIds"]
-    C --> E["ERP/DCC/Admin 业务"]
-    D --> E
-    E --> F["ES 查询 / 活动上架 / ZK DCC / 平台配置"]
+    A["管理员请求"] --> B{"目标路径"}
+    B -->|/admin/**| C["admin-service\nAdminAuthInterceptor"]
+    B -->|/raffle/erp/**\n/raffle/dcc/**\narmory| D["market-service\nOperationalAuthInterceptor"]
+    C --> E["AdminConfigController"]
+    D --> F{"鉴权方式"}
+    F -->|X-Admin-Token| G["AdminAccessService"]
+    F -->|Authorization JWT| G
+    G --> H["ERP / DCC / armory 业务"]
+    E --> I["平台配置 / public/display"]
 ```
-

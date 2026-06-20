@@ -4,7 +4,7 @@ import com.dyx.market.domain.award.adapter.port.IAwardPort;
 import com.dyx.market.infrastructure.gateway.IOpenAIAccountService;
 import com.dyx.market.infrastructure.gateway.dto.AdjustQuotaRequestDTO;
 import com.dyx.market.infrastructure.gateway.dto.AdjustQuotaResponseDTO;
-import com.dyx.market.infrastructure.gateway.response.Response;
+import com.dyx.market.types.common.Response;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import com.alibaba.fastjson2.JSON;
@@ -25,9 +25,9 @@ import javax.annotation.Resource;
 public class AwardPort implements IAwardPort {
 
     @Value("${gateway.config.big-market-appId}")
-    private String BIG_MARKET_APPID;
+    private String bigMarketAppId;
     @Value("${gateway.config.big-market-appToken}")
-    private String BIG_MARKET_APPTOKEN;
+    private String bigMarketAppToken;
 
     @Resource
     private IOpenAIAccountService openAIAccountService;
@@ -36,8 +36,8 @@ public class AwardPort implements IAwardPort {
     public void adjustAmount(String userId, Integer increaseQuota) throws Exception {
         try {
             AdjustQuotaRequestDTO requestDTO = AdjustQuotaRequestDTO.builder()
-                    .appId(BIG_MARKET_APPID)
-                    .appToken(BIG_MARKET_APPTOKEN)
+                    .appId(bigMarketAppId)
+                    .appToken(bigMarketAppToken)
                     .openid(userId)
                     .increaseQuota(increaseQuota)
                     .build();
@@ -46,7 +46,7 @@ public class AwardPort implements IAwardPort {
             Response<AdjustQuotaResponseDTO> response = call.execute().body();
             log.info("请求OpenAI应用账户调额接口完成 userId:{} increaseQuota:{} response:{}", userId, increaseQuota, JSON.toJSONString(response));
 
-            if (null == response || null == response.getCode() || !"0000".equals(response.getCode())) {
+            if (response == null || !ResponseCode.SUCCESS.getCode().equals(response.getCode())) {
                 throw new AppException(ResponseCode.GATEWAY_ERROR.getCode(), ResponseCode.GATEWAY_ERROR.getInfo());
             }
 

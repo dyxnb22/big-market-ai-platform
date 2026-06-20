@@ -96,6 +96,18 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-starter-ratelimiter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-starter-data</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-starter-dubbo</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

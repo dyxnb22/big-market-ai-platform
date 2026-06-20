@@ -17,12 +17,12 @@
 
     <div class="field">
       <label for="userIdInput">用户 ID</label>
-      <input id="userIdInput" autocomplete="username" placeholder="输入用户ID" />
+      <input id="userIdInput" name="username" type="text" autocomplete="username" placeholder="输入用户ID" />
     </div>
 
     <div class="field">
       <label for="passwordInput">密码</label>
-      <input id="passwordInput" type="password" autocomplete="current-password" placeholder="输入密码" />
+      <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="输入密码" />
     </div>
 
     <button id="loginBtn" class="submit-btn" type="button">登 录</button>
@@ -32,9 +32,10 @@
   </div>
 </div>
 
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<output id="toast" class="toast" aria-live="polite"></output>
 <script src="./config.js?v=__APP_VERSION__"></script>
 <script src="./api-client.js?v=__APP_VERSION__"></script>
+<script src="./login-common.js?v=__APP_VERSION__"></script>
 <script src="./login.js?v=__APP_VERSION__"></script>
 </body>
 </html>

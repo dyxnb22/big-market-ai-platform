@@ -4,14 +4,18 @@ import com.dyx.market.domain.auth.util.JwtTokenUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Base64;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * 鉴权抽象基类：基于 HS256 的 JWT 签发、解析与校验。
@@ -21,10 +25,43 @@ import java.util.UUID;
 @Slf4j
 public abstract class AbstractAuthService implements IAuthService {
 
-    private final String base64EncodedSecretKey;
+    private final SecretKey signingKey;
 
     protected AbstractAuthService(String jwtSecret) {
-        this.base64EncodedSecretKey = Base64.encodeBase64String(jwtSecret.getBytes());
+        this.signingKey = buildSigningKey(jwtSecret);
+    }
+
+    /**
+     * jjwt 0.11+ requires HMAC keys >= 256 bits. Secrets shorter than 32 bytes are
+     * deterministically stretched with SHA-256 (config value unchanged).
+     *
+     * <p><b>Migration note:</b> the old implementation (pre-refactor) used jjwt's legacy
+     * {@code signWith(SignatureAlgorithm, base64String)} API which treated the secret as
+     * a Base64-encoded key and decoded it — effectively using the raw secret bytes.
+     * The new {@link SecretKeySpec} path also uses raw bytes for secrets ≥ 32 bytes, so
+     * key material is identical and existing tokens remain valid.
+     * For secrets &lt; 32 bytes the old API accepted them as-is while this implementation
+     * SHA-256-stretches them, producing a different key — all previously-issued tokens
+     * will fail verification after deployment. Ensure {@code JWT_SECRET} is ≥ 32 bytes
+     * in all environments to avoid this.
+     */
+    private static SecretKey buildSigningKey(String jwtSecret) {
+        byte[] raw = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        if (raw.length < 32) {
+            log.warn("JWT secret is only {} bytes; existing tokens issued with the previous " +
+                    "jjwt legacy API will be invalidated after this deployment. " +
+                    "Set JWT_SECRET to a value of at least 32 characters to prevent this.", raw.length);
+        }
+        byte[] keyMaterial = raw.length >= 32 ? raw : sha256(raw);
+        return new SecretKeySpec(keyMaterial, "HmacSHA256");
+    }
+
+    private static byte[] sha256(byte[] input) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(input);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
     /**
@@ -32,36 +69,27 @@ public abstract class AbstractAuthService implements IAuthService {
      */
     protected String encode(String issuer, long ttlMillis, Map<String, Object> claims) {
         // iss 签发人，ttlMillis 生存时间，claims 为荷载中的扩展非隐私字段
-        if (claims == null) {
-            claims = new HashMap<>();
-        }
+        // 防御性拷贝：避免 jjwt 内部 put 操作污染调用方持有的 map
+        Map<String, Object> payload = claims != null ? new HashMap<>(claims) : new HashMap<>();
         long nowMillis = System.currentTimeMillis();
 
         JwtBuilder builder = Jwts.builder()
-                // 荷载部分
-                .setClaims(claims)
-                // JWT 唯一标识
-                .setId(UUID.randomUUID().toString())//2.
-                // 签发时间
+                .setClaims(payload)
+                .setId(UUID.randomUUID().toString())
                 .setIssuedAt(new Date(nowMillis))
-                // 签发人（逻辑上一般为 username 或 userId）
                 .setSubject(issuer)
-                .signWith(SignatureAlgorithm.HS256, base64EncodedSecretKey);//这个地方是生成jwt使用的算法和秘钥
-        if (ttlMillis >= 0) {
-            long expMillis = nowMillis + ttlMillis;
-            Date exp = new Date(expMillis);// 4. 过期时间，这个也是使用毫秒生成的，使用当前时间+前面传入的持续时间生成
-            builder.setExpiration(exp);
+                .signWith(signingKey);
+        if (ttlMillis > 0) {
+            builder.setExpiration(new Date(nowMillis + ttlMillis));
         }
         return builder.compact();
     }
 
     // 解析 jwtToken，得到荷载部分所有键值对（Claim 即 map）
     protected Claims decode(String jwtToken) {
-        // 得到 DefaultJwtParser
-        return Jwts.parser()
-                // 设置签名的秘钥
-                .setSigningKey(base64EncodedSecretKey)
-                // 设置需要解析的 jwt
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
                 .parseClaimsJws(JwtTokenUtils.extractToken(jwtToken))
                 .getBody();
     }
@@ -78,23 +106,20 @@ public abstract class AbstractAuthService implements IAuthService {
     }
 
     protected String extractJtiFromToken(String jwtToken) {
-        try {
-            Claims claims = decode(jwtToken);
-            return claims.getId();
-        } catch (Exception e) {
-            log.error("Failed to extract jti from token", e);
-            return null;
-        }
+        return extractClaim(jwtToken, Claims::getId, null);
     }
 
     protected long extractExpirationFromToken(String jwtToken) {
+        Date exp = extractClaim(jwtToken, Claims::getExpiration, null);
+        return exp != null ? exp.getTime() : 0L;
+    }
+
+    private <T> T extractClaim(String jwtToken, Function<Claims, T> getter, T fallback) {
         try {
-            Claims claims = decode(jwtToken);
-            Date exp = claims.getExpiration();
-            return exp != null ? exp.getTime() : 0L;
+            return getter.apply(decode(jwtToken));
         } catch (Exception e) {
-            log.error("Failed to extract expiration from token", e);
-            return 0L;
+            log.error("Failed to extract claim from token", e);
+            return fallback;
         }
     }
 

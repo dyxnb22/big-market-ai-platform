@@ -2,11 +2,11 @@
 
 ## 排查思路：从外到内
 
-```
+```text
 Gateway 日志 → 目标 Service 日志 → Domain 日志 → 数据库/Redis 状态
 ```
 
-每个请求都有 `traceId`（由 `TraceIdGlobalFilter` 注入），日志中用 `traceId` 跨服务串联。
+每个请求都有 `traceId`：网关侧由 `TraceIdGlobalFilter` 注入；各微服务由 `big-market-starter-web` 的 `TraceIdFilter` 写入 MDC。日志中用 `traceId` 跨服务串联。
 
 ---
 
@@ -42,6 +42,18 @@ Gateway 日志 → 目标 Service 日志 → Domain 日志 → 数据库/Redis �
 **现象：** 请求头为 `Authorization: Bearer <jwt>` 时鉴权失败。
 
 **说明：** `JwtTokenUtils` 已在 `AbstractAuthService` 中统一剥离 `Bearer` 前缀。若仍失败，检查 JWT 是否过期或已被注销。
+
+---
+
+## 场景 1.3：armory / strategy_armory 返回 APP_TOKEN_ERROR
+
+**现象：** 调用预热接口返回业务码 `0008`（`APP_TOKEN_ERROR`）。
+
+**排查路径：**
+
+1. 确认请求携带 `X-Admin-Token: admin-dev-token`，或管理员 JWT（`Authorization: Bearer <token>`，且 `openId` 在 `app.admin.user-ids` 内）。
+2. 确认请求经网关到达 **market-service**（非 admin-service）。
+3. 检查 `OperationalAuthInterceptor` 与 `AdminAccessService` 配置：`app.admin.token`、`app.admin.user-ids`。
 
 ---
 

@@ -1,13 +1,12 @@
 package com.dyx.market.gateway.config;
 
+import com.dyx.market.types.common.CorsSettings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
 
 /**
  * 跨域（CORS）配置，注册 WebFlux {@link CorsWebFilter}。
@@ -28,18 +27,7 @@ public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        // "*" 须用 allowedOriginPattern；具体域名列表用 allowedOrigins 精确匹配
-        if ("*".equals(allowedOrigins)) {
-            config.addAllowedOriginPattern("*");
-        } else {
-            Arrays.stream(allowedOrigins.split(","))
-                    .map(String::trim)
-                    .forEach(config::addAllowedOrigin);
-        }
-        config.addAllowedMethod("*");
-        config.addAllowedHeader("*");
-        // 与通配符来源搭配时 Spring 要求 credentials 为 false
-        config.setAllowCredentials(false);
+        CorsSettings.apply(config, allowedOrigins);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

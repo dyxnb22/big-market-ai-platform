@@ -15,6 +15,9 @@
         <module>big-market-starter-db-router</module>
         <module>big-market-starter-dcc</module>
         <module>big-market-starter-ratelimiter</module>
+        <module>big-market-starter-web</module>
+        <module>big-market-starter-data</module>
+        <module>big-market-starter-dubbo</module>
         <module>big-market-api</module>
         <module>big-market-management</module>
         <!-- Microservice launchers (shared jars remain above) -->
@@ -102,8 +105,18 @@
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt</artifactId>
-                <version>0.9.1</version>
+                <artifactId>jjwt-api</artifactId>
+                <version>0.11.5</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>0.11.5</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>0.11.5</version>
             </dependency>
             <dependency>
                 <groupId>javax.xml.bind</groupId>
@@ -219,6 +232,21 @@
             <dependency>
                 <groupId>com.dyx.market</groupId>
                 <artifactId>big-market-starter-ratelimiter</artifactId>
+                <version>1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dyx.market</groupId>
+                <artifactId>big-market-starter-web</artifactId>
+                <version>1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dyx.market</groupId>
+                <artifactId>big-market-starter-data</artifactId>
+                <version>1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dyx.market</groupId>
+                <artifactId>big-market-starter-dubbo</artifactId>
                 <version>1.1</version>
             </dependency>
             <dependency>

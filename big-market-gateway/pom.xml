@@ -12,6 +12,10 @@
     <artifactId>big-market-gateway</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-types</artifactId>
+        </dependency>
         <!-- Spring Cloud Gateway is WebFlux-based; do NOT add spring-boot-starter-web here -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

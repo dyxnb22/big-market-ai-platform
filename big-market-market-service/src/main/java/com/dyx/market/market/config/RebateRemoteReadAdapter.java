@@ -1,10 +1,10 @@
 package com.dyx.market.market.config;
 
 import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
+import com.dyx.market.domain.rebate.support.RebateAppTokenValidator;
 import com.dyx.market.trigger.adapter.IRebateReadAdapter;
 import com.dyx.market.trigger.api.IRebateService;
 import com.dyx.market.trigger.api.dto.RebateOrderQueryRequestDTO;
-import com.dyx.market.trigger.api.request.Request;
 import com.dyx.market.trigger.api.response.Response;
 import com.dyx.market.types.enums.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Map;
 
 /**
  * 返利读路径路由：按 {@code rebate.service.remote-read.enabled} 查询日历签到返利状态。
@@ -32,11 +31,9 @@ public class RebateRemoteReadAdapter implements IRebateReadAdapter {
 
     @Resource
     private IBehaviorRebateService behaviorRebateService;
-
     @Resource
-    private Map<String, String> appTokenMap;
+    private RebateAppTokenValidator rebateAppTokenValidator;
 
-    // check=false：rebate-service 未注册到 Nacos 时仍可启动
     @DubboReference(version = "1.0", check = false)
     private IRebateService rebateService;
 
@@ -45,14 +42,10 @@ public class RebateRemoteReadAdapter implements IRebateReadAdapter {
         if (remoteReadEnabled) {
             try {
                 Response<Boolean> resp = rebateService.isCalendarSignRebate(
-                        Request.<RebateOrderQueryRequestDTO>builder()
-                                .appId(appId)
-                                .appToken(appTokenMap.get(appId))
-                                .data(RebateOrderQueryRequestDTO.builder()
-                                        .userId(userId)
-                                        .outBusinessNo(outBusinessNo)
-                                        .build())
-                                .build());
+                        rebateAppTokenValidator.buildRequest(appId, RebateOrderQueryRequestDTO.builder()
+                                .userId(userId)
+                                .outBusinessNo(outBusinessNo)
+                                .build()));
                 if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
                     log.info("[RebateRemoteReadAdapter] isCalendarSignRebate remote success userId:{} outBusinessNo:{} result:{}",
                             userId, outBusinessNo, resp.getData());
@@ -67,5 +60,4 @@ public class RebateRemoteReadAdapter implements IRebateReadAdapter {
         }
         return !behaviorRebateService.queryOrderByOutBusinessNo(userId, outBusinessNo).isEmpty();
     }
-
 }

@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 public class AuthAccessController {
 
     private static final long TOKEN_TTL_SECONDS = 24 * 60 * 60L;
+    private static final long TOKEN_TTL_MS = TOKEN_TTL_SECONDS * 1_000L;
 
     @Resource
     private IAuthService authService;
@@ -44,50 +46,49 @@ public class AuthAccessController {
     @Value("${app.auth.dev-users:xiaofuge:demo,admin:admin}")
     private String devUsers;
 
-    @RequestMapping(value = "login", method = RequestMethod.POST)
-    public Response<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
-        try {
-            if (null == request || StringUtils.isBlank(request.getUserId()) || StringUtils.isBlank(request.getPassword())) {
-                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
-            }
-            if (!isValidCredential(request.getUserId().trim(), request.getPassword())) {
-                log.warn("[AuthAccessController] login denied — invalid credentials userId:{}", request.getUserId().trim());
-                return Response.<LoginResponseDTO>builder()
-                        .code(ResponseCode.Login.TOKEN_ERROR.getCode())
-                        .info("账号或密码错误")
-                        .build();
-            }
-            String token = authService.createToken(request.getUserId().trim());
-            String jti = authService.extractJti(token);
-            log.info("[AuthAccessController] login success userId:{} jti:{}", request.getUserId().trim(), jti);
-            return Response.<LoginResponseDTO>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info(ResponseCode.SUCCESS.getInfo())
-                    .data(LoginResponseDTO.builder()
-                            .userId(request.getUserId().trim())
-                            .token(token)
-                            .expiresIn(TOKEN_TTL_SECONDS)
-                            .build())
-                    .build();
-        } catch (AppException e) {
-            return Response.<LoginResponseDTO>builder().code(e.getCode()).info(e.getInfo()).build();
-        } catch (Exception e) {
-            log.error("[AuthAccessController] login error", e);
-            return Response.<LoginResponseDTO>builder().code(ResponseCode.UN_ERROR.getCode()).info(ResponseCode.UN_ERROR.getInfo()).build();
-        }
-    }
+    private Map<String, String> parsedDevUsers;
 
-    private boolean isValidCredential(String userId, String password) {
-        Map<String, String> users = Arrays.stream(StringUtils.defaultString(devUsers).split(","))
+    @PostConstruct
+    void initDevUsers() {
+        parsedDevUsers = Arrays.stream(StringUtils.defaultString(devUsers).split(","))
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
                 .map(item -> item.split(":", 2))
                 .filter(parts -> parts.length == 2 && StringUtils.isNotBlank(parts[0]))
-                .collect(Collectors.toMap(parts -> parts[0].trim(), parts -> parts[1], (left, right) -> right));
-        return password.equals(users.get(userId));
+                .collect(Collectors.toMap(parts -> parts[0].trim(), parts -> parts[1], (l, r) -> r));
     }
 
-    @RequestMapping(value = "verify", method = RequestMethod.GET)
+    @PostMapping("login")
+    public Response<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
+        if (null == request || StringUtils.isBlank(request.getUserId()) || StringUtils.isBlank(request.getPassword())) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        if (!isValidCredential(request.getUserId().trim(), request.getPassword())) {
+            log.warn("[AuthAccessController] login denied — invalid credentials userId:{}", request.getUserId().trim());
+            return Response.<LoginResponseDTO>builder()
+                    .code(ResponseCode.Login.TOKEN_ERROR.getCode())
+                    .info("账号或密码错误")
+                    .build();
+        }
+        String token = authService.createToken(request.getUserId().trim());
+        String jti = authService.extractJti(token);
+        log.info("[AuthAccessController] login success userId:{} jti:{}", request.getUserId().trim(), jti);
+        return Response.<LoginResponseDTO>builder()
+                .code(ResponseCode.SUCCESS.getCode())
+                .info(ResponseCode.SUCCESS.getInfo())
+                .data(LoginResponseDTO.builder()
+                        .userId(request.getUserId().trim())
+                        .token(token)
+                        .expiresIn(TOKEN_TTL_SECONDS)
+                        .build())
+                .build();
+    }
+
+    private boolean isValidCredential(String userId, String password) {
+        return password.equals(parsedDevUsers.get(userId));
+    }
+
+    @GetMapping("verify")
     public Response<String> verify(@RequestHeader("Authorization") String token) {
         if (!authService.checkToken(token)) {
             log.warn("[AuthAccessController] verify failed — token rejected");
@@ -110,35 +111,26 @@ public class AuthAccessController {
      * <p>
      * 幂等——重复吊销已吊销的 Token 仍返回 SUCCESS。
      */
-    @RequestMapping(value = "logout", method = RequestMethod.POST)
+    @PostMapping("logout")
     public Response<String> logout(@RequestHeader("Authorization") String token) {
-        try {
-            String jti = authService.extractJti(token);
-            if (jti == null) {
-                return Response.<String>builder()
-                        .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
-                        .info("Unable to extract token identifier — token may be malformed")
-                        .build();
-            }
-            long expiresAt = authService.extractExpiration(token);
-            if (expiresAt > 0) {
-                tokenRevocationService.revoke(jti, expiresAt);
-            } else {
-                // Token 无过期时间时，以较长 TTL 吊销作为兜底
-                tokenRevocationService.revoke(jti, System.currentTimeMillis() + TOKEN_TTL_SECONDS * 1000);
-            }
-            log.info("[AuthAccessController] token revoked jti:{}", jti);
+        String jti = authService.extractJti(token);
+        if (jti == null) {
             return Response.<String>builder()
-                    .code(ResponseCode.SUCCESS.getCode())
-                    .info("Token revoked successfully")
-                    .build();
-        } catch (Exception e) {
-            log.error("[AuthAccessController] logout failed", e);
-            return Response.<String>builder()
-                    .code(ResponseCode.UN_ERROR.getCode())
-                    .info("Token revocation failed: " + e.getMessage())
+                    .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                    .info("Unable to extract token identifier — token may be malformed")
                     .build();
         }
+        long expiresAt = authService.extractExpiration(token);
+        if (expiresAt > 0) {
+            tokenRevocationService.revoke(jti, expiresAt);
+        } else {
+            tokenRevocationService.revoke(jti, System.currentTimeMillis() + TOKEN_TTL_MS);
+        }
+        log.info("[AuthAccessController] token revoked jti:{}", jti);
+        return Response.<String>builder()
+                .code(ResponseCode.SUCCESS.getCode())
+                .info("Token revoked successfully")
+                .build();
     }
 
 }
