@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -58,7 +59,7 @@ public class AdminConfigController {
     }
 
     @PostMapping("save")
-    public Response<AdminConfigResponseDTO> save(@RequestBody AdminConfigRequestDTO request) {
+    public Response<AdminConfigResponseDTO> save(@RequestBody AdminConfigRequestDTO request) throws IOException {
         requireValidRequest(request);
         return Response.<AdminConfigResponseDTO>builder()
                 .code(ResponseCode.SUCCESS.getCode())
@@ -92,7 +93,7 @@ public class AdminConfigController {
     }
 
     @PostMapping("delete")
-    public Response<Boolean> delete(@RequestBody AdminConfigRequestDTO request) {
+    public Response<Boolean> delete(@RequestBody AdminConfigRequestDTO request) throws IOException {
         requireValidRequest(request);
         platformConfigService.delete(request.getNamespace(), request.getConfigKey());
         return Response.<Boolean>builder()

@@ -1,6 +1,9 @@
 package com.dyx.market.infrastructure.dao.po;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.Date;
 
@@ -10,6 +13,9 @@ import java.sql.Date;
  * @create 2024-10-26 17:06
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class RaffleActivityStage {
 
     /** ID */

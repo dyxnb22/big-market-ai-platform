@@ -1,6 +1,9 @@
 package com.dyx.market.infrastructure.dao.po;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
@@ -10,6 +13,9 @@ import java.util.Date;
  * @create 2024-04-03 15:30
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserAwardRecord {
 
     /** 自增ID */
