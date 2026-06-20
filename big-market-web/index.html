@@ -2,7 +2,11 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Lucky Draw AI - 智能抽奖平台，边抽奖边和 AI 聊天" />
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Lucky Draw AI - 智能抽奖平台</title>
   <link rel="stylesheet" href="./styles.css?v=__APP_VERSION__" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -126,7 +130,7 @@
   <aside id="lotteryDrawer" class="side-drawer right">
     <div class="drawer-header">
       <h3>轮盘抽奖</h3>
-      <button id="closeDrawerBtn" class="icon-btn" type="button">
+      <button id="closeDrawerBtn" class="icon-btn" type="button" aria-label="关闭抽奖面板" title="关闭">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
       </button>
     </div>
@@ -165,7 +169,7 @@
   <aside id="userCenterDrawer" class="side-drawer right">
     <div class="drawer-header">
       <h3>用户中心</h3>
-      <button id="closeUserCenterBtn" class="icon-btn" type="button">
+      <button id="closeUserCenterBtn" class="icon-btn" type="button" aria-label="关闭用户中心" title="关闭">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
       </button>
     </div>

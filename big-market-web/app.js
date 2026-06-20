@@ -569,7 +569,24 @@ function initApp() {
     return chatState.conversations.find(function(c){return c.id===chatState.activeId;}) || chatState.conversations[0];
   }
 
-  function renderChats() {
+  function createMsgElement(m) {
+    var el = document.createElement("div");
+    el.className = "message " + m.role;
+    var content;
+    if (m.role === "assistant") {
+      if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+        content = DOMPurify.sanitize(marked.parse(m.content, {breaks: true, gfm: true}));
+      } else {
+        content = esc(m.content);
+      }
+    } else {
+      content = esc(m.content);
+    }
+    el.innerHTML = '<div class="avatar">'+(m.role==="user"?"我":"AI")+'</div><div class="bubble">'+content+'</div>';
+    return el;
+  }
+
+  function renderConvListSidebar() {
     var active = activeConv();
     d.convTitle.textContent = active.title;
     d.convList.innerHTML = "";
@@ -588,6 +605,11 @@ function initApp() {
       };
       d.convList.appendChild(el);
     });
+  }
+
+  function renderChats() {
+    var active = activeConv();
+    renderConvListSidebar();
 
     d.msgList.innerHTML = "";
     if (active.messages.length === 0 && !pendingAssistant) {
@@ -607,20 +629,7 @@ function initApp() {
       });
     } else {
       active.messages.forEach(function(m) {
-        var el = document.createElement("div");
-        el.className = "message "+m.role;
-        var content;
-        if (m.role === "assistant") {
-          if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
-            content = DOMPurify.sanitize(marked.parse(m.content, {breaks: true, gfm: true}));
-          } else {
-            content = esc(m.content);
-          }
-        } else {
-          content = esc(m.content);
-        }
-        el.innerHTML = '<div class="avatar">'+(m.role==="user"?"我":"AI")+'</div><div class="bubble">'+content+'</div>';
-        d.msgList.appendChild(el);
+        d.msgList.appendChild(createMsgElement(m));
       });
     }
     if (pendingAssistant) {

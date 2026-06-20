@@ -105,7 +105,7 @@ async function loadActivity() {
   var activityId = dom.activityIdInput.value.trim() || "100301";
   dom.activityIdInput.value = activityId;
   var stageRes = await safeRequest("/raffle/erp/query_raffle_activity_stage_list", {method: "GET"});
-  var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST"});
+  var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST", body: "{}"});
   var stage = (stageRes.data || []).find(function(item) { return String(item.activityId) === String(activityId); });
   dom.activityStateInput.value = stage?.state || "online";
   if (dom.activityStateInput.tagName === "SELECT") {

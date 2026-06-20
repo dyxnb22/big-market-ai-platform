@@ -8,6 +8,10 @@ var CONFIG = {
   API_BASE: (function() {
     var port = location.port;
     if (!port || port === "80" || port === "443") return "/api/v1";
+    // 允许通过查询参数或全局对象动态重写 (适配不同测试环境)
+    if (window.API_BASE_OVERRIDE) return window.API_BASE_OVERRIDE;
+    // 如果是通过IP地址或非本地localhost直接访问的，尽量使用相对路径，避免写死127.0.0.1跨域
+    if (location.hostname !== "127.0.0.1" && location.hostname !== "localhost") return "/api/v1";
     return "http://127.0.0.1:8080/api/v1";
   })(),
   AUTH_KEY: "lucky-draw-auth",

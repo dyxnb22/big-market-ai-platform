@@ -24,6 +24,29 @@
   --radius-sm: 8px;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #111827;
+    --sidebar-bg: #1f2937;
+    --sidebar-hover: #374151;
+    --surface: #1f2937;
+    --ink: #f9fafb;
+    --muted: #9ca3af;
+    --line: #374151;
+    --brand: #818cf8;
+    --brand-light: rgba(99, 102, 241, 0.15);
+    --brand-hover: #6366f1;
+    --green: #34d399;
+    --green-light: rgba(52, 211, 153, 0.15);
+    --danger: #f87171;
+    --danger-light: rgba(248, 113, 113, 0.15);
+    --user-bubble: #6366f1;
+    --user-bubble-text: #ffffff;
+    --assistant-bubble: #374151;
+  }
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
