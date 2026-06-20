@@ -1,8 +1,11 @@
 /**
  * Shared configuration for big-market-web frontend.
  *
- * Development (python server.py):           API → http://127.0.0.1:8080/api/v1  (gateway)
- * Docker / nginx:                           Dockerfile pins API → /api/v1
+ * API_BASE resolution order:
+ *   1. Port 80/443 (nginx/production)       → /api/v1  (same-origin reverse proxy)
+ *   2. window.API_BASE_OVERRIDE set          → use override value  (test env injection)
+ *   3. Non-localhost hostname (IP/domain)    → /api/v1  (avoid cross-origin to 127.0.0.1)
+ *   4. localhost / 127.0.0.1 + custom port  → http://127.0.0.1:8080/api/v1  (python server.py dev)
  */
 var CONFIG = {
   API_BASE: (function() {
