@@ -20,6 +20,11 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.Date;
 
+/**
+ * 活动抽奖领域应用服务：编排参与下单、策略决策、发奖记录与失败额度补偿。
+ *
+ * <p>位于 domain 层，由 trigger 模块 {@code RaffleDrawApplicationService} 等调用方驱动。</p>
+ */
 @Slf4j
 @Service
 public class RaffleApplicationService {
@@ -37,6 +42,12 @@ public class RaffleApplicationService {
     @Value("${account.service.remote-quota-decrement.enabled:false}")
     private boolean remoteQuotaDecrementEnabled;
 
+    /**
+     * 执行一次活动抽奖：创建参与单 → 策略出奖 → 落中奖记录；异常时补偿回退额度。
+     *
+     * @param request 用户 ID、活动 ID
+     * @return 中奖奖品 ID、标题与序号
+     */
     public ActivityDrawResponseEntity executeDraw(ActivityDrawRequestEntity request) {
         String userId = request.getUserId();
         Long activityId = request.getActivityId();

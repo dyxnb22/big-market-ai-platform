@@ -18,6 +18,11 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.*;
 
+/**
+ * AI Chatbot 应用服务：积分扣减、调用 AI 提供商、失败退还。
+ *
+ * <p>支持 DeepSeek 远程调用与本地兜底回复；开关与计费配置由 {@link PlatformConfigService} 动态下发。</p>
+ */
 @Slf4j
 @Service
 public class ChatbotApplicationService {
@@ -48,6 +53,10 @@ public class ChatbotApplicationService {
     @Resource
     private RestTemplate restTemplate;
 
+    /**
+     * AI 对话主流程：校验开关与参数 → 扣减积分 → 调用 AI → 返回回答。
+     * <p>AI 调用失败时按 requestId 退还已扣积分，并抛出业务异常。</p>
+     */
     public ChatbotAskResponseDTO ask(ChatbotAskRequestDTO request, String token) {
         if (null == request || StringUtils.isBlank(request.getMessage())) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
@@ -83,6 +92,10 @@ public class ChatbotApplicationService {
         }
     }
 
+    /**
+     * 按配置扣减本次对话积分：校验 Token、余额充足后扣款。
+     * <p>effectiveCost 为 0 时跳过扣减，仅查询余额（未登录则返回 0）。</p>
+     */
     private CreditDeductionResult applyCreditDeduction(String token, int effectiveCost, ChatbotAskRequestDTO request) {
         if (effectiveCost > 0 && StringUtils.isBlank(token)) {
             throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());

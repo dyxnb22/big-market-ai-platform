@@ -7,6 +7,9 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
+/**
+ * Dubbo 内部 RPC 鉴权自动配置，将 {@link InternalRpcAuthProperties} 注入消费端与提供端过滤器。
+ */
 @Configuration
 @ConditionalOnClass(name = "org.apache.dubbo.rpc.Filter")
 @EnableConfigurationProperties(InternalRpcAuthProperties.class)

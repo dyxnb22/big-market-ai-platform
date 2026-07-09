@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * 抽奖策略查询应用服务：奖品列表与权重规则查询，经 {@link IStrategyReadAdapter} 读数据。
+ */
 @Slf4j
 @Service
 public class RaffleStrategyQueryApplicationService {

@@ -1,3 +1,7 @@
+/**
+ * 用户端主应用：登录门禁、转盘抽奖、签到兑换、AI 对话、用户中心。
+ * 依赖：config.js → api-client.js；鉴权 Token 存 localStorage（CONFIG.AUTH_KEY）。
+ */
 var auth = readAuth();
 var CHAT_KEY = "lucky-draw-chats-" + (auth.userId || "anon");
 var DRAW_HISTORY_KEY = function(uid) { return "lucky-draw-history-" + (uid || "anon"); };
@@ -125,6 +129,7 @@ function initApp() {
   var metricsLoading = true;
   var pendingAssistant = false;
 
+  // ---- Local history (draw / credit ledger) ----
   function readHistory(keyFn, fallback) {
     return readJson(keyFn(auth.userId), fallback);
   }
@@ -210,6 +215,7 @@ function initApp() {
     }
   }
 
+  // ---- Chatbot gate / activity display ----
   function applyChatbotGate() {
     var disabled = !chatbotEnabled;
     if (d.msgInput) {
@@ -231,6 +237,10 @@ function initApp() {
     }
   }
 
+  /**
+   * 解析当前活动 ID：仅当上架活动与演示默认 ID 一致时采用动态值，
+   * 避免 stage 与演示账户数据不一致导致查询失败。
+   */
   function resolveActivityId() {
     return apiRequest("/raffle/activity/query_stage_activity_id?channel=" + encodeURIComponent(CONFIG.CHANNEL) + "&source=" + encodeURIComponent(CONFIG.SOURCE), {
       method: "GET"
@@ -342,7 +352,7 @@ function initApp() {
     location.reload();
   }
 
-  // ---- Wheel ----
+  // ---- Wheel / campaign / draw ----
   function renderWheel() {
     var seg = 360 / awards.length;
     var colors = ["#f97316","#14b8a6","#3b82f6","#facc15","#a855f7","#22c55e","#ef4444","#06b6d4"];
@@ -458,7 +468,7 @@ function initApp() {
     });
   }
 
-  // ---- Draw ----
+  // ---- Draw（随机积分奖需轮询余额变化以展示实际到账） ----
   function draw() {
     busy(d.drawBtn, true);
     if (d.drawBtn) d.drawBtn.textContent = "抽奖中...";
@@ -560,6 +570,7 @@ function initApp() {
   }
 
   // ---- Chat ----
+  // ---- Chat conversations ----
   function activeConv() {
     if (!chatState.conversations.length) {
       var id = crypto.randomUUID();
@@ -648,6 +659,7 @@ function initApp() {
     saveChats(); renderChats();
   }
 
+  /** 调用 chatbot 服务；失败退积分由后端处理，前端仅展示余额与错误提示。 */
   function ask(text) {
     text = text.trim(); if (!text) return;
     if (!chatbotEnabled) { toast("AI 对话已在管理端关闭"); return; }
@@ -727,6 +739,7 @@ function initApp() {
   }
 
   // ---- Drawers ----
+  // ---- Drawers (lottery / user center) ----
   function openDrawer(drawer) {
     if (drawer !== d.lotteryDrawer) closeDrawer(d.lotteryDrawer);
     if (drawer !== d.userCenterDrawr) closeDrawer(d.userCenterDrawr);

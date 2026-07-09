@@ -19,6 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 策略只读应用服务：查询活动奖品列表与规则权重。
+ *
+ * <p>聚合领域策略服务与账户参与次数端口，为前端展示提供解锁状态等读模型。</p>
+ */
 @Service
 public class StrategyReadApplicationService {
 
@@ -29,6 +34,7 @@ public class StrategyReadApplicationService {
     @Resource
     private IStrategyAccountParticipationPort strategyAccountParticipationPort;
 
+    /** 按活动查询奖品列表，附带规则锁定次数与当日解锁状态。 */
     public List<RaffleAwardListResponseDTO> queryRaffleAwardList(RaffleAwardListRequestDTO request) {
         if (request == null || StringUtils.isBlank(request.getUserId()) || request.getActivityId() == null) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
@@ -64,6 +70,7 @@ public class StrategyReadApplicationService {
         return result;
     }
 
+    /** 按活动查询策略规则权重及关联奖品，附带用户累计参与次数。 */
     public List<RaffleStrategyRuleWeightResponseDTO> queryRaffleStrategyRuleWeight(
             RaffleStrategyRuleWeightRequestDTO request) {
         if (request == null || StringUtils.isBlank(request.getUserId()) || request.getActivityId() == null) {

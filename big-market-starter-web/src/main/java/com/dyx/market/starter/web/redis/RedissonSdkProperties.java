@@ -3,6 +3,9 @@ package com.dyx.market.starter.web.redis;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Redisson 连接配置，前缀 {@code redis.sdk.config}。
+ */
 @Data
 @ConfigurationProperties(prefix = "redis.sdk.config", ignoreInvalidFields = true)
 public class RedissonSdkProperties implements RedissonConnectionProperties {

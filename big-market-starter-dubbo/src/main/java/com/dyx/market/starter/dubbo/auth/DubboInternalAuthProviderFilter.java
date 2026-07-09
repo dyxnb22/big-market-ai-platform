@@ -10,6 +10,9 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcException;
 
+/**
+ * Dubbo 服务端内部鉴权过滤器，校验调用方附带的 RPC 共享令牌。
+ */
 @Activate(group = CommonConstants.PROVIDER, order = -9000)
 public class DubboInternalAuthProviderFilter implements Filter {
 

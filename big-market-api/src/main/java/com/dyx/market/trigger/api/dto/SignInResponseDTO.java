@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+/**
+ * 日历签到应答对象：今日是否已签、本次奖励积分、最新余额与提示文案。
+ */
 @Data
 @Builder
 @NoArgsConstructor

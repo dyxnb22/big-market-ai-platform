@@ -9,6 +9,9 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.servlet.Filter;
 
+/**
+ * 全链路追踪 ID 过滤器自动配置，注册 {@link TraceIdFilter} 并映射到全部 URL。
+ */
 @Configuration
 @ConditionalOnClass(Filter.class)
 public class TraceIdAutoConfiguration {

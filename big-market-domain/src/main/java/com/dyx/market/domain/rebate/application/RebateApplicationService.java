@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * 行为返利领域应用服务：对外返利下单与签到返利查询入口。
+ */
 @Service
 public class RebateApplicationService {
 
@@ -23,6 +26,12 @@ public class RebateApplicationService {
     @Resource
     private RebateAppTokenValidator rebateAppTokenValidator;
 
+    /**
+     * 接收外部行为返利请求并创建返利订单。
+     *
+     * @param request 含鉴权信息与 {@link RebateRequestDTO}
+     * @return 受理成功为 true
+     */
     public boolean rebate(Request<RebateRequestDTO> request) {
         rebateAppTokenValidator.validate(request);
         RebateRequestDTO requestDTO = request.getData();
@@ -40,6 +49,12 @@ public class RebateApplicationService {
         return true;
     }
 
+    /**
+     * 按外部业务号查询是否已存在日历签到返利单。
+     *
+     * @param request 含 userId、outBusinessNo 的查询请求
+     * @return 已返利为 true
+     */
     public boolean isCalendarSignRebate(Request<RebateOrderQueryRequestDTO> request) {
         rebateAppTokenValidator.validate(request);
         RebateOrderQueryRequestDTO requestDTO = request.getData();

@@ -1,3 +1,10 @@
+/**
+ * 管理后台脚本：活动展示配置、奖品预览、Chatbot 开关、运维探活。
+ *
+ * 鉴权约定：
+ * - adminRequest：仅用于 /admin/*，鉴权失败会跳转登录
+ * - safeRequest：用于 raffle/ERP 等业务接口，失败只 toast、不跳转
+ */
 var dom = {
   adminUserBadge: document.getElementById("adminUserBadge"),
   adminLoginLink: document.getElementById("adminLoginLink"),
@@ -23,6 +30,7 @@ var dom = {
 var auth = readAuth();
 var redirectingToLogin = false;
 
+// ===== Auth helpers =====
 function requireLogin() {
   if (auth.token) return true;
   location.href = adminLoginUrl();
@@ -80,6 +88,7 @@ function safeRequest(path, opts) {
   return apiRequest(path, opts);
 }
 
+// ===== Platform config / activity / awards =====
 async function saveConfig(namespace, configKey, configValue, description) {
   await adminRequest("/admin/config/save", {
     method: "POST",
@@ -200,7 +209,7 @@ function bind(button, action) {
   });
 }
 
-// Update sidebar user badge
+// ===== Sidebar / button bindings =====
 if (dom.adminUserBadge) dom.adminUserBadge.textContent = auth.token ? "已登录: " + (auth.userId || "") : "未登录";
 if (dom.adminLoginLink) dom.adminLoginLink.textContent = auth.token ? "🔑 切换账号" : "🔑 登录";
 

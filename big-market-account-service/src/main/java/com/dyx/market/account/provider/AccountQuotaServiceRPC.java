@@ -12,6 +12,11 @@ import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
 
+/**
+ * {@link IAccountQuotaService} 的 Dubbo Provider 实现：活动账户额度（quota）操作。
+ *
+ * <p>委托 {@link AccountQuotaApplicationService} 编排领域服务，响应统一封装为 {@link Response}。</p>
+ */
 @Slf4j
 @DubboService(version = "1.0")
 public class AccountQuotaServiceRPC implements IAccountQuotaService {

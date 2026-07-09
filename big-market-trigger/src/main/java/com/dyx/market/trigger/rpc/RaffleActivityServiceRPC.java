@@ -14,6 +14,11 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * {@link IRaffleActivityService} 的 Dubbo Provider 实现：活动抽奖、签到与积分等接口。
+ *
+ * <p>委托 {@link RaffleActivityFacade} 编排用例，响应统一封装为 {@link Response}。</p>
+ */
 @DubboService(version = "1.0")
 @ConditionalOnProperty(name = "activity.embedded-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RaffleActivityServiceRPC implements IRaffleActivityService {

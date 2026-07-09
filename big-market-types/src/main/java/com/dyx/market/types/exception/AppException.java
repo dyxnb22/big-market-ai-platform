@@ -3,6 +3,11 @@ package com.dyx.market.types.exception;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+/**
+ * 业务运行时异常：携带 {@code code} 与 {@code info}，对应 {@link com.dyx.market.types.enums.ResponseCode}。
+ *
+ * <p>由应用层、领域服务抛出，经 Controller / Dubbo 统一封装为 {@link com.dyx.market.types.common.Response}。</p>
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class AppException extends RuntimeException {

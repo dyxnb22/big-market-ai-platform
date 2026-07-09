@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * ERP 运营 HTTP 入口：抽奖单查询、上架活动生效与阶段列表等运营接口。
+ */
 @Slf4j
 @RestController()
 @CrossOrigin("${app.config.cross-origin}")

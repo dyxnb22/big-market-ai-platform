@@ -10,6 +10,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+/**
+ * CORS 跨域过滤器自动配置，读取 {@code app.cors.allowed-origins} 并注册 {@link CorsFilter}。
+ */
 @Configuration
 @ConditionalOnClass(CorsFilter.class)
 public class CorsAutoConfiguration {

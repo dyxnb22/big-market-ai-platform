@@ -10,6 +10,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Redisson 客户端自动配置，绑定 {@link RedissonSdkProperties} 并创建单机 {@link RedissonClient} Bean。
+ */
 @Configuration
 @ConditionalOnClass(RedissonClient.class)
 @EnableConfigurationProperties(RedissonSdkProperties.class)

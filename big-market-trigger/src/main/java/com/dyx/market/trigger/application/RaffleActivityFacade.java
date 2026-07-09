@@ -13,6 +13,9 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * 抽奖活动门面：统一编排活动装配、抽奖、签到、账户查询与积分兑换等用例。
+ */
 @Slf4j
 @Service
 public class RaffleActivityFacade {

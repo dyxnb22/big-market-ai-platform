@@ -14,6 +14,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import javax.annotation.Resource;
 
+/**
+ * {@link IRebateService} 的 Dubbo Provider 实现：行为返利与签到查询。
+ *
+ * <p>委托 {@link RebateApplicationService} 编排领域服务，响应统一封装为 {@link Response}。</p>
+ */
 @Slf4j
 @DubboService(version = "1.0")
 @ConditionalOnProperty(name = "rebate.embedded-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)

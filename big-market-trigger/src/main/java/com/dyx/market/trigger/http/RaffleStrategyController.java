@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * 抽奖策略 HTTP 入口：鉴权、参数绑定与响应包装；装配、查询与抽奖分别委托对应应用服务。
+ */
 @Slf4j
 @RestController()
 @CrossOrigin("${app.config.cross-origin}")

@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.io.IOException;
 
+/**
+ * 管理端模块统一 HTTP 异常处理。
+ *
+ * <p>将 {@link AppException} 与系统异常映射为统一 {@link Response}，减少 Controller 内重复 try/catch。</p>
+ */
 @Slf4j
 @RestControllerAdvice(basePackages = "com.dyx.market.admin")
 public class AdminExceptionHandler {

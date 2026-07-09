@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
+/**
+ * 抽奖策略执行应用服务：校验参数并委托领域层执行随机抽奖。
+ */
 @Slf4j
 @Service
 public class RaffleStrategyDrawApplicationService {

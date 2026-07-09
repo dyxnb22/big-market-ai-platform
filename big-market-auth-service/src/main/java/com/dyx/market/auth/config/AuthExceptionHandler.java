@@ -7,6 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * 认证模块统一 HTTP 异常处理。
+ *
+ * <p>将 {@link AppException} 与系统异常映射为统一 {@link Response}，减少 Controller 内重复 try/catch。</p>
+ */
 @Slf4j
 @RestControllerAdvice(basePackages = "com.dyx.market.auth")
 public class AuthExceptionHandler {

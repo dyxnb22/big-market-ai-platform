@@ -15,6 +15,11 @@ import org.apache.dubbo.config.annotation.DubboService;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * {@link IStrategyReadService} 的 Dubbo Provider 实现：策略只读查询。
+ *
+ * <p>委托 {@link StrategyReadApplicationService} 编排领域服务，响应统一封装为 {@link Response}。</p>
+ */
 @Slf4j
 @DubboService(version = "1.0")
 public class StrategyReadServiceRPC implements IStrategyReadService {

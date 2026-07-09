@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 
+/**
+ * 返利消息应用服务：按返利类型编排活动配额或积分入账。
+ */
 @Service
 public class RebateMessageApplicationService {
 

@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+/**
+ * 跨应用 RPC/HTTP 统一请求包装：{@code appId}、{@code appToken} 鉴权，{@code data} 业务载荷。
+ */
 @Data
 @Builder
 @NoArgsConstructor

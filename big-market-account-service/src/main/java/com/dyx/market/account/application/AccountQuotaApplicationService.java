@@ -14,12 +14,18 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
+/**
+ * 活动账户额度应用服务：下单、更新、查询与扣减/回滚额度。
+ *
+ * <p>适配 RPC 入参，委托 {@link IRaffleActivityAccountQuotaService} 完成领域逻辑。</p>
+ */
 @Service
 public class AccountQuotaApplicationService {
 
     @Resource
     private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
 
+    /** 创建活动额度充值/兑换订单。 */
     public UnpaidActivityOrderResponseDTO createOrder(AccountQuotaCreateOrderRequestDTO request) {
         if (request.getSku() == null
                 || StringUtils.isBlank(request.getUserId())
@@ -44,6 +50,7 @@ public class AccountQuotaApplicationService {
                 .build();
     }
 
+    /** 更新订单发货状态（支付完成后触发）。 */
     public void updateOrder(AccountQuotaUpdateOrderRequestDTO request) {
         if (StringUtils.isBlank(request.getUserId()) || StringUtils.isBlank(request.getOutBusinessNo())) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
@@ -54,6 +61,7 @@ public class AccountQuotaApplicationService {
                 .build());
     }
 
+    /** 查询用户在指定活动下的额度账户（总/日/月剩余次数）。 */
     public UserActivityAccountResponseDTO queryActivityAccountEntity(Long activityId, String userId) {
         if (activityId == null || StringUtils.isBlank(userId)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
@@ -82,12 +90,14 @@ public class AccountQuotaApplicationService {
         return raffleActivityAccountQuotaService.queryRaffleActivityAccountDayPartakeCount(activityId, userId);
     }
 
+    /** 扣减活动参与额度（抽奖前调用）。 */
     public boolean decrementQuota(AccountQuotaDecrementRequestDTO request) {
         validateDecrementRequest(request);
         return raffleActivityAccountQuotaService.decrementQuota(
                 request.getUserId(), request.getActivityId(), request.getOutBusinessNo());
     }
 
+    /** 回滚已扣减的活动额度（抽奖失败补偿）。 */
     public boolean rollbackQuota(AccountQuotaRollbackRequestDTO request) {
         validateRollbackRequest(request);
         return raffleActivityAccountQuotaService.rollbackQuota(

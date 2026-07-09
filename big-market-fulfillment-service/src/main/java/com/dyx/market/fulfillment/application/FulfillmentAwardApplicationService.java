@@ -13,12 +13,18 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 
+/**
+ * 奖品履约应用服务：保存中奖记录、执行发奖。
+ *
+ * <p>适配 RPC 入参，委托 {@link IAwardService} 完成领域逻辑。</p>
+ */
 @Service
 public class FulfillmentAwardApplicationService {
 
     @Resource
     private IAwardService awardService;
 
+    /** 持久化用户中奖记录（含奖品状态与配置）。 */
     public void saveUserAwardRecord(FulfillmentSaveUserAwardRecordRequestDTO request) {
         validateSaveRequest(request);
         AwardStateVO awardState = AwardStateVO.getByCode(request.getAwardState());
@@ -38,6 +44,7 @@ public class FulfillmentAwardApplicationService {
                 .build());
     }
 
+    /** 按订单触发奖品发放（积分、商品等）。 */
     public void distributeAward(FulfillmentDistributeAwardRequestDTO request) {
         if (request == null
                 || StringUtils.isBlank(request.getUserId())

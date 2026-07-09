@@ -16,6 +16,9 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * ERP 运营应用服务：查询 ES 抽奖单、上架活动生效与阶段列表。
+ */
 @Slf4j
 @Service
 public class ErpOperateApplicationService {

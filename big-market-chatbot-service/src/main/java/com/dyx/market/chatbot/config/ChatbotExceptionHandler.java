@@ -15,13 +15,19 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
+/**
+ * Chatbot 模块统一 HTTP 异常处理。
+ *
+ * <p>对 /ask 端点的业务异常返回带积分余额的 {@link ChatbotAskResponseDTO} 错误体，
+ * 其余接口返回无 data 的标准 {@link Response}。</p>
+ */
 @Slf4j
 @RestControllerAdvice(basePackages = "com.dyx.market.chatbot")
 public class ChatbotExceptionHandler {
 
     /**
-     * Request attribute set by ChatbotController.ask() to signal this is an /ask request.
-     * Using an attribute avoids fragile URI-suffix matching that breaks under reverse-proxy rewriting.
+     * 由 {@link ChatbotController#ask} 设置的请求属性，标识当前为 /ask 请求。
+     * 避免依赖 URI 后缀匹配，在反向代理改写路径时仍能返回正确错误体。
      */
     public static final String ATTR_ASK_ENDPOINT = "chatbot.isAskEndpoint";
 

@@ -1,5 +1,10 @@
 package com.dyx.market.types.common;
 
+/**
+ * 平台通用常量：字符串分隔符及 Redis 缓存 key 前缀。
+ *
+ * <p>{@link RedisKey} 供各领域仓储、策略装配与分布式锁命名使用。</p>
+ */
 public class Constants {
 
     public final static String SPLIT = ",";

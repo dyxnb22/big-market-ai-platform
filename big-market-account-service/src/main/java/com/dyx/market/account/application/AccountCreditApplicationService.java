@@ -14,12 +14,18 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 
+/**
+ * 积分账户应用服务：创建积分交易订单、查询可用余额。
+ *
+ * <p>适配 RPC 入参，委托 {@link ICreditAdjustService} 完成领域逻辑。</p>
+ */
 @Service
 public class AccountCreditApplicationService {
 
     @Resource
     private ICreditAdjustService creditAdjustService;
 
+    /** 创建积分交易订单（赚取或消费积分）。 */
     public String createOrder(CreditTradeRequestDTO request) {
         if (StringUtils.isBlank(request.getUserId())
                 || StringUtils.isBlank(request.getTradeName())
@@ -37,6 +43,7 @@ public class AccountCreditApplicationService {
                 .build());
     }
 
+    /** 查询用户当前可用积分余额。 */
     public BigDecimal queryUserCreditAccount(String userId) {
         if (StringUtils.isBlank(userId)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());

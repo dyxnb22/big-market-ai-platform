@@ -13,6 +13,11 @@ import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
 
+/**
+ * {@link IRebateService} 的 Dubbo Provider 实现：返利操作与签到查询。
+ *
+ * <p>委托 {@link RebateApplicationService} 编排领域服务，响应统一封装为 {@link Response}。</p>
+ */
 @Slf4j
 @DubboService(version = "1.0")
 public class RebateServiceRPC implements IRebateService {

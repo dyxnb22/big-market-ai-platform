@@ -4,6 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * 平台统一业务响应码：{@code code} 错误码、{@code info} 默认提示文案。
+ *
+ * <p>供 {@link com.dyx.market.types.common.Response}、
+ * {@link com.dyx.market.types.exception.AppException} 及各层校验使用；
+ * {@link Login} 子枚举承载登录鉴权相关码。</p>
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

@@ -15,6 +15,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import javax.annotation.Resource;
 import java.util.List;
 
+/**
+ * {@link IErpOperateService} 的 Dubbo Provider 实现：ERP 运营查询与上架活动管理。
+ *
+ * <p>委托 {@link ErpOperateApplicationService} 编排应用服务，响应统一封装为 {@link Response}。</p>
+ */
 @DubboService(version = "1.0")
 @ConditionalOnProperty(name = "erp.embedded-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class ErpOperateServiceRPC implements IErpOperateService {

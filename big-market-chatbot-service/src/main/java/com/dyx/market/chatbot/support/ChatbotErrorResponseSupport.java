@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 
+/**
+ * Chatbot 错误响应构建支持：为 /ask 端点异常补充积分余额与用户友好提示。
+ */
 @Slf4j
 @Component
 public class ChatbotErrorResponseSupport {
@@ -18,6 +21,7 @@ public class ChatbotErrorResponseSupport {
     @Resource
     private MarketCreditGatewayClient marketCreditGatewayClient;
 
+    /** 根据业务异常码构建 /ask 错误响应体，尽力附带当前积分余额。 */
     public ChatbotAskResponseDTO buildErrorData(AppException e, String token) {
         BigDecimal balance = BigDecimal.ZERO;
         if (StringUtils.isNotBlank(token)) {

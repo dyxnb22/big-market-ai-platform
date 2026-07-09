@@ -12,6 +12,11 @@ import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
 
+/**
+ * {@link IFulfillmentAwardService} 的 Dubbo Provider 实现：奖品履约（发奖）。
+ *
+ * <p>委托 {@link FulfillmentAwardApplicationService} 编排领域服务，响应统一封装为 {@link Response}。</p>
+ */
 @Slf4j
 @DubboService(version = "1.0")
 public class FulfillmentAwardServiceRPC implements IFulfillmentAwardService {

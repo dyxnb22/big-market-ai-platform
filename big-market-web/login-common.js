@@ -1,7 +1,8 @@
 /**
- * Shared login helpers for user and admin login pages.
+ * 用户与管理员登录页共用的辅助方法（redirect 解析、缓存破坏、密码登录）。
  */
 (function(global) {
+  /** 仅允许同 origin 的 redirect，防止开放重定向。 */
   function parseRedirectUrl(defaultPath) {
     var p = new URLSearchParams(location.search);
     var r = p.get("redirect");

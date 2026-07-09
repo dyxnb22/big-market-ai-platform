@@ -1,9 +1,14 @@
+/**
+ * 用户登录页：已登录则校验 Token 后跳转；否则走 LoginCommon 密码登录。
+ * 依赖：config.js → api-client.js → login-common.js
+ */
 const userIdInput = document.getElementById("userIdInput");
 const passwordInput = document.getElementById("passwordInput");
 const loginBtn = document.getElementById("loginBtn");
 
 const redirectUrl = LoginCommon.parseRedirectUrl("./index.html");
 
+// 已有有效 Token 时直接进入业务页，避免重复登录
 const existingAuth = readAuth();
 if (existingAuth.token) {
   apiRequest("/auth/verify", {}, {
