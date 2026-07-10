@@ -35,8 +35,9 @@
 
 ### 第四阶段：面试备考
 
-1. [11-key-design-decisions.md](11-key-design-decisions.md) - 7 个关键设计决策与理由（面试必读）
-2. [14-interview-qa.md](14-interview-qa.md) - 20 道高频面试题 Q&A（面试必读）
+1. [18-resume-project-deep-dive.md](18-resume-project-deep-dive.md) - 简历要点 + 项目必知总册（建议先读）
+2. [11-key-design-decisions.md](11-key-design-decisions.md) - 7 个关键设计决策与理由（面试必读）
+3. [14-interview-qa.md](14-interview-qa.md) - 20 道高频面试题 Q&A（面试必读）
 
 ### 参考工具
 
