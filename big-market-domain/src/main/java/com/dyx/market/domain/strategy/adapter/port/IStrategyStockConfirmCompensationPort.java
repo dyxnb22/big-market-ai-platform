@@ -14,5 +14,11 @@ public interface IStrategyStockConfirmCompensationPort {
 
     List<StrategyAwardStockConfirmTaskEntity> queryPendingTasks(int limit);
 
-    int markConfirmed(String userId, String orderId);
+    int claimProcessing(int scanDbIdx, String userId, String orderId);
+
+    int markConfirmed(int scanDbIdx, String userId, String orderId);
+
+    int incrementRetryFailed(int scanDbIdx, String userId, String orderId);
+
+    int revertStaleProcessing(int scanDbIdx, java.util.Date staleBefore, int limit);
 }

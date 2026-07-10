@@ -84,6 +84,8 @@ public class PlatformConfigService implements InitializingBean {
     }
 
     public synchronized AdminConfigResponseDTO save(AdminConfigRequestDTO request) throws IOException {
+        String key = storeKey(request.getNamespace(), request.getConfigKey());
+        AdminConfigResponseDTO previous = configStore.get(key);
         AdminConfigResponseDTO config = AdminConfigResponseDTO.builder()
                 .namespace(request.getNamespace())
                 .configKey(request.getConfigKey())
@@ -91,11 +93,26 @@ public class PlatformConfigService implements InitializingBean {
                 .description(request.getDescription())
                 .updateTime(System.currentTimeMillis())
                 .build();
-        configStore.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
+        configStore.put(key, config);
         saveToDisk();
         publishToNacos();
-        syncDynamicConfigIfNeeded(config);
-        return config;
+        try {
+            syncDynamicConfigIfNeeded(config);
+            return config;
+        } catch (RuntimeException e) {
+            rollbackConfig(key, previous);
+            throw e;
+        }
+    }
+
+    private void rollbackConfig(String key, AdminConfigResponseDTO previous) throws IOException {
+        if (previous != null) {
+            configStore.put(key, previous);
+        } else {
+            configStore.remove(key);
+        }
+        saveToDisk();
+        publishToNacos();
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {

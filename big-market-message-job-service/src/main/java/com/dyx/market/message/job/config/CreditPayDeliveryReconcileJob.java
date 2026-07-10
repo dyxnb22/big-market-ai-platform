@@ -153,6 +153,24 @@ public class CreditPayDeliveryReconcileJob {
             dbRouter.clear();
         }
 
+        completeCompensation(order);
+    }
+
+    private void finishCompensatingOrder(RaffleActivityOrder order) {
+        completeCompensation(order);
+    }
+
+    private void completeCompensation(RaffleActivityOrder order) {
+        if (!refundCreditOnce(order)) {
+            return;
+        }
+        if (!restoreSkuStockOnce(order)) {
+            return;
+        }
+        markOrderFailed(order);
+    }
+
+    private boolean refundCreditOnce(RaffleActivityOrder order) {
         String refundOutBusinessNo = "refund_" + order.getOutBusinessNo();
         try {
             accountCreditWriteAdapter.createOrder(TradeEntity.builder()
@@ -164,45 +182,41 @@ public class CreditPayDeliveryReconcileJob {
                     .build());
             log.info("[CreditPayDeliveryReconcileJob] credit refunded userId:{} outBusinessNo:{} refundKey:{}",
                     order.getUserId(), order.getOutBusinessNo(), refundOutBusinessNo);
+            return true;
         } catch (AppException e) {
-            if (!ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
-                log.error("[CreditPayDeliveryReconcileJob] refund failed userId:{} outBusinessNo:{}",
-                        order.getUserId(), order.getOutBusinessNo(), e);
-                return;
+            if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
+                log.warn("[CreditPayDeliveryReconcileJob] refund already exists userId:{} refundKey:{}",
+                        order.getUserId(), refundOutBusinessNo);
+                return true;
             }
-            log.warn("[CreditPayDeliveryReconcileJob] refund already exists userId:{} refundKey:{}",
-                    order.getUserId(), refundOutBusinessNo);
+            log.error("[CreditPayDeliveryReconcileJob] refund failed userId:{} outBusinessNo:{}",
+                    order.getUserId(), order.getOutBusinessNo(), e);
+            return false;
         } catch (Exception e) {
             log.error("[CreditPayDeliveryReconcileJob] refund failed userId:{} outBusinessNo:{}",
                     order.getUserId(), order.getOutBusinessNo(), e);
-            return;
+            return false;
         }
-
-        restoreSkuStockOnce(order);
-        markOrderFailed(order);
     }
 
-    private void finishCompensatingOrder(RaffleActivityOrder order) {
-        restoreSkuStockOnce(order);
-        markOrderFailed(order);
-    }
-
-    private void restoreSkuStockOnce(RaffleActivityOrder order) {
+    private boolean restoreSkuStockOnce(RaffleActivityOrder order) {
         if (!restoreSkuStock || order.getSku() == null) {
-            return;
+            return true;
         }
         String skuKey = SKU_RESTORED_KEY_PREFIX + order.getUserId() + Constants.UNDERLINE + order.getOutBusinessNo();
         if (!Boolean.TRUE.equals(redisService.setNx(skuKey))) {
             log.info("[CreditPayDeliveryReconcileJob] SKU already restored userId:{} outBusinessNo:{}",
                     order.getUserId(), order.getOutBusinessNo());
-            return;
+            return true;
         }
         try {
             activityRepository.restoreActivitySkuStock(order.getSku());
             log.info("[CreditPayDeliveryReconcileJob] SKU stock restored sku:{}", order.getSku());
+            return true;
         } catch (Exception e) {
             redisService.remove(skuKey);
             log.error("[CreditPayDeliveryReconcileJob] SKU stock restore failed sku:{}", order.getSku(), e);
+            return false;
         }
     }
 

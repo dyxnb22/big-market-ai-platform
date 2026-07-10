@@ -33,4 +33,9 @@ public interface IRaffleStock {
      */
     void updateStrategyAwardStock(Long strategyId, Integer awardId);
 
+    /**
+     * 按 reservationId 幂等扣减 MySQL 库存。
+     */
+    void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey);
+
 }

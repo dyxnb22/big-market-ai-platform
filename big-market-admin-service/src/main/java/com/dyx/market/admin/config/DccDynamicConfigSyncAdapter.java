@@ -1,6 +1,8 @@
 package com.dyx.market.admin.config;
 
 import com.dyx.market.management.config.DynamicConfigSyncPort;
+import com.dyx.market.types.enums.ResponseCode;
+import com.dyx.market.types.exception.AppException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -69,13 +71,16 @@ public class DccDynamicConfigSyncAdapter implements DynamicConfigSyncPort {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(url, new HttpEntity<>("{}", headers), String.class);
             if (!response.getStatusCode().is2xxSuccessful() || !isSuccessBody(response.getBody())) {
-                log.warn("DCC {} sync returned non-success status={} body={}",
-                        key, response.getStatusCodeValue(), response.getBody());
-            } else {
-                log.info("DCC {} synced to {}", key, value);
+                throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                        "DCC sync failed for " + key + ": status=" + response.getStatusCodeValue()
+                                + " body=" + response.getBody());
             }
+            log.info("DCC {} synced to {}", key, value);
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
-            log.warn("Failed to sync {} to DCC: {}", key, e.getMessage());
+            throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                    "DCC sync failed for " + key + ": " + e.getMessage());
         }
     }
 

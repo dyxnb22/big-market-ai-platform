@@ -16,5 +16,13 @@ public interface IStrategyAwardStockConfirmTaskDao {
     List<StrategyAwardStockConfirmTask> queryPendingTasks(@Param("limit") int limit);
 
     @DBRouter
+    int claimProcessing(StrategyAwardStockConfirmTask task);
+
+    @DBRouter
     int updateConfirmed(StrategyAwardStockConfirmTask task);
+
+    @DBRouter
+    int updateRetryFailed(StrategyAwardStockConfirmTask task);
+
+    int revertStaleProcessing(@Param("staleBefore") java.util.Date staleBefore, @Param("limit") int limit);
 }

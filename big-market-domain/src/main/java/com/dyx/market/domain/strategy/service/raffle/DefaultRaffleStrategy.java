@@ -78,6 +78,11 @@ public class DefaultRaffleStrategy extends AbstractRaffleStrategy implements IRa
     }
 
     @Override
+    public void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey) {
+        repository.updateStrategyAwardStockOnce(stockKey);
+    }
+
+    @Override
     public List<StrategyAwardEntity> queryRaffleStrategyAwardList(Long strategyId) {
         return repository.queryStrategyAwardList(strategyId);
     }

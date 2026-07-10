@@ -19,5 +19,8 @@ public interface IMqDeadLetterDao {
 
     int updateManualPending(MqDeadLetter record);
 
-    int reactivateReplayed(@Param("businessMessageId") String businessMessageId);
+    int reactivateReplayed(@Param("businessMessageId") String businessMessageId,
+                           @Param("maxConsumeFailures") int maxConsumeFailures);
+
+    MqDeadLetter queryLatestByBusinessMessageId(@Param("businessMessageId") String businessMessageId);
 }

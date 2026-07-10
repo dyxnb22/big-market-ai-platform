@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +27,9 @@ public class StrategyAwardStockConfirmJob {
 
     @Value("${job.strategy-stock-confirm.scan-limit:20}")
     private int scanLimit;
+
+    @Value("${job.strategy-stock-confirm.processing-lease-minutes:5}")
+    private int processingLeaseMinutes;
 
     @Resource
     private IStrategyStockConfirmCompensationPort strategyStockConfirmCompensationPort;
@@ -56,9 +60,15 @@ public class StrategyAwardStockConfirmJob {
                 return;
             }
             dbRouter.setDBKey(dbIdx);
+            Date staleBefore = new Date(System.currentTimeMillis()
+                    - TimeUnit.MINUTES.toMillis(processingLeaseMinutes));
+            int reverted = strategyStockConfirmCompensationPort.revertStaleProcessing(dbIdx, staleBefore, scanLimit);
+            if (reverted > 0) {
+                log.warn("[StrategyAwardStockConfirmJob] reverted {} stale processing tasks on DB{}", reverted, dbIdx);
+            }
             List<StrategyAwardStockConfirmTaskEntity> tasks = strategyStockConfirmCompensationPort.queryPendingTasks(scanLimit);
             for (StrategyAwardStockConfirmTaskEntity task : tasks) {
-                confirmTask(task);
+                confirmTask(task, dbIdx);
             }
         } catch (Exception e) {
             log.error("[StrategyAwardStockConfirmJob] DB{} scan failed", dbIdx, e);
@@ -70,24 +80,36 @@ public class StrategyAwardStockConfirmJob {
         }
     }
 
-    private void confirmTask(StrategyAwardStockConfirmTaskEntity task) {
+    private void confirmTask(StrategyAwardStockConfirmTaskEntity task, int scanDbIdx) {
+        int claimed = strategyStockConfirmCompensationPort.claimProcessing(scanDbIdx, task.getUserId(), task.getOrderId());
+        if (claimed != 1) {
+            log.info("[StrategyAwardStockConfirmJob] skip task already claimed userId:{} orderId:{}",
+                    task.getUserId(), task.getOrderId());
+            return;
+        }
+
+        StrategyAwardStockKeyVO reservation = StrategyAwardStockKeyVO.builder()
+                .strategyId(task.getStrategyId())
+                .awardId(task.getAwardId())
+                .reservationId(task.getReservationId())
+                .lockSurplus(task.getLockSurplus())
+                .build();
         try {
-            dbRouter.doRouter(task.getUserId());
-            StrategyAwardStockKeyVO reservation = StrategyAwardStockKeyVO.builder()
-                    .strategyId(task.getStrategyId())
-                    .awardId(task.getAwardId())
-                    .reservationId(task.getReservationId())
-                    .lockSurplus(task.getLockSurplus())
-                    .build();
             strategyRepository.confirmAwardStockReservation(reservation);
-            int updated = strategyStockConfirmCompensationPort.markConfirmed(task.getUserId(), task.getOrderId());
-            if (updated == 1) {
-                log.info("[StrategyAwardStockConfirmJob] confirmed userId:{} orderId:{}", task.getUserId(), task.getOrderId());
-            }
         } catch (Exception e) {
-            log.warn("[StrategyAwardStockConfirmJob] confirm failed userId:{} orderId:{}", task.getUserId(), task.getOrderId(), e);
-        } finally {
-            dbRouter.clear();
+            log.warn("[StrategyAwardStockConfirmJob] confirm failed userId:{} orderId:{}",
+                    task.getUserId(), task.getOrderId(), e);
+            strategyStockConfirmCompensationPort.incrementRetryFailed(scanDbIdx, task.getUserId(), task.getOrderId());
+            return;
+        }
+
+        int updated = strategyStockConfirmCompensationPort.markConfirmed(scanDbIdx, task.getUserId(), task.getOrderId());
+        if (updated == 1) {
+            log.info("[StrategyAwardStockConfirmJob] confirmed userId:{} orderId:{}", task.getUserId(), task.getOrderId());
+        } else {
+            log.warn("[StrategyAwardStockConfirmJob] markConfirmed missed userId:{} orderId:{} on DB{}",
+                    task.getUserId(), task.getOrderId(), scanDbIdx);
+            strategyStockConfirmCompensationPort.incrementRetryFailed(scanDbIdx, task.getUserId(), task.getOrderId());
         }
     }
 }

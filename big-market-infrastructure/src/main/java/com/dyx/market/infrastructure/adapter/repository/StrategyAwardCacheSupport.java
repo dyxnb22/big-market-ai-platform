@@ -29,6 +29,9 @@ import static com.dyx.market.types.enums.ResponseCode.UN_ASSEMBLED_STRATEGY_ARMO
 @Component
 public class StrategyAwardCacheSupport {
 
+    private static final String STOCK_CONFIRM_DEDUPE_KEY_PREFIX = "stock_confirm:";
+    private static final String STOCK_MYSQL_DECREMENT_KEY_PREFIX = "stock_mysql_decrement:";
+
     @Resource
     private IStrategyAwardDao strategyAwardDao;
     @Resource
@@ -163,10 +166,23 @@ public class StrategyAwardCacheSupport {
      * 确认预占：中奖记录落库成功后入队，由 UpdateAwardStockJob 异步写 MySQL。
      */
     public void confirmReservation(StrategyAwardStockKeyVO reservation) {
-        if (null == reservation) {
+        if (null == reservation || null == reservation.getReservationId()) {
             return;
         }
-        awardStockConsumeSendQueue(reservation);
+        String dedupeKey = STOCK_CONFIRM_DEDUPE_KEY_PREFIX + reservation.getReservationId();
+        if (Boolean.TRUE.equals(redisService.isExists(dedupeKey))) {
+            log.info("奖品库存预占确认已提交，跳过重复入队 strategyId:{} awardId:{} reservationId:{}",
+                    reservation.getStrategyId(), reservation.getAwardId(), reservation.getReservationId());
+            return;
+        }
+        try {
+            awardStockConsumeSendQueue(reservation);
+        } catch (Exception e) {
+            log.error("奖品库存预占确认入队失败 strategyId:{} awardId:{} reservationId:{}",
+                    reservation.getStrategyId(), reservation.getAwardId(), reservation.getReservationId(), e);
+            throw new RuntimeException("award stock confirm enqueue failed", e);
+        }
+        redisService.setNx(dedupeKey, 7, TimeUnit.DAYS);
         log.info("奖品库存预占确认 strategyId:{} awardId:{} reservationId:{}",
                 reservation.getStrategyId(), reservation.getAwardId(), reservation.getReservationId());
     }
@@ -212,6 +228,32 @@ public class StrategyAwardCacheSupport {
         strategyAward.setStrategyId(strategyId);
         strategyAward.setAwardId(awardId);
         strategyAwardDao.updateStrategyAwardStock(strategyAward);
+    }
+
+    /**
+     * 按 reservationId 幂等扣减 MySQL 库存，防止重复入队导致多次扣减。
+     */
+    public void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey) {
+        if (null == stockKey) {
+            return;
+        }
+        String reservationId = stockKey.getReservationId();
+        String dedupeKey = null;
+        if (null != reservationId && !reservationId.isEmpty()) {
+            dedupeKey = STOCK_MYSQL_DECREMENT_KEY_PREFIX + reservationId;
+            if (!Boolean.TRUE.equals(redisService.setNx(dedupeKey, 7, TimeUnit.DAYS))) {
+                log.info("奖品库存 MySQL 扣减已执行，跳过重复 reservationId:{}", reservationId);
+                return;
+            }
+        }
+        try {
+            updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
+        } catch (Exception e) {
+            if (null != dedupeKey) {
+                redisService.remove(dedupeKey);
+            }
+            throw e;
+        }
     }
 
     public StrategyAwardEntity queryStrategyAwardEntity(Long strategyId, Integer awardId) {

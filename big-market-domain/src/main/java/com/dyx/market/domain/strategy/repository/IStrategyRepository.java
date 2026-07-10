@@ -121,6 +121,11 @@ public interface IStrategyRepository {
     void updateStrategyAwardStock(Long strategyId, Integer awardId);
 
     /**
+     * 按 reservationId 幂等扣减 MySQL 库存。
+     */
+    void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey);
+
+    /**
      * 根据策略ID+奖品ID的唯一值组合，查询奖品信息
      *
      * @param strategyId 策略ID

@@ -5,6 +5,7 @@ import com.dyx.market.domain.strategy.model.entity.StrategyAwardStockConfirmTask
 import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao;
 import com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -20,6 +22,8 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
 
     @Resource
     private IStrategyAwardStockConfirmTaskDao strategyAwardStockConfirmTaskDao;
+    @Resource
+    private IDBRouterStrategy dbRouter;
 
     @Override
     public void enqueuePendingConfirm(String userId, StrategyAwardStockKeyVO reservation) {
@@ -27,6 +31,7 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
             return;
         }
         try {
+            dbRouter.doRouter(userId);
             strategyAwardStockConfirmTaskDao.insert(StrategyAwardStockConfirmTask.builder()
                     .userId(userId)
                     .orderId(reservation.getReservationId())
@@ -40,6 +45,8 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
             log.warn("[StockConfirmCompensation] enqueued userId:{} orderId:{}", userId, reservation.getReservationId());
         } catch (DuplicateKeyException e) {
             log.warn("[StockConfirmCompensation] duplicate orderId:{}", reservation.getReservationId());
+        } finally {
+            dbRouter.clear();
         }
     }
 
@@ -63,10 +70,49 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
     }
 
     @Override
-    public int markConfirmed(String userId, String orderId) {
-        return strategyAwardStockConfirmTaskDao.updateConfirmed(StrategyAwardStockConfirmTask.builder()
+    public int claimProcessing(int scanDbIdx, String userId, String orderId) {
+        try {
+            dbRouter.setDBKey(scanDbIdx);
+            return strategyAwardStockConfirmTaskDao.claimProcessing(buildTaskKey(userId, orderId));
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
+    public int markConfirmed(int scanDbIdx, String userId, String orderId) {
+        try {
+            dbRouter.setDBKey(scanDbIdx);
+            return strategyAwardStockConfirmTaskDao.updateConfirmed(buildTaskKey(userId, orderId));
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
+    public int incrementRetryFailed(int scanDbIdx, String userId, String orderId) {
+        try {
+            dbRouter.setDBKey(scanDbIdx);
+            return strategyAwardStockConfirmTaskDao.updateRetryFailed(buildTaskKey(userId, orderId));
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
+    public int revertStaleProcessing(int scanDbIdx, Date staleBefore, int limit) {
+        try {
+            dbRouter.setDBKey(scanDbIdx);
+            return strategyAwardStockConfirmTaskDao.revertStaleProcessing(staleBefore, limit);
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    private static StrategyAwardStockConfirmTask buildTaskKey(String userId, String orderId) {
+        return StrategyAwardStockConfirmTask.builder()
                 .userId(userId)
                 .orderId(orderId)
-                .build());
+                .build();
     }
 }

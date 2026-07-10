@@ -17,10 +17,31 @@
         limit #{limit}
     </select>
 
+    <update id="claimProcessing" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
+        update strategy_award_stock_confirm_task
+        set state = 'processing', update_time = now()
+        where user_id = #{userId} and order_id = #{orderId} and state = 'pending'
+    </update>
+
     <update id="updateConfirmed" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
         update strategy_award_stock_confirm_task
         set state = 'confirmed', update_time = now()
-        where user_id = #{userId} and order_id = #{orderId} and state = 'pending'
+        where user_id = #{userId} and order_id = #{orderId} and state in ('pending', 'processing')
+    </update>
+
+    <update id="updateRetryFailed" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
+        update strategy_award_stock_confirm_task
+        set state = 'pending',
+            retry_count = retry_count + 1,
+            update_time = now()
+        where user_id = #{userId} and order_id = #{orderId} and state = 'processing'
+    </update>
+
+    <update id="revertStaleProcessing">
+        update strategy_award_stock_confirm_task
+        set state = 'pending', update_time = now()
+        where state = 'processing' and update_time &lt;= #{staleBefore}
+        limit #{limit}
     </update>
 
 </mapper>

@@ -52,10 +52,20 @@
             select max(id) as id from mq_dead_letter
             where business_message_id = #{businessMessageId} and state = 'replayed'
         ) t on m.id = t.id
-        set m.state = 'pending',
-            m.consume_fail_count = m.consume_fail_count + 1,
-            m.retry_count = 0,
+        set m.consume_fail_count = m.consume_fail_count + 1,
+            m.state = case when m.consume_fail_count + 1 >= #{maxConsumeFailures}
+                           then 'manual_pending' else 'pending' end,
+            m.retry_count = case when m.consume_fail_count + 1 >= #{maxConsumeFailures}
+                                 then m.retry_count else 0 end,
             m.update_time = now()
     </update>
+
+    <select id="queryLatestByBusinessMessageId" resultMap="dataMap">
+        select id, message_id, business_message_id, queue, payload, state, retry_count, consume_fail_count
+        from mq_dead_letter
+        where business_message_id = #{businessMessageId}
+        order by id desc
+        limit 1
+    </select>
 
 </mapper>

@@ -12,6 +12,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;
@@ -41,6 +42,9 @@ public class RabbitMQDlqConfig {
 
     @Resource
     private IMqDeadLetterDao mqDeadLetterDao;
+
+    @Value("${job.dlq-replay.max-consume-failures:5}")
+    private int maxConsumeFailures;
 
     @Bean
     public DirectExchange dlxExchange() {
@@ -110,9 +114,15 @@ public class RabbitMQDlqConfig {
     private void persistDeadLetter(String originalQueue, Message message) {
         String payload = new String(message.getBody(), StandardCharsets.UTF_8);
         String businessMessageId = resolveBusinessMessageId(originalQueue, payload);
-        int reactivated = mqDeadLetterDao.reactivateReplayed(businessMessageId);
+        int reactivated = mqDeadLetterDao.reactivateReplayed(businessMessageId, maxConsumeFailures);
         if (reactivated > 0) {
-            log.warn("[DLQ] reactivated replayed record businessMessageId:{} queue:{}", businessMessageId, originalQueue);
+            MqDeadLetter latest = mqDeadLetterDao.queryLatestByBusinessMessageId(businessMessageId);
+            if (latest != null && "manual_pending".equals(latest.getState())) {
+                log.error("[DLQ] MANUAL_PENDING businessMessageId:{} queue:{} consumeFailCount:{} — exceeded max consume failures",
+                        businessMessageId, originalQueue, latest.getConsumeFailCount());
+            } else {
+                log.warn("[DLQ] reactivated replayed record businessMessageId:{} queue:{}", businessMessageId, originalQueue);
+            }
             return;
         }
         String messageId = businessMessageId + ":dlq:" + System.nanoTime();
@@ -126,9 +136,15 @@ public class RabbitMQDlqConfig {
             log.error("[DLQ] persisted dead-letter messageId:{} businessMessageId:{} queue:{}",
                     messageId, businessMessageId, originalQueue);
         } catch (DuplicateKeyException e) {
-            int retryReactivate = mqDeadLetterDao.reactivateReplayed(businessMessageId);
+            int retryReactivate = mqDeadLetterDao.reactivateReplayed(businessMessageId, maxConsumeFailures);
             if (retryReactivate > 0) {
-                log.warn("[DLQ] reactivated after duplicate businessMessageId:{} queue:{}", businessMessageId, originalQueue);
+                MqDeadLetter latest = mqDeadLetterDao.queryLatestByBusinessMessageId(businessMessageId);
+                if (latest != null && "manual_pending".equals(latest.getState())) {
+                    log.error("[DLQ] MANUAL_PENDING businessMessageId:{} queue:{} consumeFailCount:{} — exceeded max consume failures",
+                            businessMessageId, originalQueue, latest.getConsumeFailCount());
+                } else {
+                    log.warn("[DLQ] reactivated after duplicate businessMessageId:{} queue:{}", businessMessageId, originalQueue);
+                }
             } else {
                 log.warn("[DLQ] duplicate dead-letter ignored messageId:{} queue:{}", messageId, originalQueue);
             }
