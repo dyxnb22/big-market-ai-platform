@@ -6,6 +6,8 @@ set -euo pipefail
 GW="${1:-http://127.0.0.1:8080}"
 CHANNEL="${CHANNEL:-c01}"
 SOURCE="${SOURCE:-s01}"
+DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
+DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=lib/health-poll.sh
@@ -13,7 +15,7 @@ source "$ROOT/scripts/lib/health-poll.sh"
 
 ADMIN_LOGIN=$(curl -sf -X POST "$GW/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"admin","password":"admin"}')
+  -d "{\"userId\":\"$DEMO_ADMIN_USER_ID\",\"password\":\"$DEMO_ADMIN_PASSWORD\"}")
 ADMIN_TOKEN=$(echo "$ADMIN_LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null || true)
 
 if [ -z "$ADMIN_TOKEN" ]; then

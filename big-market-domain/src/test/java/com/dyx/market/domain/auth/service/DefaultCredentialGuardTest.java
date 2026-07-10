@@ -53,6 +53,21 @@ public class DefaultCredentialGuardTest {
         guard.afterPropertiesSet();
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void secureRejectsStandaloneDemoUser() {
+        MockEnvironment env = new MockEnvironment();
+        env.setActiveProfiles("docker", "secure");
+        DefaultCredentialGuard guard = newGuard(env,
+                "strong-jwt-secret-value-32chars!!",
+                "xiaofuge:demo",
+                "strong-admin-token-xyz",
+                "strong-rpc-token-xyz",
+                "strong-chat-internal-token",
+                "strong-xxl-token",
+                "strong-gateway-token");
+        guard.afterPropertiesSet();
+    }
+
     private static DefaultCredentialGuard newGuard(Environment env,
                                                    String jwt,
                                                    String users,

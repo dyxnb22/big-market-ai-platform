@@ -107,7 +107,7 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 
 ## 数据与归属
 
-服务边界矩阵见 `docs/microservices-dao-ownership.md`（**逻辑约定**，非编译器强制；边界靠 ports/adapters + ArchUnit 门禁）。DDL 与 Outbox 学习说明见 `docs/data-and-outbox.md` 与 `docs/sql/`。SQL 文件为学习环境下的 DDL 参考，本仓库不会自动执行。
+服务边界矩阵见 `docs/microservices-dao-ownership.md`（**逻辑约定**，非编译器强制；边界靠 ports/adapters + ArchUnit 门禁）。DDL 与 Outbox 学习说明见 `docs/data-and-outbox.md` 与 `docs/sql/`。`docs/sql/` 下的 SQL 是需手动执行的学习参考；`docs/dev-ops/mysql/sql/` 会在 fresh MySQL 卷初始化时由 Docker 自动执行。旧卷不会重跑 init SQL，需执行 `./scripts/apply-stack-migrations.sh`。
 
 - Admin 平台配置：当 `nacos.config.sync.enabled=true` 时，保存以 Nacos publish 成功为准（可用 `nacos.config.sync.fail-open=true` 降级为仅写本地）。
 

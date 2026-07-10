@@ -263,20 +263,17 @@ trigger（HTTP / MQ / Job）
 | 层 | 模式 | 解决的问题 | 时机 |
 |----|------|------------|------|
 | 第一层 | 责任链 | **抽哪个奖**（抽前分流） | 先执行 |
-| 第二层 | 决策树 | **能不能发这个奖**（抽后过滤） | 仅默认抽奖路径进入 |
+| 第二层 | 决策树 | **能不能发这个奖**（抽后过滤） | 责任链的候选奖均进入（该奖配置了规则树时） |
 
 入口：`AbstractRaffleStrategy.performRaffle()`
 
 ```52:64:big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/AbstractRaffleStrategy.java
-        // 2. 责任链：拿到初步 awardId；黑名单/权重等非默认逻辑直接返回
+        // 2. 责任链：拿到初步 awardId
         DefaultChainFactory.StrategyAwardVO chainStrategyAwardVO = raffleLogicChain(userId, strategyId);
-        if (!RULE_DEFAULT.equals(chainStrategyAwardVO.getLogicModel())) {
-            return buildRaffleAwardEntity(...);
-        }
 
-        // 3. 规则树：次数判断、库存扣减、兜底奖
+        // 3. 规则树：接管候选奖也要做库存校验
         DefaultTreeFactory.StrategyAwardVO treeStrategyAwardVO =
-            raffleLogicTree(userId, strategyId, chainStrategyAwardVO.getAwardId(), endDateTime);
+            raffleLogicTree(userId, strategyId, chainStrategyAwardVO.getAwardId(), endDateTime, orderId);
         return buildRaffleAwardEntity(...);
 ```
 
@@ -338,7 +335,7 @@ RuleStockLogicTreeNode
 
 ### 3.5 面试口述模板
 
-> 抽奖规则分两层：责任链做抽前分流，处理黑名单和积分权重；只有走到默认随机时，才进入决策树做次数锁和库存校验。两边都是可配置节点，新增规则主要加节点和配置，不用改 `performRaffle` 主流程，所以编排灵活、耦合低。
+> 抽奖规则分两层：责任链做抽前分流，处理黑名单和积分权重；责任链给出候选奖后，若该奖配置了规则树，会继续做次数锁和库存校验，避免接管路径绕过库存。两边都是可配置节点，新增规则主要加节点和配置，不用改 `performRaffle` 主流程。
 
 ---
 
@@ -505,8 +502,8 @@ RuleStockLogicTreeNode
 
 ## 7. 常见追问（简答）
 
-**Q：黑名单命中为什么不走规则树？**
-A：责任链已「接管」并给出最终奖品（通常兜底积分），无需再做次数/库存过滤；只有默认随机路径才需要树节点校验。
+**Q：黑名单/权重接管后为什么还要走规则树？**
+A：责任链接管只确定候选奖，不等于库存已预占。候选奖配置规则树时仍需继续执行库存节点，避免接管路径超卖。
 
 **Q：Redis 库存和 MySQL 不一致怎么办？**
 A：并发正确性以 Redis 为准；MySQL 是异步投影。Job/延迟队列负责追平；极端情况可对账补偿。

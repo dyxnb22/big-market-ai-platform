@@ -6,6 +6,10 @@ API="${API:-http://127.0.0.1:8080/api/v1}"
 BASE_URL="${API%/api/v1}"
 CHANNEL="${CHANNEL:-c01}"
 SOURCE="${SOURCE:-s01}"
+DEMO_USER_ID="${DEMO_USER_ID:-xiaofuge}"
+DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
+DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
+DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=lib/health-poll.sh
@@ -24,14 +28,14 @@ echo "  PASS  actuator health UP"
 
 LOGIN_RESPONSE="$(curl -fsS "$API/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"userId":"xiaofuge","password":"demo"}')"
+  -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}")"
 assert_json_code "auth/login" "0000" "$LOGIN_RESPONSE"
 TOKEN="$(printf '%s' "$LOGIN_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))")"
 test -n "$TOKEN"
 
 ADMIN_LOGIN_RESPONSE="$(curl -fsS "$API/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"userId":"admin","password":"admin"}')"
+  -d "{\"userId\":\"$DEMO_ADMIN_USER_ID\",\"password\":\"$DEMO_ADMIN_PASSWORD\"}")"
 assert_json_code "auth/login admin" "0000" "$ADMIN_LOGIN_RESPONSE"
 ADMIN_TOKEN="$(printf '%s' "$ADMIN_LOGIN_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))")"
 test -n "$ADMIN_TOKEN"

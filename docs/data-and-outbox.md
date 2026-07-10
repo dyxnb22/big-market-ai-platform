@@ -104,6 +104,22 @@ The project prevents duplicate effects through:
   and `failed`.
 - Explicit refund/rollback operations for chatbot credit and raffle quota.
 
+Chat debit `CREDIT_CREATE` tasks use a continuation after remote reconciliation:
+only after the account order is confirmed does the job mark the matching
+`chat_credit_session` from `deducting` to `deducted`, preserving refundability
+after a timeout with an unknown remote outcome.
+
+DLQ replay is manual-by-default for money-effect messages. The job bean and XXL
+seed are disabled unless explicitly enabled, and its query only selects rows in
+`reviewed` state. After checking the queue, business idempotency key, and remote
+terminal state, an operator may authorize one row with:
+
+```sql
+UPDATE mq_dead_letter
+SET state = 'reviewed', retry_count = 0, update_time = NOW()
+WHERE id = ? AND state IN ('pending', 'manual_pending');
+```
+
 ## Verification
 
 For local learning, verify data/outbox behavior by explaining each write path

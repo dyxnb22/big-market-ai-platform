@@ -22,10 +22,10 @@
 | **B. 可演示闭环** | fresh Docker 下：登录 → 签到/兑换 → 抽奖 → 发奖/积分到账 → 库存落库，前端用真实 stage 活动 |
 | **C. 准生产基线** | 关键写路径幂等正确、补偿语义正确、默认安全边界成立、门禁能拦住启动级回归 |
 
-**当前状态（2026-07-10 复核修复后）：**
+**当前状态（2026-07-11 历史验收快照）：**
 
 - **A. 可启动** — 代码已修：BM-001/002/003；`MarketServiceSpringBootContextTest` 与 `MessageJobServiceApplicationContextTest` 为全量 `@SpringBootTest`；message-job `MessageJobReadAdapterConfig` + `IAccountReadAdapter` @Primary。
-- **B. 可演示闭环** — `./scripts/acceptance.sh --reuse` 全绿（2026-07-11）：`test-http-contracts`（401/403/400）、smoke 21/21、smoke-api、Chat 退款 E2E、Playwright 18/18×2；旧卷统一 `./scripts/apply-stack-migrations.sh`；演示前 `./scripts/ensure-demo-activity-online.sh`（stage `c01/s01`→100401）。
+- **B. 可演示闭环** — 历史快照 `4278a8c` 的 `./scripts/acceptance.sh --reuse --skip-build` 全绿（2026-07-11）：`test-http-contracts`（401/403/400）、smoke 21/21、smoke-api、Chat 退款 E2E、Playwright 18/18×2；旧卷统一 `./scripts/apply-stack-migrations.sh`；演示前 `./scripts/ensure-demo-activity-online.sh`（stage `c01/s01`→100401）。该结果不代表当前 HEAD，发布前必须在目标提交重跑。
 - **C. 准生产基线** — 部分：BM-015 `secure` + 关键写路径终态（库存 ledger / chat deduct_state / remote continuation FSM / `acceptance.sh`）已落地；BM-016/017 按两周工程债计划推进（指标门禁 + ArchUnit/Mapper 漂移，不做物理拆库）。
 
 **执行约定：**
@@ -319,6 +319,8 @@ npm test
 
 ## 5. 文档回写清单（阶段完成时做）
 
+> 未勾选项保留为当前 HEAD 的复核清单；下方 §8 的历史快照状态不会自动将这些项置为已验收。
+
 - [ ] `README.md`：删除或改写「completed local stack / 稳定可演示」等与事实不符的表述，直到阶段 3 验收通过
 - [ ] `docs/MICROSERVICES.md` / `docs/operations-checklist.md`：XXL appname、必开 Job、DCC 默认开关
 - [ ] `docs/data-and-outbox.md`：发奖完成态、库存确认、remote write 语义
@@ -359,11 +361,13 @@ npm test
 
 ## 8. 进度跟踪（勾选）
 
+> 本表记录代码落地与历史验收快照。只有在目标 HEAD 重跑对应命令后，才能将其作为当前验收结论。
+
 | 阶段 | 状态 | 完成日期 | 备注 |
 | --- | --- | --- | --- |
 | 1 启动阻塞 | 基本完成（代码+Context 测试） | 2026-07-10 | BM-001/002/003；market/message-job `@SpringBootTest`；CI `build-verify.yml` |
-| 2 核心闭环 | 已验（acceptance 全绿） | 2026-07-11 | `acceptance.sh`：HTTP 契约、smoke 21/21、chat-refund E2E、Playwright 18/18×2；`apply-stack-migrations.sh`；admin.js stage=100401；`0008`→403 |
-| 3 演示与安全 | 已完成（代码+验收） | 2026-07-11 | BM-011～015；Nacos 保存元数据；secure profile 可选 |
-| 4 观测与架构债 | 门禁完成（本轮切片） | 2026-07-11 | BM-016 指标含 refund/stock confirm pending + `validate-prometheus-config.sh` CI；BM-017 ArchUnit+mapper 漂移；runtime-safety + HTTP 契约脚本 |
+| 2 核心闭环 | 代码已落地；当前 HEAD 待验 | 2026-07-11 | 历史快照 `4278a8c` 的 `acceptance.sh --reuse --skip-build` 全绿；当前 HEAD 需重跑 reuse/fresh；`apply-stack-migrations.sh`；admin.js stage=100401；`0008`→403 |
+| 3 演示与安全 | 代码已落地；当前 HEAD 待验 | 2026-07-11 | BM-011～015；Nacos 保存元数据；secure profile 可选；secure acceptance 需在目标提交复验 |
+| 4 观测与架构债 | 静态门禁代码已落地；当前 HEAD 待验 | 2026-07-11 | BM-016 指标含 refund/stock confirm pending + `validate-prometheus-config.sh` CI；BM-017 ArchUnit+mapper 漂移；runtime-safety + HTTP 契约脚本 |
 
 更新本表时同步更新「当前状态」一节的目标档结论。

@@ -275,9 +275,8 @@ rateRange >  10000 → OLogNAlgorithm
 
 ```text
 1. raffleLogicChain(userId, strategyId)  → 得到 awardId + logicModel
-2. 若 logicModel != rule_default → 直接返回（跳过规则树）
-3. raffleLogicTree(...) → 次数锁 / 库存 / 兜底
-4. buildRaffleAwardEntity
+2. raffleLogicTree(...) → 次数锁 / 库存 / 兜底（接管候选奖也执行）
+3. buildRaffleAwardEntity
 ```
 
 文件：`domain/strategy/service/AbstractRaffleStrategy.java`
@@ -312,10 +311,9 @@ rateRange >  10000 → OLogNAlgorithm
 
 数据表：`rule_tree` / `rule_tree_node` / `rule_tree_line`。
 
-#### 何时不进规则树
+#### 何时不执行具体规则树
 
-1. 责任链被黑名单/权重接管（`logicModel != rule_default`）  
-2. 该奖品未配置 `ruleModels` / 规则树（`DefaultRaffleStrategy.raffleLogicTree` 直接返回原 awardId）
+责任链的候选奖都会调用 `raffleLogicTree`。仅当该奖品未配置 `ruleModels` / 规则树时，`DefaultRaffleStrategy.raffleLogicTree` 才直接返回原 awardId。
 
 ### 3.3 可能问的问题
 
@@ -323,9 +321,9 @@ rateRange >  10000 → OLogNAlgorithm
 
 > 链解决「抽什么」（线性前置分流）；树解决「能不能给」（带分支的后置过滤）。语义不同，拆开后扩展互不影响。
 
-**Q2：黑名单为什么跳过库存树？**
+**Q2：黑名单/权重接管后为什么还要走库存树？**
 
-> 黑名单已给出最终兜底奖，业务上不再做次数/库存校验；只有默认随机路径才需要「抽中后过滤」。
+> 接管只确定候选奖，不等于库存已预占。候选奖配置规则树时仍需执行库存节点，避免接管路径超卖。
 
 **Q3：次数锁 ALLOW / TAKE_OVER 怎么理解？**
 
@@ -343,7 +341,7 @@ rateRange >  10000 → OLogNAlgorithm
 
 | 容易说错 | 更准确 |
 |----------|--------|
-| 「所有抽奖都走规则树」 | 仅默认链路径且奖品配置了树才走 |
+| 「所有抽奖都执行具体规则树」 | 所有候选奖都调用 `raffleLogicTree`；未配置树时直接返回 |
 | 「库存节点失败就抛异常」 | 失败走兜底奖，用户仍能拿到结果 |
 | 「权重是决策树节点」 | 权重在责任链；次数锁/库存在树 |
 
@@ -454,7 +452,7 @@ Job：UpdateAwardStockJob 拉取 → updateStrategyAwardStock（MySQL -1）
 |----------|--------|
 | 「MQ 事务消息」 | 本项目主路径是本地消息表 Outbox + 补偿 Job |
 | 「库存扣 MySQL」 | 热点扣 Redis，MySQL 异步回写 |
-| 「失败会回滚奖品库存」 | 默认补偿的是活动额度，不是策略奖品 Redis 库存 |
+| 「所有失败都回滚奖品库存」 | 仅在已预占且中奖记录未落库时 release；落库后 confirm 失败走补偿任务，禁止 release |
 
 ---
 

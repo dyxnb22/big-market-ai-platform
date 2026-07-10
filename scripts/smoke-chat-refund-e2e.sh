@@ -6,7 +6,10 @@ API="${API:-http://127.0.0.1:8080/api/v1}"
 XXL_ADMIN="${XXL_ADMIN:-http://127.0.0.1:9090/xxl-job-admin}"
 MYSQL_CONTAINER="${MYSQL_CONTAINER:-mysql}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-123456}"
-USER_ID="${USER_ID:-xiaofuge}"
+USER_ID="${USER_ID:-${DEMO_USER_ID:-xiaofuge}}"
+DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
+DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
+DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin}"
 
 pass() { echo "  PASS  $*"; }
 fail() { echo "  FAIL  $*"; exit 1; }
@@ -25,10 +28,10 @@ echo "=== Chat Refund E2E ==="
 echo
 
 LOGIN="$(curl -fsS "$API/auth/login" -H 'Content-Type: application/json' \
-  -d "{\"userId\":\"$USER_ID\",\"password\":\"demo\"}")"
+  -d "{\"userId\":\"$USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}")"
 TOKEN="$(printf '%s' "$LOGIN" | json_field "d['data']['token']")"
 ADMIN_LOGIN="$(curl -fsS "$API/auth/login" -H 'Content-Type: application/json' \
-  -d '{"userId":"admin","password":"admin"}')"
+  -d "{\"userId\":\"$DEMO_ADMIN_USER_ID\",\"password\":\"$DEMO_ADMIN_PASSWORD\"}")"
 ADMIN_TOKEN="$(printf '%s' "$ADMIN_LOGIN" | json_field "d['data']['token']")"
 test -n "$TOKEN" && test -n "$ADMIN_TOKEN"
 

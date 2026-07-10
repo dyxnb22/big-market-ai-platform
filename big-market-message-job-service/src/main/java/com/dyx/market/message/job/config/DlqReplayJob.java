@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -17,10 +18,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * DLQ 死信重放 Job：分片扫描 mq_dead_letter 中 pending 消息并重投原队列。
+ * DLQ 死信重放 Job：仅在显式启用后，分片扫描人工复核为 reviewed 的消息并重投原队列。
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "job.dlq-replay.enabled", havingValue = "true")
 public class DlqReplayJob {
 
     @Value("${job.dlq-replay.max-retries:5}")

@@ -39,6 +39,18 @@ for arg in "$@"; do
   esac
 done
 
+if [ "$RUN_SECURE" = true ]; then
+  : "${DEMO_USER_ID:?DEMO_USER_ID is required for secure acceptance}"
+  : "${DEMO_USER_PASSWORD:?DEMO_USER_PASSWORD is required for secure acceptance}"
+  : "${DEMO_ADMIN_USER_ID:?DEMO_ADMIN_USER_ID is required for secure acceptance}"
+  : "${DEMO_ADMIN_PASSWORD:?DEMO_ADMIN_PASSWORD is required for secure acceptance}"
+  : "${ADMIN_TOKEN:?ADMIN_TOKEN is required for secure acceptance}"
+  : "${GRAFANA_ADMIN_USER:?GRAFANA_ADMIN_USER is required for secure acceptance}"
+  : "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required for secure acceptance}"
+  export APP_AUTH_DEV_USERS="${APP_AUTH_DEV_USERS:-${DEMO_USER_ID}:${DEMO_USER_PASSWORD},${DEMO_ADMIN_USER_ID}:${DEMO_ADMIN_PASSWORD}}"
+  export ADMIN_DEV_TOKEN="${ADMIN_DEV_TOKEN:-$ADMIN_TOKEN}"
+fi
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 # shellcheck source=lib/health-poll.sh

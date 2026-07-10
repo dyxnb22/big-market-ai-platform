@@ -36,6 +36,7 @@ public class DefaultCredentialGuard implements InitializingBean {
             "big-market-internal-dev",
             "6ec604541f8b1ce4a",
             "89iu7o8732ijd9114",
+            "xiaofuge:demo",
             "xiaofuge:demo,admin:admin",
             "admin:admin",
             "admin-dev-token"

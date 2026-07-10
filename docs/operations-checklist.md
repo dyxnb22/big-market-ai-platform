@@ -29,7 +29,9 @@ Script: `scripts/smoke-api.sh`.
 - `DispatchCreditAwardTaskJob` dispatches award-credit outbox rows.
 - `StrategyAwardStockConfirmJob` confirms pending `strategy_award_stock_confirm_task` rows after award save.
 - `CreditPayDeliveryReconcileJob` retries stuck `wait_pay` credit-exchange deliveries (CAS `compensating` before refund/SKU restore).
-- `DlqReplayJob` replays `mq_dead_letter` pending rows.
+- `DlqReplayJob` is disabled by default. After idempotency/terminal-state review,
+  an operator moves selected `mq_dead_letter` rows to `reviewed`, enables
+  `JOB_DLQ_REPLAY_ENABLED=true`, and manually enables/triggers the stopped XXL seed.
 - `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes.
 - `ChatRefundReconcileJob` retries chat `refund_state=pending` sessions.
 
@@ -62,14 +64,16 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
 
 - Actuator health is enabled on each service.
 - Prometheus scrape config is in `docs/dev-ops/prometheus/prometheus.yml`.
-- Grafana config is under `docs/dev-ops/grafana`.
+- Grafana config is under `docs/dev-ops/grafana`; the learning stack has annotated
+  dev-only credentials, while secure acceptance requires explicit non-default
+  `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` overrides.
 
 ## Secure profile (BM-015)
 
 - Learning/default compose: `SPRING_PROFILES_ACTIVE=docker` (or local equivalents) — permissive RPC/gateway defaults.
 - Production-like demo:
   - `docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d`
-  - Requires non-default `JWT_SECRET`, `APP_INTERNAL_RPC_TOKEN`, `ADMIN_TOKEN`, `CHAT_INTERNAL_SERVICE_TOKEN`, `XXL_JOB_TOKEN`, `APP_AUTH_DEV_USERS`.
+  - Requires non-default `JWT_SECRET`, `APP_INTERNAL_RPC_TOKEN`, `ADMIN_TOKEN`, `CHAT_INTERNAL_SERVICE_TOKEN`, `XXL_JOB_TOKEN`, `APP_AUTH_DEV_USERS`; secure acceptance also requires `DEMO_USER_ID` / `DEMO_USER_PASSWORD` and `DEMO_ADMIN_USER_ID` / `DEMO_ADMIN_PASSWORD` entries matching `APP_AUTH_DEV_USERS`.
   - `secure` overrides `docker` in `DefaultCredentialGuard` (defaults refuse to start).
   - All Dubbo services ship `application-secure.yml` with `app.internal-rpc.enforce=true`.
 - Negative checks: `./scripts/smoke-security.sh`

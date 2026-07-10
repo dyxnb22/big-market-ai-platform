@@ -273,11 +273,19 @@ services:
       - 4000:4000
     depends_on:
       - prometheus
+    environment:
+      # Learning-stack defaults; secure acceptance requires explicit overrides.
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-big-market-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-big-market-grafana-dev}
     volumes:
-      - ./grafana:/etc/grafana
+      - ./grafana:/etc/grafana:ro
+      - grafana-data:/var/lib/grafana
     networks:
       - my-network
 
 networks:
   my-network:
     driver: bridge
+
+volumes:
+  grafana-data:

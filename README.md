@@ -81,11 +81,11 @@ npx playwright test --workers=1
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-11 |
-| Git | `4278a8c` (working tree; run `git rev-parse --short HEAD` before release) |
+| Git | `4278a8c` (historical snapshot; not current-HEAD evidence) |
 | Command | `./scripts/acceptance.sh --reuse --skip-build` |
-| Result | **PASS** — stack health, `test-http-contracts`, smoke 21/21, smoke-api, XXL health, chat-refund E2E, Playwright **18/18 ×2** (`--workers=1`) |
+| Result | **Historical PASS at `4278a8c` only** — stack health, `test-http-contracts`, smoke 21/21, smoke-api, XXL health, chat-refund E2E, Playwright **18/18 ×2** (`--workers=1`) |
 
-**Readiness:** Demo closed loop is gated on `./scripts/acceptance.sh`全绿 (see evidence above). Boot fixes (BM-001–003) and money-path/demo code (BM-004–015) remain in tree with unit/slice context tests.
+**Current-HEAD status:** static gates and Maven tests can run, but Docker and Node/Playwright are unavailable in the current environment, so reuse/fresh/secure acceptance remains blocked. Do not treat the historical result above as PASS evidence for current HEAD. Demo closed-loop readiness remains gated on rerunning `./scripts/acceptance.sh` 全绿 at the commit being released. Boot fixes (BM-001–003) and money-path/demo code (BM-004–015) remain in tree with unit/slice context tests.
 
 ## Frontend
 

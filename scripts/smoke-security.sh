@@ -4,6 +4,8 @@
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"
+DEMO_USER_ID="${DEMO_USER_ID:-xiaofuge}"
+DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=lib/health-poll.sh
 source "$ROOT/scripts/lib/health-poll.sh"
@@ -14,7 +16,7 @@ fail() { echo "  FAIL  $*"; exit 1; }
 echo "=== Security Smoke ==="
 
 LOGIN="$(curl -fsS "$API/auth/login" -H 'Content-Type: application/json' \
-  -d '{"userId":"xiaofuge","password":"demo"}')"
+  -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}")"
 assert_json_code "login" "0000" "$LOGIN"
 TOKEN="$(printf '%s' "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])")"
 test -n "$TOKEN"

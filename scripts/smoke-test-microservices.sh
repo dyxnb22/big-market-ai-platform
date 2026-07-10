@@ -16,6 +16,10 @@ GW="http://$HOST:8080"
 AUTH="http://$HOST:8081"
 CHANNEL="${CHANNEL:-c01}"
 SOURCE="${SOURCE:-s01}"
+DEMO_USER_ID="${DEMO_USER_ID:-xiaofuge}"
+DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
+DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
+DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=lib/health-poll.sh
@@ -64,7 +68,7 @@ echo ""
 echo "--- Auth service (direct) ---"
 LOGIN=$(curl -sf -X POST "$AUTH/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"xiaofuge","password":"demo"}' 2>/dev/null || echo '{"code":"FAIL"}')
+  -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}" 2>/dev/null || echo '{"code":"FAIL"}')
 check "auth/login (direct)" "0000" "$LOGIN"
 TOKEN=$(echo "$LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || echo "")
 
@@ -75,7 +79,7 @@ echo ""
 echo "--- Gateway routing ---"
 GW_LOGIN=$(curl -sf -X POST "$GW/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"xiaofuge","password":"demo"}' 2>/dev/null || echo '{"code":"FAIL"}')
+  -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}" 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → auth/login" "0000" "$GW_LOGIN"
 GW_TOKEN=$(echo "$GW_LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || echo "")
 
@@ -97,7 +101,7 @@ check "gateway → admin/config/list (no auth, expect 0009)" "0009" "$GW_ADMIN_N
 
 GW_ADMIN_LOGIN=$(curl -sf -X POST "$GW/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"admin","password":"admin"}' 2>/dev/null || echo '{"code":"FAIL"}')
+  -d "{\"userId\":\"$DEMO_ADMIN_USER_ID\",\"password\":\"$DEMO_ADMIN_PASSWORD\"}" 2>/dev/null || echo '{"code":"FAIL"}')
 GW_ADMIN_TOKEN=$(echo "$GW_ADMIN_LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || echo "")
 
 GW_ADMIN=$(curl -sf "$GW/api/v1/admin/config/list" \

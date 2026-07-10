@@ -64,6 +64,40 @@ assert_pattern_present() {
   fi
 }
 
+# Read a scalar from the repository's simple, indentation-based application.yml
+# files and resolve a Spring placeholder default such as ${ENV_VAR:true}.
+# This deliberately avoids treating nested YAML as flattened dotted text.
+yaml_default_value() {
+  local file="$1" property_path="$2"
+  python3 - "$file" "$property_path" <<'PY'
+import re
+import sys
+
+path, wanted = sys.argv[1], sys.argv[2]
+keys = {}
+with open(path, encoding="utf-8") as stream:
+    for raw in stream:
+        match = re.match(r"^(\s*)([A-Za-z0-9_.-]+):(?:\s*(.*?))?\s*$", raw.rstrip("\n"))
+        if not match:
+            continue
+        indent, key, value = match.groups()
+        level = len(indent.expandtabs(2)) // 2
+        keys[level] = key
+        for stale in [item for item in keys if item > level]:
+            del keys[stale]
+        current = ".".join(keys[item] for item in sorted(keys) if item <= level)
+        if current != wanted:
+            continue
+        value = (value or "").strip().strip('"\'')
+        placeholder = re.fullmatch(r"\$\{[^}:]+:(-?)([^}]*)}", value)
+        if placeholder:
+            value = placeholder.group(2)
+        print(value.lower())
+        sys.exit(0)
+sys.exit(1)
+PY
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 1: Default credential surface audit
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -217,18 +251,22 @@ assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_J
 echo ""
 echo "── 2.1 Mutual-exclusion: embedded provider vs service provider ──"
 
+MARKET_YML="$REPO_ROOT/big-market-market-service/src/main/resources/application.yml"
+
+if [[ "$(yaml_default_value "$MARKET_YML" "rebate.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" \
+   && "$(yaml_default_value "$MARKET_YML" "strategy.service.remote-read.enabled" 2>/dev/null)" == "false" ]]; then
+  pass "Nested YAML/default-placeholder parser resolves known market defaults"
+else
+  fail "Nested YAML/default-placeholder parser could not resolve known market defaults"
+fi
+
 # Rebate: embedded provider must NOT be default-true WHILE service create is default-true
 REBATE_EMBEDDED_DEFAULT_TRUE=0
 REBATE_REMOTE_DEFAULT_TRUE=0
-for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources; do
-  [[ -d "$dir" ]] || continue
-  if grep -RqE 'REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true|rebate\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    REBATE_EMBEDDED_DEFAULT_TRUE=1
-  fi
-  if grep -RqE 'REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-true|rebate\.service\.remote-create-order\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    REBATE_REMOTE_DEFAULT_TRUE=1
-  fi
-done
+[[ "$(yaml_default_value "$MARKET_YML" "rebate.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" ]] \
+  && REBATE_EMBEDDED_DEFAULT_TRUE=1
+[[ "$(yaml_default_value "$MARKET_YML" "rebate.service.remote-create-order.enabled" 2>/dev/null)" == "true" ]] \
+  && REBATE_REMOTE_DEFAULT_TRUE=1
 if [[ "$REBATE_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
   fail "Rebate embedded provider AND remote create-order both default to true — dual-provider risk"
 else
@@ -238,15 +276,10 @@ fi
 # Strategy: embedded provider must NOT be default-true WHILE remote read is default-true
 STRATEGY_EMBEDDED_DEFAULT_TRUE=0
 STRATEGY_REMOTE_DEFAULT_TRUE=0
-for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources; do
-  [[ -d "$dir" ]] || continue
-  if grep -RqE 'STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:-true|strategy\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    STRATEGY_EMBEDDED_DEFAULT_TRUE=1
-  fi
-  if grep -RqE 'STRATEGY_SERVICE_REMOTE_READ_ENABLED:-true|strategy\.service\.remote-read\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    STRATEGY_REMOTE_DEFAULT_TRUE=1
-  fi
-done
+[[ "$(yaml_default_value "$MARKET_YML" "strategy.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" ]] \
+  && STRATEGY_EMBEDDED_DEFAULT_TRUE=1
+[[ "$(yaml_default_value "$MARKET_YML" "strategy.service.remote-read.enabled" 2>/dev/null)" == "true" ]] \
+  && STRATEGY_REMOTE_DEFAULT_TRUE=1
 if [[ "$STRATEGY_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
   fail "Strategy embedded provider AND remote read both default to true — dual-provider risk"
 else
@@ -260,12 +293,12 @@ echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ─
 # per-domain outbox dispatchers (DispatchCreditAwardTaskJob) are enabled.
 MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
 if [[ -f "$MESSAGE_JOB_YML" ]]; then
-  if grep -qE 'ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true|account\.award-credit-outbox\.enabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
+  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "account.award-credit-outbox.enabled" 2>/dev/null)" == "true" ]]; then
     OUTBOX_ENABLED=1
   else
     OUTBOX_ENABLED=0
   fi
-  if grep -qE 'job\.shared-task-dispatch\.credit-award-disabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
+  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "job.shared-task-dispatch.credit-award-disabled" 2>/dev/null)" == "true" ]]; then
     SHARED_TASK_DISABLED=1
   else
     SHARED_TASK_DISABLED=0
@@ -474,6 +507,25 @@ if [[ -f "$XXL_SQL" ]]; then
       --include='*.java' 2>/dev/null \
     | sed -E 's/.*@XxlJob\("([^"]+)"\).*/\1/' \
     | sort -u)
+
+  if [[ "${OUTBOX_ENABLED:-0}" -eq 0 ]]; then
+    for handler in DispatchCreditAwardTaskJob_DB1 DispatchCreditAwardTaskJob_DB2; do
+      if grep -E "'$handler'.*,'',0,0,0\)[,;]?$" "$XXL_SQL" >/dev/null; then
+        pass "$handler seed is stopped while award-credit outbox defaults off"
+      else
+        fail "$handler seed must be stopped while award-credit outbox defaults off"
+      fi
+    done
+  fi
+  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "job.dlq-replay.enabled" 2>/dev/null)" == "false" ]]; then
+    if grep -E "'DlqReplayJob'.*,'',0,0,0\)[,;]?$" "$XXL_SQL" >/dev/null; then
+      pass "DlqReplayJob seed is stopped while reviewed replay defaults off"
+    else
+      fail "DlqReplayJob seed must be stopped while reviewed replay defaults off"
+    fi
+  else
+    fail "DLQ replay must default off pending explicit idempotency review"
+  fi
 else
   fail "xxl_job.sql missing"
 fi

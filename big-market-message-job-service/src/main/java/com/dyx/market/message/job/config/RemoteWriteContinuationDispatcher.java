@@ -1,6 +1,8 @@
 package com.dyx.market.message.job.config;
 
 import com.alibaba.fastjson.JSON;
+import com.dyx.market.domain.chat.adapter.repository.IChatCreditSessionRepository;
+import com.dyx.market.trigger.api.dto.CreditTradeRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaCreateOrderRequestDTO;
 import com.dyx.market.trigger.application.CreditPayExchangeApplicationService;
 import com.dyx.market.types.common.RemoteWriteOperations;
@@ -21,6 +23,8 @@ public class RemoteWriteContinuationDispatcher {
 
     @Resource
     private CreditPayExchangeApplicationService creditPayExchangeApplicationService;
+    @Resource
+    private IChatCreditSessionRepository chatCreditSessionRepository;
 
     public void dispatch(PendingRemoteWriteTask task) {
         if (task == null || StringUtils.isBlank(task.getOperation())) {
@@ -28,7 +32,27 @@ public class RemoteWriteContinuationDispatcher {
         }
         if (RemoteWriteOperations.QUOTA_CREATE.equals(task.getOperation())) {
             continueCreditPayIfNeeded(task);
+            return;
         }
+        if (RemoteWriteOperations.CREDIT_CREATE.equals(task.getOperation())) {
+            continueChatDeductIfNeeded(task);
+        }
+    }
+
+    private void continueChatDeductIfNeeded(PendingRemoteWriteTask task) {
+        CreditTradeRequestDTO dto = JSON.parseObject(task.getPayload(), CreditTradeRequestDTO.class);
+        if (dto == null || StringUtils.isBlank(dto.getUserId()) || StringUtils.isBlank(dto.getOutBusinessNo())
+                || !"OPENAI_PAY".equals(dto.getTradeName()) || !"reverse".equals(dto.getTradeType())) {
+            return;
+        }
+        String prefix = "chat_" + dto.getUserId() + "_";
+        if (!dto.getOutBusinessNo().startsWith(prefix) || dto.getOutBusinessNo().length() == prefix.length()) {
+            return;
+        }
+        String requestId = dto.getOutBusinessNo().substring(prefix.length());
+        chatCreditSessionRepository.markDeducted(dto.getUserId(), requestId);
+        log.info("[RemoteWriteContinuation] chat deduct completed userId:{} requestId:{}",
+                dto.getUserId(), requestId);
     }
 
     private void continueCreditPayIfNeeded(PendingRemoteWriteTask task) {

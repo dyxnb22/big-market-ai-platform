@@ -6,6 +6,8 @@ API="${API:-http://127.0.0.1:8080/api/v1}"
 BASE_URL="${API%/api/v1}"
 CHANNEL="${CHANNEL:-c01}"
 SOURCE="${SOURCE:-s01}"
+DEMO_USER_ID="${DEMO_USER_ID:-xiaofuge}"
+DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=lib/health-poll.sh
@@ -35,7 +37,7 @@ rm -f "$ADMIN_BODY"
 
 # normal user token on admin
 LOGIN=$(curl -fsS "$API/auth/login" -H 'Content-Type: application/json' \
-  -d '{"userId":"xiaofuge","password":"demo"}')
+  -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}")
 TOKEN=$(printf '%s' "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])")
 USER_ADMIN_BODY=$(mktemp)
 USER_ADMIN_HTTP=$(curl -sS -o "$USER_ADMIN_BODY" -w '%{http_code}' \
@@ -56,7 +58,7 @@ rm -f "$DRAW_BODY"
 LOGIN_BODY=$(mktemp)
 LOGIN_HTTP=$(curl -sS -o "$LOGIN_BODY" -w '%{http_code}' -X POST "$API/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"userId":"xiaofuge","password":""}' || echo "000")
+  -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"\"}" || echo "000")
 assert_http_and_code "login empty password" "400" "0002" "$LOGIN_BODY" "$LOGIN_HTTP"
 rm -f "$LOGIN_BODY"
 
