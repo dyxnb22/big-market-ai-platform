@@ -206,6 +206,16 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
+    public void updateStageActivity2Expire(Long id) {
+        activityStageRepositorySupport.updateStageActivity2Expire(id);
+    }
+
+    @Override
+    public void updateRaffleActivityState(Long activityId, String state) {
+        activityQuerySupport.updateRaffleActivityState(activityId, state);
+    }
+
+    @Override
     public Long queryStageActiveBySC(String channel, String source) {
         return activityStageRepositorySupport.queryStageActiveBySC(channel, source);
     }

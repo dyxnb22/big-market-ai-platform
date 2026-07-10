@@ -3,85 +3,83 @@ package com.dyx.market.market.config;
 import com.dyx.market.domain.activity.model.entity.DeliveryOrderEntity;
 import com.dyx.market.domain.activity.model.entity.SkuRechargeEntity;
 import com.dyx.market.domain.activity.model.entity.UnpaidActivityOrderEntity;
-import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
+import com.dyx.market.infrastructure.adapter.repository.PendingRemoteWriteSupport;
 import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
 import com.dyx.market.trigger.api.IAccountQuotaService;
 import com.dyx.market.trigger.api.dto.AccountQuotaCreateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.AccountQuotaUpdateOrderRequestDTO;
 import com.dyx.market.trigger.api.dto.UnpaidActivityOrderResponseDTO;
 import com.dyx.market.trigger.api.response.Response;
+import com.dyx.market.types.common.RemoteWriteOperations;
 import com.dyx.market.types.enums.ResponseCode;
+import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
 /**
- * 活动配额写路径路由：按 {@code account.service.remote-quota-write.enabled} 在远程与本地间切换。
- * <p>
- * 覆盖创建未支付订单、更新发货订单；远程失败时回退本地 {@code IRaffleActivityAccountQuotaService}。
+ * 活动配额写路径：远程 account-service 失败时写 pending 任务，不回退本地写。
  */
 @Slf4j
-@Component
 public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter {
 
-    @Value("${account.service.remote-quota-write.enabled:false}")
-    private boolean remoteQuotaWriteEnabled;
-
     @Resource
-    private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
+    private PendingRemoteWriteSupport pendingRemoteWriteSupport;
 
     @DubboReference(version = "1.0", check = false)
     private IAccountQuotaService accountQuotaService;
 
     @Override
     public UnpaidActivityOrderEntity createOrder(SkuRechargeEntity skuRechargeEntity) {
-        if (remoteQuotaWriteEnabled) {
-            try {
-                Response<UnpaidActivityOrderResponseDTO> resp = accountQuotaService.createOrder(AccountQuotaCreateOrderRequestDTO.builder()
-                        .userId(skuRechargeEntity.getUserId())
-                        .sku(skuRechargeEntity.getSku())
-                        .outBusinessNo(skuRechargeEntity.getOutBusinessNo())
-                        .orderTradeType(skuRechargeEntity.getOrderTradeType().getCode())
-                        .build());
-                if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
-                    log.info("[AccountRemoteQuotaWriteAdapter] createOrder remote success userId:{} outBusinessNo:{}",
-                            skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo());
-                    return toEntity(resp.getData());
-                }
-                log.warn("[AccountRemoteQuotaWriteAdapter] createOrder non-success code:{} userId:{} outBusinessNo:{}",
-                        resp != null ? resp.getCode() : null, skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo());
-            } catch (Exception e) {
-                log.error("[AccountRemoteQuotaWriteAdapter] createOrder remote failed, falling back to local userId:{} outBusinessNo:{}",
-                        skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo(), e);
+        AccountQuotaCreateOrderRequestDTO request = AccountQuotaCreateOrderRequestDTO.builder()
+                .userId(skuRechargeEntity.getUserId())
+                .sku(skuRechargeEntity.getSku())
+                .outBusinessNo(skuRechargeEntity.getOutBusinessNo())
+                .orderTradeType(skuRechargeEntity.getOrderTradeType().getCode())
+                .build();
+        try {
+            Response<UnpaidActivityOrderResponseDTO> resp = accountQuotaService.createOrder(request);
+            if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
+                log.info("[AccountRemoteQuotaWriteAdapter] createOrder remote success userId:{} outBusinessNo:{}",
+                        skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo());
+                return toEntity(resp.getData());
             }
+            log.warn("[AccountRemoteQuotaWriteAdapter] createOrder non-success code:{} userId:{} outBusinessNo:{}",
+                    resp != null ? resp.getCode() : null, skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo());
+        } catch (Exception e) {
+            log.error("[AccountRemoteQuotaWriteAdapter] createOrder remote failed userId:{} outBusinessNo:{}",
+                    skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo(), e);
         }
-        return raffleActivityAccountQuotaService.createOrder(skuRechargeEntity);
+        if (!pendingRemoteWriteSupport.enqueue(skuRechargeEntity.getOutBusinessNo(), RemoteWriteOperations.QUOTA_CREATE, request)) {
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度订单写入失败，补偿任务参数无效");
+        }
+        throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度订单写入失败，已记录待对账任务");
     }
 
     @Override
     public void updateOrder(DeliveryOrderEntity deliveryOrderEntity) {
-        if (remoteQuotaWriteEnabled) {
-            try {
-                Response<Boolean> resp = accountQuotaService.updateOrder(AccountQuotaUpdateOrderRequestDTO.builder()
-                        .userId(deliveryOrderEntity.getUserId())
-                        .outBusinessNo(deliveryOrderEntity.getOutBusinessNo())
-                        .build());
-                if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
-                    log.info("[AccountRemoteQuotaWriteAdapter] updateOrder remote success userId:{} outBusinessNo:{}",
-                            deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo());
-                    return;
-                }
-                log.warn("[AccountRemoteQuotaWriteAdapter] updateOrder non-success code:{} userId:{} outBusinessNo:{}",
-                        resp != null ? resp.getCode() : null, deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo());
-            } catch (Exception e) {
-                log.error("[AccountRemoteQuotaWriteAdapter] updateOrder remote failed, falling back to local userId:{} outBusinessNo:{}",
-                        deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo(), e);
+        AccountQuotaUpdateOrderRequestDTO request = AccountQuotaUpdateOrderRequestDTO.builder()
+                .userId(deliveryOrderEntity.getUserId())
+                .outBusinessNo(deliveryOrderEntity.getOutBusinessNo())
+                .build();
+        try {
+            Response<Boolean> resp = accountQuotaService.updateOrder(request);
+            if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
+                log.info("[AccountRemoteQuotaWriteAdapter] updateOrder remote success userId:{} outBusinessNo:{}",
+                        deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo());
+                return;
             }
+            log.warn("[AccountRemoteQuotaWriteAdapter] updateOrder non-success code:{} userId:{} outBusinessNo:{}",
+                    resp != null ? resp.getCode() : null, deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo());
+        } catch (Exception e) {
+            log.error("[AccountRemoteQuotaWriteAdapter] updateOrder remote failed userId:{} outBusinessNo:{}",
+                    deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo(), e);
         }
-        raffleActivityAccountQuotaService.updateOrder(deliveryOrderEntity);
+        if (!pendingRemoteWriteSupport.enqueue(deliveryOrderEntity.getOutBusinessNo(), RemoteWriteOperations.QUOTA_UPDATE, request)) {
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度发货写入失败，补偿任务参数无效");
+        }
+        throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度发货写入失败，已记录待对账任务");
     }
 
     private UnpaidActivityOrderEntity toEntity(UnpaidActivityOrderResponseDTO dto) {
@@ -95,5 +93,4 @@ public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter
                 .payAmount(dto.getPayAmount())
                 .build();
     }
-
 }

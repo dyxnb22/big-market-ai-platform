@@ -26,7 +26,7 @@ public class AdminConfigController {
 
     private static final String DEFAULT_ACTIVITY_TITLE = "幸运轮盘活动";
     private static final String DEFAULT_ACTIVITY_COPY  = "登录参与抽奖，AI 帮你解读活动权益。";
-    private static final String DEFAULT_ACTIVITY_STATE = "online";
+    private static final String DEFAULT_ACTIVITY_STATE = "preparing";
 
     @Resource
     private PlatformConfigService platformConfigService;

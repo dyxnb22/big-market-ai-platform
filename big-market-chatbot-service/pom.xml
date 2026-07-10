@@ -52,6 +52,32 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-starter-web</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-infrastructure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-starter-db-router</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>

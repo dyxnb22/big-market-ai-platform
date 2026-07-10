@@ -132,6 +132,62 @@ public class StrategyAwardCacheSupport {
         return true;
     }
 
+    /**
+     * 预占奖品库存：DECR + lock，不落库队列；确认后再入队。
+     */
+    public StrategyAwardStockKeyVO reserveStock(Long strategyId, Integer awardId, Date endDateTime, String reservationId) {
+        String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_KEY + strategyId + Constants.UNDERLINE + awardId;
+        long surplus = redisService.decr(cacheKey);
+        if (surplus < 0) {
+            redisService.setAtomicLong(cacheKey, 0);
+            return null;
+        }
+        String lockKey = cacheKey + Constants.UNDERLINE + surplus;
+        Boolean lock = null != endDateTime
+                ? redisService.setNx(lockKey, endDateTime.getTime() - System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS)
+                : redisService.setNx(lockKey);
+        if (!Boolean.TRUE.equals(lock)) {
+            log.warn("策略奖品库存预占加锁失败，回滚扣减 {}", lockKey);
+            redisService.incr(cacheKey);
+            return null;
+        }
+        return StrategyAwardStockKeyVO.builder()
+                .strategyId(strategyId)
+                .awardId(awardId)
+                .reservationId(reservationId)
+                .lockSurplus(surplus)
+                .build();
+    }
+
+    /**
+     * 确认预占：中奖记录落库成功后入队，由 UpdateAwardStockJob 异步写 MySQL。
+     */
+    public void confirmReservation(StrategyAwardStockKeyVO reservation) {
+        if (null == reservation) {
+            return;
+        }
+        awardStockConsumeSendQueue(reservation);
+        log.info("奖品库存预占确认 strategyId:{} awardId:{} reservationId:{}",
+                reservation.getStrategyId(), reservation.getAwardId(), reservation.getReservationId());
+    }
+
+    /**
+     * 释放预占：抽奖落库失败时 INCR 恢复 Redis 并删除 lock key。
+     */
+    public void releaseReservation(StrategyAwardStockKeyVO reservation) {
+        if (null == reservation) {
+            return;
+        }
+        String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_KEY + reservation.getStrategyId() + Constants.UNDERLINE + reservation.getAwardId();
+        redisService.incr(cacheKey);
+        if (null != reservation.getLockSurplus()) {
+            String lockKey = cacheKey + Constants.UNDERLINE + reservation.getLockSurplus();
+            redisService.remove(lockKey);
+        }
+        log.info("奖品库存预占释放 strategyId:{} awardId:{} reservationId:{}",
+                reservation.getStrategyId(), reservation.getAwardId(), reservation.getReservationId());
+    }
+
     public void awardStockConsumeSendQueue(StrategyAwardStockKeyVO strategyAwardStockKeyVO) {
         String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_QUERY_KEY + Constants.UNDERLINE + strategyAwardStockKeyVO.getStrategyId() + Constants.UNDERLINE + strategyAwardStockKeyVO.getAwardId();
         RBlockingQueue<StrategyAwardStockKeyVO> blockingQueue = redisService.getBlockingQueue(cacheKey);

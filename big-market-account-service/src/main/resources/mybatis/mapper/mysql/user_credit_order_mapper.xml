@@ -21,4 +21,11 @@
         )
     </insert>
 
+    <select id="queryByOutBusinessNo" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditOrder" resultMap="dataMap">
+        select user_id, order_id, trade_name, trade_type, trade_amount, out_business_no
+        from user_credit_order
+        where user_id = #{userId} and out_business_no = #{outBusinessNo}
+        limit 1
+    </select>
+
 </mapper>

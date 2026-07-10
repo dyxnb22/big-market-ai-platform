@@ -346,4 +346,12 @@ public class ActivityQuerySupport {
         return skuProductEntities;
     }
 
+    public void updateRaffleActivityState(Long activityId, String state) {
+        RaffleActivity req = new RaffleActivity();
+        req.setActivityId(activityId);
+        req.setState(state);
+        raffleActivityDao.updateRaffleActivityStateByActivityId(req);
+        redisService.remove(Constants.RedisKey.ACTIVITY_KEY + activityId);
+    }
+
 }

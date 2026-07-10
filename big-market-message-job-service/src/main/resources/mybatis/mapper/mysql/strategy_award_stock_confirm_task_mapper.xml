@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao">
+
+    <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
+        insert into strategy_award_stock_confirm_task
+        (user_id, order_id, strategy_id, award_id, reservation_id, lock_surplus, state, retry_count)
+        values
+        (#{userId}, #{orderId}, #{strategyId}, #{awardId}, #{reservationId}, #{lockSurplus}, #{state}, #{retryCount})
+    </insert>
+
+    <select id="queryPendingTasks" resultType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
+        select user_id, order_id, strategy_id, award_id, reservation_id, lock_surplus, state, retry_count
+        from strategy_award_stock_confirm_task
+        where state = 'pending'
+        order by create_time asc
+        limit #{limit}
+    </select>
+
+    <update id="updateConfirmed" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
+        update strategy_award_stock_confirm_task
+        set state = 'confirmed', update_time = now()
+        where user_id = #{userId} and order_id = #{orderId} and state = 'pending'
+    </update>
+
+</mapper>

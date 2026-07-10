@@ -1,12 +1,14 @@
 package com.dyx.market.message.job.config;
 
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
-import com.dyx.market.domain.credit.service.ICreditAdjustService;
+import com.dyx.market.infrastructure.adapter.repository.PendingRemoteWriteSupport;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.dyx.market.trigger.api.IAccountCreditService;
 import com.dyx.market.trigger.api.dto.CreditTradeRequestDTO;
 import com.dyx.market.trigger.api.response.Response;
+import com.dyx.market.types.common.RemoteWriteOperations;
 import com.dyx.market.types.enums.ResponseCode;
+import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,10 +17,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * 远程积分写适配器（message-job-service）。
- * <p>
- * 仅在 {@code account.service.remote-credit-write.enabled=true} 时激活；
- * 远程异常或非成功响应时回退到本地 {@link ICreditAdjustService}。
+ * 远程积分写适配器（message-job-service）：远程失败写 pending 任务，不本地回落。
  */
 @Slf4j
 @Component
@@ -26,21 +25,22 @@ import javax.annotation.Resource;
 public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapter {
 
     @Resource
-    private ICreditAdjustService creditAdjustService;
+    private PendingRemoteWriteSupport pendingRemoteWriteSupport;
 
     @DubboReference(version = "1.0", check = false)
     private IAccountCreditService accountCreditService;
 
     @Override
     public String createOrder(TradeEntity tradeEntity) {
+        CreditTradeRequestDTO request = CreditTradeRequestDTO.builder()
+                .userId(tradeEntity.getUserId())
+                .tradeName(tradeEntity.getTradeName().name())
+                .tradeType(tradeEntity.getTradeType().getCode())
+                .amount(tradeEntity.getAmount())
+                .outBusinessNo(tradeEntity.getOutBusinessNo())
+                .build();
         try {
-            Response<String> resp = accountCreditService.createOrder(CreditTradeRequestDTO.builder()
-                    .userId(tradeEntity.getUserId())
-                    .tradeName(tradeEntity.getTradeName().name())
-                    .tradeType(tradeEntity.getTradeType().getCode())
-                    .amount(tradeEntity.getAmount())
-                    .outBusinessNo(tradeEntity.getOutBusinessNo())
-                    .build());
+            Response<String> resp = accountCreditService.createOrder(request);
             if (resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
                 log.info("[AccountRemoteCreditWriteAdapter] createOrder remote success userId:{} outBusinessNo:{}",
                         tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
@@ -49,10 +49,13 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
             log.warn("[AccountRemoteCreditWriteAdapter] createOrder non-success code:{} userId:{} outBusinessNo:{}",
                     resp != null ? resp.getCode() : null, tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
         } catch (Exception e) {
-            log.error("[AccountRemoteCreditWriteAdapter] createOrder remote failed, falling back to local userId:{} outBusinessNo:{}",
+            log.error("[AccountRemoteCreditWriteAdapter] createOrder remote failed userId:{} outBusinessNo:{}",
                     tradeEntity.getUserId(), tradeEntity.getOutBusinessNo(), e);
         }
-        return creditAdjustService.createOrder(tradeEntity);
+        if (!pendingRemoteWriteSupport.enqueue(tradeEntity.getOutBusinessNo(), RemoteWriteOperations.CREDIT_CREATE, request)) {
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "积分写入失败，补偿任务参数无效");
+        }
+        throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                "积分写入处理中，请稍后刷新余额");
     }
-
 }

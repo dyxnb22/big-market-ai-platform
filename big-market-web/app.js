@@ -126,6 +126,7 @@ function initApp() {
   var ctxTargetId = null;
   var signedToday = false;
   var chatbotEnabled = true;
+  var activityDisplayReady = true;
   var metricsLoading = true;
   var pendingAssistant = false;
 
@@ -216,6 +217,20 @@ function initApp() {
   }
 
   // ---- Chatbot gate / activity display ----
+  function applyActivityGate(state) {
+    var preparing = state !== "active" && state !== "online";
+    if (d.drawBtn) {
+      d.drawBtn.disabled = preparing || !activityDisplayReady;
+    }
+    if (preparing && d.drawResult && !d.drawResult.textContent.startsWith("恭喜")) {
+      d.drawResult.textContent = "活动准备中，请稍后再试";
+    }
+    if (d.activityCopy && preparing) {
+      d.activityCopy.textContent = "活动准备中，请等待管理员上架后再参与抽奖。";
+      d.activityCopy.style.display = "";
+    }
+  }
+
   function applyChatbotGate() {
     var disabled = !chatbotEnabled;
     if (d.msgInput) {
@@ -297,6 +312,8 @@ function initApp() {
         }
         chatbotEnabled = data.chatbotEnabled !== false;
         applyChatbotGate();
+        activityDisplayReady = data.state === "online" || data.state === "active";
+        applyActivityGate(data.state);
       })
       .catch(function() {
         if (d.activityLabel) d.activityLabel.textContent = "活动 " + CONFIG.ACTIVITY_ID;
@@ -388,9 +405,6 @@ function initApp() {
     setMetricsLoading(true);
     var proms = [];
 
-    // Armory (fire-and-forget, may fail silently)
-    apiRequest("/raffle/activity/armory?activityId=" + CONFIG.ACTIVITY_ID, {method:"GET"}).catch(function(){});
-
     // User activity account
     proms.push(
       apiRequest("/raffle/activity/query_user_activity_account_by_token", {
@@ -470,6 +484,10 @@ function initApp() {
 
   // ---- Draw（随机积分奖需轮询余额变化以展示实际到账） ----
   function draw() {
+    if (!activityDisplayReady) {
+      toast("活动准备中，请稍后再试");
+      return;
+    }
     busy(d.drawBtn, true);
     if (d.drawBtn) d.drawBtn.textContent = "抽奖中...";
     var creditBefore = currentCreditBalance();

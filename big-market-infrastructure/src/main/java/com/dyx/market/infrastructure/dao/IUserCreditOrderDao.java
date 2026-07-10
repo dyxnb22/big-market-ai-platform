@@ -1,6 +1,7 @@
 package com.dyx.market.infrastructure.dao;
 
 import com.dyx.market.infrastructure.dao.po.UserCreditOrder;
+import com.dyx.market.middleware.db.router.annotation.DBRouter;
 import com.dyx.market.middleware.db.router.annotation.DBRouterStrategy;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -14,5 +15,8 @@ import org.apache.ibatis.annotations.Mapper;
 public interface IUserCreditOrderDao {
 
     void insert(UserCreditOrder userCreditOrderReq);
+
+    @DBRouter
+    UserCreditOrder queryByOutBusinessNo(UserCreditOrder userCreditOrderReq);
 
 }

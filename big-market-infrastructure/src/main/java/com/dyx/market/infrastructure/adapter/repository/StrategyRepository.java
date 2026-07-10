@@ -161,6 +161,21 @@ public class StrategyRepository implements IStrategyRepository {
     }
 
     @Override
+    public StrategyAwardStockKeyVO reserveAwardStock(Long strategyId, Integer awardId, Date endDateTime, String reservationId) {
+        return strategyAwardCacheSupport.reserveStock(strategyId, awardId, endDateTime, reservationId);
+    }
+
+    @Override
+    public void confirmAwardStockReservation(StrategyAwardStockKeyVO reservation) {
+        strategyAwardCacheSupport.confirmReservation(reservation);
+    }
+
+    @Override
+    public void releaseAwardStockReservation(StrategyAwardStockKeyVO reservation) {
+        strategyAwardCacheSupport.releaseReservation(reservation);
+    }
+
+    @Override
     public StrategyAwardStockKeyVO takeQueueValue() throws InterruptedException {
         return strategyAwardCacheSupport.takeQueueValue();
     }

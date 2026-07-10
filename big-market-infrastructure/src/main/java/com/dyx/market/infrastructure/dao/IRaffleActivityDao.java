@@ -2,6 +2,7 @@ package com.dyx.market.infrastructure.dao;
 
 import com.dyx.market.infrastructure.dao.po.RaffleActivity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -16,5 +17,7 @@ public interface IRaffleActivityDao {
     Long queryStrategyIdByActivityId(Long activityId);
 
     Long queryActivityIdByStrategyId(Long strategyId);
+
+    Integer updateRaffleActivityStateByActivityId(RaffleActivity raffleActivity);
 
 }

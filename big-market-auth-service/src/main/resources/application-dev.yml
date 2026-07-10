@@ -7,7 +7,7 @@
 # in Redis; set it to true to enable token blacklisting.
 token-revocation:
   redis:
-    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:true}
 
 redis:
   sdk:

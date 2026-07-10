@@ -24,5 +24,7 @@ public class RaffleFactorEntity {
     private Long strategyId;
     /** 结束时间 */
     private Date endDateTime;
+    /** 抽奖订单 ID，用作奖品库存预占凭证 */
+    private String orderId;
 
 }

@@ -1,7 +1,7 @@
 # Local development: infra on mapped host ports.
 token-revocation:
   redis:
-    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:true}
 
 spring:
   rabbitmq:

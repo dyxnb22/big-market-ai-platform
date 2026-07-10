@@ -136,4 +136,12 @@ public class RaffleActivityController implements IRaffleActivityService {
         return TriggerApiResponses.ok(raffleActivityFacade.chatCreditDeduct(
                 authenticatedUserSupport.requireUserId(token), amount, requestId));
     }
+
+    @PostMapping("chat_credit_mark_refund_pending_by_token")
+    public Response<Boolean> chatCreditMarkRefundPendingByToken(@RequestHeader("Authorization") String token,
+                                                              @RequestParam(defaultValue = "1") int amount,
+                                                              @RequestParam String requestId) {
+        return TriggerApiResponses.ok(raffleActivityFacade.chatCreditMarkRefundPending(
+                authenticatedUserSupport.requireUserId(token), amount, requestId));
+    }
 }

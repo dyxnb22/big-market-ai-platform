@@ -29,4 +29,9 @@
         select activity_id from raffle_activity where strategy_id = #{strategyId}
     </select>
 
+    <update id="updateRaffleActivityStateByActivityId" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivity">
+        update raffle_activity set state = #{state}, update_time = now()
+        where activity_id = #{activityId}
+    </update>
+
 </mapper>

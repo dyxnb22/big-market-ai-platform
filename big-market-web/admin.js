@@ -11,10 +11,13 @@ var dom = {
   adminLoginBtn: document.getElementById("adminLoginBtn"),
   activityIdInput: document.getElementById("activityIdInput"),
   activityTitleInput: document.getElementById("activityTitleInput"),
+  erpStageStatus: document.getElementById("erpStageStatus"),
   activityStateInput: document.getElementById("activityStateInput"),
   activityCopyInput: document.getElementById("activityCopyInput"),
   loadActivityBtn: document.getElementById("loadActivityBtn"),
   saveActivityConfigBtn: document.getElementById("saveActivityConfigBtn"),
+  publishActivityBtn: document.getElementById("publishActivityBtn"),
+  unpublishActivityBtn: document.getElementById("unpublishActivityBtn"),
   armoryBtn: document.getElementById("armoryBtn"),
   skuTable: document.getElementById("skuTable"),
   loadAwardsBtn: document.getElementById("loadAwardsBtn"),
@@ -29,6 +32,7 @@ var dom = {
 
 var auth = readAuth();
 var redirectingToLogin = false;
+var currentStageId = null;
 
 // ===== Auth helpers =====
 function requireLogin() {
@@ -116,13 +120,25 @@ async function loadActivity() {
   var stageRes = await safeRequest("/raffle/erp/query_raffle_activity_stage_list", {method: "GET"});
   var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST", body: "{}"});
   var stage = (stageRes.data || []).find(function(item) { return String(item.activityId) === String(activityId); });
-  dom.activityStateInput.value = stage?.state || "online";
+  currentStageId = stage?.id || null;
+  if (dom.erpStageStatus) {
+    dom.erpStageStatus.textContent = stage
+      ? ("#" + stage.id + " · " + (stage.state || "unknown"))
+      : "未找到上架记录";
+  }
+  try {
+    var displayState = await adminRequest("/admin/config/get?namespace=activity." + activityId + "&configKey=state", {method: "GET"});
+    if (displayState?.data?.configValue) {
+      dom.activityStateInput.value = displayState.data.configValue;
+    }
+  } catch (e) { /* use default */ }
   if (dom.activityStateInput.tagName === "SELECT") {
-    var opt = dom.activityStateInput.querySelector('option[value="' + (stage?.state || "online") + '"]');
+    var opt = dom.activityStateInput.querySelector('option[value="' + dom.activityStateInput.value + '"]');
     if (!opt) dom.activityStateInput.value = "online";
   }
   renderSkuTable(skuRes.data || []);
-  toast("已读取活动 " + activityId + "，SKU 数量：" + (skuRes.data?.length || 0));
+  var erpState = stage?.state || "unknown";
+  toast("已读取活动 " + activityId + "（ERP:" + erpState + "），SKU 数量：" + (skuRes.data?.length || 0));
 }
 
 async function loadAwards() {
@@ -162,7 +178,7 @@ async function saveActivityDisplay() {
   if (!requireLogin()) return;
   var activityId = dom.activityIdInput.value.trim();
   await saveConfig("activity." + activityId, "title", dom.activityTitleInput.value, "用户端活动标题");
-  await saveConfig("activity." + activityId, "state", dom.activityStateInput.value, "用户端活动状态");
+  await saveConfig("activity." + activityId, "state", dom.activityStateInput.value, "用户端活动展示状态");
   await saveConfig("activity." + activityId, "copy", dom.activityCopyInput.value, "用户端活动文案");
   toast("活动展示配置已保存");
   await loadConfigs();
@@ -174,6 +190,35 @@ async function saveAwardDisplay() {
   await saveConfig("award." + activityId, "note", dom.awardNoteInput.value, "奖品展示备注");
   toast("奖品展示配置已保存");
   await loadConfigs();
+}
+
+async function publishActivity() {
+  if (!requireLogin()) return;
+  if (!currentStageId) {
+    toast("请先读取线上活动以获取上架流水 ID");
+    return;
+  }
+  await safeRequest("/raffle/erp/update_stage_activity_2_active", {
+    method: "POST",
+    body: JSON.stringify({id: currentStageId})
+  });
+  toast("活动已上架（stage=active，已预热装配）");
+  await loadActivity();
+}
+
+async function unpublishActivity() {
+  if (!requireLogin()) return;
+  if (!currentStageId) {
+    toast("请先读取线上活动以获取上架流水 ID");
+    return;
+  }
+  if (!confirm("确认下架活动？下架后用户端将无法抽奖。")) return;
+  await safeRequest("/raffle/erp/update_stage_activity_2_expire", {
+    method: "POST",
+    body: JSON.stringify({id: currentStageId})
+  });
+  toast("活动已下架（stage=expire，抽奖将被拒绝）");
+  await loadActivity();
 }
 
 async function armory() {
@@ -229,6 +274,8 @@ dom.adminLoginBtn.addEventListener("click", function() {
 });
 bind(dom.loadActivityBtn, loadActivity);
 bind(dom.saveActivityConfigBtn, saveActivityDisplay);
+if (dom.publishActivityBtn) bind(dom.publishActivityBtn, publishActivity);
+if (dom.unpublishActivityBtn) bind(dom.unpublishActivityBtn, unpublishActivity);
 bind(dom.armoryBtn, armory);
 bind(dom.loadAwardsBtn, loadAwards);
 bind(dom.saveAwardConfigBtn, saveAwardDisplay);

@@ -83,6 +83,10 @@ public interface IActivityRepository {
 
     void updateStageActivity2Active(Long id);
 
+    void updateStageActivity2Expire(Long id);
+
+    void updateRaffleActivityState(Long activityId, String state);
+
     Long queryStageActiveBySC(String channel, String source);
 
     List<RaffleActivityStageEntity> queryStageActivityList();

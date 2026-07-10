@@ -2,6 +2,7 @@ package com.dyx.market.domain.strategy.service.rule.tree.factory;
 
 import com.dyx.market.domain.strategy.model.valobj.RuleLogicCheckTypeVO;
 import com.dyx.market.domain.strategy.model.valobj.RuleTreeVO;
+import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.domain.strategy.service.rule.tree.ILogicTreeNode;
 import com.dyx.market.domain.strategy.service.rule.tree.factory.engine.IDecisionTreeEngine;
 import com.dyx.market.domain.strategy.service.rule.tree.factory.engine.impl.DecisionTreeEngine;
@@ -49,6 +50,10 @@ public class DefaultTreeFactory {
         private Integer awardId;
         /** 抽奖奖品规则 */
         private String awardRuleValue;
+        /** 是否已在 Redis 预占奖品库存 */
+        private Boolean stockReserved;
+        /** 奖品库存预占信息 */
+        private StrategyAwardStockKeyVO stockReservation;
     }
 
 }

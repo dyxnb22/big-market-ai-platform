@@ -38,4 +38,9 @@ public class AccountCreditServiceRPC implements IAccountCreditService {
         log.info("account credit queryUserCreditAccount userId:{}", userId);
         return ApiResponses.execute(() -> accountCreditApplicationService.queryUserCreditAccount(userId));
     }
+
+    @Override
+    public Response<Boolean> existsCreditOrder(String userId, String outBusinessNo) {
+        return ApiResponses.execute(() -> accountCreditApplicationService.existsCreditOrder(userId, outBusinessNo));
+    }
 }

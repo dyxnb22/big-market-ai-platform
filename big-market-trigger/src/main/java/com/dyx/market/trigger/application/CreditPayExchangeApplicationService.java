@@ -83,8 +83,10 @@ public class CreditPayExchangeApplicationService {
             log.info("积分兑换商品，发货完成 userId:{} sku:{} outBusinessNo:{}",
                     request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
         } catch (Exception deliveryEx) {
-            log.error("积分兑换商品，发货失败（MQ异步补偿将重试） userId:{} sku:{} outBusinessNo:{}",
+            log.error("积分兑换商品，发货失败，等待补偿任务重试 userId:{} sku:{} outBusinessNo:{}",
                     request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo(), deliveryEx);
+            throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                    "积分已扣减，发货处理中，请稍后刷新查看兑换结果");
         }
     }
 

@@ -74,4 +74,14 @@ public interface IAccountQuotaService {
      */
     Response<Boolean> rollbackQuota(AccountQuotaRollbackRequestDTO request);
 
+    /**
+     * 按幂等键查询活动额度订单是否已创建（远程写对账）。
+     */
+    Response<Boolean> existsActivityOrder(String userId, String outBusinessNo);
+
+    /**
+     * 按幂等键查询活动额度订单是否已发货完成（远程写对账）。
+     */
+    Response<Boolean> isActivityOrderCompleted(String userId, String outBusinessNo);
+
 }

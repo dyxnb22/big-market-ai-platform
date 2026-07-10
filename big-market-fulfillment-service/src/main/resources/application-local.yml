@@ -1,0 +1,4 @@
+# Embedded local mode (mvn spring-boot:run): direct credit grant without outbox tables.
+account:
+  award-credit-outbox:
+    enabled: false

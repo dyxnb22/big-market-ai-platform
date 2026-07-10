@@ -95,4 +95,9 @@ public class RaffleActivityFacade {
         log.info("AI Chat积分扣减开始 userId:{} amount:{} requestId:{}", userId, amount, requestId);
         return chatCreditApplicationService.deduct(userId, amount, requestId);
     }
+
+    public Boolean chatCreditMarkRefundPending(String userId, int amount, String requestId) {
+        chatCreditApplicationService.markRefundPending(userId, requestId, amount);
+        return true;
+    }
 }

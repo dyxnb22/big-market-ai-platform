@@ -40,6 +40,9 @@ public class PlatformConfigService implements InitializingBean {
     @Autowired(required = false)
     private NacosConfigSyncService nacosConfigSyncService;
 
+    @Autowired(required = false)
+    private DynamicConfigSyncPort dynamicConfigSyncPort;
+
     @Override
     public void afterPropertiesSet() throws Exception {
         putDefault("chatbot", "enabled",  "true",                        "Chatbot entrance switch");
@@ -91,6 +94,7 @@ public class PlatformConfigService implements InitializingBean {
         configStore.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
         saveToDisk();
         publishToNacos();
+        syncDynamicConfigIfNeeded(config);
         return config;
     }
 
@@ -175,6 +179,18 @@ public class PlatformConfigService implements InitializingBean {
         }
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             buildProperties().store(outputStream, "Big Market platform runtime configuration");
+        }
+    }
+
+    private void syncDynamicConfigIfNeeded(AdminConfigResponseDTO config) {
+        if (dynamicConfigSyncPort == null) {
+            return;
+        }
+        if ("system".equals(config.getNamespace()) && "degradeSwitch".equals(config.getConfigKey())) {
+            dynamicConfigSyncPort.syncDegradeSwitch(config.getConfigValue());
+        }
+        if ("system".equals(config.getNamespace()) && "rateLimiterSwitch".equals(config.getConfigKey())) {
+            dynamicConfigSyncPort.syncRateLimiterSwitch(config.getConfigValue());
         }
     }
 

@@ -26,8 +26,20 @@ Script: `scripts/smoke-api.sh`.
 - `UpdateActivitySkuStockJob` flushes activity SKU stock.
 - `UpdateAwardStockJob` flushes award stock.
 - `DispatchCreditAwardTaskJob` dispatches award-credit outbox rows.
+- `StrategyAwardStockConfirmJob` confirms pending `strategy_award_stock_confirm_task` rows after award save.
+- `CreditPayDeliveryReconcileJob` retries stuck `wait_pay` credit-exchange deliveries (CAS `compensating` before refund/SKU restore).
+- `DlqReplayJob` replays `mq_dead_letter` pending rows.
+- `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes.
+- `ChatRefundReconcileJob` retries chat `refund_state=pending` sessions.
 
 Check logs from `big-market-message-job-service` and `big-market-market-service`.
+
+## DDL / Init
+
+- Outbox: `docs/sql/credit-award-task-outbox.sql` (Docker: `docs/dev-ops/mysql/sql/z-credit-award-task-outbox.sql`)
+- Reconcile tables: `docs/sql/reconcile-tables.sql` (Docker: `docs/dev-ops/mysql/sql/z-reconcile-tables.sql`)
+- Stock confirm outbox: `docs/sql/strategy-award-stock-confirm-task.sql`
+- DLQ reference: `docs/sql/mq-dead-letter.sql`
 
 ## Message Checks
 
@@ -35,7 +47,8 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
 - `send_rebate` is consumed by `RebateMessageConsumer`.
 - `credit_adjust_success` is consumed by `CreditAdjustSuccessConsumer`.
 - Stock-zero events are consumed by `ActivitySkuStockZeroConsumer`.
-- DLQ logging is configured in `RabbitMQDlqConfig`.
+- DLQ persistence + `DlqReplayJob` in `RabbitMQDlqConfig` / `mq_dead_letter` table (`business_message_id` reactivation on re-DLQ).
+- Draw rate limit: Admin `system.rateLimiterSwitch` syncs to DCC; `RaffleDrawApplicationService.draw` uses `@RateLimiterAccessInterceptor`.
 
 ## Log Checks
 

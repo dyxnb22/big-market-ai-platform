@@ -17,8 +17,9 @@ public interface IStrategyDecisionPort {
     /**
      * 对已确认的抽奖参与执行策略决策。
      * <p>
-     * 语义与 IRaffleStrategy.performRaffle 一致：执行规则链与规则树、扣减 Redis 奖品库存并返回中奖结果。
-     * Redis 库存扣减在本批次内不可逆，此处勿添加重试或补偿逻辑。
+     * 语义与 IRaffleStrategy.performRaffle 一致：执行规则链与规则树，对有库存限制的奖品在 Redis 预占库存并返回中奖结果。
+     * 预占仅做 DECR+lock；确认入队与失败释放由编排层 {@code RaffleApplicationService} 在落库成功/失败后调用
+     * {@code IStrategyRepository#confirmAwardStockReservation} / {@code releaseAwardStockReservation}。
      */
     RaffleAwardEntity performRaffle(RaffleFactorEntity factor);
 

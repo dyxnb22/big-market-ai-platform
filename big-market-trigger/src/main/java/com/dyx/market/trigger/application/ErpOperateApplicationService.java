@@ -1,9 +1,12 @@
 package com.dyx.market.trigger.application;
 
 import com.alibaba.fastjson.JSON;
+import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.model.entity.RaffleActivityStageEntity;
+import com.dyx.market.domain.activity.model.valobj.ActivityStateVO;
 import com.dyx.market.domain.activity.service.IRaffleActivityStageService;
 import com.dyx.market.domain.activity.service.armory.IActivityArmory;
+import com.dyx.market.domain.strategy.service.armory.IStrategyArmory;
 import com.dyx.market.queries.adapter.repository.IESUserRaffleOrderRepository;
 import com.dyx.market.queries.model.valobj.ESUserRaffleOrderVO;
 import com.dyx.market.trigger.api.dto.ESUserRaffleOrderResponseDTO;
@@ -31,6 +34,10 @@ public class ErpOperateApplicationService {
     private IRaffleActivityStageService raffleActivityStageService;
     @Resource
     private IActivityArmory activityArmory;
+    @Resource
+    private IStrategyArmory strategyArmory;
+    @Resource
+    private IActivityRepository activityRepository;
 
     public List<ESUserRaffleOrderResponseDTO> queryUserRaffleOrderList() {
         log.info("查询运营数据，用户抽奖单列表");
@@ -61,9 +68,21 @@ public class ErpOperateApplicationService {
         log.info("更新上架活动状态为生效开始 id:{}", id);
         Long activityId = raffleActivityStageService.queryStageActivity2ActiveById(id);
         boolean assembled = activityArmory.assembleActivitySkuByActivityId(activityId);
+        strategyArmory.assembleLotteryStrategyByActivityId(activityId);
         log.info("更新上架活动状态为装配完成 activityId:{} assembled:{}", activityId, assembled);
         raffleActivityStageService.updateStageActivity2Active(id);
+        activityRepository.updateRaffleActivityState(activityId, ActivityStateVO.open.getCode());
         log.info("更新上架活动状态为生效完成 activityId:{}", activityId);
+        return true;
+    }
+
+    public boolean updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO) {
+        Long id = requestDTO.getId();
+        log.info("更新上架活动状态为下架开始 id:{}", id);
+        Long activityId = raffleActivityStageService.queryStageActivity2ActiveById(id);
+        raffleActivityStageService.updateStageActivity2Expire(id);
+        activityRepository.updateRaffleActivityState(activityId, ActivityStateVO.close.getCode());
+        log.info("更新上架活动状态为下架完成 activityId:{}", activityId);
         return true;
     }
 

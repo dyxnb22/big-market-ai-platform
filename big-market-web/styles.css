@@ -1161,6 +1161,7 @@ input { outline: none; }
   background: var(--surface);
 }
 .form-grid input:focus, .form-grid select:focus { border-color: var(--brand); }
+.readonly-field { display: block; padding: 10px 12px; border-radius: 8px; background: var(--bg); color: var(--muted); font-size: 14px; }
 
 .data-table { margin-top: 14px; overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }

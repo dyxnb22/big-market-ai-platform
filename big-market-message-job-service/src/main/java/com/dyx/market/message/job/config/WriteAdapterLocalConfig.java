@@ -38,6 +38,18 @@ public class WriteAdapterLocalConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "true")
+    public AccountRemoteCreditWriteAdapter accountRemoteCreditWriteAdapter() {
+        return new AccountRemoteCreditWriteAdapter();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "account.service.remote-quota-write.enabled", havingValue = "true")
+    public AccountRemoteQuotaWriteAdapter accountRemoteQuotaWriteAdapter() {
+        return new AccountRemoteQuotaWriteAdapter();
+    }
+
+    @Bean
     @ConditionalOnProperty(name = "account.fulfillment.remote-award.enabled", havingValue = "true")
     public RemoteAwardDispatchAdapter remoteAwardDispatchAdapter() {
         return new RemoteAwardDispatchAdapter();

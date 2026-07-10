@@ -30,6 +30,13 @@ public interface IErpOperateService {
      */
     Response<Boolean> updateStageActivity2Active(UpdateStageActivity2ActiveRequestDTO requestDTO, String token);
 
+    /**
+     * 下架活动：stage → expire，raffle_activity.state → close
+     */
+    Response<Boolean> updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO);
+
+    Response<Boolean> updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO, String token);
+
     Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList();
 
     Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList(String token);

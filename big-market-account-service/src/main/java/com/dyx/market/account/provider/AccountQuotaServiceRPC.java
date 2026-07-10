@@ -88,4 +88,14 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
             return true;
         });
     }
+
+    @Override
+    public Response<Boolean> existsActivityOrder(String userId, String outBusinessNo) {
+        return ApiResponses.execute(() -> accountQuotaApplicationService.existsActivityOrder(userId, outBusinessNo));
+    }
+
+    @Override
+    public Response<Boolean> isActivityOrderCompleted(String userId, String outBusinessNo) {
+        return ApiResponses.execute(() -> accountQuotaApplicationService.isActivityOrderCompleted(userId, outBusinessNo));
+    }
 }

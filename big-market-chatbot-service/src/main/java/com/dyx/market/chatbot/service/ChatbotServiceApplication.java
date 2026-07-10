@@ -9,10 +9,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 使用 {@code PlatformConfigService}（文件持久化内存配置），无需数据库或 Redis。
  */
 @SpringBootApplication(scanBasePackages = {
-        "com.dyx.market.chatbot.service",  // 本模块配置（RestTemplateConfig）
-        "com.dyx.market.chatbot",          // ChatbotController
-        "com.dyx.market.management"        // PlatformConfigService
+        "com.dyx.market.chatbot.service",
+        "com.dyx.market.chatbot",
+        "com.dyx.market.management",
+        "com.dyx.market.infrastructure.dao",
+        "com.dyx.market.infrastructure.adapter.repository"
 })
+@org.mybatis.spring.annotation.MapperScan("com.dyx.market.infrastructure.dao")
 public class ChatbotServiceApplication {
 
     public static void main(String[] args) {

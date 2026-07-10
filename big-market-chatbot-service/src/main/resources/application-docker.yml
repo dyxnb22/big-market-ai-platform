@@ -2,6 +2,12 @@
 chatbot:
   gateway-url: ${CHATBOT_GATEWAY_URL:http://big-market-gateway:8080}
 
+mini-db-router:
+  jdbc:
+    datasource:
+      db01:
+        url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/big_market_01?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+
 nacos:
   config:
     sync:

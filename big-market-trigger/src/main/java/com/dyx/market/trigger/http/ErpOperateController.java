@@ -49,6 +49,18 @@ public class ErpOperateController implements IErpOperateService {
     }
 
     @Override
+    public Response<Boolean> updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO) {
+        return TriggerApiResponses.ok(erpOperateApplicationService.updateStageActivity2Expire(requestDTO));
+    }
+
+    @PostMapping("update_stage_activity_2_expire")
+    @Override
+    public Response<Boolean> updateStageActivity2Expire(@RequestBody UpdateStageActivity2ActiveRequestDTO requestDTO,
+                                                          @RequestHeader(value = "X-Admin-Token", required = false) String token) {
+        return updateStageActivity2Expire(requestDTO);
+    }
+
+    @Override
     public Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList() {
         return TriggerApiResponses.ok(erpOperateApplicationService.queryStageList());
     }

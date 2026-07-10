@@ -3,6 +3,7 @@ package com.dyx.market.trigger.application;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
+import com.dyx.market.domain.chat.adapter.repository.IChatCreditSessionRepository;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.types.enums.ResponseCode;
@@ -25,6 +26,8 @@ public class ChatCreditApplicationService {
     private IAccountCreditWriteAdapter accountCreditWriteAdapter;
     @Resource
     private IAccountReadAdapter accountRemoteReadAdapter;
+    @Resource
+    private IChatCreditSessionRepository chatCreditSessionRepository;
 
     public BigDecimal deduct(String userId, int amount, String requestId) {
         validate(userId, requestId, amount);
@@ -36,11 +39,13 @@ public class ChatCreditApplicationService {
                     .amount(BigDecimal.valueOf(amount).negate())
                     .outBusinessNo("chat_" + requestId)
                     .build());
+            chatCreditSessionRepository.recordDeduction(userId, requestId, amount);
             log.info("AI Chat积分扣减完成 userId:{} amount:{} orderId:{}", userId, amount, orderId);
             return queryCreditBalanceSafe(userId);
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
                 log.warn("AI Chat积分扣减重复 userId:{} requestId:{}", userId, requestId);
+                chatCreditSessionRepository.recordDeduction(userId, requestId, amount);
                 return queryCreditBalanceSafe(userId);
             }
             throw e;
@@ -57,15 +62,25 @@ public class ChatCreditApplicationService {
                     .amount(BigDecimal.valueOf(amount))
                     .outBusinessNo("chat_refund_" + originalRequestId)
                     .build());
+            chatCreditSessionRepository.updateRefundState(originalRequestId, "refunded");
             log.info("AI Chat积分退还完成 userId:{} amount:{} orderId:{}", userId, amount, orderId);
             return queryCreditBalanceSafe(userId);
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
                 log.warn("AI Chat积分退还重复 userId:{} requestId:{}", userId, originalRequestId);
+                chatCreditSessionRepository.updateRefundState(originalRequestId, "refunded");
                 return queryCreditBalanceSafe(userId);
             }
+            chatCreditSessionRepository.markRefundPending(userId, originalRequestId, amount);
+            throw e;
+        } catch (Exception e) {
+            chatCreditSessionRepository.markRefundPending(userId, originalRequestId, amount);
             throw e;
         }
+    }
+
+    public void markRefundPending(String userId, String requestId, int amount) {
+        chatCreditSessionRepository.markRefundPending(userId, requestId, amount);
     }
 
     private static void validate(String userId, String requestId, int amount) {

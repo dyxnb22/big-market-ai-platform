@@ -1,6 +1,8 @@
 package com.dyx.market.chatbot.application;
 
 import com.dyx.market.chatbot.client.MarketCreditGatewayClient;
+import com.dyx.market.chatbot.support.ChatTokenUserSupport;
+import com.dyx.market.infrastructure.adapter.repository.ChatCreditSessionSupport;
 import com.dyx.market.management.config.PlatformConfigService;
 import com.dyx.market.trigger.api.dto.ChatbotAskRequestDTO;
 import com.dyx.market.trigger.api.dto.ChatbotAskResponseDTO;
@@ -51,11 +53,15 @@ public class ChatbotApplicationService {
     @Resource
     private MarketCreditGatewayClient marketCreditGatewayClient;
     @Resource
+    private ChatCreditSessionSupport chatCreditSessionSupport;
+    @Resource
+    private ChatTokenUserSupport chatTokenUserSupport;
+    @Resource
     private RestTemplate restTemplate;
 
     /**
      * AI 对话主流程：校验开关与参数 → 扣减积分 → 调用 AI → 返回回答。
-     * <p>AI 调用失败时按 requestId 退还已扣积分，并抛出业务异常。</p>
+     * <p>AI 调用失败时按 requestId 退还已扣积分；退款 HTTP 失败则标记 pending 由补偿 Job 处理。</p>
      */
     public ChatbotAskResponseDTO ask(ChatbotAskRequestDTO request, String token) {
         if (null == request || StringUtils.isBlank(request.getMessage())) {
@@ -86,10 +92,30 @@ public class ChatbotApplicationService {
         } catch (Exception e) {
             log.error("AI call failed after credit deduction, refunding requestId:{}", creditResult.requestId, e);
             if (effectiveCost > 0) {
-                marketCreditGatewayClient.refundCredit(token, effectiveCost, creditResult.requestId);
+                handleRefundAfterAiFailure(token, effectiveCost, creditResult.requestId);
             }
-            throw new AppException(ResponseCode.UN_ERROR.getCode(), "AI 服务暂时不可用，已退还本次扣减的积分");
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "AI 服务暂时不可用");
         }
+    }
+
+    private void handleRefundAfterAiFailure(String token, int effectiveCost, String requestId) {
+        boolean refundSucceeded = false;
+        try {
+            marketCreditGatewayClient.refundCredit(token, effectiveCost, requestId);
+            chatCreditSessionSupport.markRefunded(requestId);
+            refundSucceeded = true;
+        } catch (Exception refundEx) {
+            log.error("Refund failed after AI failure requestId:{}", requestId, refundEx);
+            chatCreditSessionSupport.markRefundPending(requestId);
+        }
+        throw new AppException(ResponseCode.UN_ERROR.getCode(), resolveAiFailureUserMessage(refundSucceeded));
+    }
+
+    private String resolveAiFailureUserMessage(boolean refundSucceeded) {
+        if (refundSucceeded) {
+            return "AI 服务暂时不可用，已退还本次扣减的积分";
+        }
+        return "AI 服务暂时不可用。退款处理中，请稍后刷新余额查看是否已退还本次扣减的积分。";
     }
 
     /**
@@ -109,6 +135,10 @@ public class ChatbotApplicationService {
                         "积分不足（需要 " + effectiveCost + " 积分，当前 " + balance + " 积分），请签到赚取积分或兑换后再试。");
             }
             BigDecimal newBalance = marketCreditGatewayClient.deductCredit(token, effectiveCost, requestId);
+            String userId = chatTokenUserSupport.resolveUserId(token);
+            if (StringUtils.isNotBlank(userId)) {
+                chatCreditSessionSupport.recordDeduction(userId, requestId, effectiveCost);
+            }
             return new CreditDeductionResult(requestId, BigDecimal.valueOf(effectiveCost), newBalance);
         }
         BigDecimal balance = StringUtils.isBlank(token)

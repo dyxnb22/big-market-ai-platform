@@ -414,9 +414,11 @@ Job：UpdateAwardStockJob 拉取 → updateStrategyAwardStock（MySQL -1）
 
 ### 4.4 与额度补偿的关系（常被连问）
 
-抽奖失败时 `RaffleApplicationService` catch 会补偿**活动额度**，但：
+抽奖失败时 `RaffleApplicationService` catch 会补偿**活动额度**（仅当 `awardSaved=false`）；若规则树已 **Redis 预占奖品库存**（`stockReserved=true`）且中奖记录**未落库**，编排层会调用 `releaseAwardStockReservation` 做 INCR+删 lock 对称回滚。
 
-> **奖品 Redis 库存 DECR 一般不在这条失败路径回滚**（见 `IStrategyDecisionPort` 注释语义）。额度可补偿；库存靠规则树兜底与运维对账。
+落库成功（`awardSaved=true`）后调用 `confirmAwardStockReservation` 入延迟队列写 MySQL；若 confirm 失败，**禁止 release**，改为写入 `strategy_award_stock_confirm_task`，由 `StrategyAwardStockConfirmJob` 补偿确认。
+
+> 预占/确认/释放由 `RuleStockLogicTreeNode` → `StrategyAwardCacheSupport.reserveStock/confirm/release` 实现；兜底奖（`RuleLuckAwardLogicTreeNode`）无 DECR，不入队。
 
 订单复用：上次已扣额度、订单仍为 `create`，重试 `createOrder` 直接返回旧单，**不再扣额度**。
 

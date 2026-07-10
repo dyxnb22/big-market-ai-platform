@@ -55,9 +55,13 @@ public class MarketCreditGatewayClient {
         String url = baseUrl() + "/raffle/activity/chat_credit_refund_by_token?amount=" + amount
                 + "&originalRequestId=" + urlEncode(originalRequestId);
         try {
-            restTemplate.postForEntity(url, new HttpEntity<>("{}", authHeaders(token)), String.class);
+            ResponseEntity<String> resp = restTemplate.postForEntity(url, new HttpEntity<>("{}", authHeaders(token)), String.class);
+            parseBalance(resp);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("Failed to refund credit for requestId:{} amount:{}", originalRequestId, amount, e);
+            throw new IllegalStateException("积分退还请求失败", e);
         }
     }
 

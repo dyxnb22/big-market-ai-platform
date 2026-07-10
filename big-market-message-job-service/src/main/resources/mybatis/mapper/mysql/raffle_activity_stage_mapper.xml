@@ -24,6 +24,16 @@
         where id = #{id}
     </update>
 
+    <update id="updateStageActivity2ExpireById" parameterType="java.lang.Long">
+        update raffle_activity_stage set state = 'expire'
+        where id = #{id}
+    </update>
+
+    <update id="updateStageActivity2ExpireById" parameterType="java.lang.Long">
+        update raffle_activity_stage set state = 'expire', update_time = now()
+        where id = #{id}
+    </update>
+
     <select id="queryStageActivity2ActiveById" parameterType="java.lang.Long" resultType="java.lang.Long">
         select activity_id from raffle_activity_stage where id = #{id}
     </select>

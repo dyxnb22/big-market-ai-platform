@@ -31,9 +31,20 @@ public class EventPublisher {
     }
 
     public void publish(String topic, String eventMessageJSON){
+        publish(topic, eventMessageJSON, null);
+    }
+
+    public void publish(String topic, String eventMessageJSON, String messageId){
         try {
-            rabbitTemplate.convertAndSend(topic, eventMessageJSON);
-            log.info("发送MQ消息 topic:{} message:{}", topic, eventMessageJSON);
+            if (messageId != null && !messageId.isEmpty()) {
+                rabbitTemplate.convertAndSend(topic, eventMessageJSON, message -> {
+                    message.getMessageProperties().setMessageId(messageId);
+                    return message;
+                });
+            } else {
+                rabbitTemplate.convertAndSend(topic, eventMessageJSON);
+            }
+            log.info("发送MQ消息 topic:{} messageId:{} message:{}", topic, messageId, eventMessageJSON);
         } catch (Exception e) {
             log.error("发送MQ消息失败 topic:{} message:{}", topic, eventMessageJSON, e);
             throw e;
