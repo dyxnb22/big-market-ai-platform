@@ -69,7 +69,7 @@ public class ChatRefundReconcileJob {
     private void reconcile(ChatCreditSession session) {
         try {
             chatCreditApplicationService.refund(session.getUserId(), session.getDeductAmount(), session.getRequestId());
-            chatCreditSessionSupport.markRefunded(session.getRequestId());
+            chatCreditSessionSupport.markRefunded(session.getUserId(), session.getRequestId());
             log.info("[ChatRefundReconcileJob] refund success userId:{} requestId:{}", session.getUserId(), session.getRequestId());
         } catch (Exception e) {
             log.error("[ChatRefundReconcileJob] refund failed userId:{} requestId:{} retry:{}",

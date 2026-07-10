@@ -1,0 +1,25 @@
+---
+description: MyBatis mapper copies and XXL-Job wiring constraints
+globs:
+  - "**/mybatis/mapper/**/*.xml"
+  - "**/xxl_job.sql"
+  - "**/*Job*.java"
+  - "**/XxlJob*.java"
+  - "**/application.yml"
+alwaysApply: false
+---
+
+# Mapper + XXL-Job
+
+## MyBatis
+
+- Mapper XML is **copied per launcher** (`market-service`, `message-job-service`, `account-service`, …). Editing one copy does not update others.
+- Never duplicate the same `id` in one XML (BM-002: `updateStageActivity2ExpireById` was duplicated in message-job).
+- After mapper edits: load `SqlSessionFactory` for that service or run a mapper-parse test.
+
+## XXL-Job
+
+- Executor `xxl.job.executor.appname` must match `xxl_job_group.app_name` in `docs/dev-ops/mysql/sql/xxl_job.sql`.
+- message-job uses `big-market-message-job`; SQL historically seeded `big-market-job` — keep them unified (BM-003).
+- New `@XxlJob("HandlerName")` → add `xxl_job_info` row with matching `executor_handler` and set `trigger_status=1` if required for demo.
+- Code has no substitute `@Scheduled` for these handlers; unseeded jobs never run.

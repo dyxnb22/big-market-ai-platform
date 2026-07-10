@@ -1,0 +1,20 @@
+spring:
+  cloud:
+    inetutils:
+      preferred-networks: 127.0.0.1
+      use-only-site-local-interfaces: true
+
+redis:
+  sdk:
+    config:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+
+chatbot:
+  provider: local
+  cost-per-ask: 0
+
+gateway:
+  config:
+    enable: true
+    apiHost: http://127.0.0.1:8080

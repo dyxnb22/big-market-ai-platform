@@ -1,8 +1,10 @@
 # 微服务架构
 
-最后修订：2026-06-14。
+最后修订：2026-07-10。
 
 本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot 服务、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。
+
+**就绪说明：** 2026-07-10 审批整改（BM-001～015）代码已合入。服务默认仍可本地启动，但「可演示完整闭环」以 fresh Docker + smoke/Playwright 验收为准，见 `docs/audit-remediation-plan.md` §8。生产向演示可叠加 `secure` profile（`application-secure.yml`：`internal-rpc.enforce`、`gateway.rate-limiter`）。
 
 本文档是当前架构的 authoritative entry point（权威入口文档）。较早的实现说明仅作为历史归档材料保留在 `docs/archive/` 下。
 
@@ -13,9 +15,9 @@
 | `big-market-gateway` | 8080 | 稳定，已启用 | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
 | `big-market-auth-service` | 8081 | 稳定，已启用 | 登录、JWT 签发、Token 校验、登出吊销 |
 | `big-market-admin-service` | 8082 | 稳定，已启用 | 管理端配置 API 与 Nacos 配置同步 |
-| `big-market-market-service` | 8083 | 稳定，已启用 | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
-| `big-market-chatbot-service` | 8084 | 稳定，已启用 | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
-| `big-market-message-job-service` | 8085 | 稳定，已启用 | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
+| `big-market-market-service` | 8083 | 已修复启动扫描（BM-001） | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
+| `big-market-chatbot-service` | 8084 | 已启用 | 聊天机器人 API、平台配置消费、积分扣费/退款集成（BM-010 requestId FSM） |
+| `big-market-message-job-service` | 8085 | 已修复 Mapper+扫描（BM-002）；XXL `big-market-message-job`（BM-003） | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
 | `big-market-account-service` | 8086 | 稳定，已归属 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
 | `big-market-fulfillment-service` | 8087 | 稳定，已归属 | 奖品履约 RPC、中奖记录完成、奖品积分 Outbox 集成 |
 | `big-market-rebate-service` | 8088 | 稳定，已归属 | 行为返利创建/查询 RPC 契约与返利任务归属 |

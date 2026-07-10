@@ -9,6 +9,7 @@ import com.dyx.market.domain.award.model.valobj.TaskStateVO;
 import com.dyx.market.domain.award.adapter.repository.IAwardRepository;
 import com.dyx.market.domain.award.service.distribute.IDistributeAward;
 import com.dyx.market.types.event.BaseEvent;
+import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -79,6 +80,10 @@ public class AwardService implements IAwardService {
 
         if (null == distributeAward) {
             log.error("分发奖品，对应的服务不存在。awardKey:{}", awardKey);
+            if ("openai_model".equals(awardKey)) {
+                throw new AppException(com.dyx.market.types.enums.ResponseCode.UN_ERROR.getCode(),
+                        "openai_model 奖品类型在演示栈未启用，请使用 user_credit_random 等已支持类型");
+            }
             throw new RuntimeException("分发奖品，奖品" + awardKey + "对应的服务不存在");
         }
 

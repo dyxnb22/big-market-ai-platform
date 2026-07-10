@@ -23,7 +23,7 @@ services:
         MODULE_NAME: big-market-auth-service
     image: big-market-auth-service:latest
     container_name: big-market-auth-service
-    restart: always
+    restart: "no"
     ports:
       - "8081:8081"
     environment:
@@ -53,7 +53,7 @@ services:
         MODULE_NAME: big-market-admin-service
     image: big-market-admin-service:latest
     container_name: big-market-admin-service
-    restart: always
+    restart: "no"
     ports:
       - "8082:8082"
     environment:
@@ -88,7 +88,7 @@ services:
         MODULE_NAME: big-market-chatbot-service
     image: big-market-chatbot-service:latest
     container_name: big-market-chatbot-service
-    restart: always
+    restart: "no"
     ports:
       - "8084:8084"
     environment:
@@ -123,7 +123,7 @@ services:
         MODULE_NAME: big-market-market-service
     image: big-market-market-service:latest
     container_name: big-market-market-service
-    restart: always
+    restart: "no"
     ports:
       - "8083:8083"
     environment:
@@ -180,7 +180,7 @@ services:
         MODULE_NAME: big-market-message-job-service
     image: big-market-message-job-service:latest
     container_name: big-market-message-job-service
-    restart: always
+    restart: "no"
     ports:
       - "8085:8085"
     environment:
@@ -227,7 +227,7 @@ services:
         MODULE_NAME: big-market-account-service
     image: big-market-account-service:latest
     container_name: big-market-account-service
-    restart: always
+    restart: "no"
     ports:
       - "8086:8086"
     environment:
@@ -266,7 +266,7 @@ services:
         MODULE_NAME: big-market-fulfillment-service
     image: big-market-fulfillment-service:latest
     container_name: big-market-fulfillment-service
-    restart: always
+    restart: "no"
     ports:
       - "8087:8087"
     environment:
@@ -306,7 +306,7 @@ services:
         MODULE_NAME: big-market-gateway
     image: big-market-gateway:latest
     container_name: big-market-gateway
-    restart: always
+    restart: "no"
     ports:
       - "8080:8080"
       # Compatibility for cached frontend bundles that called
@@ -352,7 +352,7 @@ services:
         APP_VERSION: ${WEB_APP_VERSION:-dev}
     image: big-market-web:latest
     container_name: big-market-web
-    restart: always
+    restart: "no"
     ports:
       - "5173:80"
     depends_on:

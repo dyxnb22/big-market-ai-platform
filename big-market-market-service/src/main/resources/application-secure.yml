@@ -1,0 +1,8 @@
+# Secure profile: enable for production-like demos (compose: SPRING_PROFILES_ACTIVE=docker,secure)
+app:
+  internal-rpc:
+    enforce: true
+
+gateway:
+  rate-limiter:
+    enabled: true

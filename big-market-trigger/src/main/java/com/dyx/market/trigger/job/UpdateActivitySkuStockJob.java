@@ -47,15 +47,7 @@ public class UpdateActivitySkuStockJob {
             List<Long> skus = skuStock.querySkuList();
             for (Long sku : skus) {
                 executor.execute(() -> {
-                    ActivitySkuStockKeyVO activitySkuStockKeyVO = null;
-                    try {
-                        activitySkuStockKeyVO = skuStock.takeQueueValue(sku);
-                    } catch (InterruptedException e) {
-                        log.error("定时任务，更新活动sku库存失败 sku: {}", sku);
-                    }
-                    if (null == activitySkuStockKeyVO) return;
-                    log.info("定时任务，更新活动sku库存 sku:{} activityId:{}", activitySkuStockKeyVO.getSku(), activitySkuStockKeyVO.getActivityId());
-                    skuStock.updateActivitySkuStock(activitySkuStockKeyVO.getSku());
+                    skuStock.syncActivitySkuStockFromQueue(sku);
                 });
             }
         } catch (Exception e) {

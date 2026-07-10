@@ -14,6 +14,10 @@ Code paths:
 Idempotency keys include `out_business_no`, chatbot `requestId`, and
 award-credit `award_order_id`.
 
+Chat billing (BM-010): `ChatRequestIdempotencySupport` + `ChatCreditSessionSupport`
+persist request-scoped state (`refund_state`, shard via `userId`) so duplicate
+`requestId` does not double-charge; reconcile job retries pending refunds.
+
 ## Award
 
 Award data is represented by `award`, `user_award_record`, and award dispatch
@@ -53,6 +57,15 @@ and related events. Learning DDL references describe per-domain outbox tables:
 
 These SQL files show table shape, shard key, unique key, state machine, and
 retry indexes for local study.
+
+## Stock flush (BM-008)
+
+Strategy award stock uses `reservationId` per queue event. Activity SKU stock uses **`lockSurplus`** (Redis decr snapshot) per queue event — dedupe key `sku_mysql_decrement:{sku}:{lockSurplus}` so each Redis decrement maps to exactly one MySQL `-1`.
+
+## Pending remote write (BM-007)
+
+`PendingRemoteWriteSupport.enqueue(..., userId)` routes inserts through
+`dbRouter.doRouter(userId)` so compensation tasks land on the correct shard.
 
 ## Duplicate Handling
 

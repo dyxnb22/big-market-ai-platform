@@ -2,6 +2,7 @@ package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.infrastructure.dao.IChatCreditSessionDao;
 import com.dyx.market.infrastructure.dao.po.ChatCreditSession;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,10 +24,14 @@ public class ChatCreditSessionSupport {
     @Resource
     private IChatCreditSessionDao chatCreditSessionDao;
 
+    @Resource
+    private IDBRouterStrategy dbRouter;
+
     public void recordDeduction(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
             return;
         }
+        dbRouter.doRouter(userId);
         try {
             chatCreditSessionDao.insert(ChatCreditSession.builder()
                     .userId(userId)
@@ -38,26 +43,33 @@ public class ChatCreditSessionSupport {
                     .build());
         } catch (DuplicateKeyException e) {
             log.debug("[ChatCreditSession] deduction already recorded requestId:{}", requestId);
+        } finally {
+            dbRouter.clear();
         }
     }
 
-    public void markRefunded(String requestId) {
-        if (StringUtils.isBlank(requestId)) {
-            return;
-        }
-        chatCreditSessionDao.updateRefundState(ChatCreditSession.builder()
-                .requestId(requestId)
-                .refundState(REFUND_REFUNDED)
-                .build());
+    public void markRefunded(String userId, String requestId) {
+        updateRefundState(userId, requestId, REFUND_REFUNDED);
     }
 
-    public void markRefundPending(String requestId) {
+    public void markRefundPending(String userId, String requestId) {
+        updateRefundState(userId, requestId, REFUND_PENDING);
+    }
+
+    private void updateRefundState(String userId, String requestId, String refundState) {
         if (StringUtils.isBlank(requestId)) {
             return;
         }
-        chatCreditSessionDao.updateRefundState(ChatCreditSession.builder()
-                .requestId(requestId)
-                .refundState(REFUND_PENDING)
-                .build());
+        if (StringUtils.isNotBlank(userId)) {
+            dbRouter.doRouter(userId);
+        }
+        try {
+            chatCreditSessionDao.updateRefundState(ChatCreditSession.builder()
+                    .requestId(requestId)
+                    .refundState(refundState)
+                    .build());
+        } finally {
+            dbRouter.clear();
+        }
     }
 }

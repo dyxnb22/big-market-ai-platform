@@ -10,6 +10,7 @@ import com.dyx.market.trigger.api.dto.RaffleStrategyRuleWeightRequestDTO;
 import com.dyx.market.trigger.api.dto.RaffleStrategyRuleWeightResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -27,7 +28,8 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(IStrategyReadAdapter.class) // 远程适配器未注册时的本地回退
+@ConditionalOnProperty(name = "strategy.service.remote-read.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnMissingBean(name = "strategyRemoteReadAdapter")
 public class LocalStrategyReadAdapter implements IStrategyReadAdapter {
 
     @Resource

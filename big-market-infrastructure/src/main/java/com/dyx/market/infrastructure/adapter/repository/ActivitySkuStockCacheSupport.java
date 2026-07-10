@@ -37,7 +37,7 @@ public class ActivitySkuStockCacheSupport {
         redisService.setAtomicLong(cacheKey, stockCount);
     }
 
-    public boolean subtractionActivitySkuStock(Long sku, String cacheKey, Date endDateTime) {
+    public boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey, Date endDateTime) {
         long surplus = redisService.decr(cacheKey);
         if (surplus < 0) {
             redisService.setAtomicLong(cacheKey, 0);
@@ -56,6 +56,12 @@ public class ActivitySkuStockCacheSupport {
         if (surplus == 0) {
             eventPublisher.publish(activitySkuStockZeroMessageEvent.topic(), activitySkuStockZeroMessageEvent.buildEventMessage(sku));
         }
+
+        activitySkuStockConsumeSendQueue(ActivitySkuStockKeyVO.builder()
+                .sku(sku)
+                .activityId(activityId)
+                .lockSurplus(surplus)
+                .build());
         return true;
     }
 
@@ -74,6 +80,42 @@ public class ActivitySkuStockCacheSupport {
         String cacheKey = Constants.RedisKey.ACTIVITY_SKU_COUNT_QUERY_KEY;
         RBlockingQueue<ActivitySkuStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
         return destinationQueue.poll();
+    }
+
+    public ActivitySkuStockKeyVO peekQueueValue(Long sku) {
+        String cacheKey = Constants.RedisKey.ACTIVITY_SKU_COUNT_QUERY_KEY + Constants.UNDERLINE + sku;
+        RBlockingQueue<ActivitySkuStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
+        return destinationQueue.peek();
+    }
+
+    public void ackQueueValue(Long sku) {
+        String cacheKey = Constants.RedisKey.ACTIVITY_SKU_COUNT_QUERY_KEY + Constants.UNDERLINE + sku;
+        RBlockingQueue<ActivitySkuStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
+        destinationQueue.poll();
+    }
+
+    public void syncActivitySkuStockFromQueue(Long sku) {
+        ActivitySkuStockKeyVO stockKey = peekQueueValue(sku);
+        if (null == stockKey) {
+            return;
+        }
+        String dedupeKey = null;
+        if (stockKey.getLockSurplus() != null) {
+            dedupeKey = "sku_mysql_decrement:" + sku + ":" + stockKey.getLockSurplus();
+            if (!Boolean.TRUE.equals(redisService.setNx(dedupeKey, 7, TimeUnit.DAYS))) {
+                ackQueueValue(sku);
+                return;
+            }
+        }
+        try {
+            updateActivitySkuStock(sku);
+            ackQueueValue(sku);
+        } catch (Exception e) {
+            if (dedupeKey != null) {
+                redisService.remove(dedupeKey);
+            }
+            log.error("活动SKU库存落库失败，保留队列重试 sku:{}", sku, e);
+        }
     }
 
     public ActivitySkuStockKeyVO takeQueueValue(Long sku) {

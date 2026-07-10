@@ -6,7 +6,7 @@ services:
   nacos:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/nacos-server:v2.2.3-slim
     container_name: nacos
-    restart: always
+    restart: "no"
     ports:
       - "8848:8848"
       - "9848:9848"
@@ -33,7 +33,7 @@ services:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/mysql:8.0.32
     container_name: mysql
     command: --default-authentication-plugin=mysql_native_password
-    restart: always
+    restart: "no"
     environment:
       TZ: Asia/Shanghai
       MYSQL_ROOT_PASSWORD: 123456
@@ -72,7 +72,7 @@ services:
   redis:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/redis:6.2
     container_name: redis
-    restart: always
+    restart: "no"
     hostname: redis
     privileged: true
     ports:
@@ -94,7 +94,7 @@ services:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/redis-commander:0.8.0
     container_name: redis-admin
     hostname: redis-commander
-    restart: always
+    restart: "no"
     ports:
       - 8081:8081
     environment:
@@ -116,7 +116,7 @@ services:
   rabbitmq:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/rabbitmq:3.12.9
     container_name: rabbitmq
-    restart: always
+    restart: "no"
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -130,7 +130,7 @@ services:
   zookeeper:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/zookeeper:3.9.0
     container_name: zookeeper
-    restart: always
+    restart: "no"
     hostname: zoo1
     ports:
       - 2181:2181
@@ -145,7 +145,7 @@ services:
   canal-server:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/canal-server:v1.1.7
     container_name: canal-server
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "11111:11111"
     volumes:
@@ -161,7 +161,7 @@ services:
   canal-adapter:
     image: coopersoft/canal-adapter:v1.1.6
     container_name: canal-adapter
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "8082:8081"
     volumes:
@@ -178,7 +178,7 @@ services:
       - '9200:9200'
       - '9300:9300'
     container_name: elasticsearch
-    restart: always
+    restart: "no"
     environment:
       - 'cluster.name=elasticsearch' # 设置集群名称为elasticsearch
       - 'discovery.type=single-node' # 以单一节点模式启动
@@ -190,7 +190,7 @@ services:
   kibana:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/kibana:7.17.14
     container_name: kibana
-    restart: always
+    restart: "no"
     volumes:
       - /etc/localtime:/etc/localtime
       - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
@@ -212,7 +212,7 @@ services:
   xxl-job-admin:
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/xxl-job-admin:2.4.1 #M1 Mac 更换镜像 xxl-job-aarch64:2.4.0
     container_name: xxl-job-admin
-    restart: always
+    restart: "no"
     depends_on:
       - mysql
     ports:

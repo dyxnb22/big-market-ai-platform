@@ -51,7 +51,7 @@ public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter
             log.error("[AccountRemoteQuotaWriteAdapter] createOrder remote failed userId:{} outBusinessNo:{}",
                     skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo(), e);
         }
-        if (!pendingRemoteWriteSupport.enqueue(skuRechargeEntity.getOutBusinessNo(), RemoteWriteOperations.QUOTA_CREATE, request)) {
+        if (!pendingRemoteWriteSupport.enqueue(skuRechargeEntity.getOutBusinessNo(), RemoteWriteOperations.QUOTA_CREATE, request, skuRechargeEntity.getUserId())) {
             throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度订单写入失败，补偿任务参数无效");
         }
         throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度订单写入失败，已记录待对账任务");
@@ -76,7 +76,7 @@ public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter
             log.error("[AccountRemoteQuotaWriteAdapter] updateOrder remote failed userId:{} outBusinessNo:{}",
                     deliveryOrderEntity.getUserId(), deliveryOrderEntity.getOutBusinessNo(), e);
         }
-        if (!pendingRemoteWriteSupport.enqueue(deliveryOrderEntity.getOutBusinessNo(), RemoteWriteOperations.QUOTA_UPDATE, request)) {
+        if (!pendingRemoteWriteSupport.enqueue(deliveryOrderEntity.getOutBusinessNo(), RemoteWriteOperations.QUOTA_UPDATE, request, deliveryOrderEntity.getUserId())) {
             throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度发货写入失败，补偿任务参数无效");
         }
         throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度发货写入失败，已记录待对账任务");

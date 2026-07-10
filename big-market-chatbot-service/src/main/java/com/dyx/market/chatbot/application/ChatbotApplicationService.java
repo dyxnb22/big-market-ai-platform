@@ -3,6 +3,7 @@ package com.dyx.market.chatbot.application;
 import com.dyx.market.chatbot.client.MarketCreditGatewayClient;
 import com.dyx.market.chatbot.support.ChatTokenUserSupport;
 import com.dyx.market.infrastructure.adapter.repository.ChatCreditSessionSupport;
+import com.dyx.market.infrastructure.adapter.repository.ChatRequestIdempotencySupport;
 import com.dyx.market.management.config.PlatformConfigService;
 import com.dyx.market.trigger.api.dto.ChatbotAskRequestDTO;
 import com.dyx.market.trigger.api.dto.ChatbotAskResponseDTO;
@@ -55,6 +56,8 @@ public class ChatbotApplicationService {
     @Resource
     private ChatCreditSessionSupport chatCreditSessionSupport;
     @Resource
+    private ChatRequestIdempotencySupport chatRequestIdempotencySupport;
+    @Resource
     private ChatTokenUserSupport chatTokenUserSupport;
     @Resource
     private RestTemplate restTemplate;
@@ -71,44 +74,111 @@ public class ChatbotApplicationService {
             return disabledResponse(token);
         }
 
-        int effectiveCost = parseCostConfig(
-                platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(costPerAsk)));
-        CreditDeductionResult creditResult = applyCreditDeduction(token, effectiveCost, request);
-
-        String effectiveProvider = platformConfigService.getValue(CONFIG_NS_CHATBOT, "provider", provider);
-        String effectiveApiKey = platformConfigService.getValue(CONFIG_NS_CHATBOT, "apiKey", deepseekApiKey);
-        try {
-            String answer = PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) && StringUtils.isNotBlank(effectiveApiKey)
-                    ? callDeepSeek(request.getMessage(), effectiveApiKey)
-                    : localFallback(request.getMessage());
-            return ChatbotAskResponseDTO.builder()
-                    .intent("chat")
-                    .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) ? PROVIDER_DEEPSEEK : "local")
-                    .success(true)
-                    .answer(answer)
-                    .creditDeducted(creditResult.deducted)
-                    .creditBalance(creditResult.balance)
-                    .build();
-        } catch (Exception e) {
-            log.error("AI call failed after credit deduction, refunding requestId:{}", creditResult.requestId, e);
-            if (effectiveCost > 0) {
-                handleRefundAfterAiFailure(token, effectiveCost, creditResult.requestId);
+        String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
+        ChatRequestIdempotencySupport.CachedChatResponse cached =
+                chatRequestIdempotencySupport.findCompleted(requestId);
+        if (cached != null) {
+            return toResponseDto(cached);
+        }
+        if (!chatRequestIdempotencySupport.tryMarkProcessing(requestId)) {
+            cached = chatRequestIdempotencySupport.findCompleted(requestId);
+            if (cached != null) {
+                return toResponseDto(cached);
             }
-            throw new AppException(ResponseCode.UN_ERROR.getCode(), "AI 服务暂时不可用");
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "同 requestId 请求处理中，请稍后重试");
+        }
+
+        try {
+            int effectiveCost = parseCostConfig(
+                    platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(costPerAsk)));
+            CreditDeductionResult creditResult;
+            try {
+                creditResult = applyCreditDeduction(token, effectiveCost, requestId);
+            } catch (Exception e) {
+                chatRequestIdempotencySupport.clearProcessing(requestId);
+                throw e;
+            }
+
+            String effectiveProvider = platformConfigService.getValue(CONFIG_NS_CHATBOT, "provider", provider);
+            String effectiveApiKey = platformConfigService.getValue(CONFIG_NS_CHATBOT, "apiKey", deepseekApiKey);
+            try {
+                String answer = PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) && StringUtils.isNotBlank(effectiveApiKey)
+                        ? callDeepSeek(request.getMessage(), effectiveApiKey)
+                        : localFallback(request.getMessage());
+                ChatbotAskResponseDTO responseDto = ChatbotAskResponseDTO.builder()
+                        .intent("chat")
+                        .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) ? PROVIDER_DEEPSEEK : "local")
+                        .success(true)
+                        .answer(answer)
+                        .creditDeducted(creditResult.deducted)
+                        .creditBalance(creditResult.balance)
+                        .build();
+                chatRequestIdempotencySupport.complete(requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
+                        .answer(answer)
+                        .toolName(responseDto.getToolName())
+                        .success(true)
+                        .creditDeducted(creditResult.deducted)
+                        .creditBalance(creditResult.balance)
+                        .build());
+                return responseDto;
+            } catch (Exception e) {
+                log.error("AI call failed after credit deduction, refunding requestId:{}", creditResult.requestId, e);
+                String failureAnswer = handleRefundAfterAiFailure(token, effectiveCost, creditResult.requestId);
+                ChatbotAskResponseDTO failureDto = ChatbotAskResponseDTO.builder()
+                        .intent("chat")
+                        .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) ? PROVIDER_DEEPSEEK : "local")
+                        .success(false)
+                        .answer(failureAnswer)
+                        .creditDeducted(creditResult.deducted)
+                        .creditBalance(creditResult.balance)
+                        .build();
+                chatRequestIdempotencySupport.complete(requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
+                        .answer(failureAnswer)
+                        .toolName(failureDto.getToolName())
+                        .success(false)
+                        .creditDeducted(creditResult.deducted)
+                        .creditBalance(creditResult.balance)
+                        .build());
+                throw new AppException(ResponseCode.UN_ERROR.getCode(), failureAnswer);
+            }
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            chatRequestIdempotencySupport.clearProcessing(requestId);
+            throw e;
         }
     }
 
-    private void handleRefundAfterAiFailure(String token, int effectiveCost, String requestId) {
+    private ChatbotAskResponseDTO toResponseDto(ChatRequestIdempotencySupport.CachedChatResponse cached) {
+        return ChatbotAskResponseDTO.builder()
+                .intent("chat")
+                .toolName(cached.getToolName())
+                .success(cached.isSuccess())
+                .answer(cached.getAnswer())
+                .creditDeducted(cached.getCreditDeducted())
+                .creditBalance(cached.getCreditBalance())
+                .build();
+    }
+
+    private String handleRefundAfterAiFailure(String token, int effectiveCost, String requestId) {
         boolean refundSucceeded = false;
-        try {
-            marketCreditGatewayClient.refundCredit(token, effectiveCost, requestId);
-            chatCreditSessionSupport.markRefunded(requestId);
-            refundSucceeded = true;
-        } catch (Exception refundEx) {
-            log.error("Refund failed after AI failure requestId:{}", requestId, refundEx);
-            chatCreditSessionSupport.markRefundPending(requestId);
+        if (effectiveCost > 0) {
+            try {
+                marketCreditGatewayClient.refundCredit(token, effectiveCost, requestId);
+                String userId = chatTokenUserSupport.resolveUserId(token);
+                if (StringUtils.isNotBlank(userId)) {
+                    chatCreditSessionSupport.markRefunded(userId, requestId);
+                }
+                refundSucceeded = true;
+            } catch (Exception refundEx) {
+                log.error("Refund failed after AI failure requestId:{}", requestId, refundEx);
+                String userId = chatTokenUserSupport.resolveUserId(token);
+                if (StringUtils.isNotBlank(userId)) {
+                    chatCreditSessionSupport.markRefundPending(userId, requestId);
+                }
+            }
         }
-        throw new AppException(ResponseCode.UN_ERROR.getCode(), resolveAiFailureUserMessage(refundSucceeded));
+        return resolveAiFailureUserMessage(refundSucceeded);
     }
 
     private String resolveAiFailureUserMessage(boolean refundSucceeded) {
@@ -122,11 +192,10 @@ public class ChatbotApplicationService {
      * 按配置扣减本次对话积分：校验 Token、余额充足后扣款。
      * <p>effectiveCost 为 0 时跳过扣减，仅查询余额（未登录则返回 0）。</p>
      */
-    private CreditDeductionResult applyCreditDeduction(String token, int effectiveCost, ChatbotAskRequestDTO request) {
+    private CreditDeductionResult applyCreditDeduction(String token, int effectiveCost, String requestId) {
         if (effectiveCost > 0 && StringUtils.isBlank(token)) {
             throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());
         }
-        String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
         if (effectiveCost > 0) {
             BigDecimal balance = marketCreditGatewayClient.fetchCreditBalance(token);
             if (balance.compareTo(BigDecimal.valueOf(effectiveCost)) < 0) {

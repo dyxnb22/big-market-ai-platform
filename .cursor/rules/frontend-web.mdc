@@ -1,0 +1,14 @@
+---
+description: big-market-web frontend conventions and known pitfalls
+globs: "big-market-web/**"
+alwaysApply: false
+---
+
+# Frontend (`big-market-web`)
+
+- Static HTML/CSS/JS only (no React). API base: gateway `http://127.0.0.1:8080/api/v1`.
+- Dev: `./scripts/web-start.sh` → usually `http://127.0.0.1:5173`.
+- **Activity ID (BM-012):** use the staged activity from the API; do not force-fallback to `100301` when stage differs. Fix demo data in SQL if accounts lack quota for the active stage.
+- **Logout (BM-014):** call `POST /auth/logout` (revoke jti) before clearing localStorage.
+- JWT in localStorage is a learning tradeoff; do not add third-party CDN scripts without SRI if touching security.
+- Prefer asserting real API business codes in Playwright; UI visibility alone is not closed-loop proof.

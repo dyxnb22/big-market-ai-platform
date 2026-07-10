@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Repo-only runtime safety validator.
 #
-# Validates final-architecture guardrails and verifies that no regression has
+# WARNING: This script can report PASS while Spring Context / mapper / XXL
+# alignment issues remain (see docs/audit-remediation-plan.md). Do not use it
+# as the sole gate for boot or closed-loop readiness.
 # occurred in default credentials, mutually exclusive flag paths,
 # shared mapper copies, learning DDL isolation, or the presence of safety
 # hardening classes.

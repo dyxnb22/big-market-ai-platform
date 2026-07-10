@@ -71,8 +71,8 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
-    public boolean subtractionActivitySkuStock(Long sku, String cacheKey, Date endDateTime) {
-        return activitySkuStockCacheSupport.subtractionActivitySkuStock(sku, cacheKey, endDateTime);
+    public boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey, Date endDateTime) {
+        return activitySkuStockCacheSupport.subtractionActivitySkuStock(sku, activityId, cacheKey, endDateTime);
     }
 
     @Override
@@ -113,6 +113,11 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public void updateActivitySkuStock(Long sku) {
         activitySkuStockCacheSupport.updateActivitySkuStock(sku);
+    }
+
+    @Override
+    public void syncActivitySkuStockFromQueue(Long sku) {
+        activitySkuStockCacheSupport.syncActivitySkuStockFromQueue(sku);
     }
 
     @Override
@@ -183,6 +188,11 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public UnpaidActivityOrderEntity queryUnpaidActivityOrder(SkuRechargeEntity skuRechargeEntity) {
         return activityQuerySupport.queryUnpaidActivityOrder(skuRechargeEntity);
+    }
+
+    @Override
+    public UnpaidActivityOrderEntity queryQuotaOrderByOutBusinessNo(String userId, String outBusinessNo) {
+        return activityQuerySupport.queryQuotaOrderByOutBusinessNo(userId, outBusinessNo);
     }
 
     @Override

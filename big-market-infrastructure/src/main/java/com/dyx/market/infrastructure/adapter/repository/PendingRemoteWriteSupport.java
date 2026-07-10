@@ -3,6 +3,7 @@ package com.dyx.market.infrastructure.adapter.repository;
 import com.alibaba.fastjson.JSON;
 import com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao;
 import com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -19,6 +20,25 @@ public class PendingRemoteWriteSupport {
 
     @Resource
     private IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao;
+
+    @Resource
+    private IDBRouterStrategy dbRouter;
+
+    /**
+     * @return true if task is persisted or already exists; false only when arguments invalid
+     * @throws RuntimeException when DB insert fails (caller must not claim task was recorded)
+     */
+    public boolean enqueue(String outBusinessNo, String operation, Object payload, String userId) {
+        if (StringUtils.isBlank(userId)) {
+            return enqueue(outBusinessNo, operation, payload);
+        }
+        dbRouter.doRouter(userId);
+        try {
+            return enqueue(outBusinessNo, operation, payload);
+        } finally {
+            dbRouter.clear();
+        }
+    }
 
     /**
      * @return true if task is persisted or already exists; false only when arguments invalid

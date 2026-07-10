@@ -83,6 +83,11 @@ public class DefaultRaffleStrategy extends AbstractRaffleStrategy implements IRa
     }
 
     @Override
+    public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
+        repository.syncStrategyAwardStockFromQueue(strategyId, awardId);
+    }
+
+    @Override
     public List<StrategyAwardEntity> queryRaffleStrategyAwardList(Long strategyId) {
         return repository.queryStrategyAwardList(strategyId);
     }

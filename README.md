@@ -53,13 +53,20 @@ Gateway address: `http://127.0.0.1:8080`.
 ## Verify
 
 ```bash
-./scripts/smoke-test-microservices.sh
+mvn -pl big-market-market-service,big-market-message-job-service,big-market-domain,big-market-infrastructure -am test \
+  -DfailIfNoTests=false -Dsurefire.failIfNoSpecifiedTests=false
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose up --build -d
 ./scripts/validate-microservices-stack.sh
-./scripts/validate-microservices-runtime-safety.sh
 ./scripts/smoke-api.sh
+./scripts/smoke-test-microservices.sh
+./scripts/web-start.sh   # separate terminal
+npm test                 # Playwright; needs gateway + web on 8080/5173
 ```
 
-These commands validate the completed local microservices architecture.
+`validate-microservices-runtime-safety.sh` is a coarse guardrail only — it can pass while Spring Context or XXL wiring is still broken. Prefer the Maven tests above plus stack/smoke scripts after audit remediation (see `docs/audit-remediation-plan.md`).
+
+**Readiness (2026-07-10):** Boot fixes (BM-001–003) and money-path/demo code (BM-004–015) are in tree with unit/slice context tests. **Do not** claim demo closed loop until Docker + smoke/Playwright pass.
 
 ## Frontend
 
@@ -72,7 +79,9 @@ Frontend API calls use `http://127.0.0.1:8080/api/v1` by default.
 
 ## Documentation
 
+- [AGENTS.md](AGENTS.md) - guidance for Cursor/Codex agents (rules & skills under `.cursor/`)
 - [docs/MICROSERVICES.md](docs/MICROSERVICES.md) - authoritative architecture entry
+- [docs/audit-remediation-plan.md](docs/audit-remediation-plan.md) - audit fix backlog and phases
 - [docs/learning/README.md](docs/learning/README.md) - final-state learning guide
 - [docs/production-readiness-learning.md](docs/production-readiness-learning.md) - learning readiness notes
 - [docs/operations-checklist.md](docs/operations-checklist.md) - local operations checklist

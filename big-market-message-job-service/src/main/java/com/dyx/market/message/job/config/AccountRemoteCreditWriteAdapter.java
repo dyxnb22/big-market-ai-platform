@@ -52,7 +52,7 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
             log.error("[AccountRemoteCreditWriteAdapter] createOrder remote failed userId:{} outBusinessNo:{}",
                     tradeEntity.getUserId(), tradeEntity.getOutBusinessNo(), e);
         }
-        if (!pendingRemoteWriteSupport.enqueue(tradeEntity.getOutBusinessNo(), RemoteWriteOperations.CREDIT_CREATE, request)) {
+        if (!pendingRemoteWriteSupport.enqueue(tradeEntity.getOutBusinessNo(), RemoteWriteOperations.CREDIT_CREATE, request, tradeEntity.getUserId())) {
             throw new AppException(ResponseCode.UN_ERROR.getCode(), "积分写入失败，补偿任务参数无效");
         }
         throw new AppException(ResponseCode.UN_ERROR.getCode(),

@@ -196,6 +196,11 @@ public class StrategyRepository implements IStrategyRepository {
     }
 
     @Override
+    public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
+        strategyAwardCacheSupport.syncStrategyAwardStockFromQueue(strategyId, awardId);
+    }
+
+    @Override
     public StrategyAwardEntity queryStrategyAwardEntity(Long strategyId, Integer awardId) {
         return strategyAwardCacheSupport.queryStrategyAwardEntity(strategyId, awardId);
     }

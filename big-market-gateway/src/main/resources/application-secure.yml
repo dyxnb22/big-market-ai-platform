@@ -1,0 +1,4 @@
+# Secure profile overlay for gateway
+gateway:
+  rate-limiter:
+    enabled: true

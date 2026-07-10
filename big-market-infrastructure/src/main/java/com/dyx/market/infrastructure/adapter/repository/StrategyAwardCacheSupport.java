@@ -217,6 +217,34 @@ public class StrategyAwardCacheSupport {
         return destinationQueue.poll();
     }
 
+    public StrategyAwardStockKeyVO peekQueueValue(Long strategyId, Integer awardId) {
+        String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_QUERY_KEY + Constants.UNDERLINE + strategyId + Constants.UNDERLINE + awardId;
+        RBlockingQueue<StrategyAwardStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
+        return destinationQueue.peek();
+    }
+
+    public void ackQueueValue(Long strategyId, Integer awardId) {
+        String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_QUERY_KEY + Constants.UNDERLINE + strategyId + Constants.UNDERLINE + awardId;
+        RBlockingQueue<StrategyAwardStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
+        destinationQueue.poll();
+    }
+
+    /**
+     * DB 成功后再 ACK 队列项；失败保留队列供重试。
+     */
+    public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
+        StrategyAwardStockKeyVO stockKey = peekQueueValue(strategyId, awardId);
+        if (null == stockKey) {
+            return;
+        }
+        try {
+            updateStrategyAwardStockOnce(stockKey);
+            ackQueueValue(strategyId, awardId);
+        } catch (Exception e) {
+            log.error("奖品库存落库失败，保留队列重试 strategyId:{} awardId:{}", strategyId, awardId, e);
+        }
+    }
+
     public StrategyAwardStockKeyVO takeQueueValue(Long strategyId, Integer awardId) {
         String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_QUERY_KEY + Constants.UNDERLINE + strategyId + Constants.UNDERLINE + awardId;
         RBlockingQueue<StrategyAwardStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);

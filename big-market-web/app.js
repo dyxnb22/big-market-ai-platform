@@ -253,16 +253,14 @@ function initApp() {
   }
 
   /**
-   * 解析当前活动 ID：仅当上架活动与演示默认 ID 一致时采用动态值，
-   * 避免 stage 与演示账户数据不一致导致查询失败。
+   * 解析当前活动 ID：采用 stage API 返回值，与后端上架活动保持一致。
    */
   function resolveActivityId() {
     return apiRequest("/raffle/activity/query_stage_activity_id?channel=" + encodeURIComponent(CONFIG.CHANNEL) + "&source=" + encodeURIComponent(CONFIG.SOURCE), {
       method: "GET"
     }).then(function(r) {
       var staged = (r.data && Number(r.data) > 0) ? Number(r.data) : null;
-      // 上架活动 ID 与演示账户数据可能不一致（如 stage=100401、演示=100301），仅匹配时采用动态值
-      CONFIG.ACTIVITY_ID = (staged === CONFIG.DEFAULT_ACTIVITY_ID) ? staged : CONFIG.DEFAULT_ACTIVITY_ID;
+      CONFIG.ACTIVITY_ID = staged || CONFIG.DEFAULT_ACTIVITY_ID;
       return CONFIG.ACTIVITY_ID;
     }).catch(function() {
       CONFIG.ACTIVITY_ID = CONFIG.DEFAULT_ACTIVITY_ID;
@@ -365,8 +363,14 @@ function initApp() {
 
   // ---- Logout ----
   function logout() {
-    clearAuth();
-    location.reload();
+    var token = auth.token;
+    var revoke = token
+      ? apiRequest("/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }).catch(function() {})
+      : Promise.resolve();
+    revoke.finally(function() {
+      clearAuth();
+      location.reload();
+    });
   }
 
   // ---- Wheel / campaign / draw ----

@@ -6,6 +6,7 @@ import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -20,7 +21,8 @@ import java.math.BigDecimal;
  */
 @Slf4j
 @Component
-@ConditionalOnMissingBean(IAccountReadAdapter.class) // 远程适配器未注册时的本地回退
+@ConditionalOnProperty(name = "account.service.remote-read.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnMissingBean(name = "accountRemoteReadAdapter")
 public class LocalAccountReadAdapter implements IAccountReadAdapter {
 
     @Resource

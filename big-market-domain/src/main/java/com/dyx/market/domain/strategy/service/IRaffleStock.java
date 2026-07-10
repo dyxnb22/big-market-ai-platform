@@ -38,4 +38,9 @@ public interface IRaffleStock {
      */
     void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey);
 
+    /**
+     * 从队列同步奖品库存到 DB（成功后再 ACK）。
+     */
+    void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId);
+
 }

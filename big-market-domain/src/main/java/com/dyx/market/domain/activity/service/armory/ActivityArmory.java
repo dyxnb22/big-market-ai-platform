@@ -59,9 +59,9 @@ public class ActivityArmory implements IActivityArmory, IActivityDispatch {
     }
 
     @Override
-    public boolean subtractionActivitySkuStock(Long sku, Date endDateTime) {
+    public boolean subtractionActivitySkuStock(Long sku, Long activityId, Date endDateTime) {
         String cacheKey = Constants.RedisKey.ACTIVITY_SKU_STOCK_COUNT_KEY + sku;
-        return activityRepository.subtractionActivitySkuStock(sku, cacheKey, endDateTime);
+        return activityRepository.subtractionActivitySkuStock(sku, activityId, cacheKey, endDateTime);
     }
 
 }

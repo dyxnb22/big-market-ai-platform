@@ -22,6 +22,7 @@ Script: `scripts/smoke-api.sh`.
 
 ## Task Checks
 
+- XXL executor `appname` must be **`big-market-message-job`** (see `docs/dev-ops/mysql/sql/xxl_job.sql` and `message-job-service` `application.yml`). Handler seeds include `updateAwardStockJob`, stock confirm, remote-write reconcile, chat refund reconcile, DLQ replay, etc.
 - `SendMessageTaskJob` scans shared task rows.
 - `UpdateActivitySkuStockJob` flushes activity SKU stock.
 - `UpdateAwardStockJob` flushes award stock.
@@ -63,8 +64,15 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
 - Prometheus scrape config is in `docs/dev-ops/prometheus/prometheus.yml`.
 - Grafana config is under `docs/dev-ops/grafana`.
 
+## Secure profile (BM-015)
+
+- Learning/default compose: `SPRING_PROFILES_ACTIVE=docker` (or local equivalents) — permissive RPC/gateway defaults.
+- Production-like demo: add `secure` on market/gateway (`application-secure.yml`: `app.internal-rpc.enforce=true`, `gateway.rate-limiter.enabled=true`).
+- `scripts/validate-microservices-runtime-safety.sh` is not sufficient alone; run Maven boot-related tests and stack smoke after changes.
+
 ## Completion Standard
 
 For this learning project, local build and smoke validation replace real
 production observation windows. Record any unavailable dependency honestly and
-rerun once the dependency is available.
+rerun once the dependency is available. After BM-001–015 code landing, confirm:
+Maven module tests green, Docker stack up, `smoke-api.sh`, and Playwright (`npm test` with web on `:5173`).

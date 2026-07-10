@@ -40,9 +40,10 @@ CREATE TABLE `xxl_job_group` (
 LOCK TABLES `xxl_job_group` WRITE;
 /*!40000 ALTER TABLE `xxl_job_group` DISABLE KEYS */;
 
+-- Executor appname must match big-market-message-job-service application.yml: xxl.job.executor.appname
 INSERT INTO `xxl_job_group` (`id`, `app_name`, `title`, `address_type`, `address_list`, `update_time`)
 VALUES
-	(1,'big-market-job','大营销调度任务',0,NULL,'2024-08-10 09:18:32');
+	(1,'big-market-message-job','大营销调度任务',0,NULL,'2024-08-10 09:18:32');
 
 /*!40000 ALTER TABLE `xxl_job_group` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -86,10 +87,19 @@ LOCK TABLES `xxl_job_info` WRITE;
 
 INSERT INTO `xxl_job_info` (`id`, `job_group`, `job_desc`, `add_time`, `update_time`, `author`, `alarm_email`, `schedule_type`, `schedule_conf`, `misfire_strategy`, `executor_route_strategy`, `executor_handler`, `executor_param`, `executor_block_strategy`, `executor_timeout`, `executor_fail_retry_count`, `glue_type`, `glue_source`, `glue_remark`, `glue_updatetime`, `child_jobid`, `trigger_status`, `trigger_last_time`, `trigger_next_time`)
 VALUES
-	(1,1,'更新奖品库存任务','2018-11-03 22:21:31','2024-08-10 09:17:47','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','updateAwardStockJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2018-11-03 22:21:31','',0,0,0),
-	(2,1,'发送MQ消息任务队列(DB1)','2024-08-10 09:09:27','2024-08-10 09:15:44','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','SendMessageTaskJob_DB1','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:09:27','',1,1723252715000,1723252720000),
-	(3,1,'发送MQ消息任务队列(DB2)','2024-08-10 09:09:38','2024-08-10 09:15:40','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','SendMessageTaskJob_DB2','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:09:38','',1,1723252715000,1723252720000),
-	(4,1,'更新活动sku库存任务','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','UpdateActivitySkuStockJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,1723252715000,1723252720000);
+	(1,1,'更新奖品库存任务','2018-11-03 22:21:31','2024-08-10 09:17:47','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','updateAwardStockJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2018-11-03 22:21:31','',1,0,0),
+	(2,1,'发送MQ消息任务队列(DB1)','2024-08-10 09:09:27','2024-08-10 09:15:44','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','SendMessageTaskJob_DB1','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:09:27','',1,0,0),
+	(3,1,'发送MQ消息任务队列(DB2)','2024-08-10 09:09:38','2024-08-10 09:15:40','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','SendMessageTaskJob_DB2','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:09:38','',1,0,0),
+	(4,1,'更新活动sku库存任务','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','UpdateActivitySkuStockJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(5,1,'积分发奖任务(DB1)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','DispatchCreditAwardTaskJob_DB1','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(6,1,'积分发奖任务(DB2)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','DispatchCreditAwardTaskJob_DB2','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(7,1,'策略奖品库存确认(DB1)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','StrategyAwardStockConfirmJob_DB1','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(8,1,'策略奖品库存确认(DB2)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/5 * * * * ?','DO_NOTHING','FIRST','StrategyAwardStockConfirmJob_DB2','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(9,1,'积分支付履约对账(DB1)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','CreditPayDeliveryReconcileJob_DB1','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(10,1,'积分支付履约对账(DB2)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','CreditPayDeliveryReconcileJob_DB2','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(11,1,'远程写对账','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','RemoteWriteReconcileJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(12,1,'DLQ重放','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','DlqReplayJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(13,1,'Chat退款对账','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','ChatRefundReconcileJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0);
 
 /*!40000 ALTER TABLE `xxl_job_info` ENABLE KEYS */;
 UNLOCK TABLES;

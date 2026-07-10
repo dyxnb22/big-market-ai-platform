@@ -263,13 +263,19 @@ dom.adminLoginBtn.addEventListener("click", function() {
   if (!auth.token) {
     location.href = "./admin-login.html";
   } else {
-    clearAuth();
-    auth = {token: "", userId: ""};
-    if (dom.adminUserBadge) dom.adminUserBadge.textContent = "未登录";
-    if (dom.adminLoginLink) dom.adminLoginLink.textContent = "🔑 登录";
-    dom.adminLoginBtn.textContent = "登录";
-    toast("已退出");
-    setTimeout(function() { location.replace(adminLoginUrl()); }, 300);
+    var token = auth.token;
+    var revoke = token
+      ? apiRequest("/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }).catch(function() {})
+      : Promise.resolve();
+    revoke.finally(function() {
+      clearAuth();
+      auth = {token: "", userId: ""};
+      if (dom.adminUserBadge) dom.adminUserBadge.textContent = "未登录";
+      if (dom.adminLoginLink) dom.adminLoginLink.textContent = "🔑 登录";
+      dom.adminLoginBtn.textContent = "登录";
+      toast("已退出");
+      setTimeout(function() { location.replace(adminLoginUrl()); }, 300);
+    });
   }
 });
 bind(dom.loadActivityBtn, loadActivity);

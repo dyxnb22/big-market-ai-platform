@@ -80,6 +80,9 @@ public class PlatformConfigService implements InitializingBean {
 
     public String getValue(String namespace, String configKey, String defaultValue) {
         AdminConfigResponseDTO config = get(namespace, configKey);
+        if (config != null && "__DELETED__".equals(config.getDescription())) {
+            return defaultValue;
+        }
         return config == null || StringUtils.isBlank(config.getConfigValue()) ? defaultValue : config.getConfigValue();
     }
 
@@ -116,7 +119,15 @@ public class PlatformConfigService implements InitializingBean {
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {
-        configStore.remove(storeKey(namespace, configKey));
+        String key = storeKey(namespace, configKey);
+        AdminConfigResponseDTO tombstone = AdminConfigResponseDTO.builder()
+                .namespace(namespace)
+                .configKey(configKey)
+                .configValue("")
+                .description("__DELETED__")
+                .updateTime(System.currentTimeMillis())
+                .build();
+        configStore.put(key, tombstone);
         saveToDisk();
         publishToNacos();
     }
@@ -129,12 +140,16 @@ public class PlatformConfigService implements InitializingBean {
             Properties properties = new Properties();
             properties.load(new StringReader(content));
             for (String propertyName : properties.stringPropertyNames()) {
-                String[] parts = propertyName.split("\\.", 3);
-                if (parts.length != 3 || !"value".equals(parts[2])) {
+                if (!propertyName.endsWith(".value")) {
                     continue;
                 }
-                String namespace = parts[0];
-                String configKey = parts[1];
+                String withoutValue = propertyName.substring(0, propertyName.length() - ".value".length());
+                int lastDot = withoutValue.lastIndexOf('.');
+                if (lastDot < 0) {
+                    continue;
+                }
+                String namespace = withoutValue.substring(0, lastDot);
+                String configKey = withoutValue.substring(lastDot + 1);
                 String description = properties.getProperty(namespace + "." + configKey + ".description", "");
                 configStore.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
                         .namespace(namespace)
@@ -171,12 +186,16 @@ public class PlatformConfigService implements InitializingBean {
             properties.load(inputStream);
         }
         for (String propertyName : properties.stringPropertyNames()) {
-            String[] parts = propertyName.split("\\.", 3);
-            if (parts.length != 3 || !"value".equals(parts[2])) {
+            if (!propertyName.endsWith(".value")) {
                 continue;
             }
-            String namespace = parts[0];
-            String configKey = parts[1];
+            String withoutValue = propertyName.substring(0, propertyName.length() - ".value".length());
+            int lastDot = withoutValue.lastIndexOf('.');
+            if (lastDot < 0) {
+                continue;
+            }
+            String namespace = withoutValue.substring(0, lastDot);
+            String configKey = withoutValue.substring(lastDot + 1);
             String description = properties.getProperty(namespace + "." + configKey + ".description", "");
             configStore.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
                     .namespace(namespace)

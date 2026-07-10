@@ -1,0 +1,1109 @@
+26-07-10.17:27:20.659 [main            ] INFO  WelcomeLogoApplicationListener - 
+
+ :: Dubbo Spring Boot (v3.0.9) : https://github.com/apache/dubbo-spring-boot-project
+ :: Dubbo (v3.0.9) : https://github.com/apache/dubbo
+ :: Discuss group : dev@dubbo.apache.org
+
+26-07-10.17:27:20.697 [main            ] INFO  MessageJobServiceApplicationContextTest - Starting MessageJobServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 90600 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service)
+26-07-10.17:27:20.697 [main            ] INFO  MessageJobServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.17:27:20.703 [background-preinit] INFO  Version                - HV000001: Hibernate Validator 6.2.5.Final
+26-07-10.17:27:21.668 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default framework from null to Dubbo Framework[1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.668 [main            ] INFO  FrameworkModel         -  [DUBBO] Dubbo Framework[1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.722 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.0](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.723 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.0.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.742 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.742 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.773 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default application from null to Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.773 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.1](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.773 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.776 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.777 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.783 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default application: Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.783 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.785 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.787 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default module model of target application: Dubbo Module[1.1.1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.787 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Bind Dubbo Module[1.1.1] to spring container: org.springframework.beans.factory.support.DefaultListableBeanFactory@79c4715d, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:21.931 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.17:27:21.932 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.17:27:21.942 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+26-07-10.17:27:22.055 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator bean can't be found in BeanFactory with name [org.springframework.context.annotation.internalConfigurationBeanNameGenerator], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:22.055 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator will be a instance of org.springframework.context.annotation.AnnotationBeanNameGenerator , it maybe a potential problem on bean name generation., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:22.056 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:22.125 [main            ] INFO  GenericScope           - BeanFactory id=1c72d7fb-42a5-33d7-a639-85e9c05cd610
+26-07-10.17:27:22.681 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountCreditService = ReferenceBean:com.dyx.market.trigger.api.IAccountCreditService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountCreditService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountCreditService
+26-07-10.17:27:22.681 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountQuotaService = ReferenceBean:com.dyx.market.trigger.api.IAccountQuotaService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountQuotaService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountQuotaService
+26-07-10.17:27:22.681 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: rebateService = ReferenceBean:com.dyx.market.trigger.api.IRebateService:1.0(check=false) at private com.dyx.market.trigger.api.IRebateService com.dyx.market.message.job.config.RemoteWriteReconcileJob.rebateService
+26-07-10.17:27:22.986 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - class org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor was destroying!
+26-07-10.17:27:23.842 [main            ] INFO  DubboConfigBeanInitializer - loading dubbo config beans ...
+26-07-10.17:27:23.846 [main            ] INFO  DubboConfigBeanInitializer - dubbo config beans are loaded.
+26-07-10.17:27:23.879 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the DynamicConfigurationFactory extension[name : nacos] supports as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:23.879 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:23.881 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as config-center: <dubbo:config-center highestPriority="false" id="config-center-nacos-127.0.0.1-8848" address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:23.925 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.17:27:23.925 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.17:27:24.960 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:24.963 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:24.996 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.0] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.000 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.1] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.004 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the MetadataReportFactory extension[name : nacos] supports as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.004 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.006 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as metadata-center: <dubbo:metadata-report address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.076 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.17:27:25.076 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.17:27:25.078 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.706 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatRefundReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatCreditApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+26-07-10.17:27:25.722 [main            ] INFO  ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-07-10.17:27:25.740 [main            ] ERROR LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+A component required a bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' in your configuration.
+
+26-07-10.17:27:25.741 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@3e6ef8ad] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@64836643]
+java.lang.IllegalStateException: Failed to load ApplicationContext
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatRefundReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatCreditApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
+	... 30 common frames omitted
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatCreditApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:213)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.resolveBeanByName(AbstractAutowireCapableBeanFactory.java:479)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:550)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 46 common frames omitted
+Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1801)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1357)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 60 common frames omitted
+26-07-10.17:27:25.914 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.17:27:25.914 [DubboShutdownHook] INFO  DubboShutdownHook      -  [DUBBO] Run shutdown hook now., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.914 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.17:27:25.915 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.17:27:25.915 [DubboShutdownHook] INFO  FrameworkModel         -  [DUBBO] Reset global default application from Dubbo Application[1.1](big-market-message-job) to null, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.915 [DubboShutdownHook] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) is stopping., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.915 [DubboShutdownHook] INFO  RegistryManager        -  [DUBBO] Close all registries [], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.17:27:25.915 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.18:50:26.634 [main            ] INFO  WelcomeLogoApplicationListener - 
+
+ :: Dubbo Spring Boot (v3.0.9) : https://github.com/apache/dubbo-spring-boot-project
+ :: Dubbo (v3.0.9) : https://github.com/apache/dubbo
+ :: Discuss group : dev@dubbo.apache.org
+
+26-07-10.18:50:26.671 [main            ] INFO  MessageJobServiceApplicationContextTest - Starting MessageJobServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 10327 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service)
+26-07-10.18:50:26.672 [main            ] INFO  MessageJobServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.18:50:26.677 [background-preinit] INFO  Version                - HV000001: Hibernate Validator 6.2.5.Final
+26-07-10.18:50:27.720 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default framework from null to Dubbo Framework[1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.720 [main            ] INFO  FrameworkModel         -  [DUBBO] Dubbo Framework[1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.837 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.0](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.841 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.0.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.878 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.878 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.935 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default application from null to Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.935 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.1](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.936 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.944 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.944 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.954 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default application: Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.955 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.959 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.961 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default module model of target application: Dubbo Module[1.1.1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:27.961 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Bind Dubbo Module[1.1.1] to spring container: org.springframework.beans.factory.support.DefaultListableBeanFactory@35e52059, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:28.326 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.18:50:28.328 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.18:50:28.354 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 7 ms. Found 0 Redis repository interfaces.
+26-07-10.18:50:28.645 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator bean can't be found in BeanFactory with name [org.springframework.context.annotation.internalConfigurationBeanNameGenerator], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:28.646 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator will be a instance of org.springframework.context.annotation.AnnotationBeanNameGenerator , it maybe a potential problem on bean name generation., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:28.647 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:28.816 [main            ] INFO  GenericScope           - BeanFactory id=832b1bc3-9609-371e-9ab0-ce8b82652c33
+26-07-10.18:50:29.569 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountCreditService = ReferenceBean:com.dyx.market.trigger.api.IAccountCreditService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountCreditService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountCreditService
+26-07-10.18:50:29.569 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountQuotaService = ReferenceBean:com.dyx.market.trigger.api.IAccountQuotaService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountQuotaService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountQuotaService
+26-07-10.18:50:29.570 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: rebateService = ReferenceBean:com.dyx.market.trigger.api.IRebateService:1.0(check=false) at private com.dyx.market.trigger.api.IRebateService com.dyx.market.message.job.config.RemoteWriteReconcileJob.rebateService
+26-07-10.18:50:30.262 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - class org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor was destroying!
+26-07-10.18:50:31.472 [main            ] INFO  DubboConfigBeanInitializer - loading dubbo config beans ...
+26-07-10.18:50:31.478 [main            ] INFO  DubboConfigBeanInitializer - dubbo config beans are loaded.
+26-07-10.18:50:31.528 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the DynamicConfigurationFactory extension[name : nacos] supports as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:31.529 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:31.533 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as config-center: <dubbo:config-center highestPriority="false" id="config-center-nacos-127.0.0.1-8848" address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:31.594 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.18:50:31.594 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.18:50:32.699 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.699 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.743 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.0] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.746 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.1] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.752 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the MetadataReportFactory extension[name : nacos] supports as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.752 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.754 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as metadata-center: <dubbo:metadata-report address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:32.864 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.18:50:32.864 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.18:50:32.864 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:33.709 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'outboxSchemaValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
+26-07-10.18:50:33.731 [main            ] INFO  ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-07-10.18:50:33.755 [main            ] ERROR SpringApplication      - Application run failed
+org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'outboxSchemaValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
+	at org.springframework.beans.factory.config.DependencyDescriptor.resolveNotUnique(DependencyDescriptor.java:220)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1369)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 46 common frames omitted
+26-07-10.18:50:33.759 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@65f095f8] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@724e0a77]
+java.lang.IllegalStateException: Failed to load ApplicationContext
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'outboxSchemaValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
+	... 30 common frames omitted
+Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
+	at org.springframework.beans.factory.config.DependencyDescriptor.resolveNotUnique(DependencyDescriptor.java:220)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1369)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 46 common frames omitted
+26-07-10.18:50:33.781 [DubboShutdownHook] INFO  DubboShutdownHook      -  [DUBBO] Run shutdown hook now., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:33.781 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.18:50:33.781 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.18:50:33.781 [DubboShutdownHook] INFO  FrameworkModel         -  [DUBBO] Reset global default application from Dubbo Application[1.1](big-market-message-job) to null, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:33.781 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.18:50:33.781 [DubboShutdownHook] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) is stopping., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:33.781 [DubboShutdownHook] INFO  RegistryManager        -  [DUBBO] Close all registries [], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:50:33.785 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.18:51:29.528 [main            ] INFO  WelcomeLogoApplicationListener - 
+
+ :: Dubbo Spring Boot (v3.0.9) : https://github.com/apache/dubbo-spring-boot-project
+ :: Dubbo (v3.0.9) : https://github.com/apache/dubbo
+ :: Discuss group : dev@dubbo.apache.org
+
+26-07-10.18:51:29.573 [main            ] INFO  MessageJobServiceApplicationContextTest - Starting MessageJobServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 12395 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service)
+26-07-10.18:51:29.573 [main            ] INFO  MessageJobServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.18:51:29.580 [background-preinit] INFO  Version                - HV000001: Hibernate Validator 6.2.5.Final
+26-07-10.18:51:30.484 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default framework from null to Dubbo Framework[1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.484 [main            ] INFO  FrameworkModel         -  [DUBBO] Dubbo Framework[1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.540 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.0](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.542 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.0.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.570 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.570 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.619 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default application from null to Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.619 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.1](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.619 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.622 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.622 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.628 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default application: Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.628 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.630 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.632 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default module model of target application: Dubbo Module[1.1.1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.632 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Bind Dubbo Module[1.1.1] to spring container: org.springframework.beans.factory.support.DefaultListableBeanFactory@17ba57f0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:30.957 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.18:51:30.959 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.18:51:30.973 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+26-07-10.18:51:31.099 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator bean can't be found in BeanFactory with name [org.springframework.context.annotation.internalConfigurationBeanNameGenerator], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:31.100 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator will be a instance of org.springframework.context.annotation.AnnotationBeanNameGenerator , it maybe a potential problem on bean name generation., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:31.101 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:31.195 [main            ] INFO  GenericScope           - BeanFactory id=832b1bc3-9609-371e-9ab0-ce8b82652c33
+26-07-10.18:51:31.315 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountCreditService = ReferenceBean:com.dyx.market.trigger.api.IAccountCreditService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountCreditService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountCreditService
+26-07-10.18:51:31.316 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountQuotaService = ReferenceBean:com.dyx.market.trigger.api.IAccountQuotaService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountQuotaService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountQuotaService
+26-07-10.18:51:31.316 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: rebateService = ReferenceBean:com.dyx.market.trigger.api.IRebateService:1.0(check=false) at private com.dyx.market.trigger.api.IRebateService com.dyx.market.message.job.config.RemoteWriteReconcileJob.rebateService
+26-07-10.18:51:31.672 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - class org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor was destroying!
+26-07-10.18:51:32.709 [main            ] INFO  DubboConfigBeanInitializer - loading dubbo config beans ...
+26-07-10.18:51:32.714 [main            ] INFO  DubboConfigBeanInitializer - dubbo config beans are loaded.
+26-07-10.18:51:32.767 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the DynamicConfigurationFactory extension[name : nacos] supports as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:32.767 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:32.772 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as config-center: <dubbo:config-center highestPriority="false" id="config-center-nacos-127.0.0.1-8848" address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:32.830 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.18:51:32.830 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.18:51:33.926 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:33.926 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:33.957 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.0] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:33.962 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.1] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:33.966 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the MetadataReportFactory extension[name : nacos] supports as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:33.966 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:33.968 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as metadata-center: <dubbo:metadata-report address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:34.047 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.18:51:34.047 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.18:51:34.048 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:34.913 [main            ] INFO  ReferenceCreator       - The configBean[type:ReferenceConfig] has been built.
+26-07-10.18:51:34.922 [main            ] INFO  ReferenceCreator       - The configBean[type:ReferenceConfig] has been built.
+26-07-10.18:51:34.929 [main            ] INFO  ReferenceCreator       - The configBean[type:ReferenceConfig] has been built.
+26-07-10.18:51:34.946 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'remoteWriteReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'rebateAppTokenValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+26-07-10.18:51:34.961 [main            ] INFO  ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-07-10.18:51:34.985 [main            ] ERROR LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+A component required a bean of type 'java.util.Map' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'java.util.Map' in your configuration.
+
+26-07-10.18:51:34.987 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@6050462a] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@6a9a6a0c]
+java.lang.IllegalStateException: Failed to load ApplicationContext
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'remoteWriteReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'rebateAppTokenValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
+	... 30 common frames omitted
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'rebateAppTokenValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:213)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.resolveBeanByName(AbstractAutowireCapableBeanFactory.java:479)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:550)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 46 common frames omitted
+Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1801)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1357)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 60 common frames omitted
+26-07-10.18:51:35.170 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
+26-07-10.18:51:35.171 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:51:35.171 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:51:35.172 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+java.lang.RuntimeException: refund timeout
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.finishCompensatingOrder(CreditPayDeliveryReconcileJob.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.finishCompensatingOrder_should_not_restore_sku_when_refund_fails(CreditPayDeliveryReconcileJobTest.java:65)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:51:35.173 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:51:35.173 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+java.lang.RuntimeException: sku restore failed
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_not_mark_failed_when_sku_restore_fails(CreditPayDeliveryReconcileJobTest.java:125)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:51:35.174 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:51:35.175 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+java.lang.RuntimeException: sku restore failed
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_retry_sku_restore_on_second_attempt(CreditPayDeliveryReconcileJobTest.java:141)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:51:35.175 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:51:35.175 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:51:35.175 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:51:35.176 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+java.lang.RuntimeException: refund timeout
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_retry_refund_on_second_attempt(CreditPayDeliveryReconcileJobTest.java:109)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:51:35.176 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:51:35.176 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:51:35.176 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:51:35.178 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:51:35.178 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:51:35.178 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:51:35.186 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.18:51:35.186 [DubboShutdownHook] INFO  DubboShutdownHook      -  [DUBBO] Run shutdown hook now., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:35.186 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.18:51:35.187 [DubboShutdownHook] INFO  FrameworkModel         -  [DUBBO] Reset global default application from Dubbo Application[1.1](big-market-message-job) to null, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:35.187 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.18:51:35.187 [DubboShutdownHook] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) is stopping., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:51:35.187 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.18:51:35.187 [DubboShutdownHook] INFO  RegistryManager        -  [DUBBO] Close all registries [], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:46.110 [main            ] INFO  WelcomeLogoApplicationListener - 
+
+ :: Dubbo Spring Boot (v3.0.9) : https://github.com/apache/dubbo-spring-boot-project
+ :: Dubbo (v3.0.9) : https://github.com/apache/dubbo
+ :: Discuss group : dev@dubbo.apache.org
+
+26-07-10.18:52:46.152 [main            ] INFO  MessageJobServiceApplicationContextTest - Starting MessageJobServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 15679 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service)
+26-07-10.18:52:46.153 [main            ] INFO  MessageJobServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.18:52:46.159 [background-preinit] INFO  Version                - HV000001: Hibernate Validator 6.2.5.Final
+26-07-10.18:52:47.259 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default framework from null to Dubbo Framework[1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.260 [main            ] INFO  FrameworkModel         -  [DUBBO] Dubbo Framework[1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.281 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.0](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.282 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.0.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.299 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.299 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.332 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default application from null to Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.332 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.1](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.332 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.335 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.335 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.340 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default application: Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.340 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.342 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.344 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default module model of target application: Dubbo Module[1.1.1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.344 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Bind Dubbo Module[1.1.1] to spring container: org.springframework.beans.factory.support.DefaultListableBeanFactory@492fc69e, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.534 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.18:52:47.536 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.18:52:47.550 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+26-07-10.18:52:47.697 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator bean can't be found in BeanFactory with name [org.springframework.context.annotation.internalConfigurationBeanNameGenerator], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.697 [main            ] INFO  ServiceAnnotationPostProcessor -  [DUBBO] BeanNameGenerator will be a instance of org.springframework.context.annotation.AnnotationBeanNameGenerator , it maybe a potential problem on bean name generation., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.699 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:47.790 [main            ] INFO  GenericScope           - BeanFactory id=b2fd51ad-3779-3b39-8207-f8ef73b5b9c8
+26-07-10.18:52:48.307 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountCreditService = ReferenceBean:com.dyx.market.trigger.api.IAccountCreditService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountCreditService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountCreditService
+26-07-10.18:52:48.308 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: accountQuotaService = ReferenceBean:com.dyx.market.trigger.api.IAccountQuotaService:1.0(check=false) at private com.dyx.market.trigger.api.IAccountQuotaService com.dyx.market.message.job.config.RemoteWriteReconcileJob.accountQuotaService
+26-07-10.18:52:48.308 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - Register dubbo reference bean: rebateService = ReferenceBean:com.dyx.market.trigger.api.IRebateService:1.0(check=false) at private com.dyx.market.trigger.api.IRebateService com.dyx.market.message.job.config.RemoteWriteReconcileJob.rebateService
+26-07-10.18:52:48.664 [main            ] INFO  ReferenceAnnotationBeanPostProcessor - class org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor was destroying!
+26-07-10.18:52:49.520 [main            ] INFO  DubboConfigBeanInitializer - loading dubbo config beans ...
+26-07-10.18:52:49.529 [main            ] INFO  DubboConfigBeanInitializer - dubbo config beans are loaded.
+26-07-10.18:52:49.622 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the DynamicConfigurationFactory extension[name : nacos] supports as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:49.624 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the config center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:49.637 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as config-center: <dubbo:config-center highestPriority="false" id="config-center-nacos-127.0.0.1-8848" address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:49.830 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.18:52:49.830 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.18:52:50.960 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:50.960 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:50.995 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.0] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:50.999 [main            ] INFO  DefaultModuleDeployer  -  [DUBBO] Dubbo Module[1.1.1] has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:51.003 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] No value is configured in the registry, the MetadataReportFactory extension[name : nacos] supports as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:51.004 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] The registry[<dubbo:registry address="nacos://127.0.0.1:8848" protocol="nacos" check="false" port="8848" />] will be used as the metadata center, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:51.007 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] use registry as metadata-center: <dubbo:metadata-report address="nacos://127.0.0.1:8848" protocol="nacos" port="8848" />, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:51.090 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+26-07-10.18:52:51.090 [main            ] INFO  ClientAuthPluginManager - [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+26-07-10.18:52:51.090 [main            ] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) has been initialized!, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:51.973 [main            ] INFO  ReferenceCreator       - The configBean[type:ReferenceConfig] has been built.
+26-07-10.18:52:51.984 [main            ] INFO  ReferenceCreator       - The configBean[type:ReferenceConfig] has been built.
+26-07-10.18:52:51.990 [main            ] INFO  ReferenceCreator       - The configBean[type:ReferenceConfig] has been built.
+26-07-10.18:52:52.336 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'calendarSignApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+26-07-10.18:52:52.353 [main            ] INFO  ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-07-10.18:52:52.372 [main            ] ERROR LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+A component required a bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' in your configuration.
+
+26-07-10.18:52:52.373 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@378542de] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@3891db3a]
+java.lang.IllegalStateException: Failed to load ApplicationContext
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'calendarSignApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
+	... 30 common frames omitted
+Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1801)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1357)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
+	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
+	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
+	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
+	... 46 common frames omitted
+26-07-10.18:52:52.391 [DubboShutdownHook] INFO  DubboShutdownHook      -  [DUBBO] Run shutdown hook now., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:52.391 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.18:52:52.391 [DubboShutdownHook] INFO  FrameworkModel         -  [DUBBO] Reset global default application from Dubbo Application[1.1](big-market-message-job) to null, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:52.391 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.18:52:52.391 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.18:52:52.391 [DubboShutdownHook] INFO  DefaultApplicationDeployer -  [DUBBO] Dubbo Application[1.1](big-market-message-job) is stopping., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:52.391 [DubboShutdownHook] INFO  RegistryManager        -  [DUBBO] Close all registries [], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:52:52.392 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.18:53:53.178 [main            ] INFO  WelcomeLogoApplicationListener - 
+
+ :: Dubbo Spring Boot (v3.0.9) : https://github.com/apache/dubbo-spring-boot-project
+ :: Dubbo (v3.0.9) : https://github.com/apache/dubbo
+ :: Discuss group : dev@dubbo.apache.org
+
+26-07-10.18:53:53.205 [main            ] INFO  MessageJobServiceApplicationContextTest - Starting MessageJobServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 18084 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service)
+26-07-10.18:53:53.205 [main            ] INFO  MessageJobServiceApplicationContextTest - The following 1 profile is active: "dev"
+26-07-10.18:53:53.213 [background-preinit] INFO  Version                - HV000001: Hibernate Validator 6.2.5.Final
+26-07-10.18:53:53.909 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default framework from null to Dubbo Framework[1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.909 [main            ] INFO  FrameworkModel         -  [DUBBO] Dubbo Framework[1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.929 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.0](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.930 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.0.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.947 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.947 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.975 [main            ] INFO  FrameworkModel         -  [DUBBO] Reset global default application from null to Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.975 [main            ] INFO  ApplicationModel       -  [DUBBO] Dubbo Application[1.1](unknown) is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.975 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.0] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.979 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.979 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.985 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default application: Dubbo Application[1.1](unknown), dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.985 [main            ] INFO  ScopeModel             -  [DUBBO] Dubbo Module[1.1.1] is created, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.987 [main            ] INFO  AbstractConfigManager  -  [DUBBO] Config settings: {dubbo.config.mode=STRICT, dubbo.config.ignore-duplicated-interface=false}, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.989 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Use default module model of target application: Dubbo Module[1.1.1], dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.989 [main            ] INFO  DubboSpringInitializer -  [DUBBO] Bind Dubbo Module[1.1.1] to spring container: org.springframework.beans.factory.support.DefaultListableBeanFactory@35c9a231, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-10.18:53:53.993 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'creditAdjustService' defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig: Cannot register bean definition [Root bean: class [null]; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=messageJobServiceApplicationContextTest.ChatCreditContextConfig; factoryMethodName=creditAdjustService; initMethodName=null; destroyMethodName=(inferred); defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig] for bean 'creditAdjustService': There is already [Generic bean: class [com.dyx.market.domain.credit.service.adjust.CreditAdjustService]; scope=singleton; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=null; initMethodName=null; destroyMethodName=null; defined in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-domain/target/classes/com/dyx/market/domain/credit/service/adjust/CreditAdjustService.class]] bound.
+26-07-10.18:53:53.998 [main            ] INFO  ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-07-10.18:53:54.006 [main            ] ERROR LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+The bean 'creditAdjustService', defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig, could not be registered. A bean with that name has already been defined in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-domain/target/classes/com/dyx/market/domain/credit/service/adjust/CreditAdjustService.class] and overriding is disabled.
+
+Action:
+
+Consider renaming one of the beans or enabling overriding by setting spring.main.allow-bean-definition-overriding=true
+
+26-07-10.18:53:54.007 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@562c877a] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@7994a0d1]
+java.lang.IllegalStateException: Failed to load ApplicationContext
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
+	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
+	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
+	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
+	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
+	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+Caused by: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'creditAdjustService' defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig: Cannot register bean definition [Root bean: class [null]; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=messageJobServiceApplicationContextTest.ChatCreditContextConfig; factoryMethodName=creditAdjustService; initMethodName=null; destroyMethodName=(inferred); defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig] for bean 'creditAdjustService': There is already [Generic bean: class [com.dyx.market.domain.credit.service.adjust.CreditAdjustService]; scope=singleton; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=null; initMethodName=null; destroyMethodName=null; defined in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-domain/target/classes/com/dyx/market/domain/credit/service/adjust/CreditAdjustService.class]] bound.
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.registerBeanDefinition(DefaultListableBeanFactory.java:1006)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForBeanMethod(ConfigurationClassBeanDefinitionReader.java:295)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForConfigurationClass(ConfigurationClassBeanDefinitionReader.java:153)
+	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitions(ConfigurationClassBeanDefinitionReader.java:129)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:343)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:247)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:311)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:112)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:748)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:564)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
+	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
+	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
+	... 30 common frames omitted
+26-07-10.18:53:54.227 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
+26-07-10.18:53:54.227 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:53:54.227 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:53:54.228 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+java.lang.RuntimeException: refund timeout
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.finishCompensatingOrder(CreditPayDeliveryReconcileJob.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.finishCompensatingOrder_should_not_restore_sku_when_refund_fails(CreditPayDeliveryReconcileJobTest.java:65)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:53:54.228 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:53:54.228 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+java.lang.RuntimeException: sku restore failed
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_not_mark_failed_when_sku_restore_fails(CreditPayDeliveryReconcileJobTest.java:125)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:53:54.229 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:53:54.229 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+java.lang.RuntimeException: sku restore failed
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_retry_sku_restore_on_second_attempt(CreditPayDeliveryReconcileJobTest.java:141)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:53:54.229 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:53:54.229 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:53:54.229 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:53:54.230 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+java.lang.RuntimeException: refund timeout
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_retry_refund_on_second_attempt(CreditPayDeliveryReconcileJobTest.java:109)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-10.18:53:54.230 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:53:54.230 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:53:54.230 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-10.18:53:54.231 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] credit refunded userId:user-1 outBusinessNo:convert-sku-001 refundKey:refund_convert-sku-001
+26-07-10.18:53:54.231 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restored sku:9001
+26-07-10.18:53:54.231 [main            ] INFO  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] order marked failed userId:user-1 outBusinessNo:convert-sku-001

@@ -56,7 +56,7 @@ public class RebateRemoteCreateOrderAdapter implements IRebateOrderAdapter {
             log.error("[RebateRemoteCreateOrderAdapter] createOrder remote failed userId:{} outBusinessNo:{}",
                     behaviorEntity.getUserId(), behaviorEntity.getOutBusinessNo(), e);
         }
-        if (!pendingRemoteWriteSupport.enqueue(behaviorEntity.getOutBusinessNo(), RemoteWriteOperations.REBATE_CREATE, request)) {
+        if (!pendingRemoteWriteSupport.enqueue(behaviorEntity.getOutBusinessNo(), RemoteWriteOperations.REBATE_CREATE, request, behaviorEntity.getUserId())) {
             throw new AppException(ResponseCode.UN_ERROR.getCode(), "返利写入失败，补偿任务参数无效");
         }
         throw new AppException(ResponseCode.UN_ERROR.getCode(), "返利写入处理中，请稍后查看");

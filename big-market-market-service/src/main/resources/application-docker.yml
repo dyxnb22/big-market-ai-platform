@@ -34,6 +34,7 @@ dubbo:
 zookeeper:
   sdk:
     config:
+      enable: ${ZOOKEEPER_SDK_CONFIG_ENABLE:true}
       connect-string: ${ZOOKEEPER_HOST:zookeeper}:2181
 
 xxl:

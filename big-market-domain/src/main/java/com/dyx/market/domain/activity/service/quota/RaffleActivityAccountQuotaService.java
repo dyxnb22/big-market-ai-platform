@@ -91,6 +91,11 @@ public class RaffleActivityAccountQuotaService extends AbstractRaffleActivityAcc
     }
 
     @Override
+    public void syncActivitySkuStockFromQueue(Long sku) {
+        activityRepository.syncActivitySkuStockFromQueue(sku);
+    }
+
+    @Override
     public void updateOrder(DeliveryOrderEntity deliveryOrderEntity) {
         activityRepository.updateOrder(deliveryOrderEntity);
     }

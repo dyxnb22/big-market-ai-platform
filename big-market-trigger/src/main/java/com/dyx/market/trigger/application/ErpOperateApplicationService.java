@@ -14,6 +14,7 @@ import com.dyx.market.trigger.api.dto.RaffleActivityStageResponseDTO;
 import com.dyx.market.trigger.api.dto.UpdateStageActivity2ActiveRequestDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -63,19 +64,27 @@ public class ErpOperateApplicationService {
         return result;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateStageActivity2Active(UpdateStageActivity2ActiveRequestDTO requestDTO) {
         Long id = requestDTO.getId();
         log.info("更新上架活动状态为生效开始 id:{}", id);
         Long activityId = raffleActivityStageService.queryStageActivity2ActiveById(id);
-        boolean assembled = activityArmory.assembleActivitySkuByActivityId(activityId);
-        strategyArmory.assembleLotteryStrategyByActivityId(activityId);
-        log.info("更新上架活动状态为装配完成 activityId:{} assembled:{}", activityId, assembled);
+        boolean skuAssembled = activityArmory.assembleActivitySkuByActivityId(activityId);
+        if (!skuAssembled) {
+            throw new IllegalStateException("活动 SKU 装配失败，拒绝发布 activityId=" + activityId);
+        }
+        boolean strategyAssembled = strategyArmory.assembleLotteryStrategyByActivityId(activityId);
+        if (!strategyAssembled) {
+            throw new IllegalStateException("策略装配失败，拒绝发布 activityId=" + activityId);
+        }
+        log.info("更新上架活动状态为装配完成 activityId:{} skuAssembled:{} strategyAssembled:{}", activityId, skuAssembled, strategyAssembled);
         raffleActivityStageService.updateStageActivity2Active(id);
         activityRepository.updateRaffleActivityState(activityId, ActivityStateVO.open.getCode());
         log.info("更新上架活动状态为生效完成 activityId:{}", activityId);
         return true;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public boolean updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO) {
         Long id = requestDTO.getId();
         log.info("更新上架活动状态为下架开始 id:{}", id);
