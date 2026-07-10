@@ -37,6 +37,8 @@
 
 1. [11-key-design-decisions.md](11-key-design-decisions.md) - 7 个关键设计决策与理由（面试必读）
 2. [14-interview-qa.md](14-interview-qa.md) - 20 道高频面试题 Q&A（面试必读）
+3. [18-resume-project-deep-dive.md](18-resume-project-deep-dive.md) - 简历四点结合代码详解（面试口述）
+4. [19-resume-code-walkthrough-and-interview.md](19-resume-code-walkthrough-and-interview.md) - 简历相关代码走读与面试追问（深挖）
 
 ### 参考工具
 
