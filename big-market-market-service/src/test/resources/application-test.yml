@@ -1,4 +1,6 @@
 spring:
+  main:
+    lazy-initialization: true
   cloud:
     inetutils:
       preferred-networks: 127.0.0.1

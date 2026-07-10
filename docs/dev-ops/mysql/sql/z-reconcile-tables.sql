@@ -1,5 +1,35 @@
 -- Docker MySQL init: reconcile / DLQ / chat session tables (G-02, G-05, G-06, G-07).
 -- Canonical reference: docs/sql/reconcile-tables.sql
+-- Stock decrement ledgers live on shared big_market (same as strategy_award / raffle_activity_sku).
+
+USE `big_market`;
+
+CREATE TABLE IF NOT EXISTS `strategy_award_stock_decrement_ledger` (
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+    `reservation_id`  VARCHAR(64)  NOT NULL,
+    `strategy_id`     BIGINT       NOT NULL,
+    `award_id`        INT          NOT NULL,
+    `lock_surplus`    BIGINT       DEFAULT NULL,
+    `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
+    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_reservation_id` (`reservation_id`),
+    KEY `idx_strategy_award` (`strategy_id`, `award_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+    `sku`             BIGINT       NOT NULL,
+    `activity_id`     BIGINT       DEFAULT NULL,
+    `lock_surplus`    BIGINT       NOT NULL,
+    `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
+    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_sku_lock_surplus` (`sku`, `lock_surplus`),
+    KEY `idx_activity` (`activity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 USE `big_market_01`;
 
@@ -40,13 +70,15 @@ CREATE TABLE IF NOT EXISTS `chat_credit_session` (
     `request_id`    VARCHAR(64)  NOT NULL,
     `deducted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `deduct_amount` INT          NOT NULL DEFAULT 0,
+    `deduct_state`  VARCHAR(16)  NOT NULL DEFAULT 'deducted',
     `refund_state`  VARCHAR(16)  NOT NULL DEFAULT 'none',
     `retry_count`   TINYINT      NOT NULL DEFAULT 0,
     `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_user_request` (`user_id`, `request_id`),
-    KEY `idx_refund_pending` (`refund_state`, `retry_count`, `create_time`)
+    KEY `idx_refund_pending` (`refund_state`, `retry_count`, `create_time`),
+    KEY `idx_deduct_state` (`deduct_state`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` (
@@ -72,3 +104,5 @@ CREATE TABLE IF NOT EXISTS `mq_dead_letter` LIKE `big_market_01`.`mq_dead_letter
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` LIKE `big_market_01`.`pending_remote_write_task`;
 CREATE TABLE IF NOT EXISTS `chat_credit_session` LIKE `big_market_01`.`chat_credit_session`;
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` LIKE `big_market_01`.`strategy_award_stock_confirm_task`;
+
+-- Older volumes: deduct_state is added by scripts/apply-reconcile-ddl.sh (idempotent).

@@ -2,8 +2,9 @@ package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.infrastructure.dao.IStrategyAwardDao;
+import com.dyx.market.infrastructure.dao.IStrategyAwardStockDecrementLedgerDao;
+import com.dyx.market.infrastructure.dao.po.StrategyAwardStockDecrementLedger;
 import com.dyx.market.infrastructure.redis.IRedisService;
-import com.dyx.market.types.common.Constants;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,6 +12,10 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +25,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * G-01 故障注入：预占失败回滚、确认入队、释放 INCR。
+ * G-01 / durable ledger: 预占失败回滚、确认入队、MySQL ledger 幂等。
  */
 @RunWith(MockitoJUnitRunner.class)
 public class StrategyAwardCacheSupportTest {
@@ -29,7 +34,6 @@ public class StrategyAwardCacheSupportTest {
     private static final Integer AWARD_ID = 101;
     private static final String ORDER_ID = "order-test-001";
     private static final String DEDUPE_KEY = "stock_confirm:" + ORDER_ID;
-
     private static final String MYSQL_DEDUPE_KEY = "stock_mysql_decrement:" + ORDER_ID;
 
     @Mock
@@ -38,6 +42,12 @@ public class StrategyAwardCacheSupportTest {
     @Mock
     private IStrategyAwardDao strategyAwardDao;
 
+    @Mock
+    private IStrategyAwardStockDecrementLedgerDao strategyAwardStockDecrementLedgerDao;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
+
     @InjectMocks
     private StrategyAwardCacheSupport support;
 
@@ -45,7 +55,12 @@ public class StrategyAwardCacheSupportTest {
 
     @Before
     public void setUp() {
-        cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_KEY + STRATEGY_ID + Constants.UNDERLINE + AWARD_ID;
+        cacheKey = com.dyx.market.types.common.Constants.RedisKey.STRATEGY_AWARD_COUNT_KEY
+                + STRATEGY_ID + com.dyx.market.types.common.Constants.UNDERLINE + AWARD_ID;
+        when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(mock(TransactionStatus.class));
+        });
     }
 
     @Test
@@ -81,7 +96,7 @@ public class StrategyAwardCacheSupportTest {
         support.releaseReservation(reservation);
 
         verify(redisService).incr(cacheKey);
-        verify(redisService).remove(cacheKey + Constants.UNDERLINE + "5");
+        verify(redisService).remove(cacheKey + com.dyx.market.types.common.Constants.UNDERLINE + "5");
     }
 
     @Test
@@ -98,6 +113,7 @@ public class StrategyAwardCacheSupportTest {
         inOrder.verify(redisService).getDelayedQueue(any());
         inOrder.verify(redisService).setNx(eq(DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS));
         verify(redisService, never()).incr(cacheKey);
+        verify(redisService).addToSet(eq(com.dyx.market.types.common.Constants.RedisKey.STRATEGY_AWARD_STOCK_PENDING_SET), anyString());
     }
 
     @Test
@@ -127,12 +143,42 @@ public class StrategyAwardCacheSupportTest {
     @Test
     public void updateStrategyAwardStockOnce_decrements_once_per_reservationId() {
         StrategyAwardStockKeyVO stockKey = buildReservation();
-        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true, false);
+        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);
 
         support.updateStrategyAwardStockOnce(stockKey);
+        // Second call: SETNX fails but ledger exists → skip DB
+        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(false);
+        when(strategyAwardStockDecrementLedgerDao.queryByReservationId(ORDER_ID))
+                .thenReturn(StrategyAwardStockDecrementLedger.builder().reservationId(ORDER_ID).build());
         support.updateStrategyAwardStockOnce(stockKey);
 
         verify(strategyAwardDao, times(1)).updateStrategyAwardStock(any());
+        verify(strategyAwardStockDecrementLedgerDao, times(1)).insert(any());
+    }
+
+    @Test
+    public void updateStrategyAwardStockOnce_crashWindow_setnxWithoutLedger_retriesDb() {
+        StrategyAwardStockKeyVO stockKey = buildReservation();
+        // Simulate crash: Redis SETNX already set, but MySQL ledger missing
+        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(false, true);
+        when(strategyAwardStockDecrementLedgerDao.queryByReservationId(ORDER_ID)).thenReturn(null);
+
+        support.updateStrategyAwardStockOnce(stockKey);
+
+        verify(redisService).remove(MYSQL_DEDUPE_KEY);
+        verify(strategyAwardStockDecrementLedgerDao).insert(any());
+        verify(strategyAwardDao).updateStrategyAwardStock(any());
+    }
+
+    @Test
+    public void updateStrategyAwardStockOnce_duplicateLedger_skipsStockUpdate() {
+        StrategyAwardStockKeyVO stockKey = buildReservation();
+        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);
+        doThrow(new DuplicateKeyException("dup")).when(strategyAwardStockDecrementLedgerDao).insert(any());
+
+        support.updateStrategyAwardStockOnce(stockKey);
+
+        verify(strategyAwardDao, never()).updateStrategyAwardStock(any());
     }
 
     @Test
@@ -140,7 +186,6 @@ public class StrategyAwardCacheSupportTest {
         StrategyAwardStockKeyVO stockKey = buildReservation();
         when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);
         doThrow(new RuntimeException("db down"))
-                .doNothing()
                 .when(strategyAwardDao).updateStrategyAwardStock(any());
 
         try {
@@ -151,8 +196,6 @@ public class StrategyAwardCacheSupportTest {
         }
 
         verify(redisService).remove(MYSQL_DEDUPE_KEY);
-        support.updateStrategyAwardStockOnce(stockKey);
-        verify(strategyAwardDao, times(2)).updateStrategyAwardStock(any());
     }
 
     private static StrategyAwardStockKeyVO buildReservation() {

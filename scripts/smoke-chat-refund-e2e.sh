@@ -37,18 +37,21 @@ balance_before="$(curl -fsS "$API/raffle/activity/query_user_credit_account_by_t
   | json_field "d['data']")"
 
 echo "--- Part 1: AI failure with immediate refund (market up) ---"
-ORIG_API_KEY="$(curl -fsS "$API/admin/config/get?ns=chatbot&configKey=apiKey" \
+ORIG_API_KEY="$(curl -fsS "$API/admin/config/get?namespace=chatbot&configKey=apiKey" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | json_field "d.get('data') or {}.get('configValue','')")"
-ORIG_PROVIDER="$(curl -fsS "$API/admin/config/get?ns=chatbot&configKey=provider" \
+ORIG_PROVIDER="$(curl -fsS "$API/admin/config/get?namespace=chatbot&configKey=provider" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | json_field "d.get('data') or {}.get('configValue','deepseek')")"
 
 restore_config() {
-  curl -fsS "$API/admin/config/save" -H "Authorization: Bearer $ADMIN_TOKEN" \
-    -H 'Content-Type: application/json' \
-    -d "{\"namespace\":\"chatbot\",\"configKey\":\"apiKey\",\"configValue\":\"$ORIG_API_KEY\",\"description\":\"restore\"}" >/dev/null
-  curl -fsS "$API/admin/config/save" -H "Authorization: Bearer $ADMIN_TOKEN" \
-    -H 'Content-Type: application/json' \
-    -d "{\"namespace\":\"chatbot\",\"configKey\":\"provider\",\"configValue\":\"$ORIG_PROVIDER\",\"description\":\"restore\"}" >/dev/null
+  python3 - "$API" "$ADMIN_TOKEN" "$ORIG_API_KEY" "$ORIG_PROVIDER" <<'PY'
+import json, sys, urllib.request
+api, token, api_key, provider = sys.argv[1:5]
+headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+for key, value in [("apiKey", api_key), ("provider", provider)]:
+    body = json.dumps({"namespace": "chatbot", "configKey": key, "configValue": value, "description": "restore"}).encode()
+    req = urllib.request.Request(f"{api}/admin/config/save", data=body, headers=headers, method="POST")
+    urllib.request.urlopen(req).read()
+PY
 }
 trap restore_config EXIT
 

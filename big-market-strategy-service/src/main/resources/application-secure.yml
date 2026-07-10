@@ -1,0 +1,4 @@
+app:
+  internal-rpc:
+    enforce: true
+    token: ${APP_INTERNAL_RPC_TOKEN}

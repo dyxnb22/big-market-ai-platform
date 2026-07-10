@@ -69,12 +69,29 @@ retry indexes for local study.
 
 ## Stock flush (BM-008)
 
-Strategy award stock uses `reservationId` per queue event. Activity SKU stock uses **`lockSurplus`** (Redis decr snapshot) per queue event — dedupe key `sku_mysql_decrement:{sku}:{lockSurplus}` so each Redis decrement maps to exactly one MySQL `-1`.
+Strategy award stock uses `reservationId` per queue event. Activity SKU stock uses
+**`lockSurplus`** (Redis decr snapshot) per queue event. Durable idempotency is a
+MySQL ledger (`strategy_award_stock_decrement_ledger` /
+`activity_sku_stock_decrement_ledger`) in the same transaction as the surplus
+`-1`. Redis `SETNX` is an optional fast-path only — a crash between SETNX and DB
+must still apply the ledger on retry. Pending queue keys are tracked in Redis
+sets so flush jobs can drain work after an activity goes offline.
+
+## Chat billing intent (BM-010)
+
+`ChatCreditApplicationService.deduct` inserts `chat_credit_session` with
+`deduct_state=deducting` **before** remote debit (`chat_{userId}_{requestId}`).
+On SUCCESS / INDEX_DUP the session CAS/marks `deducted`. Explicit REJECTED may
+mark `failed`; UNKNOWN keeps `deducting` for reconcile. Refund keys remain
+`chat_refund_{userId}_{requestId}`.
 
 ## Pending remote write (BM-007)
 
 `PendingRemoteWriteSupport.enqueue(..., userId)` routes inserts through
 `dbRouter.doRouter(userId)` so compensation tasks land on the correct shard.
+Task states: `pending` → `continuation_pending` → `done`. Remote adapters
+classify `SUCCESS` / `REJECTED` / `UNKNOWN`; only UNKNOWN enqueues pending.
+Continuation failures must not mark `done`.
 
 ## Duplicate Handling
 

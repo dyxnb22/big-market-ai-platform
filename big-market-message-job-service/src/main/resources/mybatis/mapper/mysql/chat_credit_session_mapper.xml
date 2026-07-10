@@ -8,6 +8,7 @@
         <result column="request_id" property="requestId"/>
         <result column="deducted" property="deducted"/>
         <result column="deduct_amount" property="deductAmount"/>
+        <result column="deduct_state" property="deductState"/>
         <result column="refund_state" property="refundState"/>
         <result column="retry_count" property="retryCount"/>
         <result column="create_time" property="createTime"/>
@@ -15,8 +16,8 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.ChatCreditSession">
-        insert into chat_credit_session(user_id, request_id, deducted, deduct_amount, refund_state, retry_count, create_time, update_time)
-        values (#{userId}, #{requestId}, #{deducted}, #{deductAmount}, #{refundState}, 0, now(), now())
+        insert into chat_credit_session(user_id, request_id, deducted, deduct_amount, deduct_state, refund_state, retry_count, create_time, update_time)
+        values (#{userId}, #{requestId}, #{deducted}, #{deductAmount}, #{deductState}, #{refundState}, 0, now(), now())
     </insert>
 
     <update id="updateRefundState" parameterType="com.dyx.market.infrastructure.dao.po.ChatCreditSession">
@@ -34,6 +35,24 @@
           and refund_state = #{fromState}
     </update>
 
+    <update id="casDeductState">
+        update chat_credit_session
+        set deduct_state = #{toState},
+            deducted = CASE WHEN #{toState} = 'deducted' THEN 1 ELSE deducted END,
+            update_time = now()
+        where user_id = #{userId}
+          and request_id = #{requestId}
+          and deduct_state = #{fromState}
+    </update>
+
+    <update id="markDeducted">
+        update chat_credit_session
+        set deduct_state = 'deducted', deducted = 1, update_time = now()
+        where user_id = #{userId}
+          and request_id = #{requestId}
+          and deduct_state IN ('deducting', 'deducted')
+    </update>
+
     <update id="updateRetryFailed" parameterType="com.dyx.market.infrastructure.dao.po.ChatCreditSession">
         update chat_credit_session
         set retry_count = retry_count + 1, update_time = now()
@@ -41,25 +60,31 @@
     </update>
 
     <select id="queryByRequestId" resultMap="dataMap">
-        select id, user_id, request_id, deducted, deduct_amount, refund_state, retry_count
+        select id, user_id, request_id, deducted, deduct_amount, deduct_state, refund_state, retry_count
         from chat_credit_session
         where request_id = #{requestId}
         limit 1
     </select>
 
     <select id="queryByUserIdAndRequestId" resultMap="dataMap">
-        select id, user_id, request_id, deducted, deduct_amount, refund_state, retry_count
+        select id, user_id, request_id, deducted, deduct_amount, deduct_state, refund_state, retry_count
         from chat_credit_session
         where user_id = #{userId} and request_id = #{requestId}
         limit 1
     </select>
 
     <select id="queryPendingRefunds" resultMap="dataMap">
-        select id, user_id, request_id, deducted, deduct_amount, refund_state, retry_count
+        select id, user_id, request_id, deducted, deduct_amount, deduct_state, refund_state, retry_count
         from chat_credit_session
         where refund_state = 'pending' and retry_count &lt; #{maxRetry}
         order by create_time asc
         limit #{limit}
+    </select>
+
+    <select id="countPendingRefunds" resultType="int">
+        select count(*)
+        from chat_credit_session
+        where refund_state = 'pending'
     </select>
 
 </mapper>

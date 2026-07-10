@@ -3,21 +3,27 @@ package com.dyx.market.infrastructure.adapter.repository;
 import com.dyx.market.domain.strategy.model.entity.StrategyAwardEntity;
 import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.infrastructure.dao.IStrategyAwardDao;
+import com.dyx.market.infrastructure.dao.IStrategyAwardStockDecrementLedgerDao;
 import com.dyx.market.infrastructure.dao.po.StrategyAward;
+import com.dyx.market.infrastructure.dao.po.StrategyAwardStockDecrementLedger;
 import com.dyx.market.infrastructure.redis.IRedisService;
 import com.dyx.market.types.common.Constants;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.dyx.market.types.enums.ResponseCode.UN_ASSEMBLED_STRATEGY_ARMORY;
@@ -30,12 +36,17 @@ import static com.dyx.market.types.enums.ResponseCode.UN_ASSEMBLED_STRATEGY_ARMO
 public class StrategyAwardCacheSupport {
 
     private static final String STOCK_CONFIRM_DEDUPE_KEY_PREFIX = "stock_confirm:";
+    /** Redis SETNX is an optional fast-path only; MySQL ledger is the durable truth. */
     private static final String STOCK_MYSQL_DECREMENT_KEY_PREFIX = "stock_mysql_decrement:";
 
     @Resource
     private IStrategyAwardDao strategyAwardDao;
     @Resource
+    private IStrategyAwardStockDecrementLedgerDao strategyAwardStockDecrementLedgerDao;
+    @Resource
     private IRedisService redisService;
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     public List<StrategyAwardEntity> queryStrategyAwardList(Long strategyId) {
         // 优先从缓存获取
@@ -209,6 +220,8 @@ public class StrategyAwardCacheSupport {
         RBlockingQueue<StrategyAwardStockKeyVO> blockingQueue = redisService.getBlockingQueue(cacheKey);
         RDelayedQueue<StrategyAwardStockKeyVO> delayedQueue = redisService.getDelayedQueue(blockingQueue);
         delayedQueue.offer(strategyAwardStockKeyVO, 3, TimeUnit.SECONDS);
+        redisService.addToSet(Constants.RedisKey.STRATEGY_AWARD_STOCK_PENDING_SET,
+                strategyAwardStockKeyVO.getStrategyId() + Constants.UNDERLINE + strategyAwardStockKeyVO.getAwardId());
     }
 
     public StrategyAwardStockKeyVO takeQueueValue() {
@@ -227,6 +240,10 @@ public class StrategyAwardCacheSupport {
         String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_QUERY_KEY + Constants.UNDERLINE + strategyId + Constants.UNDERLINE + awardId;
         RBlockingQueue<StrategyAwardStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
         destinationQueue.poll();
+        if (destinationQueue.isEmpty()) {
+            redisService.removeFromSet(Constants.RedisKey.STRATEGY_AWARD_STOCK_PENDING_SET,
+                    strategyId + Constants.UNDERLINE + awardId);
+        }
     }
 
     /**
@@ -235,6 +252,8 @@ public class StrategyAwardCacheSupport {
     public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
         StrategyAwardStockKeyVO stockKey = peekQueueValue(strategyId, awardId);
         if (null == stockKey) {
+            redisService.removeFromSet(Constants.RedisKey.STRATEGY_AWARD_STOCK_PENDING_SET,
+                    strategyId + Constants.UNDERLINE + awardId);
             return;
         }
         try {
@@ -259,29 +278,93 @@ public class StrategyAwardCacheSupport {
     }
 
     /**
-     * 按 reservationId 幂等扣减 MySQL 库存，防止重复入队导致多次扣减。
+     * 按 reservationId 幂等扣减 MySQL 库存。最终事实以 ledger INSERT 为准；
+     * Redis SETNX 仅作可选加速，不得单独作为「DB 已完成」证明。
      */
     public void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey) {
         if (null == stockKey) {
             return;
         }
         String reservationId = stockKey.getReservationId();
-        String dedupeKey = null;
-        if (null != reservationId && !reservationId.isEmpty()) {
-            dedupeKey = STOCK_MYSQL_DECREMENT_KEY_PREFIX + reservationId;
-            if (!Boolean.TRUE.equals(redisService.setNx(dedupeKey, 7, TimeUnit.DAYS))) {
-                log.info("奖品库存 MySQL 扣减已执行，跳过重复 reservationId:{}", reservationId);
+        if (null == reservationId || reservationId.isEmpty()) {
+            updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
+            return;
+        }
+
+        String dedupeKey = STOCK_MYSQL_DECREMENT_KEY_PREFIX + reservationId;
+        // Optional fast-path: if Redis says done, still verify MySQL ledger before skipping.
+        if (!Boolean.TRUE.equals(redisService.setNx(dedupeKey, 7, TimeUnit.DAYS))) {
+            if (null != strategyAwardStockDecrementLedgerDao.queryByReservationId(reservationId)) {
+                log.info("奖品库存 MySQL 扣减已落账，跳过重复 reservationId:{}", reservationId);
                 return;
             }
+            // Crash window: SETNX set but ledger missing — clear Redis and continue to durable path.
+            redisService.remove(dedupeKey);
         }
+
         try {
-            updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
-        } catch (Exception e) {
-            if (null != dedupeKey) {
-                redisService.remove(dedupeKey);
+            Boolean applied = transactionTemplate.execute(status -> {
+                try {
+                    strategyAwardStockDecrementLedgerDao.insert(StrategyAwardStockDecrementLedger.builder()
+                            .reservationId(reservationId)
+                            .strategyId(stockKey.getStrategyId())
+                            .awardId(stockKey.getAwardId())
+                            .lockSurplus(stockKey.getLockSurplus())
+                            .build());
+                } catch (DuplicateKeyException e) {
+                    log.info("奖品库存 ledger 已存在，跳过重复 reservationId:{}", reservationId);
+                    return true;
+                }
+                updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
+                return true;
+            });
+            if (!Boolean.TRUE.equals(applied)) {
+                throw new IllegalStateException("strategy award stock ledger transaction returned false");
             }
+            // Best-effort Redis cache of durable success (ignore failures).
+            redisService.setNx(dedupeKey, 7, TimeUnit.DAYS);
+        } catch (RuntimeException e) {
+            redisService.remove(dedupeKey);
             throw e;
         }
+    }
+
+    /**
+     * Open-activity awards plus any pending flush keys (survives activity offline).
+     */
+    public List<StrategyAwardStockKeyVO> queryPendingStrategyAwardStockKeys() {
+        List<StrategyAwardStockKeyVO> open = queryOpenActivityStrategyAwardList();
+        Set<String> seen = new HashSet<>();
+        List<StrategyAwardStockKeyVO> merged = new ArrayList<>();
+        if (null != open) {
+            for (StrategyAwardStockKeyVO vo : open) {
+                String key = vo.getStrategyId() + Constants.UNDERLINE + vo.getAwardId();
+                if (seen.add(key)) {
+                    merged.add(vo);
+                }
+            }
+        }
+        Set<String> pending = redisService.getSetMembers(Constants.RedisKey.STRATEGY_AWARD_STOCK_PENDING_SET);
+        if (null != pending) {
+            for (String member : pending) {
+                if (!seen.add(member)) {
+                    continue;
+                }
+                String[] parts = member.split(Constants.UNDERLINE, 2);
+                if (parts.length != 2) {
+                    continue;
+                }
+                try {
+                    merged.add(StrategyAwardStockKeyVO.builder()
+                            .strategyId(Long.valueOf(parts[0]))
+                            .awardId(Integer.valueOf(parts[1]))
+                            .build());
+                } catch (NumberFormatException ignored) {
+                    log.warn("invalid pending strategy award stock key: {}", member);
+                }
+            }
+        }
+        return merged;
     }
 
     public StrategyAwardEntity queryStrategyAwardEntity(Long strategyId, Integer awardId) {

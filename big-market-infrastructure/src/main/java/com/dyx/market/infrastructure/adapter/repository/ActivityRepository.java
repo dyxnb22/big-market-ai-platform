@@ -132,7 +132,8 @@ public class ActivityRepository implements IActivityRepository {
 
     @Override
     public List<Long> querySkuList() {
-        return activitySkuStockCacheSupport.querySkuList();
+        // Include Redis pending registry so offline activities still drain flush queues.
+        return activitySkuStockCacheSupport.queryPendingSkuList();
     }
 
     @Override

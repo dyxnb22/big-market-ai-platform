@@ -23,4 +23,6 @@ public interface IMqDeadLetterDao {
                            @Param("maxConsumeFailures") int maxConsumeFailures);
 
     MqDeadLetter queryLatestByBusinessMessageId(@Param("businessMessageId") String businessMessageId);
+
+    int countByState(@Param("state") String state);
 }

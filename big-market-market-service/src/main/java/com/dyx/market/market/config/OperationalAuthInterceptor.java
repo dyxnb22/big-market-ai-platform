@@ -36,10 +36,11 @@ public class OperationalAuthInterceptor implements HandlerInterceptor {
     }
 
     private void writeError(HttpServletResponse response) throws IOException {
+        String code = ResponseCode.APP_TOKEN_ERROR.getCode();
         response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setStatus(com.dyx.market.types.web.ResponseHttpStatusMapper.toStatusCode(code));
         response.getWriter().write(JSON.toJSONString(Response.builder()
-                .code(ResponseCode.APP_TOKEN_ERROR.getCode())
+                .code(code)
                 .info(ResponseCode.APP_TOKEN_ERROR.getInfo())
                 .build()));
     }

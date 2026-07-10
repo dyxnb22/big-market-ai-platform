@@ -53,6 +53,16 @@ Gateway address: `http://127.0.0.1:8080`.
 ## Verify
 
 ```bash
+./scripts/validate-mapper-ddl-gates.sh
+./scripts/validate-microservices-runtime-safety.sh
+./scripts/validate-prometheus-config.sh
+mvn -B verify -DfailIfNoTests=false
+./scripts/acceptance.sh --reuse   # stack already up; add --fresh --confirm-destroy-volumes for clean volumes
+```
+
+Focused unit/context tests:
+
+```bash
 mvn -pl big-market-market-service,big-market-message-job-service,big-market-domain,big-market-infrastructure -am test \
   -DfailIfNoTests=false -Dsurefire.failIfNoSpecifiedTests=false
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
@@ -61,12 +71,21 @@ docker compose up --build -d
 ./scripts/smoke-api.sh
 ./scripts/smoke-test-microservices.sh
 ./scripts/web-start.sh   # separate terminal
-npm test                 # Playwright; needs gateway + web on 8080/5173
+npx playwright test --workers=1
 ```
 
-`validate-microservices-runtime-safety.sh` is a coarse guardrail only — it can pass while Spring Context or XXL wiring is still broken. Prefer the Maven tests above plus stack/smoke scripts after audit remediation (see `docs/audit-remediation-plan.md`).
+`validate-microservices-runtime-safety.sh` is a coarse guardrail only — it can pass while Spring Context or XXL wiring is still broken. Prefer `./scripts/acceptance.sh` plus the Maven tests above after audit remediation (see `docs/audit-remediation-plan.md`).
 
-**Readiness (2026-07-10):** Boot fixes (BM-001–003) and money-path/demo code (BM-004–015) are in tree with unit/slice context tests. **Do not** claim demo closed loop until Docker + smoke/Playwright pass.
+### Acceptance evidence
+
+| Field | Value |
+| --- | --- |
+| Date | 2026-07-11 |
+| Git | `4278a8c` (working tree; run `git rev-parse --short HEAD` before release) |
+| Command | `./scripts/acceptance.sh --reuse --skip-build` |
+| Result | **PASS** — stack health, `test-http-contracts`, smoke 21/21, smoke-api, XXL health, chat-refund E2E, Playwright **18/18 ×2** (`--workers=1`) |
+
+**Readiness:** Demo closed loop is gated on `./scripts/acceptance.sh`全绿 (see evidence above). Boot fixes (BM-001–003) and money-path/demo code (BM-004–015) remain in tree with unit/slice context tests.
 
 ## Frontend
 

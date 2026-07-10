@@ -1,45 +1,65 @@
-26-07-10.17:27:22.056 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.17:27:24.960 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.17:27:24.963 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.17:27:25.706 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatRefundReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatCreditApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-26-07-10.17:27:25.740 [main            ] ERROR LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-A component required a bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' in your configuration.
-
-26-07-10.17:27:25.741 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@3e6ef8ad] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@64836643]
-java.lang.IllegalStateException: Failed to load ApplicationContext
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
-	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
-	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
-	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
-	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+26-07-11.00:24:04.667 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:24:07.893 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:24:07.893 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:24:09.670 [main            ] WARN  DefaultCredentialGuard - [DefaultCredentialGuard] DISABLED — dangerous defaults will not be caught
+26-07-11.00:24:11.617 [main            ] WARN  LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+26-07-11.00:24:11.813 [xxl-job, executor ExecutorRegistryThread] ERROR XxlJobRemotingUtil     - Connection refused (Connection refused)
+java.net.ConnectException: Connection refused (Connection refused)
+	at java.net.PlainSocketImpl.socketConnect(Native Method)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.net.Socket.connect(Socket.java:607)
+	at sun.net.NetworkClient.doConnect(NetworkClient.java:175)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:465)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:560)
+	at sun.net.www.http.HttpClient.<init>(HttpClient.java:246)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:341)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:359)
+	at sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1245)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1179)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1073)
+	at sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1007)
+	at com.xxl.job.core.util.XxlJobRemotingUtil.postBody(XxlJobRemotingUtil.java:99)
+	at com.xxl.job.core.biz.client.AdminBizClient.registry(AdminBizClient.java:42)
+	at com.xxl.job.core.thread.ExecutorRegistryThread$1.run(ExecutorRegistryThread.java:48)
+	at java.lang.Thread.run(Thread.java:750)
+26-07-11.00:24:12.059 [main            ] WARN  ServiceConfig          -  [DUBBO] Use random available port(20880) for protocol dubbo, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:24:12.674 [main            ] WARN  NacosRegistry          -  [DUBBO] Ignore empty notify urls for subscribe url provider://192.168.139.3:20880/org.apache.dubbo.metadata.MetadataService?anyhost=true&application=big-market-message-job&application.version=1.0&background=false&bind.ip=192.168.139.3&bind.port=20880&category=configurators&check=false&connections=1&corethreads=2&delay=0&deprecated=false&dubbo=2.0.2&dynamic=true&executes=100&generic=false&getAndListenInstanceMetadata.1.callback=true&getAndListenInstanceMetadata.return=true&getAndListenInstanceMetadata.sent=true&group=big-market-message-job&interface=org.apache.dubbo.metadata.MetadataService&methods=getMetadataURL,isMetadataService,getAndListenInstanceMetadata,getExportedURLs,serviceName,version,getSubscribedURLs,getExportedServiceURLs,exportInstanceMetadata,getMetadataInfo,toSortedStrings,getMetadataInfos,getServiceDefinition,getInstanceMetadataChangedListenerMap&pid=91394&qos.enable=false&register=false&release=3.0.9&revision=3.0.9&service-name-mapping=true&side=provider&threadpool=cached&threads=100&timestamp=1783700652056&version=1.0.0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:24:12.691 [main            ] WARN  AbstractServiceDiscovery -  [DUBBO] No valid instance found, stop registering instance address to registry., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:24:12.743 [main            ] WARN  JobMutualExclusionValidator - [JobMutualExclusionValidator] DISABLED — parallel dispatch conflicts will not be caught
+26-07-11.00:24:12.961 [main            ] ERROR RemoteWriteReconcileJob - [RemoteWriteReconcileJob] reconcile failed outBusinessNo:biz-1 operation:quota_create state:continuation_pending retry:0
+java.lang.RuntimeException: continuation boom
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJob.reconcile(RemoteWriteReconcileJob.java:100)
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJob.exec(RemoteWriteReconcileJob.java:80)
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJobTest.continuationPending_failureKeepsRescannable_andRestoresShard(RemoteWriteReconcileJobTest.java:67)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.mockito.internal.runners.DefaultInternalRunner$1$1.evaluate(DefaultInternalRunner.java:55)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
-	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
-	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.mockito.internal.runners.DefaultInternalRunner$1.run(DefaultInternalRunner.java:100)
+	at org.mockito.internal.runners.DefaultInternalRunner.run(DefaultInternalRunner.java:107)
+	at org.mockito.internal.runners.StrictRunner.run(StrictRunner.java:41)
+	at org.mockito.junit.MockitoJUnitRunner.run(MockitoJUnitRunner.java:163)
 	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
 	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
 	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
@@ -50,289 +70,8 @@ java.lang.IllegalStateException: Failed to load ApplicationContext
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatRefundReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatCreditApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
-	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
-	... 30 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'chatCreditApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:213)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.resolveBeanByName(AbstractAutowireCapableBeanFactory.java:479)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:550)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 46 common frames omitted
-Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IAccountReadAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1801)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1357)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 60 common frames omitted
-26-07-10.17:27:25.914 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
-26-07-10.17:27:25.914 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
-26-07-10.17:27:25.915 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
-26-07-10.17:27:25.915 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
-26-07-10.18:50:28.647 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:50:32.699 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:50:32.699 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:50:33.709 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'outboxSchemaValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
-26-07-10.18:50:33.755 [main            ] ERROR SpringApplication      - Application run failed
-org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'outboxSchemaValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
-	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
-	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
-	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
-	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
-	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
-	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
-	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
-	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
-	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
-	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
-	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
-	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
-	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
-	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
-	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
-	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
-	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
-	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveNotUnique(DependencyDescriptor.java:220)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1369)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 46 common frames omitted
-26-07-10.18:50:33.759 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@65f095f8] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@724e0a77]
-java.lang.IllegalStateException: Failed to load ApplicationContext
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
-	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
-	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
-	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
-	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
-	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
-	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
-	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
-	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
-	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
-	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
-	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
-	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
-	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
-	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
-	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
-	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
-	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'outboxSchemaValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
-	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
-	... 30 common frames omitted
-Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available: expected single matching bean but found 2: elasticsearchDataSource,mysqlDataSource
-	at org.springframework.beans.factory.config.DependencyDescriptor.resolveNotUnique(DependencyDescriptor.java:220)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1369)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 46 common frames omitted
-26-07-10.18:50:33.781 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
-26-07-10.18:50:33.781 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
-26-07-10.18:50:33.781 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
-26-07-10.18:50:33.785 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
-26-07-10.18:51:31.101 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:51:33.926 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:51:33.926 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:51:34.946 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'remoteWriteReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'rebateAppTokenValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-26-07-10.18:51:34.985 [main            ] ERROR LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-A component required a bean of type 'java.util.Map' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'java.util.Map' in your configuration.
-
-26-07-10.18:51:34.987 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@6050462a] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@6a9a6a0c]
-java.lang.IllegalStateException: Failed to load ApplicationContext
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
-	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
-	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
-	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
-	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
-	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
-	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
-	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
-	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
-	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
-	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
-	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
-	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
-	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
-	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
-	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
-	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
-	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'remoteWriteReconcileJob': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'rebateAppTokenValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
-	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
-	... 30 common frames omitted
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'rebateAppTokenValidator': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:213)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.resolveBeanByName(AbstractAutowireCapableBeanFactory.java:479)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:550)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 46 common frames omitted
-Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.util.Map<java.lang.String, java.lang.String>' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1801)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1357)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 60 common frames omitted
-26-07-10.18:51:35.170 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
-26-07-10.18:51:35.172 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-11.00:24:13.202 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
+26-07-11.00:24:13.204 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
 java.lang.RuntimeException: refund timeout
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
@@ -374,7 +113,7 @@ java.lang.RuntimeException: refund timeout
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:51:35.173 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+26-07-11.00:24:13.207 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
 java.lang.RuntimeException: sku restore failed
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
@@ -415,7 +154,7 @@ java.lang.RuntimeException: sku restore failed
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:51:35.175 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+26-07-11.00:24:13.213 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
 java.lang.RuntimeException: sku restore failed
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
@@ -456,7 +195,7 @@ java.lang.RuntimeException: sku restore failed
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:51:35.176 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-11.00:24:13.216 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
 java.lang.RuntimeException: refund timeout
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
@@ -497,52 +236,94 @@ java.lang.RuntimeException: refund timeout
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:51:35.186 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
-26-07-10.18:51:35.186 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
-26-07-10.18:51:35.187 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
-26-07-10.18:51:35.187 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
-26-07-10.18:52:47.699 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:52:50.960 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:52:50.960 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
-26-07-10.18:52:52.336 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'calendarSignApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-26-07-10.18:52:52.372 [main            ] ERROR LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-A component required a bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' that could not be found.
-
-
-Action:
-
-Consider defining a bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' in your configuration.
-
-26-07-10.18:52:52.373 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@378542de] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@3891db3a]
-java.lang.IllegalStateException: Failed to load ApplicationContext
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
-	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
-	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
-	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
-	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
+26-07-11.00:24:13.222 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-11.00:24:13.223 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-11.00:24:13.223 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-11.00:24:13.223 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-11.00:24:13.247 [xxl-job, executor ExecutorRegistryThread] ERROR XxlJobRemotingUtil     - Connection refused (Connection refused)
+java.net.ConnectException: Connection refused (Connection refused)
+	at java.net.PlainSocketImpl.socketConnect(Native Method)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.net.Socket.connect(Socket.java:607)
+	at sun.net.NetworkClient.doConnect(NetworkClient.java:175)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:465)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:560)
+	at sun.net.www.http.HttpClient.<init>(HttpClient.java:246)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:341)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:359)
+	at sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1245)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1179)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1073)
+	at sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1007)
+	at com.xxl.job.core.util.XxlJobRemotingUtil.postBody(XxlJobRemotingUtil.java:99)
+	at com.xxl.job.core.biz.client.AdminBizClient.registryRemove(AdminBizClient.java:47)
+	at com.xxl.job.core.thread.ExecutorRegistryThread$1.run(ExecutorRegistryThread.java:84)
+	at java.lang.Thread.run(Thread.java:750)
+26-07-11.00:31:48.440 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:31:50.318 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:31:50.318 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:31:51.460 [main            ] WARN  DefaultCredentialGuard - [DefaultCredentialGuard] DISABLED — dangerous defaults will not be caught
+26-07-11.00:31:53.138 [main            ] WARN  LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+26-07-11.00:31:53.290 [xxl-job, executor ExecutorRegistryThread] ERROR XxlJobRemotingUtil     - Connection refused (Connection refused)
+java.net.ConnectException: Connection refused (Connection refused)
+	at java.net.PlainSocketImpl.socketConnect(Native Method)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.net.Socket.connect(Socket.java:607)
+	at sun.net.NetworkClient.doConnect(NetworkClient.java:175)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:465)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:560)
+	at sun.net.www.http.HttpClient.<init>(HttpClient.java:246)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:341)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:359)
+	at sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1245)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1179)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1073)
+	at sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1007)
+	at com.xxl.job.core.util.XxlJobRemotingUtil.postBody(XxlJobRemotingUtil.java:99)
+	at com.xxl.job.core.biz.client.AdminBizClient.registry(AdminBizClient.java:42)
+	at com.xxl.job.core.thread.ExecutorRegistryThread$1.run(ExecutorRegistryThread.java:48)
+	at java.lang.Thread.run(Thread.java:750)
+26-07-11.00:31:53.674 [main            ] WARN  ServiceConfig          -  [DUBBO] Use random available port(20880) for protocol dubbo, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:31:54.153 [main            ] WARN  NacosRegistry          -  [DUBBO] Ignore empty notify urls for subscribe url provider://192.168.139.3:20880/org.apache.dubbo.metadata.MetadataService?anyhost=true&application=big-market-message-job&application.version=1.0&background=false&bind.ip=192.168.139.3&bind.port=20880&category=configurators&check=false&connections=1&corethreads=2&delay=0&deprecated=false&dubbo=2.0.2&dynamic=true&executes=100&generic=false&getAndListenInstanceMetadata.1.callback=true&getAndListenInstanceMetadata.return=true&getAndListenInstanceMetadata.sent=true&group=big-market-message-job&interface=org.apache.dubbo.metadata.MetadataService&methods=getMetadataURL,isMetadataService,getAndListenInstanceMetadata,getExportedURLs,serviceName,version,getSubscribedURLs,getExportedServiceURLs,exportInstanceMetadata,getMetadataInfo,toSortedStrings,getMetadataInfos,getServiceDefinition,getInstanceMetadataChangedListenerMap&pid=9261&qos.enable=false&register=false&release=3.0.9&revision=3.0.9&service-name-mapping=true&side=provider&threadpool=cached&threads=100&timestamp=1783701113670&version=1.0.0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:31:54.158 [main            ] WARN  AbstractServiceDiscovery -  [DUBBO] No valid instance found, stop registering instance address to registry., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.00:31:54.188 [main            ] WARN  JobMutualExclusionValidator - [JobMutualExclusionValidator] DISABLED — parallel dispatch conflicts will not be caught
+26-07-11.00:31:54.280 [main            ] ERROR RemoteWriteReconcileJob - [RemoteWriteReconcileJob] reconcile failed outBusinessNo:biz-1 operation:quota_create state:continuation_pending retry:0
+java.lang.RuntimeException: continuation boom
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJob.reconcile(RemoteWriteReconcileJob.java:100)
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJob.exec(RemoteWriteReconcileJob.java:80)
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJobTest.continuationPending_failureKeepsRescannable_andRestoresShard(RemoteWriteReconcileJobTest.java:67)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.mockito.internal.runners.DefaultInternalRunner$1$1.evaluate(DefaultInternalRunner.java:55)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
-	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
-	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
+	at org.mockito.internal.runners.DefaultInternalRunner$1.run(DefaultInternalRunner.java:100)
+	at org.mockito.internal.runners.DefaultInternalRunner.run(DefaultInternalRunner.java:107)
+	at org.mockito.internal.runners.StrictRunner.run(StrictRunner.java:41)
+	at org.mockito.junit.MockitoJUnitRunner.run(MockitoJUnitRunner.java:163)
 	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
 	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
 	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
@@ -553,108 +334,8 @@ java.lang.IllegalStateException: Failed to load ApplicationContext
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-Caused by: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'calendarSignApplicationService': Injection of resource dependencies failed; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:332)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.populateBean(AbstractAutowireCapableBeanFactory.java:1431)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:619)
-	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:542)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:335)
-	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:333)
-	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:208)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:955)
-	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:920)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:583)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
-	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
-	... 30 common frames omitted
-Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.dyx.market.trigger.adapter.IRebateOrderAdapter' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@javax.annotation.Resource(shareable=true, lookup=, name=, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=)}
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1801)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.doResolveDependency(DefaultListableBeanFactory.java:1357)
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.resolveDependency(DefaultListableBeanFactory.java:1311)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.autowireResource(CommonAnnotationBeanPostProcessor.java:544)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.getResource(CommonAnnotationBeanPostProcessor.java:520)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor$ResourceElement.getResourceToInject(CommonAnnotationBeanPostProcessor.java:673)
-	at org.springframework.beans.factory.annotation.InjectionMetadata$InjectedElement.inject(InjectionMetadata.java:228)
-	at org.springframework.beans.factory.annotation.InjectionMetadata.inject(InjectionMetadata.java:119)
-	at org.springframework.context.annotation.CommonAnnotationBeanPostProcessor.postProcessProperties(CommonAnnotationBeanPostProcessor.java:329)
-	... 46 common frames omitted
-26-07-10.18:52:52.391 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
-26-07-10.18:52:52.391 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
-26-07-10.18:52:52.391 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
-26-07-10.18:52:52.392 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
-26-07-10.18:53:53.993 [main            ] WARN  GenericWebApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'creditAdjustService' defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig: Cannot register bean definition [Root bean: class [null]; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=messageJobServiceApplicationContextTest.ChatCreditContextConfig; factoryMethodName=creditAdjustService; initMethodName=null; destroyMethodName=(inferred); defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig] for bean 'creditAdjustService': There is already [Generic bean: class [com.dyx.market.domain.credit.service.adjust.CreditAdjustService]; scope=singleton; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=null; initMethodName=null; destroyMethodName=null; defined in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-domain/target/classes/com/dyx/market/domain/credit/service/adjust/CreditAdjustService.class]] bound.
-26-07-10.18:53:54.006 [main            ] ERROR LoggingFailureAnalysisReporter - 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-The bean 'creditAdjustService', defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig, could not be registered. A bean with that name has already been defined in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-domain/target/classes/com/dyx/market/domain/credit/service/adjust/CreditAdjustService.class] and overriding is disabled.
-
-Action:
-
-Consider renaming one of the beans or enabling overriding by setting spring.main.allow-bean-definition-overriding=true
-
-26-07-10.18:53:54.007 [main            ] ERROR TestContextManager     - Caught exception while allowing TestExecutionListener [org.springframework.test.context.web.ServletTestExecutionListener@562c877a] to prepare test instance [com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest@7994a0d1]
-java.lang.IllegalStateException: Failed to load ApplicationContext
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:98)
-	at org.springframework.test.context.support.DefaultTestContext.getApplicationContext(DefaultTestContext.java:124)
-	at org.springframework.test.context.web.ServletTestExecutionListener.setUpRequestContextIfNecessary(ServletTestExecutionListener.java:190)
-	at org.springframework.test.context.web.ServletTestExecutionListener.prepareTestInstance(ServletTestExecutionListener.java:132)
-	at org.springframework.test.context.TestContextManager.prepareTestInstance(TestContextManager.java:248)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.createTest(SpringJUnit4ClassRunner.java:227)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner$1.runReflectiveCall(SpringJUnit4ClassRunner.java:289)
-	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.methodBlock(SpringJUnit4ClassRunner.java:291)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:246)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.runChild(SpringJUnit4ClassRunner.java:97)
-	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
-	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
-	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
-	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
-	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
-	at org.springframework.test.context.junit4.statements.RunBeforeTestClassCallbacks.evaluate(RunBeforeTestClassCallbacks.java:61)
-	at org.springframework.test.context.junit4.statements.RunAfterTestClassCallbacks.evaluate(RunAfterTestClassCallbacks.java:70)
-	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
-	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
-	at org.springframework.test.context.junit4.SpringJUnit4ClassRunner.run(SpringJUnit4ClassRunner.java:190)
-	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
-	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
-	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
-	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-Caused by: org.springframework.beans.factory.support.BeanDefinitionOverrideException: Invalid bean definition with name 'creditAdjustService' defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig: Cannot register bean definition [Root bean: class [null]; scope=; abstract=false; lazyInit=null; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=messageJobServiceApplicationContextTest.ChatCreditContextConfig; factoryMethodName=creditAdjustService; initMethodName=null; destroyMethodName=(inferred); defined in com.dyx.market.message.job.service.MessageJobServiceApplicationContextTest$ChatCreditContextConfig] for bean 'creditAdjustService': There is already [Generic bean: class [com.dyx.market.domain.credit.service.adjust.CreditAdjustService]; scope=singleton; abstract=false; lazyInit=null; autowireMode=0; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=null; initMethodName=null; destroyMethodName=null; defined in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-domain/target/classes/com/dyx/market/domain/credit/service/adjust/CreditAdjustService.class]] bound.
-	at org.springframework.beans.factory.support.DefaultListableBeanFactory.registerBeanDefinition(DefaultListableBeanFactory.java:1006)
-	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForBeanMethod(ConfigurationClassBeanDefinitionReader.java:295)
-	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitionsForConfigurationClass(ConfigurationClassBeanDefinitionReader.java:153)
-	at org.springframework.context.annotation.ConfigurationClassBeanDefinitionReader.loadBeanDefinitions(ConfigurationClassBeanDefinitionReader.java:129)
-	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:343)
-	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:247)
-	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:311)
-	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:112)
-	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:748)
-	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:564)
-	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:731)
-	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:408)
-	at org.springframework.boot.SpringApplication.run(SpringApplication.java:307)
-	at org.springframework.boot.test.context.SpringBootContextLoader.loadContext(SpringBootContextLoader.java:136)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContextInternal(DefaultCacheAwareContextLoaderDelegate.java:141)
-	at org.springframework.test.context.cache.DefaultCacheAwareContextLoaderDelegate.loadContext(DefaultCacheAwareContextLoaderDelegate.java:90)
-	... 30 common frames omitted
-26-07-10.18:53:54.227 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
-26-07-10.18:53:54.228 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-11.00:31:54.412 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
+26-07-11.00:31:54.413 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
 java.lang.RuntimeException: refund timeout
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
@@ -696,7 +377,7 @@ java.lang.RuntimeException: refund timeout
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:53:54.228 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+26-07-11.00:31:54.414 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
 java.lang.RuntimeException: sku restore failed
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
@@ -737,7 +418,7 @@ java.lang.RuntimeException: sku restore failed
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:53:54.229 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+26-07-11.00:31:54.415 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
 java.lang.RuntimeException: sku restore failed
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
@@ -778,7 +459,7 @@ java.lang.RuntimeException: sku restore failed
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
-26-07-10.18:53:54.230 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+26-07-11.00:31:54.416 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
 java.lang.RuntimeException: refund timeout
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
 	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
@@ -819,3 +500,265 @@ java.lang.RuntimeException: refund timeout
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
 	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-11.00:31:54.421 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-11.00:31:54.421 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-11.00:31:54.421 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-11.00:31:54.421 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-11.00:31:54.441 [xxl-job, executor ExecutorRegistryThread] ERROR XxlJobRemotingUtil     - Connection refused (Connection refused)
+java.net.ConnectException: Connection refused (Connection refused)
+	at java.net.PlainSocketImpl.socketConnect(Native Method)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+	at java.net.Socket.connect(Socket.java:607)
+	at sun.net.NetworkClient.doConnect(NetworkClient.java:175)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:465)
+	at sun.net.www.http.HttpClient.openServer(HttpClient.java:560)
+	at sun.net.www.http.HttpClient.<init>(HttpClient.java:246)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:341)
+	at sun.net.www.http.HttpClient.New(HttpClient.java:359)
+	at sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1245)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1179)
+	at sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1073)
+	at sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1007)
+	at com.xxl.job.core.util.XxlJobRemotingUtil.postBody(XxlJobRemotingUtil.java:99)
+	at com.xxl.job.core.biz.client.AdminBizClient.registryRemove(AdminBizClient.java:47)
+	at com.xxl.job.core.thread.ExecutorRegistryThread$1.run(ExecutorRegistryThread.java:84)
+	at java.lang.Thread.run(Thread.java:750)
+26-07-11.01:29:39.032 [main            ] WARN  ServiceAnnotationPostProcessor -  [DUBBO] No class annotated by Dubbo @Service was found under package [com.dyx.market.message.job.service], ignore re-scanned classes: 0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.01:29:41.319 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.01:29:41.319 [main            ] WARN  ConfigurationUtils     -  [DUBBO] Config center was specified, but no config item found., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.01:29:41.833 [main            ] WARN  BusinessMetricsPublisher - Business metrics refresh failed: 
+### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table 'big_market.pending_remote_write_task' doesn't exist
+### The error may exist in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service/target/classes/mybatis/mapper/mysql/pending_remote_write_task_mapper.xml]
+### The error may involve defaultParameterMap
+### The error occurred while setting parameters
+### SQL: select count(1) from pending_remote_write_task where state = ?
+### Cause: java.sql.SQLSyntaxErrorException: Table 'big_market.pending_remote_write_task' doesn't exist
+; bad SQL grammar []; nested exception is java.sql.SQLSyntaxErrorException: Table 'big_market.pending_remote_write_task' doesn't exist
+26-07-11.01:29:42.545 [main            ] WARN  DefaultCredentialGuard - [DefaultCredentialGuard] DISABLED — dangerous defaults will not be caught
+26-07-11.01:29:43.638 [main            ] WARN  LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+26-07-11.01:29:43.845 [scheduling-1    ] WARN  BusinessMetricsPublisher - Business metrics refresh failed: 
+### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Table 'big_market.pending_remote_write_task' doesn't exist
+### The error may exist in file [/Users/diaoyuxuan/big-market-ai-platform/big-market-message-job-service/target/classes/mybatis/mapper/mysql/pending_remote_write_task_mapper.xml]
+### The error may involve defaultParameterMap
+### The error occurred while setting parameters
+### SQL: select count(1) from pending_remote_write_task where state = ?
+### Cause: java.sql.SQLSyntaxErrorException: Table 'big_market.pending_remote_write_task' doesn't exist
+; bad SQL grammar []; nested exception is java.sql.SQLSyntaxErrorException: Table 'big_market.pending_remote_write_task' doesn't exist
+26-07-11.01:29:44.007 [main            ] WARN  ServiceConfig          -  [DUBBO] Use random available port(20880) for protocol dubbo, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.01:29:44.555 [main            ] WARN  NacosRegistry          -  [DUBBO] Ignore empty notify urls for subscribe url provider://192.168.139.3:20880/org.apache.dubbo.metadata.MetadataService?anyhost=true&application=big-market-message-job&application.version=1.0&background=false&bind.ip=192.168.139.3&bind.port=20880&category=configurators&check=false&connections=1&corethreads=2&delay=0&deprecated=false&dubbo=2.0.2&dynamic=true&executes=100&generic=false&getAndListenInstanceMetadata.1.callback=true&getAndListenInstanceMetadata.return=true&getAndListenInstanceMetadata.sent=true&group=big-market-message-job&interface=org.apache.dubbo.metadata.MetadataService&methods=getMetadataURL,isMetadataService,getAndListenInstanceMetadata,getExportedURLs,serviceName,version,getSubscribedURLs,getExportedServiceURLs,exportInstanceMetadata,getMetadataInfo,toSortedStrings,getMetadataInfos,getServiceDefinition,getInstanceMetadataChangedListenerMap&pid=25956&qos.enable=false&register=false&release=3.0.9&revision=3.0.9&service-name-mapping=true&side=provider&threadpool=cached&threads=100&timestamp=1783704584005&version=1.0.0, dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.01:29:44.563 [main            ] WARN  AbstractServiceDiscovery -  [DUBBO] No valid instance found, stop registering instance address to registry., dubbo version: 3.0.9, current host: 192.168.139.3
+26-07-11.01:29:44.611 [main            ] WARN  JobMutualExclusionValidator - [JobMutualExclusionValidator] DISABLED — parallel dispatch conflicts will not be caught
+26-07-11.01:29:44.695 [main            ] ERROR RemoteWriteReconcileJob - [RemoteWriteReconcileJob] reconcile failed outBusinessNo:biz-1 operation:quota_create state:continuation_pending retry:0
+java.lang.RuntimeException: continuation boom
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJob.reconcile(RemoteWriteReconcileJob.java:100)
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJob.exec(RemoteWriteReconcileJob.java:80)
+	at com.dyx.market.message.job.config.RemoteWriteReconcileJobTest.continuationPending_failureKeepsRescannable_andRestoresShard(RemoteWriteReconcileJobTest.java:67)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.mockito.internal.runners.DefaultInternalRunner$1$1.evaluate(DefaultInternalRunner.java:55)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.mockito.internal.runners.DefaultInternalRunner$1.run(DefaultInternalRunner.java:100)
+	at org.mockito.internal.runners.DefaultInternalRunner.run(DefaultInternalRunner.java:107)
+	at org.mockito.internal.runners.StrictRunner.run(StrictRunner.java:41)
+	at org.mockito.junit.MockitoJUnitRunner.run(MockitoJUnitRunner.java:163)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-11.01:29:44.840 [main            ] WARN  CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund already exists userId:user-1 refundKey:refund_convert-sku-001
+26-07-11.01:29:44.841 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+java.lang.RuntimeException: refund timeout
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.finishCompensatingOrder(CreditPayDeliveryReconcileJob.java:160)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.finishCompensatingOrder_should_not_restore_sku_when_refund_fails(CreditPayDeliveryReconcileJobTest.java:65)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-11.01:29:44.843 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+java.lang.RuntimeException: sku restore failed
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_not_mark_failed_when_sku_restore_fails(CreditPayDeliveryReconcileJobTest.java:125)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-11.01:29:44.846 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] SKU stock restore failed sku:9001
+java.lang.RuntimeException: sku restore failed
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.restoreSkuStockOnce(CreditPayDeliveryReconcileJob.java:213)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:167)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_retry_sku_restore_on_second_attempt(CreditPayDeliveryReconcileJobTest.java:141)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-11.01:29:44.849 [main            ] ERROR CreditPayDeliveryReconcileJob - [CreditPayDeliveryReconcileJob] refund failed userId:user-1 outBusinessNo:convert-sku-001
+java.lang.RuntimeException: refund timeout
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.refundCreditOnce(CreditPayDeliveryReconcileJob.java:176)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJob.completeCompensation(CreditPayDeliveryReconcileJob.java:164)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.invokePrivate(CreditPayDeliveryReconcileJobTest.java:167)
+	at com.dyx.market.message.job.config.CreditPayDeliveryReconcileJobTest.completeCompensation_should_retry_refund_on_second_attempt(CreditPayDeliveryReconcileJobTest.java:109)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.apache.maven.surefire.junit4.JUnit4TestSet.execute(JUnit4TestSet.java:59)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.executeTestSet(AbstractDirectoryTestSuite.java:120)
+	at org.apache.maven.surefire.suite.AbstractDirectoryTestSuite.execute(AbstractDirectoryTestSuite.java:103)
+	at org.apache.maven.surefire.Surefire.run(Surefire.java:169)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.maven.surefire.booter.SurefireBooter.runSuitesInProcess(SurefireBooter.java:350)
+	at org.apache.maven.surefire.booter.SurefireBooter.main(SurefireBooter.java:1021)
+26-07-11.01:29:44.858 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-11.01:29:44.858 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-11.01:29:44.858 [Thread-10       ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-11.01:29:44.859 [Thread-5        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end

@@ -27,4 +27,6 @@ public interface IStrategyAwardStockConfirmTaskDao {
                           @Param("maxRetries") int maxRetries);
 
     int revertStaleProcessing(@Param("staleBefore") java.util.Date staleBefore, @Param("limit") int limit);
+
+    int countPending();
 }

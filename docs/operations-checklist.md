@@ -67,12 +67,31 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
 ## Secure profile (BM-015)
 
 - Learning/default compose: `SPRING_PROFILES_ACTIVE=docker` (or local equivalents) — permissive RPC/gateway defaults.
-- Production-like demo: add `secure` on market/gateway (`application-secure.yml`: `app.internal-rpc.enforce=true`, `gateway.rate-limiter.enabled=true`).
+- Production-like demo:
+  - `docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d`
+  - Requires non-default `JWT_SECRET`, `APP_INTERNAL_RPC_TOKEN`, `ADMIN_TOKEN`, `CHAT_INTERNAL_SERVICE_TOKEN`, `XXL_JOB_TOKEN`, `APP_AUTH_DEV_USERS`.
+  - `secure` overrides `docker` in `DefaultCredentialGuard` (defaults refuse to start).
+  - All Dubbo services ship `application-secure.yml` with `app.internal-rpc.enforce=true`.
+- Negative checks: `./scripts/smoke-security.sh`
+- One-click acceptance: `./scripts/acceptance.sh` (default `--reuse`) or `./scripts/acceptance.sh --fresh --confirm-destroy-volumes`
 - `scripts/validate-microservices-runtime-safety.sh` is not sufficient alone; run Maven boot-related tests and stack smoke after changes.
+
+## Acceptance entry (preferred)
+
+One-click gate (Maven + Docker stack + DDL/XXL + smokes; optional Playwright/secure):
+
+```bash
+./scripts/acceptance.sh                  # --reuse (default)
+./scripts/acceptance.sh --secure         # + smoke-security.sh
+./scripts/acceptance.sh --fresh --confirm-destroy-volumes
+```
+
+Do not treat `validate-microservices-runtime-safety.sh` alone as closed-loop proof.
 
 ## Completion Standard
 
 For this learning project, local build and smoke validation replace real
 production observation windows. Record any unavailable dependency honestly and
-rerun once the dependency is available. After BM-001–015 code landing, confirm:
-Maven module tests green, Docker stack up, `smoke-api.sh`, and Playwright (`npm test` with web on `:5173`).
+rerun once the dependency is available. Prefer `./scripts/acceptance.sh` after
+BM-001–015 and write-path closure; confirm Maven module tests green, Docker
+stack up, `smoke-api.sh`, and Playwright (`npm test` with web on `:5173`).

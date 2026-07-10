@@ -25,8 +25,8 @@
 **当前状态（2026-07-10 复核修复后）：**
 
 - **A. 可启动** — 代码已修：BM-001/002/003；`MarketServiceSpringBootContextTest` 与 `MessageJobServiceApplicationContextTest` 为全量 `@SpringBootTest`；message-job `MessageJobReadAdapterConfig` + `IAccountReadAdapter` @Primary。
-- **B. 可演示闭环** — Docker 栈 2026-07-10 验收：`smoke-test-microservices.sh` 19/19、`smoke-api.sh`、`smoke-chat-refund-e2e.sh` 通过；旧 MySQL 卷需 `./scripts/apply-reconcile-ddl.sh` + `./scripts/apply-xxl-job-seeds.sh`；演示前 `./scripts/ensure-demo-activity-online.sh`（stage `c01/s01`→100401）。Playwright **17/17 PASS**（本轮已修）；完整 B 勾选仍建议等干净 PR merge SHA。
-- **C. 准生产基线** — 部分：BM-015 `secure` profile 已有；BM-016/017 延后。
+- **B. 可演示闭环** — `./scripts/acceptance.sh --reuse` 全绿（2026-07-11）：`test-http-contracts`（401/403/400）、smoke 21/21、smoke-api、Chat 退款 E2E、Playwright 18/18×2；旧卷统一 `./scripts/apply-stack-migrations.sh`；演示前 `./scripts/ensure-demo-activity-online.sh`（stage `c01/s01`→100401）。
+- **C. 准生产基线** — 部分：BM-015 `secure` + 关键写路径终态（库存 ledger / chat deduct_state / remote continuation FSM / `acceptance.sh`）已落地；BM-016/017 按两周工程债计划推进（指标门禁 + ArchUnit/Mapper 漂移，不做物理拆库）。
 
 **执行约定：**
 
@@ -270,9 +270,9 @@ npm test
 
 | 项 | 内容 | 对应 |
 | --- | --- | --- |
-| 监控 | 全服务暴露并抓取 prometheus；补 pending/DLQ/库存队列/退款失败告警 | BM-016 |
+| 监控 | 全服务暴露并抓取 prometheus；补 pending/DLQ Gauge + 最小 Grafana/告警 | BM-016（最小可用） |
 | 门禁 | 修 `validate-microservices-runtime-safety.sh` 假绿；加 Context/Mapper/XXL 对齐检查 | 报告门禁批评 |
-| 边界 | ArchUnit 或依赖规则；Mapper 单一来源，减少多服务复制漂移 | BM-017 |
+| 边界 | ArchUnit 规则 + Mapper statement-id 漂移门禁；物理单一来源延后 | BM-017（门禁子集） |
 | 路由模板 | `executeOnShard(userId, callback)` 收敛 ThreadLocal 手工路由 | BM-007/008/010 |
 | 拆分 | market 继续拆服务、真拆库 — **明确延后** | 架构评估 |
 
@@ -362,8 +362,8 @@ npm test
 | 阶段 | 状态 | 完成日期 | 备注 |
 | --- | --- | --- | --- |
 | 1 启动阻塞 | 基本完成（代码+Context 测试） | 2026-07-10 | BM-001/002/003；market/message-job `@SpringBootTest`；CI `build-verify.yml` |
-| 2 核心闭环 | 后端 E2E 已验（Docker）；Playwright 本轮修通 | 2026-07-10 | smoke 19/19、smoke-api、Chat 退款 E2E；旧卷 DDL/XXL 脚本；INDEX_DUP 幂等；stage=100401 online + 移动端布局；Playwright 目标全绿 |
-| 3 演示与安全 | 已完成（代码） | 2026-07-10 | BM-011～015；Playwright 需栈在线 |
-| 4 观测与架构债 | 未开始 | | BM-016/017 刻意延后 |
+| 2 核心闭环 | 已验（acceptance 全绿） | 2026-07-11 | `acceptance.sh`：HTTP 契约、smoke 21/21、chat-refund E2E、Playwright 18/18×2；`apply-stack-migrations.sh`；admin.js stage=100401；`0008`→403 |
+| 3 演示与安全 | 已完成（代码+验收） | 2026-07-11 | BM-011～015；Nacos 保存元数据；secure profile 可选 |
+| 4 观测与架构债 | 门禁完成（本轮切片） | 2026-07-11 | BM-016 指标含 refund/stock confirm pending + `validate-prometheus-config.sh` CI；BM-017 ArchUnit+mapper 漂移；runtime-safety + HTTP 契约脚本 |
 
 更新本表时同步更新「当前状态」一节的目标档结论。

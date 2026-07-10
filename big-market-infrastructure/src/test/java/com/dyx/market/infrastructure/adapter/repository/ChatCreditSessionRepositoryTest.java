@@ -47,7 +47,7 @@ public class ChatCreditSessionRepositoryTest {
     }
 
     @Test
-    public void recordDeduction_routesShardAndDoesNotUpdateOnDuplicate() {
+    public void recordDeduction_routesShardAndMarksDeductedOnDuplicate() {
         when(chatCreditSessionDao.insert(any(ChatCreditSession.class)))
                 .thenThrow(new DuplicateKeyException("dup"));
 
@@ -55,7 +55,20 @@ public class ChatCreditSessionRepositoryTest {
 
         verify(dbRouter).doRouter("u1");
         verify(dbRouter).clear();
+        verify(chatCreditSessionDao).markDeducted("u1", "r1");
         verify(chatCreditSessionDao, never()).updateRefundState(any());
+    }
+
+    @Test
+    public void recordDeductingIntent_insertsDeductingState() {
+        repository.recordDeductingIntent("u1", "r-intent", 4);
+
+        verify(chatCreditSessionDao).insert(org.mockito.ArgumentMatchers.argThat(s ->
+                Boolean.FALSE.equals(s.getDeducted())
+                        && "deducting".equals(s.getDeductState())
+                        && Integer.valueOf(4).equals(s.getDeductAmount())));
+        verify(dbRouter).doRouter("u1");
+        verify(dbRouter).clear();
     }
 
     @Test

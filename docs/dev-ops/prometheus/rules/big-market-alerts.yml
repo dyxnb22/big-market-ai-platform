@@ -1,0 +1,20 @@
+groups:
+  - name: big-market-business
+    rules:
+      - alert: PendingRemoteWriteBacklog
+        expr: sum(big_market_pending_remote_write_tasks) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "pending_remote_write_task backlog high"
+          description: "Remote write pending+continuation count is {{ $value }} for >5m"
+
+      - alert: MqDeadLetterPending
+        expr: big_market_mq_dead_letter_pending > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "mq_dead_letter has pending rows"
+          description: "DLQ pending count is {{ $value }} for >10m"

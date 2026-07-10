@@ -32,6 +32,8 @@ public class ChatCreditApplicationService {
 
     public BigDecimal deduct(String userId, int amount, String requestId) {
         validate(userId, requestId, amount);
+        // Durable intent first — enables refund/reconcile even if session write after RPC would fail.
+        chatCreditSessionRepository.recordDeductingIntent(userId, requestId, amount);
         try {
             String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
                     .userId(userId)
@@ -40,16 +42,30 @@ public class ChatCreditApplicationService {
                     .amount(BigDecimal.valueOf(amount).negate())
                     .outBusinessNo(chatOutBusinessNo(userId, requestId))
                     .build());
-            chatCreditSessionRepository.recordDeduction(userId, requestId, amount);
+            chatCreditSessionRepository.markDeducted(userId, requestId);
             log.info("AI Chat积分扣减完成 userId:{} amount:{} orderId:{}", userId, amount, orderId);
             return queryCreditBalanceSafe(userId);
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
                 log.warn("AI Chat积分扣减重复 userId:{} requestId:{}", userId, requestId);
+                chatCreditSessionRepository.markDeducted(userId, requestId);
                 return queryCreditBalanceSafe(userId);
+            }
+            // Explicit business rejection: clear intent. UNKNOWN/pending paths keep deducting.
+            if (isExplicitReject(e)) {
+                chatCreditSessionRepository.markDeductFailed(userId, requestId);
             }
             throw e;
         }
+    }
+
+    private static boolean isExplicitReject(AppException e) {
+        if (e == null || e.getCode() == null) {
+            return false;
+        }
+        String code = e.getCode();
+        return ResponseCode.ILLEGAL_PARAMETER.getCode().equals(code)
+                || ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode().equals(code);
     }
 
     /**

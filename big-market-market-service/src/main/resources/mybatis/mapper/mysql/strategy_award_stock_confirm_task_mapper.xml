@@ -12,7 +12,7 @@
     <select id="queryPendingTasks" resultType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
         select user_id, order_id, strategy_id, award_id, reservation_id, lock_surplus, state, retry_count
         from strategy_award_stock_confirm_task
-        where state = 'pending'
+        where state = 'pending' and retry_count &lt; #{maxRetries}
         order by create_time asc
         limit #{limit}
     </select>
@@ -29,12 +29,12 @@
         where user_id = #{userId} and order_id = #{orderId} and state in ('pending', 'processing')
     </update>
 
-    <update id="updateRetryFailed" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask">
+    <update id="updateRetryFailed">
         update strategy_award_stock_confirm_task
-        set state = 'pending',
-            retry_count = retry_count + 1,
+        set retry_count = retry_count + 1,
+            state = case when retry_count + 1 &gt;= #{maxRetries} then 'manual_pending' else 'pending' end,
             update_time = now()
-        where user_id = #{userId} and order_id = #{orderId} and state = 'processing'
+        where user_id = #{task.userId} and order_id = #{task.orderId} and state = 'processing'
     </update>
 
     <update id="revertStaleProcessing">

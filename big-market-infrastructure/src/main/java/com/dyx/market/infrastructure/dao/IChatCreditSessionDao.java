@@ -25,5 +25,15 @@ public interface IChatCreditSessionDao {
                        @Param("fromState") String fromState,
                        @Param("toState") String toState);
 
+    int casDeductState(@Param("userId") String userId,
+                       @Param("requestId") String requestId,
+                       @Param("fromState") String fromState,
+                       @Param("toState") String toState);
+
+    int markDeducted(@Param("userId") String userId,
+                     @Param("requestId") String requestId);
+
     List<ChatCreditSession> queryPendingRefunds(@Param("maxRetry") int maxRetry, @Param("limit") int limit);
+
+    int countPendingRefunds();
 }

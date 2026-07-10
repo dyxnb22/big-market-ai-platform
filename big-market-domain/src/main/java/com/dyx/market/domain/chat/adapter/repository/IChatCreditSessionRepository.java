@@ -12,6 +12,20 @@ public interface IChatCreditSessionRepository {
     String REFUND_REFUNDED = "refunded";
     String REFUND_PENDING = "pending";
 
+    String DEDUCT_DEDUCTING = "deducting";
+    String DEDUCT_DEDUCTED = "deducted";
+    String DEDUCT_FAILED = "failed";
+
+    /** Insert durable deduct intent before remote debit (deduct_state=deducting). */
+    void recordDeductingIntent(String userId, String requestId, int amount);
+
+    /** CAS / mark session as remotely deducted (refundable). */
+    void markDeducted(String userId, String requestId);
+
+    /** Mark intent failed only when remote debit is known not to have happened. */
+    void markDeductFailed(String userId, String requestId);
+
+    /** Legacy/compat: insert as already deducted (chatbot INDEX_DUP recovery). */
     void recordDeduction(String userId, String requestId, int amount);
 
     ChatCreditSessionSnapshot findSession(String userId, String requestId);

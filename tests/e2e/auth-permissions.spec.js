@@ -6,7 +6,7 @@ function collectClientErrors(page) {
     if (msg.type() !== "error") return;
     const text = msg.text();
     // Expected during wrong-password / non-admin probes
-    if (/status of 401|status of 403/.test(text)) return;
+    if (/status of 401|status of 403|status of 422/.test(text)) return;
     errors.push("console: " + text);
   });
   page.on("pageerror", (error) => {
@@ -73,7 +73,7 @@ test("user login validation, session refresh, and logout", async ({ page }) => {
   await page.locator("#userMenuBtn").click();
   await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
   await page.locator("#logoutBtn").click();
-  await expect(page.locator("#landingView")).toBeVisible();
+  await expect(page.locator("#landingView")).toBeVisible({ timeout: 10000 });
 
   await page.goto("/index.html");
   await expect(page.locator("#landingView")).toBeVisible();

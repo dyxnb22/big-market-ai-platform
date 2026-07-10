@@ -27,12 +27,15 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 远程写对账 Job：扫描 pending_remote_write_task，先查远程终态，未成功则重试同一 RPC。
+ * 远程写对账 Job：pending → continuation_pending → done。
+ * continuation 失败保留 continuation_pending，不提前 mark done。
  */
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "job.remote-write-reconcile.enabled", havingValue = "true", matchIfMissing = true)
 public class RemoteWriteReconcileJob {
+
+    private static final String STATE_CONTINUATION_PENDING = "continuation_pending";
 
     @Value("${job.remote-write-reconcile.max-retries:5}")
     private int maxRetries;
@@ -73,7 +76,12 @@ public class RemoteWriteReconcileJob {
                 dbRouter.setDBKey(dbIdx);
                 List<PendingRemoteWriteTask> tasks = pendingRemoteWriteTaskDao.queryPendingTasks(maxRetries, scanLimit);
                 for (PendingRemoteWriteTask task : tasks) {
-                    reconcile(task);
+                    try {
+                        reconcile(task);
+                    } finally {
+                        // continuation / adapters may clear router — restore scan shard
+                        dbRouter.setDBKey(dbIdx);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -88,21 +96,25 @@ public class RemoteWriteReconcileJob {
 
     private void reconcile(PendingRemoteWriteTask task) {
         try {
-            if (isRemoteDone(task)) {
-                pendingRemoteWriteTaskDao.updateDone(task);
+            if (STATE_CONTINUATION_PENDING.equals(task.getState())) {
                 remoteWriteContinuationDispatcher.dispatch(task);
-                log.info("[RemoteWriteReconcileJob] remote already done outBusinessNo:{} operation:{}",
+                pendingRemoteWriteTaskDao.updateDone(task);
+                log.info("[RemoteWriteReconcileJob] continuation done outBusinessNo:{} operation:{}",
                         task.getOutBusinessNo(), task.getOperation());
                 return;
             }
-            retryRemoteWrite(task);
-            pendingRemoteWriteTaskDao.updateDone(task);
+            if (!isRemoteDone(task)) {
+                retryRemoteWrite(task);
+            }
+            pendingRemoteWriteTaskDao.updateContinuationPending(task);
+            task.setState(STATE_CONTINUATION_PENDING);
             remoteWriteContinuationDispatcher.dispatch(task);
-            log.info("[RemoteWriteReconcileJob] retry success outBusinessNo:{} operation:{}",
+            pendingRemoteWriteTaskDao.updateDone(task);
+            log.info("[RemoteWriteReconcileJob] remote+continuation done outBusinessNo:{} operation:{}",
                     task.getOutBusinessNo(), task.getOperation());
         } catch (Exception e) {
-            log.error("[RemoteWriteReconcileJob] reconcile failed outBusinessNo:{} operation:{} retry:{}",
-                    task.getOutBusinessNo(), task.getOperation(), task.getRetryCount(), e);
+            log.error("[RemoteWriteReconcileJob] reconcile failed outBusinessNo:{} operation:{} state:{} retry:{}",
+                    task.getOutBusinessNo(), task.getOperation(), task.getState(), task.getRetryCount(), e);
             pendingRemoteWriteTaskDao.updateRetryFailed(task.getId(), maxRetries);
         }
     }
@@ -144,6 +156,9 @@ public class RemoteWriteReconcileJob {
             case RemoteWriteOperations.CREDIT_CREATE: {
                 CreditTradeRequestDTO dto = JSON.parseObject(task.getPayload(), CreditTradeRequestDTO.class);
                 Response<String> resp = accountCreditService.createOrder(dto);
+                if (resp != null && ResponseCode.INDEX_DUP.getCode().equals(resp.getCode())) {
+                    return;
+                }
                 if (resp == null || !ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
                     throw new IllegalStateException("credit retry failed");
                 }

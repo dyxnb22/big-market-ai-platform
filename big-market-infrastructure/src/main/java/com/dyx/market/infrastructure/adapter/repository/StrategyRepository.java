@@ -234,7 +234,8 @@ public class StrategyRepository implements IStrategyRepository {
 
     @Override
     public List<StrategyAwardStockKeyVO> queryOpenActivityStrategyAwardList() {
-        return strategyAwardCacheSupport.queryOpenActivityStrategyAwardList();
+        // Include Redis pending registry so offline activities still drain flush queues.
+        return strategyAwardCacheSupport.queryPendingStrategyAwardStockKeys();
     }
 
     @Override

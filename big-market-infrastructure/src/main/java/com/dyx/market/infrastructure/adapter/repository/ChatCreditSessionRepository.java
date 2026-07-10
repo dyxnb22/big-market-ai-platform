@@ -30,6 +30,77 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
     private IDBRouterStrategy dbRouter;
 
     @Override
+    public void recordDeductingIntent(String userId, String requestId, int amount) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
+            return;
+        }
+        dbRouter.doRouter(userId);
+        try {
+            chatCreditSessionDao.insert(ChatCreditSession.builder()
+                    .userId(userId)
+                    .requestId(requestId)
+                    .deducted(false)
+                    .deductAmount(amount)
+                    .deductState(DEDUCT_DEDUCTING)
+                    .refundState(REFUND_NONE)
+                    .retryCount(0)
+                    .build());
+        } catch (DuplicateKeyException e) {
+            log.debug("chat_credit_session intent 已存在 userId:{} requestId:{}", userId, requestId);
+        } catch (Exception e) {
+            log.error("记录 chat_credit_session intent 失败 userId:{} requestId:{}", userId, requestId, e);
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "记录会话扣费意图失败");
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
+    public void markDeducted(String userId, String requestId) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
+            return;
+        }
+        dbRouter.doRouter(userId);
+        try {
+            int affected = chatCreditSessionDao.markDeducted(userId, requestId);
+            if (affected == 0) {
+                // Intent missing (rare): insert as deducted so refund path works.
+                try {
+                    chatCreditSessionDao.insert(ChatCreditSession.builder()
+                            .userId(userId)
+                            .requestId(requestId)
+                            .deducted(true)
+                            .deductAmount(0)
+                            .deductState(DEDUCT_DEDUCTED)
+                            .refundState(REFUND_NONE)
+                            .retryCount(0)
+                            .build());
+                } catch (DuplicateKeyException ignored) {
+                    chatCreditSessionDao.markDeducted(userId, requestId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("标记 chat_credit_session deducted 失败 userId:{} requestId:{}", userId, requestId, e);
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "确认会话扣费状态失败");
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
+    public void markDeductFailed(String userId, String requestId) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
+            return;
+        }
+        dbRouter.doRouter(userId);
+        try {
+            chatCreditSessionDao.casDeductState(userId, requestId, DEDUCT_DEDUCTING, DEDUCT_FAILED);
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    @Override
     public void recordDeduction(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
             return;
@@ -41,10 +112,12 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
                     .requestId(requestId)
                     .deducted(true)
                     .deductAmount(amount)
+                    .deductState(DEDUCT_DEDUCTED)
                     .refundState(REFUND_NONE)
                     .retryCount(0)
                     .build());
         } catch (DuplicateKeyException e) {
+            chatCreditSessionDao.markDeducted(userId, requestId);
             log.debug("chat_credit_session 扣费记录已存在 userId:{} requestId:{}", userId, requestId);
         } catch (Exception e) {
             log.error("记录 chat_credit_session 扣费失败 userId:{} requestId:{}", userId, requestId, e);
@@ -150,6 +223,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
                 .requestId(requestId)
                 .deducted(true)
                 .deductAmount(amount)
+                .deductState(DEDUCT_DEDUCTED)
                 .refundState(REFUND_PENDING)
                 .retryCount(0)
                 .build());
@@ -159,11 +233,14 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         if (row == null) {
             return null;
         }
+        boolean deducted = Boolean.TRUE.equals(row.getDeducted())
+                || DEDUCT_DEDUCTED.equals(row.getDeductState());
         return ChatCreditSessionSnapshot.builder()
                 .userId(row.getUserId())
                 .requestId(row.getRequestId())
                 .deductAmount(row.getDeductAmount() != null ? row.getDeductAmount() : 0)
-                .deducted(Boolean.TRUE.equals(row.getDeducted()))
+                .deducted(deducted)
+                .deductState(row.getDeductState())
                 .refundState(row.getRefundState())
                 .build();
     }

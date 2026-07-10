@@ -4,6 +4,12 @@ Compact source for DAO ownership and service-boundary learning. Current status:
 direct DAO coupling is resolved through ports/adapters for the local
 microservices architecture.
 
+**Enforcement level:** this matrix is a **logical convention**, not a compiler
+guarantee. Runtime boundaries rely on ports/adapters; CI adds ArchUnit rules
+(`DomainArchitectureTest`, `MarketServiceArchitectureTest`) and mapper
+statement-id drift gates in `scripts/validate-mapper-ddl-gates.sh`. Physical
+single-source Mapper XML remains deferred (BM-017 subset).
+
 ## Contexts
 
 activity / draw; account / quota; credit; fulfillment / award; rebate;
@@ -38,8 +44,9 @@ strategy; task / outbox; query / ES; auth; admin / config; chatbot.
 
 ## Enforcement
 
-Boundary enforcement requires this file to list DAO owners before new DAO or
-repository boundary changes. Historical decision notes live in
+Before new DAO or repository boundary changes, update this file with the owner.
+This checklist is **doc-only** until ArchUnit / mapper gates fail the build.
+Historical decision notes live in
 `docs/archive/microservices-historical-docs-index.md`.
 
 ## Cross-References

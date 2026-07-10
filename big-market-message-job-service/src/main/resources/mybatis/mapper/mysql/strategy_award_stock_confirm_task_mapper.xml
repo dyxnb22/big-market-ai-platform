@@ -44,4 +44,10 @@
         limit #{limit}
     </update>
 
+    <select id="countPending" resultType="int">
+        select count(*)
+        from strategy_award_stock_confirm_task
+        where state = 'pending'
+    </select>
+
 </mapper>

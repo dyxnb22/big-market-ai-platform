@@ -68,4 +68,8 @@
         limit 1
     </select>
 
+    <select id="countByState" resultType="int">
+        select count(1) from mq_dead_letter where state = #{state}
+    </select>
+
 </mapper>

@@ -18,9 +18,20 @@ import static org.junit.Assert.assertNotNull;
  * BM-001: market-service full Application Context loads with trigger.application beans.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = MarketServiceApplication.class)
+@SpringBootTest(classes = MarketServiceApplication.class, properties = {
+        "spring.cloud.client.hostname=localhost",
+        "spring.cloud.client.ip-address=127.0.0.1",
+        "spring.main.cloud-platform=none"
+})
 @ActiveProfiles("test")
 public class MarketServiceSpringBootContextTest {
+
+    static {
+        // Avoid HostInfoEnvironmentPostProcessor calling InetAddress.getLocalHost() in restricted CI sandboxes.
+        System.setProperty("spring.cloud.inetutils.preferred-networks", "127.0.0.1");
+        System.setProperty("spring.cloud.client.hostname", "localhost");
+        System.setProperty("spring.cloud.client.ip-address", "127.0.0.1");
+    }
 
     @MockBean
     private RedissonClient redissonClient;

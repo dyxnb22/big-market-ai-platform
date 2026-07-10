@@ -113,10 +113,33 @@ async function loadConfigs() {
   setSwitch(chatbot?.configValue !== "false");
 }
 
+async function resolveAdminActivityId() {
+  var raw = dom.activityIdInput.value.trim();
+  if (raw) {
+    return raw;
+  }
+  var stageRes = await safeRequest(
+    "/raffle/activity/query_stage_activity_id?channel=" + encodeURIComponent(CONFIG.CHANNEL) +
+    "&source=" + encodeURIComponent(CONFIG.SOURCE),
+    {method: "GET"}
+  );
+  var staged = stageRes.data && Number(stageRes.data) > 0 ? String(stageRes.data) : "";
+  if (!staged) {
+    throw new Error("无法解析 stage 活动 ID");
+  }
+  dom.activityIdInput.value = staged;
+  return staged;
+}
+
 async function loadActivity() {
   if (!requireLogin()) return;
-  var activityId = dom.activityIdInput.value.trim() || "100301";
-  dom.activityIdInput.value = activityId;
+  var activityId;
+  try {
+    activityId = await resolveAdminActivityId();
+  } catch (e) {
+    toast(e.message || "无法解析活动 ID，请手动输入 100401");
+    return;
+  }
   var stageRes = await safeRequest("/raffle/erp/query_raffle_activity_stage_list", {method: "GET"});
   var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST", body: "{}"});
   var stage = (stageRes.data || []).find(function(item) { return String(item.activityId) === String(activityId); });
@@ -143,7 +166,13 @@ async function loadActivity() {
 
 async function loadAwards() {
   if (!requireLogin()) return;
-  var activityId = Number(dom.activityIdInput.value || 100301);
+  var activityId;
+  try {
+    activityId = Number(await resolveAdminActivityId());
+  } catch (e) {
+    toast(e.message || "无法解析活动 ID，请手动输入 100401");
+    return;
+  }
   try {
     var res = await safeRequest("/raffle/strategy/query_raffle_award_list_by_token", {
       method: "POST",

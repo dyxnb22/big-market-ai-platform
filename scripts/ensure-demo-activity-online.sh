@@ -1,46 +1,52 @@
 #!/usr/bin/env bash
 # Ensure the staged demo activity display state is online (Playwright / local demo).
-# Resolves stage activity via channel/source (default c01/s01 → 100401), then
-# also ensures fallback 100301 is online.
+# Resolves stage activity via channel/source (default c01/s01 → 100401). Fail-closed.
 set -euo pipefail
 
 GW="${1:-http://127.0.0.1:8080}"
 CHANNEL="${CHANNEL:-c01}"
 SOURCE="${SOURCE:-s01}"
-FALLBACK_ACTIVITY_ID="${FALLBACK_ACTIVITY_ID:-100301}"
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=lib/health-poll.sh
+source "$ROOT/scripts/lib/health-poll.sh"
 
 ADMIN_LOGIN=$(curl -sf -X POST "$GW/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"userId":"admin","password":"admin"}' || true)
+  -d '{"userId":"admin","password":"admin"}')
 ADMIN_TOKEN=$(echo "$ADMIN_LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null || true)
 
 if [ -z "$ADMIN_TOKEN" ]; then
-  echo "WARN: admin login failed; skip activity online ensure" >&2
-  exit 0
+  echo "FAIL: admin login failed; cannot ensure activity online" >&2
+  exit 1
 fi
 
-STAGE_ID=$(curl -sf "$GW/api/v1/raffle/activity/query_stage_activity_id?channel=${CHANNEL}&source=${SOURCE}" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin).get('data'); print(d if d else '')" 2>/dev/null || true)
+STAGE_ID=$(resolve_stage_activity_id "$GW" "$CHANNEL" "$SOURCE")
+echo "Resolved stage activityId=${STAGE_ID} (channel=${CHANNEL} source=${SOURCE})"
 
-ensure_online() {
-  local activity_id="$1"
-  [ -n "$activity_id" ] || return 0
+curl -sf -X POST "$GW/api/v1/admin/config/save" \
+  -H "Authorization: $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"namespace\":\"activity.${STAGE_ID}\",\"configKey\":\"state\",\"configValue\":\"online\",\"description\":\"demo online\"}" >/dev/null
+
+# Undo chat-refund E2E leftovers so smoke chatbot/ask succeeds (local provider, no API key).
+for payload in \
+  '{"namespace":"chatbot","configKey":"provider","configValue":"local","description":"demo reset"}' \
+  '{"namespace":"chatbot","configKey":"apiKey","configValue":"","description":"demo reset"}'; do
   curl -sf -X POST "$GW/api/v1/admin/config/save" \
     -H "Authorization: $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"namespace\":\"activity.${activity_id}\",\"configKey\":\"state\",\"configValue\":\"online\",\"description\":\"demo online\"}" >/dev/null
-  # Best-effort armory so award stock trees exist for draws
-  curl -sf "$GW/api/v1/raffle/activity/armory?activityId=${activity_id}" >/dev/null || true
-  local state
-  state=$(curl -sf "$GW/api/v1/admin/config/public/display?activityId=${activity_id}" \
-    | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('state',''))" 2>/dev/null || true)
-  echo "activity.${activity_id} display state=${state:-unknown}"
-  [ "$state" = "online" ] || [ "$state" = "active" ]
-}
+    -d "$payload" >/dev/null
+done
 
-ok=0
-if [ -n "$STAGE_ID" ]; then
-  ensure_online "$STAGE_ID" && ok=1
+curl -sf -H "X-Admin-Token: ${ADMIN_DEV_TOKEN:-admin-dev-token}" \
+  "$GW/api/v1/raffle/activity/armory?activityId=${STAGE_ID}" >/dev/null
+
+state=$(curl -sf "$GW/api/v1/admin/config/public/display?activityId=${STAGE_ID}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('state',''))" 2>/dev/null || true)
+echo "activity.${STAGE_ID} display state=${state:-unknown}"
+
+if [ "$state" != "online" ] && [ "$state" != "active" ]; then
+  echo "FAIL: activity ${STAGE_ID} is not online/active (state=${state:-empty})" >&2
+  exit 1
 fi
-ensure_online "$FALLBACK_ACTIVITY_ID" && ok=1
-[ "$ok" -eq 1 ]

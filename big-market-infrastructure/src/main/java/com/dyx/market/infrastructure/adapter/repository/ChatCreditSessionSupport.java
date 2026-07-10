@@ -38,6 +38,7 @@ public class ChatCreditSessionSupport {
                     .requestId(requestId)
                     .deducted(true)
                     .deductAmount(amount)
+                    .deductState("deducted")
                     .refundState(REFUND_NONE)
                     .retryCount(0)
                     .build());

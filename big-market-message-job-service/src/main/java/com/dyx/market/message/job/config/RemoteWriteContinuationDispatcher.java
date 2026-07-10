@@ -13,6 +13,7 @@ import javax.annotation.Resource;
 
 /**
  * pending 远程写对账成功后的业务 continuation（NR-006）。
+ * Failures must propagate so the job keeps {@code continuation_pending}.
  */
 @Slf4j
 @Component
@@ -31,18 +32,13 @@ public class RemoteWriteContinuationDispatcher {
     }
 
     private void continueCreditPayIfNeeded(PendingRemoteWriteTask task) {
-        try {
-            AccountQuotaCreateOrderRequestDTO dto = JSON.parseObject(task.getPayload(), AccountQuotaCreateOrderRequestDTO.class);
-            if (dto == null || !"credit_pay_trade".equals(dto.getOrderTradeType())) {
-                return;
-            }
-            creditPayExchangeApplicationService.continueAfterRemoteQuotaCreated(
-                    dto.getUserId(), dto.getOutBusinessNo(), dto.getSku());
-            log.info("[RemoteWriteContinuation] credit pay continued userId:{} outBusinessNo:{}",
-                    dto.getUserId(), dto.getOutBusinessNo());
-        } catch (Exception e) {
-            log.error("[RemoteWriteContinuation] failed outBusinessNo:{} operation:{}",
-                    task.getOutBusinessNo(), task.getOperation(), e);
+        AccountQuotaCreateOrderRequestDTO dto = JSON.parseObject(task.getPayload(), AccountQuotaCreateOrderRequestDTO.class);
+        if (dto == null || !"credit_pay_trade".equals(dto.getOrderTradeType())) {
+            return;
         }
+        creditPayExchangeApplicationService.continueAfterRemoteQuotaCreated(
+                dto.getUserId(), dto.getOutBusinessNo(), dto.getSku());
+        log.info("[RemoteWriteContinuation] credit pay continued userId:{} outBusinessNo:{}",
+                dto.getUserId(), dto.getOutBusinessNo());
     }
 }

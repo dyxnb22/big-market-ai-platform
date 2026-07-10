@@ -15,6 +15,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -103,12 +105,22 @@ public class PlatformConfigService implements InitializingBean {
                 .updateTime(System.currentTimeMillis())
                 .build();
         configStore.put(key, config);
-        saveToDisk();
-        publishToNacos();
         try {
+            saveToDisk();
+            String content = serializePropertiesContent();
+            String contentHash = contentHash(content);
+            boolean nacosPublished = publishToNacos(content);
+            String source = nacosConfigSyncService == null ? "local" : (nacosPublished ? "nacos" : "local");
             syncDynamicConfigIfNeeded(config);
-            return config;
+            return config.toBuilder()
+                    .contentHash(contentHash)
+                    .nacosPublished(nacosPublished)
+                    .source(source)
+                    .build();
         } catch (RuntimeException e) {
+            rollbackConfig(key, previous);
+            throw e;
+        } catch (IOException e) {
             rollbackConfig(key, previous);
             throw e;
         }
@@ -121,11 +133,12 @@ public class PlatformConfigService implements InitializingBean {
             configStore.remove(key);
         }
         saveToDisk();
-        publishToNacos();
+        publishToNacosBestEffort();
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {
         String key = storeKey(namespace, configKey);
+        AdminConfigResponseDTO previous = configStore.get(key);
         AdminConfigResponseDTO tombstone = AdminConfigResponseDTO.builder()
                 .namespace(namespace)
                 .configKey(configKey)
@@ -134,8 +147,14 @@ public class PlatformConfigService implements InitializingBean {
                 .updateTime(System.currentTimeMillis())
                 .build();
         configStore.put(key, tombstone);
-        saveToDisk();
-        publishToNacos();
+        try {
+            saveToDisk();
+            String content = serializePropertiesContent();
+            publishToNacos(content);
+        } catch (IOException e) {
+            rollbackConfig(key, previous);
+            throw e;
+        }
     }
 
     public synchronized void refreshFromContent(String content) {
@@ -236,16 +255,47 @@ public class PlatformConfigService implements InitializingBean {
         }
     }
 
-    private void publishToNacos() {
+    private void publishToNacosBestEffort() {
         if (nacosConfigSyncService == null) {
             return;
         }
         try {
-            StringWriter writer = new StringWriter();
-            buildProperties().store(writer, "Big Market platform runtime configuration");
-            nacosConfigSyncService.publish(writer.toString());
+            publishToNacos(serializePropertiesContent());
         } catch (Exception e) {
-            log.warn("Failed to serialize config for Nacos publish: {}", e.getMessage());
+            log.warn("Best-effort Nacos publish after rollback failed: {}", e.getMessage());
+        }
+    }
+
+    private String serializePropertiesContent() throws IOException {
+        StringWriter writer = new StringWriter();
+        buildProperties().store(writer, "Big Market platform runtime configuration");
+        return writer.toString();
+    }
+
+    private boolean publishToNacos(String content) throws IOException {
+        if (nacosConfigSyncService == null) {
+            return false;
+        }
+        try {
+            return nacosConfigSyncService.publish(content);
+        } catch (IllegalStateException e) {
+            throw new IOException(e.getMessage(), e);
+        } catch (Exception e) {
+            throw new IOException("Failed to publish config to Nacos: " + e.getMessage(), e);
+        }
+    }
+
+    private String contentHash(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                sb.append(String.format("%02x", hash[i]));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
 

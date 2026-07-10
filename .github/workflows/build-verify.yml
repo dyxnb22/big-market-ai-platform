@@ -4,6 +4,12 @@ on:
   push:
     branches: [main, master, develop]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      run_acceptance:
+        description: "Run Docker acceptance (--reuse --skip-playwright)"
+        type: boolean
+        default: false
 
 jobs:
   verify:
@@ -19,3 +25,27 @@ jobs:
         run: mvn -B verify -DfailIfNoTests=false
       - name: Mapper and DDL gates
         run: ./scripts/validate-mapper-ddl-gates.sh
+      - name: Runtime safety (XXL + scan + credentials)
+        run: ./scripts/validate-microservices-runtime-safety.sh
+      - name: Prometheus config (promtool)
+        run: ./scripts/validate-prometheus-config.sh
+      - name: Market + message-job Spring Context tests
+        run: >
+          mvn -B -pl big-market-market-service,big-market-message-job-service
+          -am test
+          -Dtest=MarketServiceSpringBootContextTest,MessageJobServiceApplicationContextTest
+          -DfailIfNoTests=false
+          -Dsurefire.failIfNoSpecifiedTests=false
+
+  # Manual / self-hosted: expects Docker stack already healthy (see scripts/acceptance.sh).
+  acceptance:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_acceptance == true
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - name: Acceptance gate entry
+        run: |
+          echo "Running ./scripts/acceptance.sh --reuse --skip-playwright --skip-build"
+          echo "Requires a pre-started local stack (compose up). On github-hosted runners without the stack this step will fail closed."
+          ./scripts/acceptance.sh --reuse --skip-playwright --skip-build

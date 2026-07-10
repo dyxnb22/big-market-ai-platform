@@ -35,6 +35,10 @@ public class Constants {
         public static String ACTIVITY_ACCOUNT_UPDATE_LOCK = "activity_account_update_lock_";
         public static String USER_CREDIT_ACCOUNT_LOCK = "user_credit_account_lock_";
         public static String STRATEGY_ARMORY_ALGORITHM_KEY = "strategy_armory_algorithm_key_";
+        /** Pending strategy-award stock flush keys: members are "{strategyId}_{awardId}" */
+        public static String STRATEGY_AWARD_STOCK_PENDING_SET = "strategy_award_stock_pending_set";
+        /** Pending activity-SKU stock flush keys: members are sku as string */
+        public static String ACTIVITY_SKU_STOCK_PENDING_SET = "activity_sku_stock_pending_set";
 
     }
 

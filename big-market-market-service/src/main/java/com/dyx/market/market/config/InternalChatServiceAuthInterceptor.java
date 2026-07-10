@@ -42,11 +42,12 @@ public class InternalChatServiceAuthInterceptor implements HandlerInterceptor {
     }
 
     private void writeUnauthorized(HttpServletResponse response) throws Exception {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        String code = ResponseCode.Login.TOKEN_ERROR.getCode();
+        response.setStatus(com.dyx.market.types.web.ResponseHttpStatusMapper.toStatusCode(code));
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         Map<String, Object> body = new HashMap<>();
-        body.put("code", ResponseCode.Login.TOKEN_ERROR.getCode());
+        body.put("code", code);
         body.put("info", "内部服务令牌无效");
         body.put("data", null);
         response.getWriter().write(objectMapper.writeValueAsString(body));

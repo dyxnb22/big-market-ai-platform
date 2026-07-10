@@ -128,3 +128,31 @@ Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No q
 26-07-10.20:01:42.365 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
 26-07-10.20:01:42.372 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
 26-07-10.20:01:42.372 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:50:23.299 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:50:23.299 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:50:23.299 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:50:23.299 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:51:15.795 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:51:15.795 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:51:15.796 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:51:15.796 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:51:58.131 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:51:58.131 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:51:58.131 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:51:58.131 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:52:35.305 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:52:35.305 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:52:35.305 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:52:35.306 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.21:10:37.181 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.21:10:37.181 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.21:10:37.181 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.21:10:37.182 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.21:59:21.029 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.21:59:21.029 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.21:59:21.029 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.21:59:21.030 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.22:14:03.763 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.22:14:03.763 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.22:14:03.763 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.22:14:03.763 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end

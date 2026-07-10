@@ -20,8 +20,10 @@
 | `big-market-message-job-service` | 8085 | 已修复 Mapper+扫描（BM-002）；XXL `big-market-message-job`（BM-003） | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
 | `big-market-account-service` | 8086 | 稳定，已归属 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
 | `big-market-fulfillment-service` | 8087 | 稳定，已归属 | 奖品履约 RPC、中奖记录完成、奖品积分 Outbox 集成 |
-| `big-market-rebate-service` | 8088 | 稳定，已归属 | 行为返利创建/查询 RPC 契约与返利任务归属 |
-| `big-market-strategy-service` | 8089 | 稳定，已归属 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
+| `big-market-rebate-service` | 8088 | 可选独立部署 | 行为返利创建/查询 RPC 契约与返利任务归属 |
+| `big-market-strategy-service` | 8089 | 可选独立部署 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
+
+> **部署默认：** `big-market-rebate-service` / `big-market-strategy-service` **不是**默认 compose 必启服务。本地学习栈由 `big-market-market-service` 通过 embedded Dubbo provider（`rebate.embedded-rpc-provider.enabled=true`、`strategy.embedded-rpc-provider.enabled=true`）托管契约。需要独立进程时，将对应 `embedded-rpc-provider.enabled=false` 并启动 8088/8089。
 
 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types` 以及各 starter 模块等共享模块，是各服务启动器所依赖的库。
 
@@ -105,15 +107,17 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 
 ## 数据与归属
 
-服务边界矩阵见 `docs/microservices-dao-ownership.md`。DDL 与 Outbox 学习说明见 `docs/data-and-outbox.md` 与 `docs/sql/`。SQL 文件为学习环境下的 DDL 参考，本仓库不会自动执行。
+服务边界矩阵见 `docs/microservices-dao-ownership.md`（**逻辑约定**，非编译器强制；边界靠 ports/adapters + ArchUnit 门禁）。DDL 与 Outbox 学习说明见 `docs/data-and-outbox.md` 与 `docs/sql/`。SQL 文件为学习环境下的 DDL 参考，本仓库不会自动执行。
+
+- Admin 平台配置：当 `nacos.config.sync.enabled=true` 时，保存以 Nacos publish 成功为准（可用 `nacos.config.sync.fail-open=true` 降级为仅写本地）。
 
 ## 本地完成标准
 
 在本学习环境中，当满足以下条件时，可认为架构已完整：
 
 - `mvn clean package -DskipTests` 构建成功。
-- 在本地 Docker 环境中 `./scripts/validate-microservices-stack.sh` 校验通过。
-- `./scripts/validate-microservices-runtime-safety.sh` 作为最终架构护栏校验通过。
+- 一键验收：`./scripts/acceptance.sh`（默认 `--reuse`；干净卷用 `--fresh --confirm-destroy-volumes`；安全链加 `--secure`）。
+- `./scripts/validate-microservices-stack.sh` 与强化后的 `validate-microservices-runtime-safety.sh` 通过（后者 alone 仍不足以替代 Context/smoke）。
 - 核心流程可从 Controller 到领域服务、Repository、MQ/XXL-Job，以及回滚/幂等处理完整说明。
 - `docs/learning/*`、本架构文档与代码/配置注释讲述同一套最终态故事。
 

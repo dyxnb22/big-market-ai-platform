@@ -13,7 +13,11 @@ public interface IPendingRemoteWriteTaskDao {
 
     List<PendingRemoteWriteTask> queryPendingTasks(@Param("maxRetry") int maxRetry, @Param("limit") int limit);
 
+    int updateContinuationPending(PendingRemoteWriteTask task);
+
     int updateDone(PendingRemoteWriteTask task);
 
     int updateRetryFailed(@Param("id") Long id, @Param("maxRetry") int maxRetry);
+
+    int countByState(@Param("state") String state);
 }

@@ -35,6 +35,8 @@ HOST="${HOST:-localhost}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=lib/health-poll.sh
+source "$ROOT/scripts/lib/health-poll.sh"
 
 echo "================================================================="
 echo "  big-market microservices stack validation"
@@ -81,21 +83,23 @@ if [ "$SKIP_DOCKER" = false ]; then
     exit 1
   fi
   echo ""
-  echo "  Infrastructure stack started. Applying reconcile DDL (idempotent)..."
-  if ! ./scripts/apply-reconcile-ddl.sh; then
+  echo "  Infrastructure stack started. Applying stack migrations (idempotent)..."
+  if ! ./scripts/apply-stack-migrations.sh; then
     echo ""
-    echo "Reconcile DDL apply failed. chat_credit_session may be missing on old MySQL volumes."
-    echo "  ./scripts/apply-reconcile-ddl.sh"
+    echo "Stack migrations failed. Old MySQL volumes may need reconcile DDL / XXL seeds."
+    echo "  ./scripts/apply-stack-migrations.sh"
     exit 1
   fi
-  if ! ./scripts/apply-xxl-job-seeds.sh; then
-    echo ""
-    echo "XXL job seed apply failed. ChatRefundReconcileJob may be missing on old volumes."
-    echo "  ./scripts/apply-xxl-job-seeds.sh"
-    exit 1
-  fi
-  echo "  Waiting 10s for services to settle..."
-  sleep 10
+  wait_for_http_up "http://${HOST}:3306" 60 "mysql-port" || true
+  # MySQL may not speak HTTP; poll via docker exec instead
+  echo "  Waiting for MySQL to accept connections..."
+  for _ in $(seq 1 30); do
+    if docker exec mysql mysqladmin ping -uroot -p123456 --silent 2>/dev/null; then
+      echo "  UP  mysql"
+      break
+    fi
+    sleep 2
+  done
   echo ""
 else
   echo "Step 2/4: SKIPPED (--skip-docker)"
@@ -146,8 +150,14 @@ if [ "$SKIP_DOCKER" = false ]; then
     exit 1
   fi
   echo ""
-  echo "  Application stack started. Waiting 30s for health checks..."
-  sleep 30
+  echo "  Application stack started. Polling health endpoints..."
+  if ! wait_for_stack_healthy "$HOST" 180; then
+    echo ""
+    echo "Stack health polling timed out."
+    echo "  docker compose ps"
+    echo "  docker compose logs --tail=50 big-market-gateway"
+    exit 1
+  fi
   echo ""
 else
   echo "Step 3/4: SKIPPED (--skip-docker)"
@@ -158,8 +168,12 @@ fi
 
 echo "Step 4/4: Running smoke test"
 echo "-----------------------------------------------------------------"
-chmod +x ./scripts/ensure-demo-activity-online.sh 2>/dev/null || true
-./scripts/ensure-demo-activity-online.sh "http://${HOST}:8080" || echo "WARN: demo activity online ensure skipped"
+chmod +x ./scripts/ensure-demo-activity-online.sh
+if ! ./scripts/ensure-demo-activity-online.sh "http://${HOST}:8080"; then
+  echo ""
+  echo "Demo activity online ensure FAILED (fail-closed)."
+  exit 1
+fi
 if ! ./scripts/smoke-test-microservices.sh "$HOST"; then
   echo ""
   echo "SMOKE TEST FAILED. Check the failures above, then:"

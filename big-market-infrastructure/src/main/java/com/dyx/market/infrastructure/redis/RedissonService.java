@@ -92,6 +92,18 @@ public class RedissonService implements IRedisService {
         set.add(value);
     }
 
+    @Override
+    public void removeFromSet(String key, String value) {
+        RSet<String> set = redissonClient.getSet(key);
+        set.remove(value);
+    }
+
+    @Override
+    public java.util.Set<String> getSetMembers(String key) {
+        RSet<String> set = redissonClient.getSet(key);
+        return set.readAll();
+    }
+
     public boolean isSetMember(String key, String value) {
         RSet<String> set = redissonClient.getSet(key);
         return set.contains(value);

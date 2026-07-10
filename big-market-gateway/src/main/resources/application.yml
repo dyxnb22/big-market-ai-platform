@@ -23,10 +23,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,circuitbreakers
+        include: health,info,circuitbreakers,prometheus
   endpoint:
     health:
       show-details: when_authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  prometheus:
+    enabled: true
 
 resilience4j:
   timelimiter:

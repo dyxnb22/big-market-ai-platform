@@ -42,10 +42,16 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: when_authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  prometheus:
+    enabled: true
 
 logging:
   level:

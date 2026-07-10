@@ -199,3 +199,101 @@ Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No q
 26-07-10.20:01:42.365 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
 26-07-10.20:01:42.372 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
 26-07-10.20:01:42.372 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:50:20.468 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 with PID ??? (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.20:50:20.469 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.20:50:20.852 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.20:50:20.853 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.20:50:20.862 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+26-07-10.20:50:21.329 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.20:50:22.103 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.20:50:22.115 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.20:50:23.172 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.20:50:23.238 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 2.929 seconds (JVM running for 3.624)
+26-07-10.20:50:23.299 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:50:23.299 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:50:23.299 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:50:23.299 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:51:12.962 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 with PID ??? (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.20:51:12.965 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.20:51:13.344 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.20:51:13.345 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.20:51:13.354 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+26-07-10.20:51:13.832 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.20:51:14.598 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.20:51:14.607 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.20:51:15.662 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.20:51:15.732 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 2.936 seconds (JVM running for 3.639)
+26-07-10.20:51:15.795 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:51:15.795 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:51:15.796 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:51:15.796 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:51:55.337 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 with PID ??? (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.20:51:55.338 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.20:51:55.716 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.20:51:55.717 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.20:51:55.729 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+26-07-10.20:51:56.195 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.20:51:56.975 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.20:51:56.982 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.20:51:58.009 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.20:51:58.072 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 2.916 seconds (JVM running for 3.626)
+26-07-10.20:51:58.131 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:51:58.131 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:51:58.131 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:51:58.131 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.20:52:32.444 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 with PID ??? (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.20:52:32.445 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.20:52:32.810 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.20:52:32.811 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.20:52:32.820 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+26-07-10.20:52:33.286 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.20:52:34.039 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.20:52:34.044 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.20:52:35.177 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.20:52:35.247 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 2.961 seconds (JVM running for 3.639)
+26-07-10.20:52:35.305 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.20:52:35.305 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.20:52:35.305 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.20:52:35.306 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.21:10:34.388 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 37713 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.21:10:34.389 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.21:10:34.741 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.21:10:34.742 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.21:10:34.754 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+26-07-10.21:10:35.218 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.21:10:36.079 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.21:10:36.093 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.21:10:37.058 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.21:10:37.121 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 2.886 seconds (JVM running for 3.514)
+26-07-10.21:10:37.181 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.21:10:37.181 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.21:10:37.181 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.21:10:37.182 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.21:59:17.608 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 with PID ??? (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.21:59:17.609 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.21:59:18.095 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.21:59:18.097 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.21:59:18.108 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+26-07-10.21:59:18.809 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.21:59:19.638 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.21:59:19.657 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.21:59:20.876 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.21:59:20.951 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 3.558 seconds (JVM running for 4.404)
+26-07-10.21:59:21.029 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.21:59:21.029 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.21:59:21.029 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.21:59:21.030 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end
+26-07-10.22:13:59.641 [main            ] INFO  ChatbotServiceApplicationContextTest - Starting ChatbotServiceApplicationContextTest using Java 1.8.0_462 on diaoyuxuandeMacBook-Pro-2.local with PID 55191 (started by diaoyuxuan in /Users/diaoyuxuan/big-market-ai-platform/big-market-chatbot-service)
+26-07-10.22:13:59.641 [main            ] INFO  ChatbotServiceApplicationContextTest - The following 1 profile is active: "test"
+26-07-10.22:14:00.118 [main            ] INFO  RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+26-07-10.22:14:00.120 [main            ] INFO  RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+26-07-10.22:14:00.134 [main            ] INFO  RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+26-07-10.22:14:00.710 [main            ] INFO  NacosConfigSyncService - NacosConfigSyncService initialized, serverAddr=127.0.0.1:8848, dataId=big-market-platform-config
+26-07-10.22:14:01.654 [main            ] INFO  NacosConfigSubscriberConfig - No platform config in Nacos yet — using local defaults
+26-07-10.22:14:01.661 [main            ] INFO  NacosConfigSyncService - Registered Nacos config listener, dataId=big-market-platform-config
+26-07-10.22:14:03.510 [main            ] INFO  EndpointLinksResolver  - Exposing 2 endpoint(s) beneath base path '/actuator'
+26-07-10.22:14:03.646 [main            ] INFO  ChatbotServiceApplicationContextTest - Started ChatbotServiceApplicationContextTest in 4.221 seconds (JVM running for 5.228)
+26-07-10.22:14:03.763 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Start destroying Publisher
+26-07-10.22:14:03.763 [Thread-9        ] WARN  NotifyCenter           - [NotifyCenter] Destruction of the end
+26-07-10.22:14:03.763 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Start destroying common HttpClient
+26-07-10.22:14:03.763 [Thread-4        ] WARN  HttpClientBeanHolder   - [HttpClientBeanHolder] Destruction of the end

@@ -14,5 +14,6 @@ public class ChatCreditSessionSnapshot {
     String requestId;
     int deductAmount;
     boolean deducted;
+    String deductState;
     String refundState;
 }
