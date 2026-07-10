@@ -119,29 +119,12 @@ public class RaffleActivityController implements IRaffleActivityService {
         return TriggerApiResponses.ok(raffleActivityFacade.creditPayExchangeSku(request));
     }
 
-    @PostMapping("chat_credit_refund_by_token")
-    @Override
-    public Response<BigDecimal> chatCreditRefundByToken(@RequestHeader("Authorization") String token,
-                                                        @RequestParam(defaultValue = "1") int amount,
-                                                        @RequestParam String originalRequestId) {
-        return TriggerApiResponses.ok(raffleActivityFacade.chatCreditRefund(
-                authenticatedUserSupport.requireUserId(token), amount, originalRequestId));
-    }
-
     @PostMapping("chat_credit_deduct_by_token")
     @Override
     public Response<BigDecimal> chatCreditDeductByToken(@RequestHeader("Authorization") String token,
                                                         @RequestParam(defaultValue = "1") int amount,
                                                         @RequestParam String requestId) {
         return TriggerApiResponses.ok(raffleActivityFacade.chatCreditDeduct(
-                authenticatedUserSupport.requireUserId(token), amount, requestId));
-    }
-
-    @PostMapping("chat_credit_mark_refund_pending_by_token")
-    public Response<Boolean> chatCreditMarkRefundPendingByToken(@RequestHeader("Authorization") String token,
-                                                              @RequestParam(defaultValue = "1") int amount,
-                                                              @RequestParam String requestId) {
-        return TriggerApiResponses.ok(raffleActivityFacade.chatCreditMarkRefundPending(
                 authenticatedUserSupport.requireUserId(token), amount, requestId));
     }
 }

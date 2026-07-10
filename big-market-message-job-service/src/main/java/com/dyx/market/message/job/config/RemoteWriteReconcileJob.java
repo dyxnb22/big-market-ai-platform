@@ -51,6 +51,8 @@ public class RemoteWriteReconcileJob {
     private IDBRouterStrategy dbRouter;
     @Resource
     private RedissonClient redissonClient;
+    @Resource
+    private RemoteWriteContinuationDispatcher remoteWriteContinuationDispatcher;
 
     @DubboReference(version = "1.0", check = false)
     private IAccountCreditService accountCreditService;
@@ -88,12 +90,14 @@ public class RemoteWriteReconcileJob {
         try {
             if (isRemoteDone(task)) {
                 pendingRemoteWriteTaskDao.updateDone(task);
+                remoteWriteContinuationDispatcher.dispatch(task);
                 log.info("[RemoteWriteReconcileJob] remote already done outBusinessNo:{} operation:{}",
                         task.getOutBusinessNo(), task.getOperation());
                 return;
             }
             retryRemoteWrite(task);
             pendingRemoteWriteTaskDao.updateDone(task);
+            remoteWriteContinuationDispatcher.dispatch(task);
             log.info("[RemoteWriteReconcileJob] retry success outBusinessNo:{} operation:{}",
                     task.getOutBusinessNo(), task.getOperation());
         } catch (Exception e) {

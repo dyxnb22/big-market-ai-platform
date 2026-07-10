@@ -24,8 +24,8 @@
 
 **当前状态（2026-07-10 复核修复后）：**
 
-- **A. 可启动** — 代码已修：BM-001/002（含 `MessageJobLocalAccountReadAdapter`、`appTokenMap`）、BM-003；`MessageJobServiceApplicationContextTest`（ChatCredit + `IAccountReadAdapter` 切片）、Mapper/XXL 测试通过。**全量** `MessageJobServiceApplication` / `MarketServiceApplication` 集成 Context 仍待补（market adapter 双注册等）。
-- **B. 可演示闭环** — BM-004～015 代码已落地；**须** fresh Docker + `smoke-api` / Playwright 验收后方可勾选。
+- **A. 可启动** — 代码已修：BM-001/002/003；`MarketServiceSpringBootContextTest` 与 `MessageJobServiceApplicationContextTest` 为全量 `@SpringBootTest`；message-job `MessageJobReadAdapterConfig` + `IAccountReadAdapter` @Primary。
+- **B. 可演示闭环** — Docker 栈 2026-07-10 验收：`smoke-test-microservices.sh` 19/19、`smoke-api.sh`、`smoke-chat-refund-e2e.sh` 通过；旧 MySQL 卷需 `./scripts/apply-reconcile-ddl.sh` + `./scripts/apply-xxl-job-seeds.sh`；演示前 `./scripts/ensure-demo-activity-online.sh`（stage `c01/s01`→100401）。Playwright **17/17 PASS**（本轮已修）；完整 B 勾选仍建议等干净 PR merge SHA。
 - **C. 准生产基线** — 部分：BM-015 `secure` profile 已有；BM-016/017 延后。
 
 **执行约定：**
@@ -312,7 +312,7 @@ npm test
 现有脚本使用注意：
 
 - `validate-microservices-runtime-safety.sh` — 当前假绿，增强前不当唯一门禁
-- `smoke-test-microservices.sh` — 基础冒烟，不覆盖已登录抽奖/MQ 终态
+- `smoke-test-microservices.sh` — 基础冒烟；fallback 断言 HTTP 503 + body `0007`（2026-07-10 修）
 - `smoke-api.sh` — 多处只打印响应，应逐步加业务码断言
 
 ---
@@ -361,8 +361,8 @@ npm test
 
 | 阶段 | 状态 | 完成日期 | 备注 |
 | --- | --- | --- | --- |
-| 1 启动阻塞 | 基本完成（代码+切片测试） | 2026-07-10 | BM-001/002/003；message-job `IAccountReadAdapter` + `appTokenMap`；全量 Context 集成待补 |
-| 2 核心闭环 | 代码完成 | 2026-07-10 | BM-004～010；SKU `lockSurplus` 落库、chat requestId 失败态、remote 余额 UNKNOWN |
+| 1 启动阻塞 | 基本完成（代码+Context 测试） | 2026-07-10 | BM-001/002/003；market/message-job `@SpringBootTest`；CI `build-verify.yml` |
+| 2 核心闭环 | 后端 E2E 已验（Docker）；Playwright 本轮修通 | 2026-07-10 | smoke 19/19、smoke-api、Chat 退款 E2E；旧卷 DDL/XXL 脚本；INDEX_DUP 幂等；stage=100401 online + 移动端布局；Playwright 目标全绿 |
 | 3 演示与安全 | 已完成（代码） | 2026-07-10 | BM-011～015；Playwright 需栈在线 |
 | 4 观测与架构债 | 未开始 | | BM-016/017 刻意延后 |
 

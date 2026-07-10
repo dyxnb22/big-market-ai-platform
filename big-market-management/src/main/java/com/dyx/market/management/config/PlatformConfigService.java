@@ -52,6 +52,12 @@ public class PlatformConfigService implements InitializingBean {
         putDefault("chatbot", "model",    "deepseek-chat",               "LLM model name");
         putDefault("system",  "degradeSwitch",    "close", "Global raffle degrade switch");
         putDefault("system",  "rateLimiterSwitch","close", "Global rate limiter switch");
+        putDefault("activity.100301", "state", "online", "Demo activity display state");
+        putDefault("activity.100301", "title", "幸运轮盘活动", "Demo activity title");
+        putDefault("activity.100301", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Demo activity copy");
+        putDefault("activity.100401", "state", "online", "Staged demo activity display state");
+        putDefault("activity.100401", "title", "OpenAi抽奖活动", "Staged demo activity title");
+        putDefault("activity.100401", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Staged demo activity copy");
         loadFromDisk();
         // 启动时以 Nacos 为权威源：用远端最新配置覆盖本地磁盘快照
         if (nacosConfigSyncService != null) {

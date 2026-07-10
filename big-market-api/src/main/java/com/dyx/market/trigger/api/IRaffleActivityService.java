@@ -133,14 +133,4 @@ public interface IRaffleActivityService {
      */
     Response<BigDecimal> chatCreditDeductByToken(String token, int amount, String requestId);
 
-    /**
-     * AI Chat 积分退还（AI 调用失败时退还已扣积分）
-     *
-     * @param token              用户Token
-     * @param amount             退还积分数量
-     * @param originalRequestId  原始请求ID
-     * @return 剩余积分
-     */
-    Response<BigDecimal> chatCreditRefundByToken(String token, int amount, String originalRequestId);
-
 }

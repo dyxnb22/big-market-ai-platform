@@ -29,7 +29,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "strategy.service.remote-read.enabled", havingValue = "false", matchIfMissing = true)
-@ConditionalOnMissingBean(name = "strategyRemoteReadAdapter")
+@ConditionalOnMissingBean(IStrategyReadAdapter.class)
 public class LocalStrategyReadAdapter implements IStrategyReadAdapter {
 
     @Resource

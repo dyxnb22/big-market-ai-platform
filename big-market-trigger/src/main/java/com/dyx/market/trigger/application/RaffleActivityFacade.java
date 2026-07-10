@@ -86,9 +86,9 @@ public class RaffleActivityFacade {
         return true;
     }
 
-    public BigDecimal chatCreditRefund(String userId, int amount, String originalRequestId) {
-        log.info("AI Chat积分退还开始 userId:{} amount:{} requestId:{}", userId, amount, originalRequestId);
-        return chatCreditApplicationService.refund(userId, amount, originalRequestId);
+    public BigDecimal chatCreditRefund(String userId, String originalRequestId) {
+        log.info("AI Chat积分退还开始 userId:{} requestId:{}", userId, originalRequestId);
+        return chatCreditApplicationService.refund(userId, originalRequestId);
     }
 
     public BigDecimal chatCreditDeduct(String userId, int amount, String requestId) {
@@ -96,8 +96,8 @@ public class RaffleActivityFacade {
         return chatCreditApplicationService.deduct(userId, amount, requestId);
     }
 
-    public Boolean chatCreditMarkRefundPending(String userId, int amount, String requestId) {
-        chatCreditApplicationService.markRefundPending(userId, requestId, amount);
+    public Boolean chatCreditMarkRefundPending(String userId, String requestId) {
+        chatCreditApplicationService.markRefundPending(userId, requestId, 0);
         return true;
     }
 }

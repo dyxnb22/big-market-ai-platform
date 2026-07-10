@@ -45,9 +45,9 @@ echo ""
 # ── Step 1: Build ──────────────────────────────────────────────────────────────
 
 if [ "$SKIP_BUILD" = false ]; then
-  echo "Step 1/4: Building all modules (mvn clean package -DskipTests)"
+  echo "Step 1/4: Building all modules (mvn verify)"
   echo "-----------------------------------------------------------------"
-  if ! mvn clean package -DskipTests; then
+  if ! mvn verify -DfailIfNoTests=false; then
     echo ""
     echo "BUILD FAILED. Fix compilation errors before proceeding."
     echo ""
@@ -81,7 +81,20 @@ if [ "$SKIP_DOCKER" = false ]; then
     exit 1
   fi
   echo ""
-  echo "  Infrastructure stack started. Waiting 10s for services to settle..."
+  echo "  Infrastructure stack started. Applying reconcile DDL (idempotent)..."
+  if ! ./scripts/apply-reconcile-ddl.sh; then
+    echo ""
+    echo "Reconcile DDL apply failed. chat_credit_session may be missing on old MySQL volumes."
+    echo "  ./scripts/apply-reconcile-ddl.sh"
+    exit 1
+  fi
+  if ! ./scripts/apply-xxl-job-seeds.sh; then
+    echo ""
+    echo "XXL job seed apply failed. ChatRefundReconcileJob may be missing on old volumes."
+    echo "  ./scripts/apply-xxl-job-seeds.sh"
+    exit 1
+  fi
+  echo "  Waiting 10s for services to settle..."
   sleep 10
   echo ""
 else
@@ -145,6 +158,8 @@ fi
 
 echo "Step 4/4: Running smoke test"
 echo "-----------------------------------------------------------------"
+chmod +x ./scripts/ensure-demo-activity-online.sh 2>/dev/null || true
+./scripts/ensure-demo-activity-online.sh "http://${HOST}:8080" || echo "WARN: demo activity online ensure skipped"
 if ! ./scripts/smoke-test-microservices.sh "$HOST"; then
   echo ""
   echo "SMOKE TEST FAILED. Check the failures above, then:"

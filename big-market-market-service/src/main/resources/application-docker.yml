@@ -26,6 +26,9 @@ redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
 
+chat:
+  internal-service-token: ${CHAT_INTERNAL_SERVICE_TOKEN:change-me-chat-internal-docker}
+
 dubbo:
   registry:
     id: nacos-registry

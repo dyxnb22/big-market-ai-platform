@@ -51,6 +51,7 @@ public class StrategyAwardStockConfirmJobTest {
         inject(job, "dbRouter", dbRouter);
         inject(job, "redissonClient", redissonClient);
         inject(job, "scanLimit", 20);
+        inject(job, "maxRetries", 5);
         inject(job, "processingLeaseMinutes", 5);
     }
 
@@ -58,7 +59,7 @@ public class StrategyAwardStockConfirmJobTest {
     public void scanDb_should_revert_stale_processing_before_claiming_tasks() throws Exception {
         StrategyAwardStockConfirmTaskEntity task = buildTask();
         when(compensationPort.revertStaleProcessing(eq(1), any(), eq(20))).thenReturn(1);
-        when(compensationPort.queryPendingTasks(20)).thenReturn(Collections.singletonList(task));
+        when(compensationPort.queryPendingTasks(5, 20)).thenReturn(Collections.singletonList(task));
         when(compensationPort.claimProcessing(1, task.getUserId(), task.getOrderId())).thenReturn(1);
         when(compensationPort.markConfirmed(1, task.getUserId(), task.getOrderId())).thenReturn(1);
 
@@ -66,7 +67,7 @@ public class StrategyAwardStockConfirmJobTest {
 
         org.mockito.InOrder inOrder = inOrder(compensationPort);
         inOrder.verify(compensationPort).revertStaleProcessing(eq(1), any(), eq(20));
-        inOrder.verify(compensationPort).queryPendingTasks(20);
+        inOrder.verify(compensationPort).queryPendingTasks(5, 20);
         inOrder.verify(compensationPort).claimProcessing(1, task.getUserId(), task.getOrderId());
         verify(compensationPort).markConfirmed(1, task.getUserId(), task.getOrderId());
     }
@@ -81,7 +82,7 @@ public class StrategyAwardStockConfirmJobTest {
 
         verify(strategyRepository).confirmAwardStockReservation(any(StrategyAwardStockKeyVO.class));
         verify(compensationPort).markConfirmed(1, task.getUserId(), task.getOrderId());
-        verify(compensationPort, never()).incrementRetryFailed(any(Integer.class), any(), any());
+        verify(compensationPort, never()).incrementRetryFailed(any(Integer.class), any(), any(), any(Integer.class));
     }
 
     @Test
@@ -92,7 +93,7 @@ public class StrategyAwardStockConfirmJobTest {
 
         invokeConfirmTask(job, task, 1);
 
-        verify(compensationPort).incrementRetryFailed(1, task.getUserId(), task.getOrderId());
+        verify(compensationPort).incrementRetryFailed(1, task.getUserId(), task.getOrderId(), 5);
     }
 
     @Test
@@ -104,7 +105,7 @@ public class StrategyAwardStockConfirmJobTest {
 
         invokeConfirmTask(job, task, 1);
 
-        verify(compensationPort).incrementRetryFailed(1, task.getUserId(), task.getOrderId());
+        verify(compensationPort).incrementRetryFailed(1, task.getUserId(), task.getOrderId(), 5);
         verify(compensationPort, never()).markConfirmed(any(Integer.class), any(), any());
     }
 

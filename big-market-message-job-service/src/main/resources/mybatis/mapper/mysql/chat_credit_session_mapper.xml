@@ -22,7 +22,16 @@
     <update id="updateRefundState" parameterType="com.dyx.market.infrastructure.dao.po.ChatCreditSession">
         update chat_credit_session
         set refund_state = #{refundState}, update_time = now()
-        where request_id = #{requestId}
+        where user_id = #{userId} and request_id = #{requestId}
+    </update>
+
+    <update id="casRefundState">
+        update chat_credit_session
+        set refund_state = #{toState}, update_time = now()
+        where user_id = #{userId}
+          and request_id = #{requestId}
+          and deducted = 1
+          and refund_state = #{fromState}
     </update>
 
     <update id="updateRetryFailed" parameterType="com.dyx.market.infrastructure.dao.po.ChatCreditSession">
@@ -35,6 +44,13 @@
         select id, user_id, request_id, deducted, deduct_amount, refund_state, retry_count
         from chat_credit_session
         where request_id = #{requestId}
+        limit 1
+    </select>
+
+    <select id="queryByUserIdAndRequestId" resultMap="dataMap">
+        select id, user_id, request_id, deducted, deduct_amount, refund_state, retry_count
+        from chat_credit_session
+        where user_id = #{userId} and request_id = #{requestId}
         limit 1
     </select>
 

@@ -13,7 +13,7 @@ import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Chatbot requestId 幂等：processing / completed 缓存，避免重放重复调 AI。
+ * Chatbot requestId 幂等：processing / completed 缓存，按用户隔离，避免重放重复调 AI。
  */
 @Component
 public class ChatRequestIdempotencySupport {
@@ -24,11 +24,11 @@ public class ChatRequestIdempotencySupport {
     @Resource
     private IRedisService redisService;
 
-    public CachedChatResponse findCompleted(String requestId) {
-        if (StringUtils.isBlank(requestId)) {
+    public CachedChatResponse findCompleted(String userId, String requestId) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
             return null;
         }
-        String raw = redisService.getValue(KEY_PREFIX + requestId);
+        String raw = redisService.getValue(key(userId, requestId));
         if (StringUtils.isBlank(raw)) {
             return null;
         }
@@ -42,44 +42,43 @@ public class ChatRequestIdempotencySupport {
     /**
      * 原子占位 processing；已存在（processing 或 completed）则返回 false。
      */
-    public boolean tryMarkProcessing(String requestId) {
-        if (StringUtils.isBlank(requestId)) {
+    public boolean tryMarkProcessing(String userId, String requestId) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
             return false;
         }
-        String key = KEY_PREFIX + requestId;
-        if (!Boolean.TRUE.equals(redisService.setNx(key, TTL_MILLIS, TimeUnit.MILLISECONDS))) {
-            return false;
-        }
-        redisService.setValue(key,
-                JSON.toJSONString(CachedChatResponse.builder().status("processing").build()),
-                TTL_MILLIS);
-        return true;
+        String processingJson = JSON.toJSONString(CachedChatResponse.builder().status("processing").build());
+        return Boolean.TRUE.equals(redisService.setValueIfAbsent(
+                key(userId, requestId), processingJson, TTL_MILLIS, TimeUnit.MILLISECONDS));
     }
 
-    public void complete(String requestId, CachedChatResponse response) {
-        if (StringUtils.isBlank(requestId) || response == null) {
+    public void complete(String userId, String requestId, CachedChatResponse response) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || response == null) {
             return;
         }
         response.setStatus("completed");
-        redisService.setValue(KEY_PREFIX + requestId, JSON.toJSONString(response), TTL_MILLIS);
+        redisService.setValue(key(userId, requestId), JSON.toJSONString(response), TTL_MILLIS);
     }
 
     /**
      * 扣费/校验失败等可重试路径：仅清除 processing 占位，不缓存 completed。
      */
-    public void clearProcessing(String requestId) {
-        if (StringUtils.isBlank(requestId)) {
+    public void clearProcessing(String userId, String requestId) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
             return;
         }
-        String key = KEY_PREFIX + requestId;
-        String raw = redisService.getValue(key);
+        String redisKey = key(userId, requestId);
+        String raw = redisService.getValue(redisKey);
         if (StringUtils.isBlank(raw)) {
             return;
         }
         CachedChatResponse cached = JSON.parseObject(raw, CachedChatResponse.class);
         if (cached != null && "processing".equals(cached.getStatus())) {
-            redisService.remove(key);
+            redisService.remove(redisKey);
         }
+    }
+
+    private static String key(String userId, String requestId) {
+        return KEY_PREFIX + userId + ":" + requestId;
     }
 
     @Data
@@ -93,5 +92,7 @@ public class ChatRequestIdempotencySupport {
         private boolean success;
         private java.math.BigDecimal creditDeducted;
         private java.math.BigDecimal creditBalance;
+        private String errorCode;
+        private String errorMessage;
     }
 }

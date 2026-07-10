@@ -42,6 +42,11 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
                         tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
                 return resp.getData();
             }
+            if (resp != null && ResponseCode.INDEX_DUP.getCode().equals(resp.getCode())) {
+                log.warn("[AccountRemoteCreditWriteAdapter] createOrder duplicate userId:{} outBusinessNo:{}",
+                        tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
+                return resp.getData() != null ? resp.getData() : tradeEntity.getOutBusinessNo();
+            }
             log.warn("[AccountRemoteCreditWriteAdapter] createOrder non-success code:{} userId:{} outBusinessNo:{}",
                     resp != null ? resp.getCode() : null, tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
         } catch (Exception e) {

@@ -74,28 +74,33 @@ public class ChatbotApplicationService {
             return disabledResponse(token);
         }
 
-        String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
-        ChatRequestIdempotencySupport.CachedChatResponse cached =
-                chatRequestIdempotencySupport.findCompleted(requestId);
-        if (cached != null) {
-            return toResponseDto(cached);
+        int effectiveCost = parseCostConfig(
+                platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(costPerAsk)));
+        if (effectiveCost > 0 && StringUtils.isBlank(token)) {
+            throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());
         }
-        if (!chatRequestIdempotencySupport.tryMarkProcessing(requestId)) {
-            cached = chatRequestIdempotencySupport.findCompleted(requestId);
+        String userId = resolveUserIdForAsk(token, effectiveCost);
+        String requestId = StringUtils.defaultIfBlank(request.getRequestId(), UUID.randomUUID().toString());
+
+        ChatRequestIdempotencySupport.CachedChatResponse cached =
+                chatRequestIdempotencySupport.findCompleted(userId, requestId);
+        if (cached != null) {
+            return replayFromCache(cached);
+        }
+        if (!chatRequestIdempotencySupport.tryMarkProcessing(userId, requestId)) {
+            cached = chatRequestIdempotencySupport.findCompleted(userId, requestId);
             if (cached != null) {
-                return toResponseDto(cached);
+                return replayFromCache(cached);
             }
             throw new AppException(ResponseCode.UN_ERROR.getCode(), "同 requestId 请求处理中，请稍后重试");
         }
 
         try {
-            int effectiveCost = parseCostConfig(
-                    platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(costPerAsk)));
             CreditDeductionResult creditResult;
             try {
                 creditResult = applyCreditDeduction(token, effectiveCost, requestId);
             } catch (Exception e) {
-                chatRequestIdempotencySupport.clearProcessing(requestId);
+                chatRequestIdempotencySupport.clearProcessing(userId, requestId);
                 throw e;
             }
 
@@ -113,7 +118,7 @@ public class ChatbotApplicationService {
                         .creditDeducted(creditResult.deducted)
                         .creditBalance(creditResult.balance)
                         .build();
-                chatRequestIdempotencySupport.complete(requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
+                chatRequestIdempotencySupport.complete(userId, requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
                         .answer(answer)
                         .toolName(responseDto.getToolName())
                         .success(true)
@@ -123,30 +128,44 @@ public class ChatbotApplicationService {
                 return responseDto;
             } catch (Exception e) {
                 log.error("AI call failed after credit deduction, refunding requestId:{}", creditResult.requestId, e);
-                String failureAnswer = handleRefundAfterAiFailure(token, effectiveCost, creditResult.requestId);
-                ChatbotAskResponseDTO failureDto = ChatbotAskResponseDTO.builder()
-                        .intent("chat")
+                String failureAnswer = handleRefundAfterAiFailure(token, creditResult.requestId);
+                String errorCode = ResponseCode.UN_ERROR.getCode();
+                chatRequestIdempotencySupport.complete(userId, requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
+                        .answer(failureAnswer)
                         .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) ? PROVIDER_DEEPSEEK : "local")
                         .success(false)
-                        .answer(failureAnswer)
                         .creditDeducted(creditResult.deducted)
                         .creditBalance(creditResult.balance)
-                        .build();
-                chatRequestIdempotencySupport.complete(requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
-                        .answer(failureAnswer)
-                        .toolName(failureDto.getToolName())
-                        .success(false)
-                        .creditDeducted(creditResult.deducted)
-                        .creditBalance(creditResult.balance)
+                        .errorCode(errorCode)
+                        .errorMessage(failureAnswer)
                         .build());
-                throw new AppException(ResponseCode.UN_ERROR.getCode(), failureAnswer);
+                throw new AppException(errorCode, failureAnswer);
             }
         } catch (AppException e) {
             throw e;
         } catch (Exception e) {
-            chatRequestIdempotencySupport.clearProcessing(requestId);
+            chatRequestIdempotencySupport.clearProcessing(userId, requestId);
             throw e;
         }
+    }
+
+    private String resolveUserIdForAsk(String token, int effectiveCost) {
+        if (effectiveCost > 0) {
+            String userId = chatTokenUserSupport.resolveUserId(token);
+            if (StringUtils.isBlank(userId)) {
+                throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());
+            }
+            return userId;
+        }
+        return StringUtils.defaultIfBlank(chatTokenUserSupport.resolveUserId(token), "__anonymous__");
+    }
+
+    private ChatbotAskResponseDTO replayFromCache(ChatRequestIdempotencySupport.CachedChatResponse cached) {
+        if (!cached.isSuccess() && StringUtils.isNotBlank(cached.getErrorCode())) {
+            throw new AppException(cached.getErrorCode(),
+                    StringUtils.defaultIfBlank(cached.getErrorMessage(), cached.getAnswer()));
+        }
+        return toResponseDto(cached);
     }
 
     private ChatbotAskResponseDTO toResponseDto(ChatRequestIdempotencySupport.CachedChatResponse cached) {
@@ -160,20 +179,21 @@ public class ChatbotApplicationService {
                 .build();
     }
 
-    private String handleRefundAfterAiFailure(String token, int effectiveCost, String requestId) {
+    private String handleRefundAfterAiFailure(String token, String requestId) {
         boolean refundSucceeded = false;
-        if (effectiveCost > 0) {
-            try {
-                marketCreditGatewayClient.refundCredit(token, effectiveCost, requestId);
-                String userId = chatTokenUserSupport.resolveUserId(token);
-                if (StringUtils.isNotBlank(userId)) {
-                    chatCreditSessionSupport.markRefunded(userId, requestId);
-                }
-                refundSucceeded = true;
-            } catch (Exception refundEx) {
-                log.error("Refund failed after AI failure requestId:{}", requestId, refundEx);
-                String userId = chatTokenUserSupport.resolveUserId(token);
-                if (StringUtils.isNotBlank(userId)) {
+        String userId = chatTokenUserSupport.resolveUserId(token);
+        try {
+            marketCreditGatewayClient.refundCredit(token, requestId);
+            if (StringUtils.isNotBlank(userId)) {
+                chatCreditSessionSupport.markRefunded(userId, requestId);
+            }
+            refundSucceeded = true;
+        } catch (Exception refundEx) {
+            log.error("Refund failed after AI failure requestId:{}", requestId, refundEx);
+            if (StringUtils.isNotBlank(userId)) {
+                try {
+                    marketCreditGatewayClient.markRefundPending(token, requestId);
+                } catch (Exception pendingEx) {
                     chatCreditSessionSupport.markRefundPending(userId, requestId);
                 }
             }

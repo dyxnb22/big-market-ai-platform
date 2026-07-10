@@ -267,4 +267,9 @@ public interface IRedisService {
 
     Boolean setNx(String key, long expired, TimeUnit timeUnit);
 
+    /**
+     * 原子 SET key value NX PX，成功返回 true。
+     */
+    <T> Boolean setValueIfAbsent(String key, T value, long expired, TimeUnit timeUnit);
+
 }

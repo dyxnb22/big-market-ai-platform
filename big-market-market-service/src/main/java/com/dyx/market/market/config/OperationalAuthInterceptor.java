@@ -37,7 +37,7 @@ public class OperationalAuthInterceptor implements HandlerInterceptor {
 
     private void writeError(HttpServletResponse response) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_OK);
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.getWriter().write(JSON.toJSONString(Response.builder()
                 .code(ResponseCode.APP_TOKEN_ERROR.getCode())
                 .info(ResponseCode.APP_TOKEN_ERROR.getInfo())

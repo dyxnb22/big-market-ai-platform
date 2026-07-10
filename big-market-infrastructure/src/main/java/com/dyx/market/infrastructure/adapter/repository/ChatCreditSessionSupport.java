@@ -57,17 +57,20 @@ public class ChatCreditSessionSupport {
     }
 
     private void updateRefundState(String userId, String requestId, String refundState) {
-        if (StringUtils.isBlank(requestId)) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
             return;
         }
-        if (StringUtils.isNotBlank(userId)) {
-            dbRouter.doRouter(userId);
-        }
+        dbRouter.doRouter(userId);
         try {
-            chatCreditSessionDao.updateRefundState(ChatCreditSession.builder()
+            int affected = chatCreditSessionDao.updateRefundState(ChatCreditSession.builder()
+                    .userId(userId)
                     .requestId(requestId)
                     .refundState(refundState)
                     .build());
+            if (affected == 0) {
+                log.warn("[ChatCreditSession] refund state not updated userId:{} requestId:{} state:{}",
+                        userId, requestId, refundState);
+            }
         } finally {
             dbRouter.clear();
         }

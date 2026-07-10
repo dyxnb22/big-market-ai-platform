@@ -20,8 +20,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Resource
     private OperationalAuthInterceptor operationalAuthInterceptor;
 
+    @Resource
+    private InternalChatServiceAuthInterceptor internalChatServiceAuthInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(internalChatServiceAuthInterceptor)
+                .addPathPatterns(
+                        "/api/*/internal/raffle/activity/chat_credit_refund_by_token",
+                        "/api/*/internal/raffle/activity/chat_credit_mark_refund_pending_by_token");
         registry.addInterceptor(operationalAuthInterceptor)
                 .addPathPatterns(
                         "/api/*/raffle/erp/**",
@@ -37,7 +44,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/*/raffle/activity/query_user_credit_account_by_token",
                         "/api/*/raffle/activity/credit_pay_exchange_sku_by_token",
                         "/api/*/raffle/activity/chat_credit_deduct_by_token",
-                        "/api/*/raffle/activity/chat_credit_refund_by_token",
                         "/api/*/raffle/strategy/query_raffle_award_list_by_token")
                 .excludePathPatterns("/api/*/auth/**");
     }

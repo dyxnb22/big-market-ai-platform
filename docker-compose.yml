@@ -94,6 +94,8 @@ services:
     environment:
       - SERVER_PORT=8084
       - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
+      - APP_JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
       - CHATBOT_PROVIDER=${CHATBOT_PROVIDER:-local}
@@ -102,6 +104,14 @@ services:
       - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
+      - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
+      - CHATBOT_GATEWAY_URL=http://big-market-gateway:8080
     volumes:
       - ./data/chatbot-config:/data/chatbot-config
     networks:
@@ -161,6 +171,7 @@ services:
       - XXL_JOB_PORT=9090
       - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
       - GATEWAY_API_HOST=big-market-gateway
+      - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
     networks:
       - dev-ops_my-network
     healthcheck:

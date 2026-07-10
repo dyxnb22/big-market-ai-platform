@@ -828,7 +828,7 @@ function initApp() {
     if (d.ucExchangeBtn) { busy(d.ucExchangeBtn, true); d.ucExchangeBtn.textContent = "兑换中..."; }
     apiRequest("/raffle/activity/credit_pay_exchange_sku_by_token", {
       method: "POST",
-      body: JSON.stringify({ sku: exchangeSku.sku })
+      body: JSON.stringify({ sku: exchangeSku.sku, requestId: crypto.randomUUID() })
     }).then(function() {
       toast("兑换成功，获得 1 次抽奖机会");
       var cost = exchangeSku ? (exchangeSku.productAmount || 0) : 0;

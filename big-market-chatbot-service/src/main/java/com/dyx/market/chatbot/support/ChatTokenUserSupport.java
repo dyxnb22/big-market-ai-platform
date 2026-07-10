@@ -2,7 +2,6 @@ package com.dyx.market.chatbot.support;
 
 import com.dyx.market.domain.auth.util.JwtTokenUtils;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,8 +20,10 @@ public class ChatTokenUserSupport {
             return null;
         }
         try {
-            String token = JwtTokenUtils.extractToken(authorizationHeader);
-            Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
+            Claims claims = JwtTokenUtils.parseClaims(authorizationHeader, jwtSecret);
+            if (claims == null) {
+                return null;
+            }
             Object openId = claims.get("openId");
             return openId != null ? openId.toString() : null;
         } catch (Exception e) {

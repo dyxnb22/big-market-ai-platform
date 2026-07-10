@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ImportResource;
 
 /**
  * 账户服务启动入口：对外提供积分与活动额度相关的 Dubbo RPC。
@@ -34,6 +35,7 @@ import org.springframework.context.annotation.Import;
 })
 @EnableDubbo
 @Import(LocalActivityPortConfig.class)
+@ImportResource(locations = {"classpath:spring/spring-config-token.xml"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class AccountServiceApplication {
 

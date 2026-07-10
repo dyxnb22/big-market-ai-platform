@@ -10,6 +10,9 @@ redis:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:16379}
 
+chat:
+  internal-service-token: test-chat-internal-token
+
 chatbot:
   provider: local
   cost-per-ask: 0

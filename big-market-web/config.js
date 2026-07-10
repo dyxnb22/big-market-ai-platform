@@ -20,7 +20,7 @@ var CONFIG = {
   AUTH_KEY: "lucky-draw-auth",
   CHANNEL: "c01",
   SOURCE: "s01",
-  /** 动态活动 ID 解析失败时的兜底值（与演示数据、管理端默认一致） */
-  DEFAULT_ACTIVITY_ID: 100301,
-  ACTIVITY_ID: 100301,
+  /** 动态活动 ID 解析失败时的兜底值；正常路径以 stage(c01/s01→100401) 为准 */
+  DEFAULT_ACTIVITY_ID: 100401,
+  ACTIVITY_ID: 100401,
 };

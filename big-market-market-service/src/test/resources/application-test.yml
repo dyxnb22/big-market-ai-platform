@@ -3,6 +3,9 @@ spring:
     inetutils:
       preferred-networks: 127.0.0.1
       use-only-site-local-interfaces: true
+    client:
+      hostname: localhost
+      ip-address: 127.0.0.1
     zookeeper:
       enabled: false
   rabbitmq:
@@ -34,6 +37,9 @@ dubbo:
   registry:
     check: false
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
+
+default-credential-guard:
+  enabled: false
 
 flag-mutual-exclusion-guard:
   enabled: false

@@ -1,6 +1,5 @@
 package com.dyx.market.message.job.config;
 
-import com.dyx.market.infrastructure.adapter.repository.ChatCreditSessionSupport;
 import com.dyx.market.infrastructure.dao.IChatCreditSessionDao;
 import com.dyx.market.infrastructure.dao.po.ChatCreditSession;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
@@ -18,7 +17,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Chatbot 退款补偿 Job：扫描 refund_state=pending 的会话，重试积分退还（幂等键 chat_refund_{requestId}）。
+ * Chatbot 退款补偿 Job：扫描 refund_state=pending 的会话，重试积分退还
+ *（幂等键 chat_refund_{userId}_{requestId}）。
  */
 @Slf4j
 @Component
@@ -34,8 +34,6 @@ public class ChatRefundReconcileJob {
     private IChatCreditSessionDao chatCreditSessionDao;
     @Resource
     private ChatCreditApplicationService chatCreditApplicationService;
-    @Resource
-    private ChatCreditSessionSupport chatCreditSessionSupport;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -53,7 +51,12 @@ public class ChatRefundReconcileJob {
                 dbRouter.setDBKey(dbIdx);
                 List<ChatCreditSession> pending = chatCreditSessionDao.queryPendingRefunds(maxRetries, scanLimit);
                 for (ChatCreditSession session : pending) {
-                    reconcile(session);
+                    try {
+                        reconcile(session);
+                    } finally {
+                        // refund()/updateRetryFailed 会 clear()，恢复扫描分片以免同批后续误路由
+                        dbRouter.setDBKey(dbIdx);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -68,13 +71,17 @@ public class ChatRefundReconcileJob {
 
     private void reconcile(ChatCreditSession session) {
         try {
-            chatCreditApplicationService.refund(session.getUserId(), session.getDeductAmount(), session.getRequestId());
-            chatCreditSessionSupport.markRefunded(session.getUserId(), session.getRequestId());
+            chatCreditApplicationService.refund(session.getUserId(), session.getRequestId());
             log.info("[ChatRefundReconcileJob] refund success userId:{} requestId:{}", session.getUserId(), session.getRequestId());
         } catch (Exception e) {
             log.error("[ChatRefundReconcileJob] refund failed userId:{} requestId:{} retry:{}",
                     session.getUserId(), session.getRequestId(), session.getRetryCount(), e);
-            chatCreditSessionDao.updateRetryFailed(session);
+            try {
+                dbRouter.doRouter(session.getUserId());
+                chatCreditSessionDao.updateRetryFailed(session);
+            } finally {
+                dbRouter.clear();
+            }
         }
     }
 }

@@ -51,8 +51,8 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
     }
 
     @Override
-    public List<StrategyAwardStockConfirmTaskEntity> queryPendingTasks(int limit) {
-        List<StrategyAwardStockConfirmTask> rows = strategyAwardStockConfirmTaskDao.queryPendingTasks(limit);
+    public List<StrategyAwardStockConfirmTaskEntity> queryPendingTasks(int maxRetries, int limit) {
+        List<StrategyAwardStockConfirmTask> rows = strategyAwardStockConfirmTaskDao.queryPendingTasks(maxRetries, limit);
         List<StrategyAwardStockConfirmTaskEntity> result = new ArrayList<>();
         for (StrategyAwardStockConfirmTask row : rows) {
             result.add(StrategyAwardStockConfirmTaskEntity.builder()
@@ -90,10 +90,10 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
     }
 
     @Override
-    public int incrementRetryFailed(int scanDbIdx, String userId, String orderId) {
+    public int incrementRetryFailed(int scanDbIdx, String userId, String orderId, int maxRetries) {
         try {
             dbRouter.setDBKey(scanDbIdx);
-            return strategyAwardStockConfirmTaskDao.updateRetryFailed(buildTaskKey(userId, orderId));
+            return strategyAwardStockConfirmTaskDao.updateRetryFailed(buildTaskKey(userId, orderId), maxRetries);
         } finally {
             dbRouter.clear();
         }

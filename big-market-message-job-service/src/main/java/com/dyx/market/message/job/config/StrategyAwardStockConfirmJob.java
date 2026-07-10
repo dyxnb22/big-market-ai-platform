@@ -25,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class StrategyAwardStockConfirmJob {
 
+    @Value("${job.strategy-stock-confirm.max-retries:5}")
+    private int maxRetries;
+
     @Value("${job.strategy-stock-confirm.scan-limit:20}")
     private int scanLimit;
 
@@ -66,7 +69,8 @@ public class StrategyAwardStockConfirmJob {
             if (reverted > 0) {
                 log.warn("[StrategyAwardStockConfirmJob] reverted {} stale processing tasks on DB{}", reverted, dbIdx);
             }
-            List<StrategyAwardStockConfirmTaskEntity> tasks = strategyStockConfirmCompensationPort.queryPendingTasks(scanLimit);
+            List<StrategyAwardStockConfirmTaskEntity> tasks =
+                    strategyStockConfirmCompensationPort.queryPendingTasks(maxRetries, scanLimit);
             for (StrategyAwardStockConfirmTaskEntity task : tasks) {
                 confirmTask(task, dbIdx);
             }
@@ -99,7 +103,7 @@ public class StrategyAwardStockConfirmJob {
         } catch (Exception e) {
             log.warn("[StrategyAwardStockConfirmJob] confirm failed userId:{} orderId:{}",
                     task.getUserId(), task.getOrderId(), e);
-            strategyStockConfirmCompensationPort.incrementRetryFailed(scanDbIdx, task.getUserId(), task.getOrderId());
+            strategyStockConfirmCompensationPort.incrementRetryFailed(scanDbIdx, task.getUserId(), task.getOrderId(), maxRetries);
             return;
         }
 
@@ -109,7 +113,7 @@ public class StrategyAwardStockConfirmJob {
         } else {
             log.warn("[StrategyAwardStockConfirmJob] markConfirmed missed userId:{} orderId:{} on DB{}",
                     task.getUserId(), task.getOrderId(), scanDbIdx);
-            strategyStockConfirmCompensationPort.incrementRetryFailed(scanDbIdx, task.getUserId(), task.getOrderId());
+            strategyStockConfirmCompensationPort.incrementRetryFailed(scanDbIdx, task.getUserId(), task.getOrderId(), maxRetries);
         }
     }
 }

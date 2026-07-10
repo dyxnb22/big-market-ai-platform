@@ -71,8 +71,9 @@ public class AwardService implements IAwardService {
         // 奖品Key
         String awardKey = awardRepository.queryAwardKey(distributeAwardEntity.getAwardId());
         if (null == awardKey) {
-            log.error("分发奖品，奖品ID不存在。awardKey:{}", awardKey);
-            return;
+            log.error("分发奖品，奖品ID不存在 awardId:{}", distributeAwardEntity.getAwardId());
+            throw new AppException(com.dyx.market.types.enums.ResponseCode.ILLEGAL_PARAMETER.getCode(),
+                    "奖品配置不存在，awardId=" + distributeAwardEntity.getAwardId());
         }
 
         // 奖品服务

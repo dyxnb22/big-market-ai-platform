@@ -13,7 +13,8 @@ public interface IStrategyAwardStockConfirmTaskDao {
     @DBRouter
     void insert(StrategyAwardStockConfirmTask task);
 
-    List<StrategyAwardStockConfirmTask> queryPendingTasks(@Param("limit") int limit);
+    List<StrategyAwardStockConfirmTask> queryPendingTasks(@Param("maxRetries") int maxRetries,
+                                                          @Param("limit") int limit);
 
     @DBRouter
     int claimProcessing(StrategyAwardStockConfirmTask task);
@@ -22,7 +23,8 @@ public interface IStrategyAwardStockConfirmTaskDao {
     int updateConfirmed(StrategyAwardStockConfirmTask task);
 
     @DBRouter
-    int updateRetryFailed(StrategyAwardStockConfirmTask task);
+    int updateRetryFailed(@Param("task") StrategyAwardStockConfirmTask task,
+                          @Param("maxRetries") int maxRetries);
 
     int revertStaleProcessing(@Param("staleBefore") java.util.Date staleBefore, @Param("limit") int limit);
 }

@@ -14,9 +14,18 @@ Code paths:
 Idempotency keys include `out_business_no`, chatbot `requestId`, and
 award-credit `award_order_id`.
 
-Chat billing (BM-010): `ChatRequestIdempotencySupport` + `ChatCreditSessionSupport`
-persist request-scoped state (`refund_state`, shard via `userId`) so duplicate
-`requestId` does not double-charge; reconcile job retries pending refunds.
+Chat billing (BM-010 / NR-002): Redis idempotency key is `chat:request:{userId}:{requestId}`.
+`ChatCreditSession` lives on shards `big_market_01` / `big_market_02` only (see
+`z-reconcile-tables.sql`). Both `ChatCreditSessionRepository` (market/job) and
+`ChatCreditSessionSupport` (chatbot) must call `IDBRouterStrategy.doRouter(userId)`
+before DAO access. `recordDeduction` is insert-only; duplicate keys must not reset
+`refund_state`. Paid chat requires valid JWT before idempotency cache lookup.
+Refunds require a deduction session; public refund HTTP is removed — chatbot uses internal token route.
+Credit out_business_no: `chat_{userId}_{requestId}` / `chat_refund_{userId}_{requestId}`.
+Refund compensation: `refund_state` may transition `none|pending → refunding → refunded`.
+
+Exchange (NR-007): `SkuProductShopCartRequestDTO.requestId` is required; `out_business_no`
+is derived as `{userId}_{sku}_{requestId}` (no millisecond suffix).
 
 ## Award
 

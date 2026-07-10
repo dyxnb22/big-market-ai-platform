@@ -12,13 +12,13 @@ public interface IStrategyStockConfirmCompensationPort {
 
     void enqueuePendingConfirm(String userId, StrategyAwardStockKeyVO reservation);
 
-    List<StrategyAwardStockConfirmTaskEntity> queryPendingTasks(int limit);
+    List<StrategyAwardStockConfirmTaskEntity> queryPendingTasks(int maxRetries, int limit);
 
     int claimProcessing(int scanDbIdx, String userId, String orderId);
 
     int markConfirmed(int scanDbIdx, String userId, String orderId);
 
-    int incrementRetryFailed(int scanDbIdx, String userId, String orderId);
+    int incrementRetryFailed(int scanDbIdx, String userId, String orderId, int maxRetries);
 
     int revertStaleProcessing(int scanDbIdx, java.util.Date staleBefore, int limit);
 }

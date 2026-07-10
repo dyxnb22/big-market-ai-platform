@@ -122,10 +122,4 @@ public class RaffleActivityServiceRPC implements IRaffleActivityService {
         return TriggerApiResponses.ok(raffleActivityFacade.chatCreditDeduct(
                 authenticatedUserSupport.requireUserId(token), amount, requestId));
     }
-
-    @Override
-    public Response<BigDecimal> chatCreditRefundByToken(String token, int amount, String originalRequestId) {
-        return TriggerApiResponses.ok(raffleActivityFacade.chatCreditRefund(
-                authenticatedUserSupport.requireUserId(token), amount, originalRequestId));
-    }
 }

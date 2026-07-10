@@ -11,17 +11,13 @@ import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
 import javax.annotation.Resource;
 
 /**
  * 远程积分写适配器（message-job-service）：远程失败写 pending 任务，不本地回落。
+ * 由 {@link WriteAdapterLocalConfig} 注册为 {@code @Bean}，勿加 {@code @Component}。
  */
 @Slf4j
-@Component
-@ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "true")
 public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapter {
 
     @Resource
@@ -45,6 +41,11 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
                 log.info("[AccountRemoteCreditWriteAdapter] createOrder remote success userId:{} outBusinessNo:{}",
                         tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
                 return resp.getData();
+            }
+            if (resp != null && ResponseCode.INDEX_DUP.getCode().equals(resp.getCode())) {
+                log.warn("[AccountRemoteCreditWriteAdapter] createOrder duplicate userId:{} outBusinessNo:{}",
+                        tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());
+                return resp.getData() != null ? resp.getData() : tradeEntity.getOutBusinessNo();
             }
             log.warn("[AccountRemoteCreditWriteAdapter] createOrder non-success code:{} userId:{} outBusinessNo:{}",
                     resp != null ? resp.getCode() : null, tradeEntity.getUserId(), tradeEntity.getOutBusinessNo());

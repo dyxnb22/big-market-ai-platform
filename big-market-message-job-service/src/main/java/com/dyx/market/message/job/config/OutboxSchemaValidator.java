@@ -2,6 +2,7 @@ package com.dyx.market.message.job.config;
 
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,7 @@ public class OutboxSchemaValidator implements CommandLineRunner {
     private boolean awardCreditOutboxEnabled;
 
     @Resource
+    @Qualifier("mysqlDataSource")
     private DataSource dataSource;
 
     @Resource

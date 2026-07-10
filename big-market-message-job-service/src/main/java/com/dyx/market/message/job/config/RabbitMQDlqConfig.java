@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.util.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +43,9 @@ public class RabbitMQDlqConfig {
 
     @Resource
     private IMqDeadLetterDao mqDeadLetterDao;
+
+    @Resource
+    private com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy dbRouter;
 
     @Value("${job.dlq-replay.max-consume-failures:5}")
     private int maxConsumeFailures;
@@ -114,6 +118,20 @@ public class RabbitMQDlqConfig {
     private void persistDeadLetter(String originalQueue, Message message) {
         String payload = new String(message.getBody(), StandardCharsets.UTF_8);
         String businessMessageId = resolveBusinessMessageId(originalQueue, payload);
+        String userId = resolveUserId(payload);
+        try {
+            if (StringUtils.isNotBlank(userId)) {
+                dbRouter.doRouter(userId);
+            } else {
+                dbRouter.setDBKey(1);
+            }
+            persistDeadLetterOnCurrentShard(originalQueue, payload, businessMessageId);
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
+    private void persistDeadLetterOnCurrentShard(String originalQueue, String payload, String businessMessageId) {
         int reactivated = mqDeadLetterDao.reactivateReplayed(businessMessageId, maxConsumeFailures);
         if (reactivated > 0) {
             MqDeadLetter latest = mqDeadLetterDao.queryLatestByBusinessMessageId(businessMessageId);
@@ -178,6 +196,27 @@ public class RabbitMQDlqConfig {
             // fall through to hash
         }
         return DigestUtils.md5DigestAsHex((queue + ":" + payload).getBytes(StandardCharsets.UTF_8));
+    }
+
+    static String resolveUserId(String payload) {
+        try {
+            JSONObject json = JSON.parseObject(payload);
+            if (json == null) {
+                return null;
+            }
+            if (json.containsKey("userId")) {
+                return json.getString("userId");
+            }
+            if (json.containsKey("data")) {
+                JSONObject data = json.getJSONObject("data");
+                if (data != null && data.containsKey("userId")) {
+                    return data.getString("userId");
+                }
+            }
+        } catch (Exception ignored) {
+            // fall through
+        }
+        return null;
     }
 
 }

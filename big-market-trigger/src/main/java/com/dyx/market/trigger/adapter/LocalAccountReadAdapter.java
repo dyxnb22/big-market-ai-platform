@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "account.service.remote-read.enabled", havingValue = "false", matchIfMissing = true)
-@ConditionalOnMissingBean(name = "accountRemoteReadAdapter")
+@ConditionalOnMissingBean(IAccountReadAdapter.class)
 public class LocalAccountReadAdapter implements IAccountReadAdapter {
 
     @Resource

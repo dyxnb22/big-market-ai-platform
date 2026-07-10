@@ -10,7 +10,7 @@ app:
     api-version: ${API_VERSION:v1}
     cross-origin: ${CROSS_ORIGIN:'*'}
   jwt:
-    secret: ${APP_JWT_SECRET:change-me-in-dev-only}
+    secret: ${JWT_SECRET:${APP_JWT_SECRET:change-me-in-docker-dev-only}}
 
 chatbot:
   provider: ${CHATBOT_PROVIDER:local}

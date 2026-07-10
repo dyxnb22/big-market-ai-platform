@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `chat_credit_session` (
     `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_request_id` (`request_id`),
+    UNIQUE KEY `uq_user_request` (`user_id`, `request_id`),
     KEY `idx_refund_pending` (`refund_state`, `retry_count`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

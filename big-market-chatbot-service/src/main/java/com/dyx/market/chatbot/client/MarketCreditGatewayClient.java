@@ -29,6 +29,9 @@ public class MarketCreditGatewayClient {
     @Value("${app.config.api-version:v1}")
     private String apiVersion;
 
+    @Value("${chat.internal-service-token:change-me-chat-internal}")
+    private String internalServiceToken;
+
     @Resource
     private RestTemplate restTemplate;
 
@@ -51,17 +54,39 @@ public class MarketCreditGatewayClient {
         return parseBalance(resp);
     }
 
-    public void refundCredit(String token, int amount, String originalRequestId) {
-        String url = baseUrl() + "/raffle/activity/chat_credit_refund_by_token?amount=" + amount
-                + "&originalRequestId=" + urlEncode(originalRequestId);
+    public void refundCredit(String token, String originalRequestId) {
+        String url = internalBaseUrl() + "/chat_credit_refund_by_token?originalRequestId="
+                + urlEncode(originalRequestId);
         try {
-            ResponseEntity<String> resp = restTemplate.postForEntity(url, new HttpEntity<>("{}", authHeaders(token)), String.class);
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    url, new HttpEntity<>("{}", internalAuthHeaders(token)), String.class);
             parseBalance(resp);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("Failed to refund credit for requestId:{} amount:{}", originalRequestId, amount, e);
+            log.warn("Failed to refund credit for requestId:{}", originalRequestId, e);
             throw new IllegalStateException("积分退还请求失败", e);
+        }
+    }
+
+    public void markRefundPending(String token, String requestId) {
+        String url = internalBaseUrl() + "/chat_credit_mark_refund_pending_by_token?requestId="
+                + urlEncode(requestId);
+        try {
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    url, new HttpEntity<>("{}", internalAuthHeaders(token)), String.class);
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
+                throw new IllegalStateException("标记退款 pending 失败");
+            }
+            JsonNode root = objectMapper.readTree(resp.getBody());
+            if (!"0000".equals(root.path("code").asText())) {
+                throw new IllegalStateException(root.path("info").asText("标记退款 pending 失败"));
+            }
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Failed to mark refund pending requestId:{}", requestId, e);
+            throw new IllegalStateException("标记退款 pending 失败", e);
         }
     }
 
@@ -69,10 +94,20 @@ public class MarketCreditGatewayClient {
         return gatewayUrl.replaceAll("/$", "") + "/api/" + apiVersion;
     }
 
-    private static HttpHeaders authHeaders(String token) {
+    private String internalBaseUrl() {
+        return baseUrl() + "/internal/raffle/activity";
+    }
+
+    private HttpHeaders authHeaders(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", token);
+        return headers;
+    }
+
+    private HttpHeaders internalAuthHeaders(String token) {
+        HttpHeaders headers = authHeaders(token);
+        headers.set("X-Chat-Internal-Token", internalServiceToken);
         return headers;
     }
 

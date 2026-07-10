@@ -177,4 +177,9 @@ public class RedissonService implements IRedisService {
         return redissonClient.getBucket(key).setIfAbsent("lock", Duration.ofNanos(timeUnit.toNanos(expired)));
     }
 
+    @Override
+    public <T> Boolean setValueIfAbsent(String key, T value, long expired, TimeUnit timeUnit) {
+        return redissonClient.getBucket(key).setIfAbsent(value, Duration.ofNanos(timeUnit.toNanos(expired)));
+    }
+
 }

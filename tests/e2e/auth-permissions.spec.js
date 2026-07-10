@@ -3,7 +3,11 @@ const { test, expect } = require("@playwright/test");
 function collectClientErrors(page) {
   const errors = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") errors.push("console: " + msg.text());
+    if (msg.type() !== "error") return;
+    const text = msg.text();
+    // Expected during wrong-password / non-admin probes
+    if (/status of 401|status of 403/.test(text)) return;
+    errors.push("console: " + text);
   });
   page.on("pageerror", (error) => {
     errors.push("pageerror: " + error.message);
@@ -147,6 +151,7 @@ test("draw button shows 抽奖中... while drawing and restores GO", async ({ pa
   await loginUser(page);
   await page.locator("#openLotteryBtn").click();
   await expect(page.locator("#lotteryDrawer")).toHaveClass(/open/);
+  await expect(page.locator("#drawBtn")).toBeEnabled({ timeout: 15000 });
 
   // Button text changes on click
   await page.locator("#drawBtn").click();

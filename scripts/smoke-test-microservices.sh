@@ -9,10 +9,10 @@
 # Usage: ./scripts/smoke-test-microservices.sh [gateway-host]
 # Default host: localhost
 #
-# Expected result: 18/18 PASS
+# Expected result: 19/19 PASS
 #   - 8 health checks  (gateway + 7 backend services)
 #   - 9 functional API checks
-#   - 1 gateway fallback endpoint check
+#   - 2 gateway fallback checks (HTTP 503 + body code 0007)
 
 set -euo pipefail
 
@@ -99,18 +99,28 @@ check "gateway → chatbot/ask (with auth, credit charged)" "0000" "$GW_CHATBOT"
 GW_MARKET=$(curl -sf "$GW/api/v1/raffle/activity/query_stage_activity_id?channel=default&source=web" 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → market/query_stage_activity_id" "0000" "$GW_MARKET"
 
-GW_DRAW_NO_TOKEN=$(curl -sf -X POST "$GW/api/v1/raffle/activity/draw_by_token" \
+GW_DRAW_NO_TOKEN=$(curl -sS -X POST "$GW/api/v1/raffle/activity/draw_by_token" \
   -H "Content-Type: application/json" \
   -d '{"activityId":100301}' 2>/dev/null || echo '{"code":"FAIL"}')
 check "gateway → market/draw_by_token (no token, expect 0009)" "0009" "$GW_DRAW_NO_TOKEN"
 
 echo ""
 echo "--- Gateway fallback endpoint ---"
-GW_FALLBACK=$(curl -sf "$GW/fallback/auth-service" 2>/dev/null || echo '{"code":"FAIL"}')
+FALLBACK_BODY=$(mktemp)
+GW_FALLBACK_HTTP=$(curl -sS -o "$FALLBACK_BODY" -w '%{http_code}' "$GW/fallback/auth-service" 2>/dev/null || echo "000")
+GW_FALLBACK=$(cat "$FALLBACK_BODY")
+rm -f "$FALLBACK_BODY"
+if [ "$GW_FALLBACK_HTTP" = "503" ]; then
+  echo "  PASS  gateway fallback HTTP status 503"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  gateway fallback HTTP status (expected 503, got $GW_FALLBACK_HTTP)"
+  FAIL=$((FAIL+1))
+fi
 check "gateway fallback endpoint returns 0007" "0007" "$GW_FALLBACK"
 
 echo ""
 echo "=========================================="
-echo "Results: $PASS passed, $FAIL failed  (expected 18/18)"
+echo "Results: $PASS passed, $FAIL failed  (expected 19/19)"
 echo "=========================================="
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

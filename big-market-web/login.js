@@ -23,8 +23,12 @@ if (existingAuth.token) {
 }
 
 async function login() {
-  if (!userIdInput.value.trim() || !passwordInput.value) {
-    toast("请输入用户ID和密码");
+  if (!userIdInput.value.trim()) {
+    toast("请输入用户 ID");
+    return;
+  }
+  if (!passwordInput.value) {
+    toast("请输入密码");
     return;
   }
   loginBtn.disabled = true;

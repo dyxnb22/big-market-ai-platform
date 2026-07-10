@@ -3,7 +3,10 @@ const { test, expect } = require("@playwright/test");
 function collectClientErrors(page) {
   const errors = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") errors.push("console: " + msg.text());
+    if (msg.type() !== "error") return;
+    const text = msg.text();
+    if (/status of 401|status of 403/.test(text)) return;
+    errors.push("console: " + text);
   });
   page.on("pageerror", (error) => {
     errors.push("pageerror: " + error.message);
@@ -206,6 +209,7 @@ test("wheel is responsive on mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await loginUser(page);
   await page.waitForTimeout(500);
+  await expect(page.locator("#mOpenLotteryBtn")).toBeVisible();
   await page.locator("#mOpenLotteryBtn").click();
   await expect(page.locator("#lotteryDrawer")).toHaveClass(/open/);
   await page.waitForTimeout(1000);

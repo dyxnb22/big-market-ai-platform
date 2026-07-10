@@ -26,12 +26,14 @@ import org.springframework.context.annotation.Configuration;
 public class WriteAdapterLocalConfig {
 
     @Bean
+    @ConditionalOnProperty(name = "account.service.remote-quota-write.enabled", havingValue = "false", matchIfMissing = true)
     @ConditionalOnMissingBean(IAccountQuotaWriteAdapter.class)
     public LocalAccountQuotaWriteAdapter localAccountQuotaWriteAdapter() {
         return new LocalAccountQuotaWriteAdapter();
     }
 
     @Bean
+    @ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "false", matchIfMissing = true)
     @ConditionalOnMissingBean(IAccountCreditWriteAdapter.class)
     public LocalAccountCreditWriteAdapter localAccountCreditWriteAdapter() {
         return new LocalAccountCreditWriteAdapter();
