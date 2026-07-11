@@ -5,6 +5,7 @@ import com.dyx.market.domain.strategy.model.entity.StrategyAwardStockConfirmTask
 import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao;
 import com.dyx.market.infrastructure.dao.po.StrategyAwardStockConfirmTask;
+import com.dyx.market.middleware.db.router.DBRouterTemplate;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,22 +32,20 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
             return;
         }
         try {
-            dbRouter.doRouter(userId);
-            strategyAwardStockConfirmTaskDao.insert(StrategyAwardStockConfirmTask.builder()
-                    .userId(userId)
-                    .orderId(reservation.getReservationId())
-                    .strategyId(reservation.getStrategyId())
-                    .awardId(reservation.getAwardId())
-                    .reservationId(reservation.getReservationId())
-                    .lockSurplus(reservation.getLockSurplus())
-                    .state("pending")
-                    .retryCount(0)
-                    .build());
+            DBRouterTemplate.executeOnShard(dbRouter, userId, () ->
+                    strategyAwardStockConfirmTaskDao.insert(StrategyAwardStockConfirmTask.builder()
+                            .userId(userId)
+                            .orderId(reservation.getReservationId())
+                            .strategyId(reservation.getStrategyId())
+                            .awardId(reservation.getAwardId())
+                            .reservationId(reservation.getReservationId())
+                            .lockSurplus(reservation.getLockSurplus())
+                            .state("pending")
+                            .retryCount(0)
+                            .build()));
             log.warn("[StockConfirmCompensation] enqueued userId:{} orderId:{}", userId, reservation.getReservationId());
         } catch (DuplicateKeyException e) {
             log.warn("[StockConfirmCompensation] duplicate orderId:{}", reservation.getReservationId());
-        } finally {
-            dbRouter.clear();
         }
     }
 
@@ -71,42 +70,26 @@ public class LocalStrategyStockConfirmCompensationPort implements IStrategyStock
 
     @Override
     public int claimProcessing(int scanDbIdx, String userId, String orderId) {
-        try {
-            dbRouter.setDBKey(scanDbIdx);
-            return strategyAwardStockConfirmTaskDao.claimProcessing(buildTaskKey(userId, orderId));
-        } finally {
-            dbRouter.clear();
-        }
+        return DBRouterTemplate.executeOnDb(dbRouter, scanDbIdx,
+                () -> strategyAwardStockConfirmTaskDao.claimProcessing(buildTaskKey(userId, orderId)));
     }
 
     @Override
     public int markConfirmed(int scanDbIdx, String userId, String orderId) {
-        try {
-            dbRouter.setDBKey(scanDbIdx);
-            return strategyAwardStockConfirmTaskDao.updateConfirmed(buildTaskKey(userId, orderId));
-        } finally {
-            dbRouter.clear();
-        }
+        return DBRouterTemplate.executeOnDb(dbRouter, scanDbIdx,
+                () -> strategyAwardStockConfirmTaskDao.updateConfirmed(buildTaskKey(userId, orderId)));
     }
 
     @Override
     public int incrementRetryFailed(int scanDbIdx, String userId, String orderId, int maxRetries) {
-        try {
-            dbRouter.setDBKey(scanDbIdx);
-            return strategyAwardStockConfirmTaskDao.updateRetryFailed(buildTaskKey(userId, orderId), maxRetries);
-        } finally {
-            dbRouter.clear();
-        }
+        return DBRouterTemplate.executeOnDb(dbRouter, scanDbIdx,
+                () -> strategyAwardStockConfirmTaskDao.updateRetryFailed(buildTaskKey(userId, orderId), maxRetries));
     }
 
     @Override
     public int revertStaleProcessing(int scanDbIdx, Date staleBefore, int limit) {
-        try {
-            dbRouter.setDBKey(scanDbIdx);
-            return strategyAwardStockConfirmTaskDao.revertStaleProcessing(staleBefore, limit);
-        } finally {
-            dbRouter.clear();
-        }
+        return DBRouterTemplate.executeOnDb(dbRouter, scanDbIdx,
+                () -> strategyAwardStockConfirmTaskDao.revertStaleProcessing(staleBefore, limit));
     }
 
     private static StrategyAwardStockConfirmTask buildTaskKey(String userId, String orderId) {

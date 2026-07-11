@@ -18,6 +18,13 @@ import static org.junit.Assert.assertNotNull;
 @ActiveProfiles("test")
 public class ChatbotServiceApplicationContextTest {
 
+    static {
+        java.io.File dubboCache = new java.io.File("target/dubbo-cache");
+        dubboCache.mkdirs();
+        System.setProperty("dubbo.meta.cache.filePath", new java.io.File(dubboCache, "meta").getAbsolutePath());
+        System.setProperty("dubbo.mapping.cache.filePath", new java.io.File(dubboCache, "mapping").getAbsolutePath());
+    }
+
     @MockBean
     private RedissonClient redissonClient;
 

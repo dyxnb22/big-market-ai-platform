@@ -175,7 +175,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.6</version>
+
                 <configuration>
                     <skipTests>false</skipTests>
                 </configuration>
@@ -183,7 +183,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.6.0</version>
+
                 <configuration>
                     <mainClass>com.dyx.market.market.MarketServiceApplication</mainClass>
                     <layout>JAR</layout>

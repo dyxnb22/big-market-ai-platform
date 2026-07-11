@@ -15,7 +15,7 @@ description: >-
 | `mvn -pl <module> -am test` | Unit/Mockito | Not Spring Context / wiring |
 | Service `@SpringBootTest` | Missing beans, bad scan | Needs test deps/config |
 | Mapper SqlSessionFactory test | Duplicate statement ids | Per-launcher XML only |
-| `./scripts/validate-microservices-stack.sh` | Compose/module shape | Not full business path |
+| `./scripts/validate-microservices-stack.sh` | Health + smoke (no auto-start unless `--start-stack`) | Not full business path |
 | `./scripts/smoke-test-microservices.sh` | Basic health/routing | Not logged-in draw/MQ final state |
 | `./scripts/smoke-api.sh` | HTTP reachability | Often prints only — weak assertions |
 | `./scripts/validate-microservices-runtime-safety.sh` | Some static patterns | **Known false green** — never sole gate |
@@ -33,17 +33,19 @@ description: >-
 
 ```bash
 mvn -pl big-market-market-service,big-market-message-job-service -am test
-./scripts/validate-microservices-stack.sh
+./scripts/validate-microservices-stack.sh          # requires stack already up
+./scripts/validate-microservices-stack.sh --start-stack   # opt-in compose up
 ./scripts/smoke-test-microservices.sh
 ./scripts/smoke-api.sh
 npm test
 ```
 
-Full stack (when user wants):
+Full stack (manual — scripts do not auto-start unless `--start-stack`):
 
 ```bash
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 docker compose up --build -d
+./scripts/acceptance.sh --reuse
 ```
 
 ## Reporting

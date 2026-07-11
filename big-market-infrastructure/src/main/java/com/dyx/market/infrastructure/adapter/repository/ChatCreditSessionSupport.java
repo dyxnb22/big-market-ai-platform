@@ -2,6 +2,7 @@ package com.dyx.market.infrastructure.adapter.repository;
 
 import com.dyx.market.infrastructure.dao.IChatCreditSessionDao;
 import com.dyx.market.infrastructure.dao.po.ChatCreditSession;
+import com.dyx.market.middleware.db.router.DBRouterTemplate;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,22 +32,21 @@ public class ChatCreditSessionSupport {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
             return;
         }
-        dbRouter.doRouter(userId);
-        try {
-            chatCreditSessionDao.insert(ChatCreditSession.builder()
-                    .userId(userId)
-                    .requestId(requestId)
-                    .deducted(true)
-                    .deductAmount(amount)
-                    .deductState("deducted")
-                    .refundState(REFUND_NONE)
-                    .retryCount(0)
-                    .build());
-        } catch (DuplicateKeyException e) {
-            log.debug("[ChatCreditSession] deduction already recorded requestId:{}", requestId);
-        } finally {
-            dbRouter.clear();
-        }
+        DBRouterTemplate.executeOnShard(dbRouter, userId, () -> {
+            try {
+                chatCreditSessionDao.insert(ChatCreditSession.builder()
+                        .userId(userId)
+                        .requestId(requestId)
+                        .deducted(true)
+                        .deductAmount(amount)
+                        .deductState("deducted")
+                        .refundState(REFUND_NONE)
+                        .retryCount(0)
+                        .build());
+            } catch (DuplicateKeyException e) {
+                log.debug("[ChatCreditSession] deduction already recorded requestId:{}", requestId);
+            }
+        });
     }
 
     public void markRefunded(String userId, String requestId) {
@@ -61,8 +61,7 @@ public class ChatCreditSessionSupport {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
             return;
         }
-        dbRouter.doRouter(userId);
-        try {
+        DBRouterTemplate.executeOnShard(dbRouter, userId, () -> {
             int affected = chatCreditSessionDao.updateRefundState(ChatCreditSession.builder()
                     .userId(userId)
                     .requestId(requestId)
@@ -72,8 +71,6 @@ public class ChatCreditSessionSupport {
                 log.warn("[ChatCreditSession] refund state not updated userId:{} requestId:{} state:{}",
                         userId, requestId, refundState);
             }
-        } finally {
-            dbRouter.clear();
-        }
+        });
     }
 }

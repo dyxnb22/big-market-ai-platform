@@ -22,11 +22,11 @@
 | **B. 可演示闭环** | fresh Docker 下：登录 → 签到/兑换 → 抽奖 → 发奖/积分到账 → 库存落库，前端用真实 stage 活动 |
 | **C. 准生产基线** | 关键写路径幂等正确、补偿语义正确、默认安全边界成立、门禁能拦住启动级回归 |
 
-**当前状态（2026-07-11 历史验收快照）：**
+**当前状态（2026-07-11 治理执行后）：**
 
-- **A. 可启动** — 代码已修：BM-001/002/003；`MarketServiceSpringBootContextTest` 与 `MessageJobServiceApplicationContextTest` 为全量 `@SpringBootTest`；message-job `MessageJobReadAdapterConfig` + `IAccountReadAdapter` @Primary。
-- **B. 可演示闭环** — 历史快照 `4278a8c` 的 `./scripts/acceptance.sh --reuse --skip-build` 全绿（2026-07-11）：`test-http-contracts`（401/403/400）、smoke 21/21、smoke-api、Chat 退款 E2E、Playwright 18/18×2；旧卷统一 `./scripts/apply-stack-migrations.sh`；演示前 `./scripts/ensure-demo-activity-online.sh`（stage `c01/s01`→100401）。该结果不代表当前 HEAD，发布前必须在目标提交重跑。
-- **C. 准生产基线** — 部分：BM-015 `secure` + 关键写路径终态（库存 ledger / chat deduct_state / remote continuation FSM / `acceptance.sh`）已落地；BM-016/017 按两周工程债计划推进（指标门禁 + ArchUnit/Mapper 漂移，不做物理拆库）。
+- **A. 可启动** — 代码已修：BM-001/002/003；Context 测试在树。
+- **B. 可演示闭环** — 历史快照 `4278a8c` 曾全绿。**当前工作树**（基线 `8df5311` + 治理改动）：`acceptance.sh` 默认**不**自启 Docker；本机 8081–8087 healthy、**gateway 8080 down**；`--reuse --skip-build` 于 1s fail-closed，产物 `target/acceptance-artifacts/`。完整 reuse/fresh/secure 需本机启动 gateway 后重跑。
+- **C. 准生产基线** — BM-015 secure + 写路径测试在树；观测告警已扩展 chat refund / stock confirm pending。
 
 **执行约定：**
 
@@ -363,11 +363,17 @@ npm test
 
 > 本表记录代码落地与历史验收快照。只有在目标 HEAD 重跑对应命令后，才能将其作为当前验收结论。
 
+**当前状态（2026-07-11 治理执行后）：**
+
+- **A. 可启动** — 代码已修：BM-001/002/003；Context 测试在树。
+- **B. 可演示闭环** — 历史快照 `4278a8c` 曾全绿。**当前工作树**（基线 `8df5311` + 治理改动）：`acceptance.sh` 默认**不**自启 Docker；本机 8081–8087 healthy、**gateway 8080 down**；`--reuse --skip-build` 于 1s fail-closed，产物 `target/acceptance-artifacts/`。完整 reuse/fresh/secure 需本机启动 gateway 后重跑。
+- **C. 准生产基线** — BM-015 secure + 写路径测试在树；观测告警已扩展 chat refund / stock confirm pending。
+
 | 阶段 | 状态 | 完成日期 | 备注 |
 | --- | --- | --- | --- |
-| 1 启动阻塞 | 基本完成（代码+Context 测试） | 2026-07-10 | BM-001/002/003；market/message-job `@SpringBootTest`；CI `build-verify.yml` |
-| 2 核心闭环 | 代码已落地；当前 HEAD 待验 | 2026-07-11 | 历史快照 `4278a8c` 的 `acceptance.sh --reuse --skip-build` 全绿；当前 HEAD 需重跑 reuse/fresh；`apply-stack-migrations.sh`；admin.js stage=100401；`0008`→403 |
-| 3 演示与安全 | 代码已落地；当前 HEAD 待验 | 2026-07-11 | BM-011～015；Nacos 保存元数据；secure profile 可选；secure acceptance 需在目标提交复验 |
-| 4 观测与架构债 | 静态门禁代码已落地；当前 HEAD 待验 | 2026-07-11 | BM-016 指标含 refund/stock confirm pending + `validate-prometheus-config.sh` CI；BM-017 ArchUnit+mapper 漂移；runtime-safety + HTTP 契约脚本 |
+| 1 启动阻塞 | 基本完成（代码+Context 测试） | 2026-07-10 | BM-001/002/003；market/message-job `@SpringBootTest`；CI `build-verify.yml` 含 `dev` |
+| 2 核心闭环 | 代码已落地；HEAD acceptance **blocked** | 2026-07-11 | gateway `:8080` down；agent 无法 `compose up`；见 `target/acceptance-artifacts/latest-summary.txt` |
+| 3 演示与安全 | 代码已落地；secure 待复验 | 2026-07-11 | BM-011～015；需 `--secure --start-stack` 或手动 secure overlay |
+| 4 观测与架构债 | 静态门禁+告警扩展 | 2026-07-11 | BM-016 增 ChatRefund/StockConfirm 告警；BM-017 ArchUnit 扩 message-job；治理 GOV-D* 文档落地 |
 
 更新本表时同步更新「当前状态」一节的目标档结论。

@@ -3,6 +3,7 @@ package com.dyx.market.infrastructure.adapter.repository;
 import com.alibaba.fastjson.JSON;
 import com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao;
 import com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask;
+import com.dyx.market.middleware.db.router.DBRouterTemplate;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -32,12 +33,8 @@ public class PendingRemoteWriteSupport {
         if (StringUtils.isBlank(userId)) {
             return enqueue(outBusinessNo, operation, payload);
         }
-        dbRouter.doRouter(userId);
-        try {
-            return enqueue(outBusinessNo, operation, payload);
-        } finally {
-            dbRouter.clear();
-        }
+        return DBRouterTemplate.executeOnShard(dbRouter, userId,
+                () -> enqueue(outBusinessNo, operation, payload));
     }
 
     /**

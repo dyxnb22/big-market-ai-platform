@@ -31,6 +31,12 @@ public class MarketServiceSpringBootContextTest {
         System.setProperty("spring.cloud.inetutils.preferred-networks", "127.0.0.1");
         System.setProperty("spring.cloud.client.hostname", "localhost");
         System.setProperty("spring.cloud.client.ip-address", "127.0.0.1");
+        // Redirect Dubbo local file cache away from ~/.dubbo without changing user.home globally
+        // (changing user.home breaks Dubbo ApplicationConfig instantiation in some environments).
+        java.io.File dubboCache = new java.io.File("target/dubbo-cache");
+        dubboCache.mkdirs();
+        System.setProperty("dubbo.meta.cache.filePath", new java.io.File(dubboCache, "meta").getAbsolutePath());
+        System.setProperty("dubbo.mapping.cache.filePath", new java.io.File(dubboCache, "mapping").getAbsolutePath());
     }
 
     @MockBean

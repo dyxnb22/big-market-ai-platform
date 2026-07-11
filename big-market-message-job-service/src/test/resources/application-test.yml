@@ -19,6 +19,10 @@ spring:
   elasticsearch.datasource:
     url: jdbc:es://http://${ELASTICSEARCH_HOST:127.0.0.1}:${ELASTICSEARCH_PORT:9200}
 
+logging:
+  file:
+    path: target/test-logs
+
 mini-db-router:
   jdbc:
     datasource:
@@ -43,6 +47,11 @@ dubbo:
     check: false
   application:
     qos-enable: false
+
+nacos:
+  config:
+    sync:
+      enabled: false
 
 default-credential-guard:
   enabled: false

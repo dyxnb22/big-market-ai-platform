@@ -116,8 +116,9 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 在本学习环境中，当满足以下条件时，可认为架构已完整：
 
 - `mvn clean package -DskipTests` 构建成功。
-- 一键验收：`./scripts/acceptance.sh`（默认 `--reuse`；干净卷用 `--fresh --confirm-destroy-volumes`；安全链加 `--secure`）。
-- `./scripts/validate-microservices-stack.sh` 与强化后的 `validate-microservices-runtime-safety.sh` 通过（后者 alone 仍不足以替代 Context/smoke）。
+- 验收：`./scripts/acceptance.sh`（默认 `--reuse`，**不**自动 `compose up`；干净卷用 `--fresh --confirm-destroy-volumes`；安全链加 `--secure`；CI/自举加 `--start-stack`）。
+- `--reuse` 只证明旧卷兼容；`--fresh` 才证明初始化完整。失败产物在 `target/acceptance-artifacts/`。
+- `./scripts/validate-microservices-stack.sh`（默认不自启 Docker，加 `--start-stack` 才起栈）与强化后的 `validate-microservices-runtime-safety.sh`（后者 alone 仍不足以替代 Context/smoke）。
 - 核心流程可从 Controller 到领域服务、Repository、MQ/XXL-Job，以及回滚/幂等处理完整说明。
 - `docs/learning/*`、本架构文档与代码/配置注释讲述同一套最终态故事。
 

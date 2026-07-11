@@ -1,5 +1,4 @@
 # 命令执行 docker-compose -f docker-compose-environment.yml up -d
-version: '3.9'
 services:
   # 注册中心 https://github.com/nacos-group/nacos-docker - 其他配置可参考(集群)
   # http://127.0.0.1:8848/nacos 【账号：nacos 密码：nacos】

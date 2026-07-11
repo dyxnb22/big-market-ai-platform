@@ -57,7 +57,12 @@ Gateway address: `http://127.0.0.1:8080`.
 ./scripts/validate-microservices-runtime-safety.sh
 ./scripts/validate-prometheus-config.sh
 mvn -B verify -DfailIfNoTests=false
-./scripts/acceptance.sh --reuse   # stack already up; add --fresh --confirm-destroy-volumes for clean volumes
+# Start stack yourself first (acceptance does NOT auto-start Docker):
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose up --build -d
+./scripts/acceptance.sh --reuse
+# Clean volumes: --fresh --confirm-destroy-volumes --start-stack
+# CI bootstrap: add --start-stack
 ```
 
 Focused unit/context tests:
@@ -67,7 +72,7 @@ mvn -pl big-market-market-service,big-market-message-job-service,big-market-doma
   -DfailIfNoTests=false -Dsurefire.failIfNoSpecifiedTests=false
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 docker compose up --build -d
-./scripts/validate-microservices-stack.sh
+./scripts/validate-microservices-stack.sh   # no auto-start; add --start-stack to compose up
 ./scripts/smoke-api.sh
 ./scripts/smoke-test-microservices.sh
 ./scripts/web-start.sh   # separate terminal
@@ -81,11 +86,18 @@ npx playwright test --workers=1
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-11 |
-| Git | `4278a8c` (historical snapshot; not current-HEAD evidence) |
-| Command | `./scripts/acceptance.sh --reuse --skip-build` |
-| Result | **Historical PASS at `4278a8c` only** — stack health, `test-http-contracts`, smoke 21/21, smoke-api, XXL health, chat-refund E2E, Playwright **18/18 ×2** (`--workers=1`) |
+| Git | working tree on top of `8df5311` (governance changes uncommitted) |
+| Command | `./scripts/acceptance.sh --reuse --skip-build --skip-playwright` |
+| Result | **FAIL** — gateway `:8080` unreachable; no `--start-stack` (by design). Artifacts: `target/acceptance-artifacts/`. Partial health: 8081–8087 HTTP 200. |
 
-**Current-HEAD status:** static gates and Maven tests can run, but Docker and Node/Playwright are unavailable in the current environment, so reuse/fresh/secure acceptance remains blocked. Do not treat the historical result above as PASS evidence for current HEAD. Demo closed-loop readiness remains gated on rerunning `./scripts/acceptance.sh` 全绿 at the commit being released. Boot fixes (BM-001–003) and money-path/demo code (BM-004–015) remain in tree with unit/slice context tests.
+**Next step for green acceptance:** start gateway (and any missing app containers) manually, then re-run without `--start-stack`:
+
+```bash
+docker compose up -d big-market-gateway
+./scripts/acceptance.sh --reuse
+```
+
+Do not treat historical `4278a8c` PASS as current-HEAD evidence.
 
 ## Frontend
 

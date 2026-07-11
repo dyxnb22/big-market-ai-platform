@@ -93,6 +93,36 @@ Task states: `pending` → `continuation_pending` → `done`. Remote adapters
 classify `SUCCESS` / `REJECTED` / `UNKNOWN`; only UNKNOWN enqueues pending.
 Continuation failures must not mark `done`.
 
+## Idempotency key catalog
+
+| Domain | Key / shape | Where enforced |
+| --- | --- | --- |
+| Credit trade | `out_business_no` | `user_credit_order` unique; account createOrder |
+| Chat debit | Redis `chat:request:{userId}:{requestId}`; credit `chat_{userId}_{requestId}` | Chatbot cache + `user_credit_order` |
+| Chat refund | `chat_refund_{userId}_{requestId}` | Credit refund order / reconcile |
+| SKU exchange | `out_business_no` = `{userId}_{sku}_{requestId}` | Activity order unique (`SkuProductShopCartRequestDTO.requestId`) |
+| Award dispatch | `award_order_id` (also credit `out_business_no` when awarding points) | `user_award_record` / credit award task |
+| Award MQ / task | `message_id` on outbox `task` rows | Task unique + consumer INDEX_DUP |
+| Rebate order | `biz_id` = `{userId}_{rebateType}_{outBusinessNo}` (sign-in `outBusinessNo` = `yyyyMMdd`) | `user_behavior_rebate_order` unique |
+| Rebate consume | same `bizId` as credit/quota `out_business_no` | `RebateMessageApplicationService` treats INDEX_DUP as benign |
+| Strategy award stock | `reservationId` (raffle `orderId`) | Redis reserve + `strategy_award_stock_decrement_ledger` |
+| Activity SKU stock | `(sku, lockSurplus)` | `activity_sku_stock_decrement_ledger` |
+| Quota decrement | ledger key per draw/order | `raffle_quota_decrement_ledger` |
+| DLQ | `business_message_id` (stable); `message_id` per DLQ event | `mq_dead_letter` |
+
+## MQ DLQ topology
+
+`RabbitMQDlqConfig` declares DLX `dlx` and four durable DLQ queues (routing key = original queue name):
+
+| Original queue | DLQ queue |
+| --- | --- |
+| `activity_sku_stock_zero` | `activity_sku_stock_zero.dlq` |
+| `credit_adjust_success` | `credit_adjust_success.dlq` |
+| `send_rebate` | `send_rebate.dlq` |
+| `send_award` | `send_award.dlq` |
+
+Persistence table: `mq_dead_letter` (`docs/sql/mq-dead-letter.sql`). Auto-replay selects `state='reviewed'` only.
+
 ## Duplicate Handling
 
 The project prevents duplicate effects through:

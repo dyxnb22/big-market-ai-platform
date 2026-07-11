@@ -7,6 +7,7 @@ It provides:
 - `@DBRouter` for routed DAO methods.
 - `@DBRouterStrategy(splitTable = true)` for sharded mapper interfaces.
 - `IDBRouterStrategy` for manual route control in repository and job code.
+- `DBRouterTemplate.executeOnShard(router, userId, callback)` / `executeOnDb(...)` — try/finally clear with nested save/restore.
 - A dynamic datasource based on `mini-db-router.jdbc.datasource.*`.
 - A small MyBatis plugin that appends table suffixes such as `_000`.
 

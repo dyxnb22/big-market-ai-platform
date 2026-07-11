@@ -22,4 +22,15 @@ public class DomainArchitectureTest {
                 .because("DAO ownership is enforced via ports/adapters, not direct domain→dao coupling")
                 .check(classes);
     }
+
+    @Test
+    public void domain_must_not_depend_on_trigger_job() {
+        JavaClasses classes = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("com.dyx.market.domain");
+        noClasses().that().resideInAPackage("com.dyx.market.domain..")
+                .should().dependOnClassesThat().resideInAPackage("com.dyx.market.trigger.job..")
+                .because("XXL jobs belong to message-job trigger layer, not domain")
+                .check(classes);
+    }
 }

@@ -8,6 +8,7 @@ import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
 import com.dyx.market.infrastructure.dao.IRaffleActivityOrderDao;
 import com.dyx.market.infrastructure.dao.po.RaffleActivityOrder;
 import com.dyx.market.infrastructure.redis.IRedisService;
+import com.dyx.market.middleware.db.router.DBRouterTemplate;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.trigger.adapter.IAccountCreditWriteAdapter;
 import com.dyx.market.trigger.adapter.IAccountQuotaWriteAdapter;
@@ -88,23 +89,23 @@ public class CreditPayDeliveryReconcileJob {
             String tradeName = TradeNameVO.CONVERT_SKU.getName();
 
             for (int tbIdx = 0; tbIdx < 4; tbIdx++) {
-                dbRouter.setDBKey(dbIdx);
-                dbRouter.setTBKey(tbIdx);
-                List<RaffleActivityOrder> stuckOrders = raffleActivityOrderDao.queryStuckWaitPayOrders(
-                        since, tradeName, scanLimit);
-                for (RaffleActivityOrder order : stuckOrders) {
-                    reconcileOrder(order);
-                }
-                List<RaffleActivityOrder> compensatingOrders = raffleActivityOrderDao.queryStuckCompensatingOrders(
-                        since, scanLimit);
-                for (RaffleActivityOrder order : compensatingOrders) {
-                    finishCompensatingOrder(order);
-                }
+                final int tableIdx = tbIdx;
+                DBRouterTemplate.executeOnDbTb(dbRouter, dbIdx, tableIdx, () -> {
+                    List<RaffleActivityOrder> stuckOrders = raffleActivityOrderDao.queryStuckWaitPayOrders(
+                            since, tradeName, scanLimit);
+                    for (RaffleActivityOrder order : stuckOrders) {
+                        reconcileOrder(order);
+                    }
+                    List<RaffleActivityOrder> compensatingOrders = raffleActivityOrderDao.queryStuckCompensatingOrders(
+                            since, scanLimit);
+                    for (RaffleActivityOrder order : compensatingOrders) {
+                        finishCompensatingOrder(order);
+                    }
+                });
             }
         } catch (Exception e) {
             log.error("[CreditPayDeliveryReconcileJob] DB{} scan failed", dbIdx, e);
         } finally {
-            dbRouter.clear();
             if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }

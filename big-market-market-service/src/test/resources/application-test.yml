@@ -19,6 +19,10 @@ spring:
   elasticsearch.datasource:
     url: jdbc:es://http://${ELASTICSEARCH_HOST:127.0.0.1}:${ELASTICSEARCH_PORT:9200}
 
+logging:
+  file:
+    path: target/test-logs
+
 mini-db-router:
   jdbc:
     datasource:
@@ -35,10 +39,22 @@ redis:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:16379}
 
+# Keep registry address valid for Dubbo 3.0.9.
+# Do not set metadata-report.address=N/A (breaks ApplicationConfig).
+# Do not set metadata-type/local overrides that fail ApplicationConfig creation.
 dubbo:
   registry:
     check: false
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
+  consumer:
+    check: false
+  application:
+    qos-enable: false
+
+nacos:
+  config:
+    sync:
+      enabled: false
 
 default-credential-guard:
   enabled: false

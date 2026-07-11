@@ -2,12 +2,12 @@ name: Build and Verify
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, dev]
   pull_request:
   workflow_dispatch:
     inputs:
       run_acceptance:
-        description: "Run Docker acceptance (--reuse --skip-playwright)"
+        description: "Run Docker acceptance (--reuse --skip-playwright --start-stack)"
         type: boolean
         default: false
 
@@ -29,23 +29,35 @@ jobs:
         run: ./scripts/validate-microservices-runtime-safety.sh
       - name: Prometheus config (promtool)
         run: ./scripts/validate-prometheus-config.sh
-      - name: Market + message-job Spring Context tests
+      - name: Market + message-job + chatbot Spring Context tests
         run: >
-          mvn -B -pl big-market-market-service,big-market-message-job-service
+          mvn -B -pl big-market-market-service,big-market-message-job-service,big-market-chatbot-service
           -am test
-          -Dtest=MarketServiceSpringBootContextTest,MessageJobServiceApplicationContextTest
+          -Dtest=MarketServiceSpringBootContextTest,MessageJobServiceApplicationContextTest,ChatbotServiceApplicationContextTest
           -DfailIfNoTests=false
           -Dsurefire.failIfNoSpecifiedTests=false
 
-  # Manual / self-hosted: expects Docker stack already healthy (see scripts/acceptance.sh).
+  # Opt-in: uses --start-stack so github-hosted runners can bootstrap Docker.
   acceptance:
     if: github.event_name == 'workflow_dispatch' && inputs.run_acceptance == true
     runs-on: ubuntu-latest
     needs: verify
     steps:
       - uses: actions/checkout@v4
-      - name: Acceptance gate entry
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+      - name: Acceptance with --start-stack
         run: |
-          echo "Running ./scripts/acceptance.sh --reuse --skip-playwright --skip-build"
-          echo "Requires a pre-started local stack (compose up). On github-hosted runners without the stack this step will fail closed."
-          ./scripts/acceptance.sh --reuse --skip-playwright --skip-build
+          echo "Running ./scripts/acceptance.sh --reuse --skip-playwright --start-stack"
+          # Do NOT --skip-build: this job has a fresh checkout; Dockerfiles need target/*.jar.
+          ./scripts/acceptance.sh --reuse --skip-playwright --start-stack
+      - name: Upload acceptance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-artifacts
+          path: target/acceptance-artifacts/
+          if-no-files-found: ignore

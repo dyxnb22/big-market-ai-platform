@@ -4,6 +4,7 @@ import com.dyx.market.domain.strategy.adapter.port.IStrategyStockConfirmCompensa
 import com.dyx.market.domain.strategy.model.entity.StrategyAwardStockConfirmTaskEntity;
 import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import com.dyx.market.domain.strategy.repository.IStrategyRepository;
+import com.dyx.market.middleware.db.router.DBRouterTemplate;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import io.micrometer.core.annotation.Timed;
@@ -62,22 +63,22 @@ public class StrategyAwardStockConfirmJob {
             if (!isLocked) {
                 return;
             }
-            dbRouter.setDBKey(dbIdx);
-            Date staleBefore = new Date(System.currentTimeMillis()
-                    - TimeUnit.MINUTES.toMillis(processingLeaseMinutes));
-            int reverted = strategyStockConfirmCompensationPort.revertStaleProcessing(dbIdx, staleBefore, scanLimit);
-            if (reverted > 0) {
-                log.warn("[StrategyAwardStockConfirmJob] reverted {} stale processing tasks on DB{}", reverted, dbIdx);
-            }
-            List<StrategyAwardStockConfirmTaskEntity> tasks =
-                    strategyStockConfirmCompensationPort.queryPendingTasks(maxRetries, scanLimit);
-            for (StrategyAwardStockConfirmTaskEntity task : tasks) {
-                confirmTask(task, dbIdx);
-            }
+            DBRouterTemplate.executeOnDb(dbRouter, dbIdx, () -> {
+                Date staleBefore = new Date(System.currentTimeMillis()
+                        - TimeUnit.MINUTES.toMillis(processingLeaseMinutes));
+                int reverted = strategyStockConfirmCompensationPort.revertStaleProcessing(dbIdx, staleBefore, scanLimit);
+                if (reverted > 0) {
+                    log.warn("[StrategyAwardStockConfirmJob] reverted {} stale processing tasks on DB{}", reverted, dbIdx);
+                }
+                List<StrategyAwardStockConfirmTaskEntity> tasks =
+                        strategyStockConfirmCompensationPort.queryPendingTasks(maxRetries, scanLimit);
+                for (StrategyAwardStockConfirmTaskEntity task : tasks) {
+                    confirmTask(task, dbIdx);
+                }
+            });
         } catch (Exception e) {
             log.error("[StrategyAwardStockConfirmJob] DB{} scan failed", dbIdx, e);
         } finally {
-            dbRouter.clear();
             if (lock.isLocked() && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }

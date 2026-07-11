@@ -22,7 +22,7 @@ Script: `scripts/smoke-api.sh`.
 
 ## Task Checks
 
-- XXL executor `appname` must be **`big-market-message-job`** (see `docs/dev-ops/mysql/sql/xxl_job.sql` and `message-job-service` `application.yml`). Handler seeds include `updateAwardStockJob`, stock confirm, remote-write reconcile, chat refund reconcile, DLQ replay, etc.
+- XXL executor `appname` must be **`big-market-message-job`** (see `docs/dev-ops/mysql/sql/xxl_job.sql` and `message-job-service` `application.yml`). Handler catalog (seed id, default `trigger_status`, money-replay notes): `docs/xxl-job-handlers.md`.
 - `SendMessageTaskJob` scans shared task rows.
 - `UpdateActivitySkuStockJob` flushes activity SKU stock.
 - `UpdateAwardStockJob` flushes award stock.
@@ -50,7 +50,8 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
 - `send_rebate` is consumed by `RebateMessageConsumer`.
 - `credit_adjust_success` is consumed by `CreditAdjustSuccessConsumer`.
 - Stock-zero events are consumed by `ActivitySkuStockZeroConsumer`.
-- DLQ persistence + `DlqReplayJob` in `RabbitMQDlqConfig` / `mq_dead_letter` table (`business_message_id` reactivation on re-DLQ).
+- DLQ topology (`RabbitMQDlqConfig`): DLX `dlx` → `activity_sku_stock_zero.dlq`, `credit_adjust_success.dlq`, `send_rebate.dlq`, `send_award.dlq`.
+- DLQ persistence + `DlqReplayJob` in `RabbitMQDlqConfig` / `mq_dead_letter` table (`business_message_id` reactivation on re-DLQ; replay only `reviewed`).
 - Draw rate limit: Admin `system.rateLimiterSwitch` syncs to DCC; `RaffleDrawApplicationService.draw` uses `@RateLimiterAccessInterceptor`.
 
 ## Log Checks
@@ -64,9 +65,20 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
 
 - Actuator health is enabled on each service.
 - Prometheus scrape config is in `docs/dev-ops/prometheus/prometheus.yml`.
+- Alert rules: `docs/dev-ops/prometheus/rules/big-market-alerts.yml` (pending remote write, DLQ, chat refund, strategy stock confirm).
 - Grafana config is under `docs/dev-ops/grafana`; the learning stack has annotated
   dev-only credentials, while secure acceptance requires explicit non-default
   `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` overrides.
+
+## Alert runbook (business gauges)
+
+Gauges are published by `BusinessMetricsPublisher` on **message-job** (`big_market_*`).
+
+| Alert | Metric | First checks | Mitigations |
+| --- | --- | --- | --- |
+| `ChatRefundPending` | `big_market_chat_refund_pending` | Confirm `ChatRefundReconcileJob` enabled/firing; inspect `chat_credit_session` rows with `refund_state=pending` | Fix account RPC / token; let reconcile retry; do not manually clear without matching credit ledger |
+| `StrategyStockConfirmPending` | `big_market_strategy_stock_confirm_pending` | Confirm `StrategyAwardStockConfirmJob`; inspect `strategy_award_stock_confirm_task` pending rows vs award save failures | Restore DB/Redis connectivity; replay job after root cause; avoid double-confirming stock |
+| `PendingRemoteWriteBacklog` / `MqDeadLetterPending` | existing rules | Remote-write reconcile / DLQ review flow above | Same as Task Checks: review before `DlqReplayJob` |
 
 ## Secure profile (BM-015)
 
@@ -77,18 +89,31 @@ Check logs from `big-market-message-job-service` and `big-market-market-service`
   - `secure` overrides `docker` in `DefaultCredentialGuard` (defaults refuse to start).
   - All Dubbo services ship `application-secure.yml` with `app.internal-rpc.enforce=true`.
 - Negative checks: `./scripts/smoke-security.sh`
-- One-click acceptance: `./scripts/acceptance.sh` (default `--reuse`) or `./scripts/acceptance.sh --fresh --confirm-destroy-volumes`
+- Acceptance: `./scripts/acceptance.sh` (default `--reuse`, **does not** auto-start Docker). Use `--start-stack` only when you want the script to `compose up` (CI bootstrap).
 - `scripts/validate-microservices-runtime-safety.sh` is not sufficient alone; run Maven boot-related tests and stack smoke after changes.
 
 ## Acceptance entry (preferred)
 
-One-click gate (Maven + Docker stack + DDL/XXL + smokes; optional Playwright/secure):
+Gates (Maven + health + DDL/XXL + smokes; optional Playwright/secure). **No implicit `docker compose up`.**
+
+| Mode | Proves | Notes |
+| --- | --- | --- |
+| `--reuse` (default) | Old volumes still work | Stack must already be healthy, or pass `--start-stack` |
+| `--fresh --confirm-destroy-volumes` | Full init from empty volumes | Destructive; still needs `--start-stack` to rebuild |
+| `--secure` | Non-default credentials + `smoke-security.sh` | Requires `DEMO_*` / `ADMIN_TOKEN` / `GRAFANA_*` env |
 
 ```bash
-./scripts/acceptance.sh                  # --reuse (default)
-./scripts/acceptance.sh --secure         # + smoke-security.sh
-./scripts/acceptance.sh --fresh --confirm-destroy-volumes
+# Manual start (recommended locally — avoids surprise containers)
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+./scripts/apply-stack-migrations.sh
+docker compose up --build -d
+
+./scripts/acceptance.sh --reuse
+./scripts/acceptance.sh --secure --start-stack   # CI / bootstrap with secure overlay
+./scripts/acceptance.sh --fresh --confirm-destroy-volumes --start-stack
 ```
+
+Failure dumps go to `target/acceptance-artifacts/` (`compose ps`, service logs, health snapshot, summary).
 
 Do not treat `validate-microservices-runtime-safety.sh` alone as closed-loop proof.
 

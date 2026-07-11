@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `mq_dead_letter` (
     `business_message_id` VARCHAR(128) NOT NULL DEFAULT ''                     COMMENT 'Stable business key for re-DLQ reactivation',
     `queue`           VARCHAR(128) NOT NULL                                      COMMENT 'Original queue name before DLQ routing',
     `payload`         TEXT         NOT NULL                                      COMMENT 'Raw message body',
-    `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending'                    COMMENT 'pending | replayed | manual_pending',
+    `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending'                    COMMENT 'pending | reviewed | replayed | manual_pending',
     `retry_count`     TINYINT      NOT NULL DEFAULT 0                            COMMENT 'Number of failed replay attempts',
     `consume_fail_count` TINYINT   NOT NULL DEFAULT 0                            COMMENT 'Consumer failures after replay',
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP            COMMENT 'Row creation time',
