@@ -189,7 +189,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 | auth-service | JWT 鉴权 | 安全职责独立 |
 | market-service | 抽奖核心 | 最核心业务域 |
 | account-service | 积分/额度 | 数据所有权独立，避免多服务写同一账户表 |
-| fulfillment-service | 发奖 | 对接外部（OpenAI 等），独立隔离 |
+| fulfillment-service | 可选远程发奖 | 提供独立履约 RPC；默认 Docker 积分奖由 message-job 本地 award flow + account outbox 完成，不必经该服务 |
 | rebate-service | 返利 | 独立的返利业务域 |
 | strategy-service | 策略读 | 读密集型，可独立扩容 |
 | chatbot-service | AI Chat | 外部 API 依赖独立隔离 |

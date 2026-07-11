@@ -53,23 +53,30 @@ public class DCCController implements IDCCService {
     }
 
     private Response<Boolean> doUpdateConfig(String key, String value) {
-        log.info("DCC 动态配置值变更开始 key:{} value:{}", key, value);
+        log.info("DCC 动态配置值变更开始 key:{} valueHash:{}", key, maskValue(value));
         if (null == client) {
-            log.warn("DCC 动态配置值变更拒绝，CuratorFramework 未初始化启动「配置未开启」 key:{} value:{}", key, value);
+            log.warn("DCC 动态配置值变更拒绝，CuratorFramework 未初始化 key:{}", key);
             throw new AppException(ResponseCode.UN_ERROR.getCode(), ResponseCode.UN_ERROR.getInfo());
         }
         try {
             String keyPath = BASE_CONFIG_PATH_CONFIG.concat("/").concat(key);
             if (null == client.checkExists().forPath(keyPath)) {
                 client.create().creatingParentsIfNeeded().forPath(keyPath);
-                log.info("DCC 节点监听 base node {} not absent create new done!", keyPath);
+                log.info("DCC 节点创建完成 keyPath:{}", keyPath);
             }
             Stat stat = client.setData().forPath(keyPath, value.getBytes(StandardCharsets.UTF_8));
-            log.info("DCC 动态配置值变更完成 key:{} value:{} time:{}", key, value, stat.getMtime());
+            log.info("DCC 动态配置值变更完成 key:{} valueHash:{} mtime:{}", key, maskValue(value), stat.getMtime());
             return TriggerApiResponses.ok(true);
         } catch (Exception e) {
-            log.error("DCC 动态配置值变更失败 key:{} value:{}", key, value, e);
+            log.error("DCC 动态配置值变更失败 key:{} valueHash:{}", key, maskValue(value), e);
             throw new AppException(ResponseCode.UN_ERROR.getCode(), ResponseCode.UN_ERROR.getInfo());
         }
+    }
+
+    private static String maskValue(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return Integer.toHexString(value.hashCode());
     }
 }

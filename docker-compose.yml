@@ -23,7 +23,7 @@ services:
         MODULE_NAME: big-market-auth-service
     image: big-market-auth-service:latest
     container_name: big-market-auth-service
-    restart: always
+    restart: "no"
     ports:
       - "8081:8081"
     environment:
@@ -53,7 +53,7 @@ services:
         MODULE_NAME: big-market-admin-service
     image: big-market-admin-service:latest
     container_name: big-market-admin-service
-    restart: always
+    restart: "no"
     ports:
       - "8082:8082"
     environment:
@@ -88,12 +88,14 @@ services:
         MODULE_NAME: big-market-chatbot-service
     image: big-market-chatbot-service:latest
     container_name: big-market-chatbot-service
-    restart: always
+    restart: "no"
     ports:
       - "8084:8084"
     environment:
       - SERVER_PORT=8084
       - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
+      - APP_JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
       - CHATBOT_PROVIDER=${CHATBOT_PROVIDER:-local}
@@ -102,6 +104,14 @@ services:
       - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
+      - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
+      - CHATBOT_GATEWAY_URL=http://big-market-gateway:8080
     volumes:
       - ./data/chatbot-config:/data/chatbot-config
     networks:
@@ -123,7 +133,7 @@ services:
         MODULE_NAME: big-market-market-service
     image: big-market-market-service:latest
     container_name: big-market-market-service
-    restart: always
+    restart: "no"
     ports:
       - "8083:8083"
     environment:
@@ -147,7 +157,7 @@ services:
       - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
       - ACCOUNT_SERVICE_REMOTE_READ_ENABLED=${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:-false}
-      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-false}
+      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-true}
       - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
       - ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:-false}
       - REBATE_EMBEDDED_RPC_PROVIDER_ENABLED=${REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true}
@@ -161,6 +171,7 @@ services:
       - XXL_JOB_PORT=9090
       - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
       - GATEWAY_API_HOST=big-market-gateway
+      - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -180,7 +191,7 @@ services:
         MODULE_NAME: big-market-message-job-service
     image: big-market-message-job-service:latest
     container_name: big-market-message-job-service
-    restart: always
+    restart: "no"
     ports:
       - "8085:8085"
     environment:
@@ -197,10 +208,10 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-false}
+      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-true}
       - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
-      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-false}
-      - JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-false}
+      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}
+      - JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-true}
       - ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED=${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:-false}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
@@ -227,7 +238,7 @@ services:
         MODULE_NAME: big-market-account-service
     image: big-market-account-service:latest
     container_name: big-market-account-service
-    restart: always
+    restart: "no"
     ports:
       - "8086:8086"
     environment:
@@ -266,7 +277,7 @@ services:
         MODULE_NAME: big-market-fulfillment-service
     image: big-market-fulfillment-service:latest
     container_name: big-market-fulfillment-service
-    restart: always
+    restart: "no"
     ports:
       - "8087:8087"
     environment:
@@ -283,7 +294,7 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-false}
+      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
       - GATEWAY_API_HOST=big-market-gateway
@@ -306,7 +317,7 @@ services:
         MODULE_NAME: big-market-gateway
     image: big-market-gateway:latest
     container_name: big-market-gateway
-    restart: always
+    restart: "no"
     ports:
       - "8080:8080"
       # Compatibility for cached frontend bundles that called
@@ -352,7 +363,7 @@ services:
         APP_VERSION: ${WEB_APP_VERSION:-dev}
     image: big-market-web:latest
     container_name: big-market-web
-    restart: always
+    restart: "no"
     ports:
       - "5173:80"
     depends_on:

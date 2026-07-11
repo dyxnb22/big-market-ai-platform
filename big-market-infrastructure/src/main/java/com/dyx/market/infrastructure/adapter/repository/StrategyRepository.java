@@ -161,6 +161,21 @@ public class StrategyRepository implements IStrategyRepository {
     }
 
     @Override
+    public StrategyAwardStockKeyVO reserveAwardStock(Long strategyId, Integer awardId, Date endDateTime, String reservationId) {
+        return strategyAwardCacheSupport.reserveStock(strategyId, awardId, endDateTime, reservationId);
+    }
+
+    @Override
+    public void confirmAwardStockReservation(StrategyAwardStockKeyVO reservation) {
+        strategyAwardCacheSupport.confirmReservation(reservation);
+    }
+
+    @Override
+    public void releaseAwardStockReservation(StrategyAwardStockKeyVO reservation) {
+        strategyAwardCacheSupport.releaseReservation(reservation);
+    }
+
+    @Override
     public StrategyAwardStockKeyVO takeQueueValue() throws InterruptedException {
         return strategyAwardCacheSupport.takeQueueValue();
     }
@@ -173,6 +188,16 @@ public class StrategyRepository implements IStrategyRepository {
     @Override
     public void updateStrategyAwardStock(Long strategyId, Integer awardId) {
         strategyAwardCacheSupport.updateStrategyAwardStock(strategyId, awardId);
+    }
+
+    @Override
+    public void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey) {
+        strategyAwardCacheSupport.updateStrategyAwardStockOnce(stockKey);
+    }
+
+    @Override
+    public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
+        strategyAwardCacheSupport.syncStrategyAwardStockFromQueue(strategyId, awardId);
     }
 
     @Override
@@ -209,7 +234,8 @@ public class StrategyRepository implements IStrategyRepository {
 
     @Override
     public List<StrategyAwardStockKeyVO> queryOpenActivityStrategyAwardList() {
-        return strategyAwardCacheSupport.queryOpenActivityStrategyAwardList();
+        // Include Redis pending registry so offline activities still drain flush queues.
+        return strategyAwardCacheSupport.queryPendingStrategyAwardStockKeys();
     }
 
     @Override

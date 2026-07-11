@@ -20,5 +20,7 @@ public class ActivitySkuStockKeyVO {
     private Long sku;
     /** 活动ID */
     private Long activityId;
+    /** Redis 扣减后的 surplus，用于队列落库幂等（每条扣减一次 DB -1） */
+    private Long lockSurplus;
 
 }

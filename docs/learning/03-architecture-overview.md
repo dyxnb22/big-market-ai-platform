@@ -29,11 +29,13 @@ flowchart TD
     Gateway --> Market["market-service:8083"]
     Gateway --> Chatbot["chatbot-service:8084"]
     Market --> Account["account-service:8086"]
-    Market --> Fulfillment["fulfillment-service:8087"]
-    Market -->|"Dubbo RPC\n(默认 embedded)"| Rebate["rebate-service:8088"]
-    Market -->|"Dubbo RPC\n(默认 embedded)"| Strategy["strategy-service:8089"]
+    Market -.->|"可选 remote award"| Fulfillment["fulfillment-service:8087"]
+    Market -->|"默认进程内 provider"| Embedded["embedded rebate + strategy"]
+    Market -.->|"可选独立部署"| Rebate["rebate-service:8088"]
+    Market -.->|"可选独立部署"| Strategy["strategy-service:8089"]
     Market --> MQ["RabbitMQ"]
     MQ --> MessageJob["message-job-service:8085"]
+    MessageJob -->|"credit award outbox"| Account
     MessageJob --> XXL["XXL-Job Admin"]
     Auth --> Redis["Redis"]
     Market --> MySQL["MySQL"]
@@ -43,7 +45,7 @@ flowchart TD
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
 
-> **说明：** `rebate-service` 和 `strategy-service` 在默认配置下以 **embedded provider** 模式运行于 `market-service` 进程内（`rebate.embedded-rpc-provider.enabled=true`），docker-compose 默认栈不需要单独启动这两个容器。将 `embedded-rpc-provider.enabled` 改为 `false` 并启动对应服务容器，即可切换为独立进程 Dubbo RPC 模式。
+> **说明：** `rebate-service` 和 `strategy-service` 在默认配置下以 **embedded provider** 模式运行于 `market-service` 进程内，docker-compose 默认栈不启动 8088/8089。默认积分奖也不调用 remote fulfillment，而由 message-job 写 credit outbox 后派发到 account。独立 provider/remote award 是未纳入本次动态验收的可选模式。
 
 ## 主要职责
 

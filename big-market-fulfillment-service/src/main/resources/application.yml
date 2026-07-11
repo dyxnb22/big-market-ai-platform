@@ -1,3 +1,8 @@
+app:
+  internal-rpc:
+    token: ${APP_INTERNAL_RPC_TOKEN:big-market-internal-dev}
+    enforce: ${APP_INTERNAL_RPC_ENFORCE:false}
+
 spring:
   profiles:
     active: dev

@@ -2,7 +2,7 @@
 
 ## 项目定位
 
-Big Market 是一个已完成的本地微服务学习项目，模拟营销抽奖平台。涵盖登录鉴权、网关路由、活动额度、积分、抽奖策略、奖品发放、返利、MQ 补偿、XXL-Job 任务和本地可观测性。
+Big Market 是一个**有条件冻结**的本地微服务学习项目。默认复用栈的主路径已动态验证；fresh 空卷、完整 secure overlay 和可选独立服务尚未在本次审计验证。先读 `docs/LEARNING-FREEZE.md`，不要把“代码存在”理解成“运行已证实”。
 
 用户端前端为 `big-market-web`：原生 HTML/CSS/JS（非 React），通过网关调用后端 API；活动 ID 由 `query_stage_activity_id` 动态解析，展示文案与 Chatbot 开关由 `GET /api/v1/admin/config/public/display` 拉取。
 
@@ -36,14 +36,14 @@ Big Market 是一个已完成的本地微服务学习项目，模拟营销抽奖
 
 ## 本地完成标准
 
-学习环境视为完成，需满足：
+学习环境的默认路径视为完成，需由 `acceptance.sh` 实际证明：
 
 | 领域 | 验收项 |
 | --- | --- |
 | 构建 | `mvn clean package -DskipTests` 成功 |
 | 网关 | `/api/v1/auth/**`、`/admin/**`、`/chatbot/**`、`/raffle/**` 均经 gateway 路由 |
 | 鉴权 | 登录、校验、注销、JWT 过期与撤销路径可解释 |
-| 抽奖 | 抽奖链路覆盖额度扣减、策略决策、中奖记录、MQ 任务 |
+| 抽奖 | 兑换扣积分、策略决策、中奖记录、MQ/outbox、账户入账均核对 |
 | 积分 | 签到、兑换、Chatbot 扣退、奖品积分发放路径可解释 |
 | 返利 | 返利订单、task、MQ 消费、幂等读取可解释 |
 | 任务 | task 重试、库存 Job、credit-award outbox 派发可解释 |
@@ -55,12 +55,11 @@ Big Market 是一个已完成的本地微服务学习项目，模拟营销抽奖
 验证命令：
 
 ```bash
-mvn clean package -DskipTests
-./scripts/validate-microservices-runtime-safety.sh
-./scripts/validate-microservices-stack.sh
-./scripts/smoke-api.sh
+mvn -B verify -DfailIfNoTests=false
+./scripts/acceptance.sh --reuse
+./scripts/smoke-security.sh
 ```
 
-`validate-microservices-runtime-safety.sh` 无需 Docker 即可校验架构护栏。
+`validate-microservices-runtime-safety.sh` 只校验静态护栏，不能替代 Context、XXL 注册、业务表终态和浏览器测试。
 
 本项目是学习作品集，不包含真实生产灰度观察期。归档的英文维护文档见 `archive/`。

@@ -54,4 +54,36 @@
         limit 1
     </select>
 
+    <select id="queryStuckWaitPayOrders" resultMap="dataMap">
+        select o.user_id, o.sku, o.activity_id, o.out_business_no, o.pay_amount, o.order_time, o.state, o.create_time
+        from raffle_activity_order o
+        inner join user_credit_order c
+            on o.user_id = c.user_id and o.out_business_no = c.out_business_no
+        where o.state = 'wait_pay'
+          and c.trade_name = #{tradeName}
+          and o.create_time &lt;= #{since}
+        order by o.create_time asc
+        limit #{limit}
+    </select>
+
+    <update id="updateOrderCompensating" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityOrder">
+        update raffle_activity_order set state = 'compensating', update_time = now()
+        where user_id = #{userId} and out_business_no = #{outBusinessNo} and state = 'wait_pay'
+    </update>
+
+    <update id="updateOrderFailed" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityOrder">
+        update raffle_activity_order set state = 'failed', update_time = now()
+        where user_id = #{userId} and out_business_no = #{outBusinessNo}
+          and state in ('compensating', 'wait_pay')
+    </update>
+
+    <select id="queryStuckCompensatingOrders" resultMap="dataMap">
+        select o.user_id, o.sku, o.activity_id, o.out_business_no, o.pay_amount, o.order_time, o.state, o.create_time
+        from raffle_activity_order o
+        where o.state = 'compensating'
+          and o.create_time &lt;= #{since}
+        order by o.create_time asc
+        limit #{limit}
+    </select>
+
 </mapper>

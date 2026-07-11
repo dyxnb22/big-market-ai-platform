@@ -3,6 +3,8 @@
 This document translates production-readiness topics into the local learning
 standard for this portfolio project. Completion is based on build success,
 local smoke tests, validators, and explainable rollback/idempotency behavior.
+It is not a production-readiness claim; current evidence and exclusions are in
+`docs/LEARNING-FREEZE.md`.
 
 ## DDL
 
@@ -64,13 +66,14 @@ local smoke tests.
 Run:
 
 ```bash
-mvn clean package -DskipTests
-./scripts/validate-microservices-runtime-safety.sh
-./scripts/validate-microservices-stack.sh
+mvn -B verify -DfailIfNoTests=false
+./scripts/acceptance.sh --reuse
+./scripts/smoke-security.sh
 ```
 
 If Docker or middleware is unavailable, record the missing dependency and run
-the static/build validators that do not require that dependency.
+the static/build validators that do not require it, but label the result
+unverified rather than complete. Fresh and secure modes require their own runs.
 
 ## Rollback
 

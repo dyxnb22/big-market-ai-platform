@@ -1,6 +1,8 @@
 package com.dyx.market.gateway.fallback;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -21,6 +23,7 @@ public class FallbackController {
      * {@code service} 为路由 id 后缀（如 auth-service），当前各服务返回相同结构。
      */
     @RequestMapping("/fallback/{service}")
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public Mono<Map<String, Object>> fallback() {
         Map<String, Object> body = new HashMap<>();
         body.put("code", "0007");

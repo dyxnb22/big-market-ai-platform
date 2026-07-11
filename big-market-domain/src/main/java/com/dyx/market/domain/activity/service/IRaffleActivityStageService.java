@@ -29,6 +29,13 @@ public interface IRaffleActivityStageService {
     void updateStageActivity2Active(Long id);
 
     /**
+     * 下架活动 - 将上架状态变更为过期
+     *
+     * @param id 上架流水ID
+     */
+    void updateStageActivity2Expire(Long id);
+
+    /**
      * 查询展台活动ID - 一个渠道&来源 sc 值下，只能有一个在线的活动。
      *
      * @param channel 渠道

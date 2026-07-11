@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test profile: console only — never write ./data/log (git-tracked side effect). -->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    <logger name="com.dyx.market" level="INFO"/>
+    <logger name="org.apache.dubbo" level="ERROR"/>
+    <logger name="com.alibaba.nacos" level="ERROR"/>
+</configuration>
+

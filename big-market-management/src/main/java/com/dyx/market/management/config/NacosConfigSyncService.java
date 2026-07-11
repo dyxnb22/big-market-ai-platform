@@ -21,6 +21,8 @@ import java.util.Properties;
  * <p>
  * 通过 {@code nacos.config.sync.enabled=true} 启用；
  * admin-service 调用 {@link #publish} 推送，chatbot-service 通过 {@link #addListener} 订阅变更。
+ * <p>
+ * 默认 fail-closed：publish 失败抛异常。本地无 Nacos 时可设 {@code nacos.config.sync.fail-open=true}。
  */
 @Service
 @ConditionalOnProperty(value = "nacos.config.sync.enabled", havingValue = "true")
@@ -40,6 +42,9 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
     @Value("${nacos.config.sync.group:DEFAULT_GROUP}")
     private String group;
 
+    @Value("${nacos.config.sync.fail-open:false}")
+    private boolean failOpen;
+
     private ConfigService configService;
 
     @Override
@@ -51,25 +56,48 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
                 nacosProps.put(PropertyKeyConst.NAMESPACE, namespace);
             }
             configService = NacosFactory.createConfigService(nacosProps);
-            log.info("NacosConfigSyncService initialized, serverAddr={}, dataId={}", serverAddr, dataId);
+            log.info("NacosConfigSyncService initialized, serverAddr={}, dataId={}, failOpen={}",
+                    serverAddr, dataId, failOpen);
         } catch (NacosException e) {
-            log.warn("NacosConfigSyncService init failed (will skip sync): {}", e.getMessage());
+            if (failOpen) {
+                log.warn("NacosConfigSyncService init failed (fail-open): {}", e.getMessage());
+            } else {
+                log.error("NacosConfigSyncService init failed (fail-closed): {}", e.getMessage());
+            }
         }
     }
 
-    public void publish(String content) {
+    /**
+     * Publish platform config to Nacos.
+     *
+     * @return true when publish succeeded
+     * @throws IllegalStateException when publish fails and fail-open is false
+     */
+    public boolean publish(String content) {
         if (configService == null) {
-            return;
+            if (failOpen) {
+                log.warn("Nacos config service unavailable; skip publish (fail-open)");
+                return false;
+            }
+            throw new IllegalStateException("Nacos config service unavailable; publish rejected (fail-closed)");
         }
         try {
             boolean ok = configService.publishConfig(dataId, group, content);
             if (ok) {
                 log.info("Published platform config to Nacos dataId={}", dataId);
-            } else {
-                log.warn("Nacos publishConfig returned false, dataId={}", dataId);
+                return true;
             }
+            if (failOpen) {
+                log.warn("Nacos publishConfig returned false, dataId={} (fail-open)", dataId);
+                return false;
+            }
+            throw new IllegalStateException("Nacos publishConfig returned false for dataId=" + dataId);
         } catch (NacosException e) {
-            log.warn("Failed to publish platform config to Nacos: {}", e.getMessage());
+            if (failOpen) {
+                log.warn("Failed to publish platform config to Nacos (fail-open): {}", e.getMessage());
+                return false;
+            }
+            throw new IllegalStateException("Failed to publish platform config to Nacos: " + e.getMessage(), e);
         }
     }
 

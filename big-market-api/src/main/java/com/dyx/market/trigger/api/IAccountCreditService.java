@@ -29,4 +29,9 @@ public interface IAccountCreditService {
      */
     Response<BigDecimal> queryUserCreditAccount(String userId);
 
+    /**
+     * 按幂等键查询积分流水是否已存在（远程写对账）。
+     */
+    Response<Boolean> existsCreditOrder(String userId, String outBusinessNo);
+
 }

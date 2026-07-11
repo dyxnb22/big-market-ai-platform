@@ -1,3 +1,8 @@
+app:
+  internal-rpc:
+    token: ${APP_INTERNAL_RPC_TOKEN:big-market-internal-dev}
+    enforce: ${APP_INTERNAL_RPC_ENFORCE:false}
+
 spring:
   profiles:
     active: dev
@@ -143,6 +148,30 @@ account:
 job:
   shared-task-dispatch:
     credit-award-disabled: ${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:false}
+  credit-pay-delivery:
+    max-retries: ${JOB_CREDIT_PAY_DELIVERY_MAX_RETRIES:5}
+    scan-limit: ${JOB_CREDIT_PAY_DELIVERY_SCAN_LIMIT:20}
+    min-stuck-minutes: ${JOB_CREDIT_PAY_DELIVERY_MIN_STUCK_MINUTES:1}
+    restore-sku-stock: ${JOB_CREDIT_PAY_DELIVERY_RESTORE_SKU_STOCK:true}
+  dlq-replay:
+    # Money-effect DLQ replay requires explicit idempotency review before enabling.
+    enabled: ${JOB_DLQ_REPLAY_ENABLED:false}
+    max-retries: ${JOB_DLQ_REPLAY_MAX_RETRIES:5}
+    max-consume-failures: ${JOB_DLQ_REPLAY_MAX_CONSUME_FAILURES:5}
+    scan-limit: ${JOB_DLQ_REPLAY_SCAN_LIMIT:50}
+  remote-write-reconcile:
+    enabled: ${JOB_REMOTE_WRITE_RECONCILE_ENABLED:true}
+    max-retries: ${JOB_REMOTE_WRITE_RECONCILE_MAX_RETRIES:5}
+    scan-limit: ${JOB_REMOTE_WRITE_RECONCILE_SCAN_LIMIT:50}
+  chat-refund-reconcile:
+    max-retries: ${JOB_CHAT_REFUND_RECONCILE_MAX_RETRIES:5}
+    scan-limit: ${JOB_CHAT_REFUND_RECONCILE_SCAN_LIMIT:50}
+  strategy-stock-confirm:
+    scan-limit: ${JOB_STRATEGY_STOCK_CONFIRM_SCAN_LIMIT:20}
+    processing-lease-minutes: ${JOB_STRATEGY_STOCK_CONFIRM_PROCESSING_LEASE_MINUTES:5}
+
+outbox-schema-guard:
+  enabled: ${OUTBOX_SCHEMA_GUARD_ENABLED:true}
 
 management:
   endpoints:

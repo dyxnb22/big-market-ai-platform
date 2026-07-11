@@ -42,20 +42,23 @@
         <button id="loadActivityBtn" class="solid-button" type="button">读取线上活动</button>
       </div>
       <div class="form-grid">
-        <label>活动 ID<input id="activityIdInput" value="100301" /></label>
+        <label>活动 ID<input id="activityIdInput" value="100401" /></label>
         <label>活动标题<input id="activityTitleInput" value="幸运轮盘活动" /></label>
-        <label>活动状态
+        <label>ERP 上架状态<span id="erpStageStatus" class="readonly-field">未加载</span></label>
+        <label>展示状态（仅用户端）
           <select id="activityStateInput">
-            <option value="online">online（上架中）</option>
-            <option value="active">active</option>
-            <option value="create">create</option>
-            <option value="expire">expire</option>
+            <option value="active">active（活动进行中）</option>
+            <option value="online">online（展示中，兼容旧值）</option>
+            <option value="preparing">preparing（活动准备中）</option>
+            <option value="offline">offline（已下线展示）</option>
           </select>
         </label>
         <label>展示文案<input id="activityCopyInput" value="登录参与抽奖，AI 帮你解读活动权益。" /></label>
       </div>
       <div class="button-row">
-        <button id="saveActivityConfigBtn" class="solid-button" type="button">保存活动展示配置</button>
+        <button id="saveActivityConfigBtn" class="solid-button" type="button">保存展示配置</button>
+        <button id="publishActivityBtn" class="solid-button" type="button">上架活动</button>
+        <button id="unpublishActivityBtn" class="soft-button" type="button">下架活动</button>
         <button id="armoryBtn" class="soft-button" type="button">预热活动</button>
       </div>
       <div id="skuTable" class="data-table"></div>

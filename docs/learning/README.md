@@ -1,6 +1,6 @@
 # Big Market 学习文档索引
 
-本目录是 Big Market 微服务项目的学习材料，基于完成态代码编写，可直接对照代码阅读。
+本目录是 Big Market 微服务项目的学习材料，基于 2026-07-11 的**有条件冻结**工作树编写，可直接对照代码阅读。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
 
 ## 语言说明
 
@@ -35,9 +35,10 @@
 
 ### 第四阶段：面试备考
 
-1. [18-resume-project-deep-dive.md](18-resume-project-deep-dive.md) - 简历要点 + 项目必知总册（建议先读）
+1. [18-resume-project-deep-dive.md](18-resume-project-deep-dive.md) - 简历四点结合代码详解（面试口述，建议先读）
 2. [11-key-design-decisions.md](11-key-design-decisions.md) - 7 个关键设计决策与理由（面试必读）
 3. [14-interview-qa.md](14-interview-qa.md) - 20 道高频面试题 Q&A（面试必读）
+4. [19-resume-code-walkthrough-and-interview.md](19-resume-code-walkthrough-and-interview.md) - 简历相关代码走读与面试追问（深挖）
 
 ### 参考工具
 

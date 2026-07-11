@@ -4,7 +4,7 @@ import com.dyx.market.domain.activity.model.entity.DeliveryOrderEntity;
 import com.dyx.market.domain.activity.model.entity.SkuRechargeEntity;
 import com.dyx.market.domain.activity.model.entity.UnpaidActivityOrderEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -16,7 +16,7 @@ import javax.annotation.Resource;
  * {@link IRaffleActivityAccountQuotaService}，不经 Dubbo、不依赖远程开关。
  */
 @Component
-@ConditionalOnMissingBean(IAccountQuotaWriteAdapter.class) // 远程适配器未注册时的本地回退
+@ConditionalOnProperty(name = "account.service.remote-quota-write.enabled", havingValue = "false", matchIfMissing = true)
 public class LocalAccountQuotaWriteAdapter implements IAccountQuotaWriteAdapter {
 
     @Resource

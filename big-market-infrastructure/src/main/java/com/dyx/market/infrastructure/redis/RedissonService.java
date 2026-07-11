@@ -92,6 +92,18 @@ public class RedissonService implements IRedisService {
         set.add(value);
     }
 
+    @Override
+    public void removeFromSet(String key, String value) {
+        RSet<String> set = redissonClient.getSet(key);
+        set.remove(value);
+    }
+
+    @Override
+    public java.util.Set<String> getSetMembers(String key) {
+        RSet<String> set = redissonClient.getSet(key);
+        return set.readAll();
+    }
+
     public boolean isSetMember(String key, String value) {
         RSet<String> set = redissonClient.getSet(key);
         return set.contains(value);
@@ -175,6 +187,11 @@ public class RedissonService implements IRedisService {
     @Override
     public Boolean setNx(String key, long expired, TimeUnit timeUnit) {
         return redissonClient.getBucket(key).setIfAbsent("lock", Duration.ofNanos(timeUnit.toNanos(expired)));
+    }
+
+    @Override
+    public <T> Boolean setValueIfAbsent(String key, T value, long expired, TimeUnit timeUnit) {
+        return redissonClient.getBucket(key).setIfAbsent(value, Duration.ofNanos(timeUnit.toNanos(expired)));
     }
 
 }

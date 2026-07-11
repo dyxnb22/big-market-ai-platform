@@ -56,4 +56,9 @@ public interface IRaffleActivitySkuStockService {
 
     List<Long> querySkuList();
 
+    /**
+     * 从队列同步 SKU 库存到 DB（成功后再 ACK）。
+     */
+    void syncActivitySkuStockFromQueue(Long sku);
+
 }

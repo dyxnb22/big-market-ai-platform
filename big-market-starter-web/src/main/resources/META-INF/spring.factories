@@ -2,4 +2,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 com.dyx.market.starter.web.config.TraceIdAutoConfiguration,\
 com.dyx.market.starter.web.config.ThreadPoolShutdownAutoConfiguration,\
 com.dyx.market.starter.web.config.CorsAutoConfiguration,\
+com.dyx.market.starter.web.config.ResponseHttpStatusAutoConfiguration,\
 com.dyx.market.starter.web.redis.RedissonClientAutoConfiguration

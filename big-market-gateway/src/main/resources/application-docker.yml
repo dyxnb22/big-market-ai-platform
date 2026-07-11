@@ -1,5 +1,7 @@
 # Docker Compose: downstream services by container name.
 spring:
+  main:
+    web-application-type: reactive
   cloud:
     gateway:
       routes:

@@ -8,9 +8,10 @@
 
 | 工具 | 版本要求 |
 | ------ | --------- |
-| Docker Desktop | 4.x+，建议分配内存 ≥ 8 GB |
+| Docker Desktop | 4.x+，建议分配内存 ≥ 12 GB（8 GB 全栈重建曾触发 XXL OOM） |
 | JDK | 8（`java -version` 确认） |
 | Maven | 3.6+（`mvn -version` 确认） |
+| Node.js / npm | 用于前端与 Playwright 验收 |
 
 ---
 
@@ -114,18 +115,21 @@ docker compose up --build -d
 最小化启动顺序（先后顺序很重要）：
 
 ```bash
-# 1. gateway（依赖所有下游服务）
-cd big-market-gateway && mvn spring-boot:run &
+# 1. 先启动下游：auth/admin/chatbot/market/account/fulfillment/message-job
+# 每个命令应从项目根目录在独立终端执行，例如：
+mvn -pl big-market-auth-service spring-boot:run
+mvn -pl big-market-admin-service spring-boot:run
+mvn -pl big-market-chatbot-service spring-boot:run
+mvn -pl big-market-market-service spring-boot:run
+mvn -pl big-market-account-service spring-boot:run
+mvn -pl big-market-fulfillment-service spring-boot:run
+mvn -pl big-market-message-job-service spring-boot:run
 
-# 2. auth-service
-cd big-market-auth-service && mvn spring-boot:run &
-
-# 3. market-service（包含 embedded rebate 和 strategy）
-cd big-market-market-service && mvn spring-boot:run &
-
-# 4. message-job-service（MQ 消费 + XXL-Job）
-cd big-market-message-job-service && mvn spring-boot:run &
+# 2. 下游健康后再启动 gateway
+mvn -pl big-market-gateway spring-boot:run
 ```
+
+手工模式容易漏掉 Docker compose 提供的环境变量和跨服务 Redis token 吊销，因此只适合单服务调试；完整学习验收使用方式一。
 
 ---
 
@@ -134,20 +138,21 @@ cd big-market-message-job-service && mvn spring-boot:run &
 启动后，抽奖前必须先调用 armory 接口预热缓存，否则抽奖会因策略数据不在 Redis 而失败。
 
 ```bash
-# 预热活动（activityId=100301 是测试活动；需管理员凭证）
-curl -H "X-Admin-Token: admin-dev-token" \
-  "http://127.0.0.1:8080/api/v1/raffle/activity/armory?activityId=100301"
+# 从 stage 动态解析活动；默认学习数据应返回 100401
+ACTIVITY_ID=$(curl -s \
+  "http://127.0.0.1:8080/api/v1/raffle/activity/query_stage_activity_id?channel=c01&source=s01" \
+  | jq -r '.data')
 
-# 或使用管理员 JWT（先登录 admin/admin）
+# 使用管理员 JWT（admin/admin 仅为本地演示账号）
 ADMIN_TOKEN=$(curl -s -X POST http://127.0.0.1:8080/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"userId":"admin","password":"admin"}' | jq -r '.data.token')
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://127.0.0.1:8080/api/v1/raffle/activity/armory?activityId=100301"
+  "http://127.0.0.1:8080/api/v1/raffle/activity/armory?activityId=${ACTIVITY_ID}"
 
-# 预热策略（strategyId=100006）
-curl -H "X-Admin-Token: admin-dev-token" \
-  "http://127.0.0.1:8080/api/v1/raffle/strategy/strategy_armory?strategyId=100006"
+# 冻结演示活动 100401 对应 strategyId=10007
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://127.0.0.1:8080/api/v1/raffle/strategy/strategy_armory?strategyId=10007"
 ```
 
 ---
@@ -163,6 +168,11 @@ curl -H "X-Admin-Token: admin-dev-token" \
 
 # API 接口冒烟测试（需要完整环境 + 预热）
 ./scripts/smoke-api.sh
+
+# 推荐：完整门禁，含真实抽奖入账、Chat 补偿和 Playwright 双跑
+npm install
+npx playwright install chromium
+./scripts/acceptance.sh --reuse
 ```
 
 可选：验证 logout 跨服务生效（Docker 栈 + Redis 注销已开启）：
@@ -214,7 +224,7 @@ grep "embedded-rpc-provider" big-market-market-service/src/main/resources/applic
 
 ### 问题 4：XXL-Job 任务不执行
 
-访问 <http://127.0.0.1:9090/xxl-job-admin>（admin/123456），在"执行器管理"确认 `big-market` 执行器已注册并在线。
+访问 <http://127.0.0.1:9090/xxl-job-admin>（admin/123456），在“执行器管理”确认 `big-market-message-job` 执行器有非空在线地址。Admin 页面健康但执行器地址为空时，任务仍不会执行；可重启 message-job 后再检查注册。
 
 ---
 

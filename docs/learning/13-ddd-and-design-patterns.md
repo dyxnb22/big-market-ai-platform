@@ -24,21 +24,27 @@
 ├─────────────────────────────────────────────────────┤
 │  infrastructure 层（基础设施层）                    │
 │  big-market-infrastructure/                         │
-│  职责：实现 domain 的 port/repository 接口           │
+│  职责：实现 domain 的 port/repos00itory 接口           │
 │  包括 MyBatis DAO、Redis、MQ 发布、ES 查询           │
 └─────────────────────────────────────────────────────┘
 ```
 
+
+
 ### 四层的具体对应关系
 
-| 层 | 模块 | 典型类 |
-| --- | --- | --- |
-| trigger | `big-market-trigger` | `RaffleActivityController`、`SendAwardConsumer`、`GlobalExceptionHandler`、`DubboRpcAuthSupport` |
-| application | `big-market-domain/.../application` + `big-market-trigger/.../application` + chatbot | `RaffleDrawApplicationService`、`RaffleStrategyQueryApplicationService`、`ErpOperateApplicationService`、`ChatbotApplicationService` 等 |
-| domain | `big-market-domain` | `AbstractRaffleActivityPartake`、`DefaultRaffleStrategy`、`BehaviorRebateService`、`AdminAccessService` |
-| infrastructure | `big-market-infrastructure` | `ActivityRepository`、`ActivityQuerySupport`、`ActivityPartakeOrderSupport`、`ActivityQuotaOrderSupport`、`ActivityQuotaLedgerSupport`、`StrategyRepository`、`StrategyAwardCacheSupport`、`StrategyRuleTreeSupport`、`AwardRepository`、`AwardDispatchSupport`、`AwardCreditGrantSupport`、`MysqlMybatisConfiguration`、`ElasticsearchMybatisConfiguration` |
+
+| 层              | 模块                                                                                   | 典型类                                                                                                                                                                                                                                                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| trigger        | `big-market-trigger`                                                                 | `RaffleActivityController`、`SendAwardConsumer`、`GlobalExceptionHandler`、`DubboRpcAuthSupport`                                                                                                                                                                                                                                                    |
+| application    | `big-market-domain/.../application` + `big-market-trigger/.../application` + chatbot | `RaffleDrawApplicationService`、`RaffleStrategyQueryApplicationService`、`ErpOperateApplicationService`、`ChatbotApplicationService` 等                                                                                                                                                                                                              |
+| domain         | `big-market-domain`                                                                  | `AbstractRaffleActivityPartake`、`DefaultRaffleStrategy`、`BehaviorRebateService`、`AdminAccessService`                                                                                                                                                                                                                                             |
+| infrastructure | `big-market-infrastructure`                                                          | `ActivityRepository`、`ActivityQuerySupport`、`ActivityPartakeOrderSupport`、`ActivityQuotaOrderSupport`、`ActivityQuotaLedgerSupport`、`StrategyRepository`、`StrategyAwardCacheSupport`、`StrategyRuleTreeSupport`、`AwardRepository`、`AwardDispatchSupport`、`AwardCreditGrantSupport`、`MysqlMybatisConfiguration`、`ElasticsearchMybatisConfiguration` |
+
 
 ---
+
+
 
 ## 二、Domain 层内部结构（以 activity 域为例）
 
@@ -67,6 +73,8 @@ domain/activity/
     └── RaffleApplicationService.java
 ```
 
+
+
 ### 聚合根的作用
 
 `CreatePartakeOrderAggregate` 是典型聚合根：一次参与抽奖涉及
@@ -78,6 +86,8 @@ domain/activity/
 // 在一个本地事务内完成：扣减总/日/月额度 + 插入抽奖单
 // ActivityRepository 仅作门面委托，便于按职责继续拆分
 ```
+
+
 
 ### Port 接口的作用（防腐层）
 
@@ -101,7 +111,11 @@ public class RemoteStrategyDecisionPort implements IStrategyDecisionPort { ... }
 
 ---
 
+
+
 ## 三、设计模式
+
+
 
 ### 模式 1：模板方法（Template Method）
 
@@ -131,6 +145,8 @@ protected abstract UserRaffleOrderEntity buildUserRaffleOrder(...);
 **面试回答要点：** 父类定义了"参与抽奖"的算法骨架，子类 `RaffleActivityPartakeService` 实现了具体的额度检查逻辑（查总/日/月账户）。
 
 ---
+
+
 
 ### 模式 2：责任链（Chain of Responsibility）
 
@@ -163,6 +179,8 @@ current.appendNext(applicationContext.getBean("rule_default", ILogicChain.class)
 
 ---
 
+
+
 ### 模式 3：组合模式 + 规则树（Composite / Decision Tree）
 
 **位置：** `big-market-domain/.../strategy/service/rule/tree/`
@@ -190,14 +208,18 @@ while (null != nextNode) {
 
 **与责任链的区别（面试高频）：**
 
-| 维度 | 责任链 | 规则树 |
-| --- | --- | --- |
-| 结构 | 线性链表 | 有向无环图（树形） |
-| 时机 | 抽奖**前**：决定抽哪个奖品 | 抽奖**后**：对已抽出的奖品做过滤/替换 |
-| 分支 | 接管即终止，否则顺序传递 | 根据 ALLOW/TAKE_OVER 走不同的树边 |
+
+| 维度   | 责任链                            | 规则树                                               |
+| ---- | ------------------------------ | ------------------------------------------------- |
+| 结构   | 线性链表                           | 有向无环图（树形）                                         |
+| 时机   | 抽奖**前**：决定抽哪个奖品                | 抽奖**后**：对已抽出的奖品做过滤/替换                             |
+| 分支   | 接管即终止，否则顺序传递                   | 根据 ALLOW/TAKE_OVER 走不同的树边                         |
 | 配置来源 | `strategy` 表的 `rule_models` 字段 | `rule_tree`/`rule_tree_node`/`rule_tree_line` 三张表 |
 
+
 ---
+
+
 
 ### 模式 4：策略模式（Strategy）
 
@@ -221,6 +243,8 @@ public class RebateNoPayTradePolicy implements ITradePolicy { ... }
 ```
 
 ---
+
+
 
 ### 模式 5：适配器模式（Adapter）
 
@@ -258,6 +282,8 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
 
 ---
 
+
+
 ### 模式 6：Outbox（发件箱）模式
 
 **位置：** `AwardRepository`、`CreditRepository`、`BehaviorRebateRepository`，以及各 task 表
@@ -283,3 +309,4 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
 
 - `AwardRepository.saveUserAwardRecord()`：写 `user_award_record` + `task`，事务提交后调用 `eventPublisher` 发 MQ
 - `SendMessageTaskJob.java`：扫描 status=create 的 task，补偿重发
+

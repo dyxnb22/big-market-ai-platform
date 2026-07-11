@@ -1,0 +1,30 @@
+---
+description: Safety rules for credit, quota, award, rebate, and stock writes
+globs:
+  - "**/credit/**/*.java"
+  - "**/award/**/*.java"
+  - "**/rebate/**/*.java"
+  - "**/activity/**/*.java"
+  - "**/strategy/**/*.java"
+  - "**/*Stock*.java"
+  - "**/*Credit*.java"
+  - "**/*Award*.java"
+  - "**/*Rebate*.java"
+  - "**/*Quota*.java"
+  - "**/*Reconcile*.java"
+  - "**/*Outbox*.java"
+alwaysApply: false
+---
+
+# Money-path safety
+
+Also read: `docs/data-and-outbox.md`, `docs/learning/archive/risky-changes-remediation.md`, skill `money-path-change`.
+
+- Preserve idempotency keys: `out_business_no`, `award_order_id`, `message_id`, chatbot `requestId`, quota ledger keys.
+- Prefer **idempotent record first**, then stock DECR / remote debit. Never treat INDEX_DUP as success if side effects already ran.
+- Distinguish sync failure vs **UNKNOWN** (timeout after possible success); UNKNOWN needs query-by-bizNo, not blind retry debit.
+- Award completion must not mark `completed` before dispatch/credit actually finished (or use explicit `dispatching` state).
+- Strategy chain takeover (weight/blacklist) must still go through stock reservation for finite awards.
+- DB-router: set shard by `userId`/`dbIdx` for pending/chat/confirm tables that exist only on `big_market_01/02`; avoid writing default `db00`.
+- Redis stock queue: ACK/delete only after DB update succeeds; failed DB must requeue or retain.
+- DLQ auto-replay: review idempotency before enabling broad replay.

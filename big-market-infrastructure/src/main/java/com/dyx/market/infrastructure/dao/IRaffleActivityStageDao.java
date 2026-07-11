@@ -17,6 +17,8 @@ public interface IRaffleActivityStageDao {
 
     Integer updateStageActivity2ActiveById(Long id);
 
+    Integer updateStageActivity2ExpireById(Long id);
+
     Long queryStageActivity2ActiveById(Long id);
 
     Long queryStageActiveBySC(RaffleActivityStage raffleActivityStage);

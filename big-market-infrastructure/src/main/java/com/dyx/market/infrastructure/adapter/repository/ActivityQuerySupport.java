@@ -8,6 +8,7 @@ import com.dyx.market.infrastructure.dao.po.*;
 import com.dyx.market.infrastructure.redis.IRedisService;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.common.Constants;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -321,6 +322,30 @@ public class ActivityQuerySupport {
         }
     }
 
+    public UnpaidActivityOrderEntity queryQuotaOrderByOutBusinessNo(String userId, String outBusinessNo) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
+            return null;
+        }
+        RaffleActivityOrder raffleActivityOrderReq = new RaffleActivityOrder();
+        raffleActivityOrderReq.setUserId(userId);
+        raffleActivityOrderReq.setOutBusinessNo(outBusinessNo);
+        try {
+            dbRouter.doRouter(userId);
+            RaffleActivityOrder raffleActivityOrderRes = raffleActivityOrderDao.queryRaffleActivityOrder(raffleActivityOrderReq);
+            if (null == raffleActivityOrderRes) {
+                return null;
+            }
+            return UnpaidActivityOrderEntity.builder()
+                    .userId(raffleActivityOrderRes.getUserId())
+                    .orderId(raffleActivityOrderRes.getOrderId())
+                    .outBusinessNo(raffleActivityOrderRes.getOutBusinessNo())
+                    .payAmount(raffleActivityOrderRes.getPayAmount())
+                    .build();
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
     public List<SkuProductEntity> querySkuProductEntityListByActivityId(Long activityId) {
         List<RaffleActivitySku> raffleActivitySkus = raffleActivitySkuDao.queryActivitySkuListByActivityId(activityId);
         List<SkuProductEntity> skuProductEntities = new ArrayList<>(raffleActivitySkus.size());
@@ -344,6 +369,14 @@ public class ActivityQuerySupport {
 
         }
         return skuProductEntities;
+    }
+
+    public void updateRaffleActivityState(Long activityId, String state) {
+        RaffleActivity req = new RaffleActivity();
+        req.setActivityId(activityId);
+        req.setState(state);
+        raffleActivityDao.updateRaffleActivityStateByActivityId(req);
+        redisService.remove(Constants.RedisKey.ACTIVITY_KEY + activityId);
     }
 
 }

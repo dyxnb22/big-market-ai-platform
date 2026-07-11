@@ -71,8 +71,8 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
-    public boolean subtractionActivitySkuStock(Long sku, String cacheKey, Date endDateTime) {
-        return activitySkuStockCacheSupport.subtractionActivitySkuStock(sku, cacheKey, endDateTime);
+    public boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey, Date endDateTime) {
+        return activitySkuStockCacheSupport.subtractionActivitySkuStock(sku, activityId, cacheKey, endDateTime);
     }
 
     @Override
@@ -116,6 +116,11 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
+    public void syncActivitySkuStockFromQueue(Long sku) {
+        activitySkuStockCacheSupport.syncActivitySkuStockFromQueue(sku);
+    }
+
+    @Override
     public void clearActivitySkuStock(Long sku) {
         activitySkuStockCacheSupport.clearActivitySkuStock(sku);
     }
@@ -127,7 +132,8 @@ public class ActivityRepository implements IActivityRepository {
 
     @Override
     public List<Long> querySkuList() {
-        return activitySkuStockCacheSupport.querySkuList();
+        // Include Redis pending registry so offline activities still drain flush queues.
+        return activitySkuStockCacheSupport.queryPendingSkuList();
     }
 
     @Override
@@ -186,6 +192,11 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
+    public UnpaidActivityOrderEntity queryQuotaOrderByOutBusinessNo(String userId, String outBusinessNo) {
+        return activityQuerySupport.queryQuotaOrderByOutBusinessNo(userId, outBusinessNo);
+    }
+
+    @Override
     public List<SkuProductEntity> querySkuProductEntityListByActivityId(Long activityId) {
         return activityQuerySupport.querySkuProductEntityListByActivityId(activityId);
     }
@@ -203,6 +214,16 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public void updateStageActivity2Active(Long id) {
         activityStageRepositorySupport.updateStageActivity2Active(id);
+    }
+
+    @Override
+    public void updateStageActivity2Expire(Long id) {
+        activityStageRepositorySupport.updateStageActivity2Expire(id);
+    }
+
+    @Override
+    public void updateRaffleActivityState(Long activityId, String state) {
+        activityQuerySupport.updateRaffleActivityState(activityId, state);
     }
 
     @Override

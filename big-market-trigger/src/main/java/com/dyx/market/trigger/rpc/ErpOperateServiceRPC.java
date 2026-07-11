@@ -54,6 +54,18 @@ public class ErpOperateServiceRPC implements IErpOperateService {
     }
 
     @Override
+    public Response<Boolean> updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO) {
+        DubboRpcAuthSupport.rejectInternalRpc("updateStageActivity2Expire");
+        return null;
+    }
+
+    @Override
+    public Response<Boolean> updateStageActivity2Expire(UpdateStageActivity2ActiveRequestDTO requestDTO, String token) {
+        DubboRpcAuthSupport.requireAdmin(adminAccessService, token);
+        return TriggerApiResponses.ok(erpOperateApplicationService.updateStageActivity2Expire(requestDTO));
+    }
+
+    @Override
     public Response<List<RaffleActivityStageResponseDTO>> queryRaffleActivityStageList() {
         DubboRpcAuthSupport.rejectInternalRpc("queryRaffleActivityStageList");
         return null;

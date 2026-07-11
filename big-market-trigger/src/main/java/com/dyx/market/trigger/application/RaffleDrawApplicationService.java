@@ -6,6 +6,7 @@ import com.dyx.market.domain.activity.application.RaffleApplicationService;
 import com.dyx.market.trigger.api.dto.ActivityDrawRequestDTO;
 import com.dyx.market.trigger.api.dto.ActivityDrawResponseDTO;
 import com.dyx.market.types.annotations.DCCValue;
+import com.dyx.market.types.annotations.RateLimiterAccessInterceptor;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class RaffleDrawApplicationService {
     @Resource
     private RaffleApplicationService raffleApplicationService;
 
+    @RateLimiterAccessInterceptor(key = "userId", permitsPerSecond = 20, fallbackMethod = "drawRateLimiterFallback")
     public ActivityDrawResponseDTO draw(ActivityDrawRequestDTO request) {
         log.info("活动抽奖开始 userId:{} activityId:{}", request.getUserId(), request.getActivityId());
         if (StringUtils.isNotBlank(degradeSwitch) && "open".equals(degradeSwitch)) {
@@ -42,5 +44,10 @@ public class RaffleDrawApplicationService {
                 .awardTitle(result.getAwardTitle())
                 .awardIndex(result.getAwardIndex())
                 .build();
+    }
+
+    @SuppressWarnings("unused")
+    public ActivityDrawResponseDTO drawRateLimiterFallback(ActivityDrawRequestDTO request) {
+        throw new AppException(ResponseCode.RATE_LIMITER.getCode(), ResponseCode.RATE_LIMITER.getInfo());
     }
 }

@@ -4,7 +4,9 @@ import com.dyx.market.infrastructure.dao.po.RaffleActivityOrder;
 import com.dyx.market.middleware.db.router.annotation.DBRouter;
 import com.dyx.market.middleware.db.router.annotation.DBRouterStrategy;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,5 +31,18 @@ public interface IRaffleActivityOrderDao {
 
     @DBRouter
     RaffleActivityOrder queryUnpaidActivityOrder(RaffleActivityOrder raffleActivityOrderReq);
+
+    List<RaffleActivityOrder> queryStuckWaitPayOrders(@Param("since") Date since,
+                                                        @Param("tradeName") String tradeName,
+                                                        @Param("limit") int limit);
+
+    @DBRouter
+    int updateOrderCompensating(RaffleActivityOrder raffleActivityOrderReq);
+
+    @DBRouter
+    int updateOrderFailed(RaffleActivityOrder raffleActivityOrderReq);
+
+    List<RaffleActivityOrder> queryStuckCompensatingOrders(@Param("since") Date since,
+                                                           @Param("limit") int limit);
 
 }

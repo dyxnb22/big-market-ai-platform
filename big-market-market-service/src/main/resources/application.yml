@@ -139,17 +139,6 @@ zookeeper:
       session-timeout-ms: 18000
       connection-timeout-ms: 30000
 
-xxl:
-  job:
-    accessToken: ${XXL_JOB_TOKEN:default_token}
-    executor:
-      address:
-      appname: big-market-job
-      ip:
-      port: 9999
-      logpath: ./data/applogs/xxl-job/jobhandler
-      logretentiondays: 30
-
 gateway:
   config:
     enable: true

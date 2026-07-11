@@ -52,25 +52,26 @@ public abstract class AbstractRaffleStrategy implements IRaffleStrategy {
         // 2. 责任链抽奖计算【这步拿到的是初步的抽奖ID，之后需要根据ID处理抽奖】注意；黑名单、权重等非默认抽奖的直接返回抽奖结果
         DefaultChainFactory.StrategyAwardVO chainStrategyAwardVO = raffleLogicChain(userId, strategyId);
         log.info("抽奖策略计算-责任链 {} {} {} {}", userId, strategyId, chainStrategyAwardVO.getAwardId(), chainStrategyAwardVO.getLogicModel());
-        if (!DefaultChainFactory.LogicModel.RULE_DEFAULT.getCode().equals(chainStrategyAwardVO.getLogicModel())) {
-            return buildRaffleAwardEntity(strategyId, chainStrategyAwardVO.getAwardId(), chainStrategyAwardVO.getAwardRuleValue());
-        }
 
-        // 3. 规则树抽奖过滤【奖品ID，会根据抽奖次数判断、库存判断、兜底兜里返回最终的可获得奖品信息】
-        DefaultTreeFactory.StrategyAwardVO treeStrategyAwardVO = raffleLogicTree(userId, strategyId, chainStrategyAwardVO.getAwardId(), raffleFactorEntity.getEndDateTime());
+        // 3. 规则树抽奖过滤（权重/黑名单接管候选奖仍须走库存树）
+        DefaultTreeFactory.StrategyAwardVO treeStrategyAwardVO = raffleLogicTree(
+                userId, strategyId, chainStrategyAwardVO.getAwardId(),
+                raffleFactorEntity.getEndDateTime(), raffleFactorEntity.getOrderId());
         log.info("抽奖策略计算-规则树 {} {} {} {}", userId, strategyId, treeStrategyAwardVO.getAwardId(), treeStrategyAwardVO.getAwardRuleValue());
 
         // 4. 返回抽奖结果
-        return buildRaffleAwardEntity(strategyId, treeStrategyAwardVO.getAwardId(), treeStrategyAwardVO.getAwardRuleValue());
+        return buildRaffleAwardEntity(strategyId, treeStrategyAwardVO);
     }
 
-    private RaffleAwardEntity buildRaffleAwardEntity(Long strategyId, Integer awardId, String awardConfig) {
-        StrategyAwardEntity strategyAward = repository.queryStrategyAwardEntity(strategyId, awardId);
+    private RaffleAwardEntity buildRaffleAwardEntity(Long strategyId, DefaultTreeFactory.StrategyAwardVO strategyAwardVO) {
+        StrategyAwardEntity strategyAward = repository.queryStrategyAwardEntity(strategyId, strategyAwardVO.getAwardId());
         return RaffleAwardEntity.builder()
-                .awardId(awardId)
+                .awardId(strategyAwardVO.getAwardId())
                 .awardTitle(strategyAward.getAwardTitle())
-                .awardConfig(awardConfig)
+                .awardConfig(strategyAwardVO.getAwardRuleValue())
                 .sort(strategyAward.getSort())
+                .stockReserved(strategyAwardVO.getStockReserved())
+                .stockReservation(strategyAwardVO.getStockReservation())
                 .build();
     }
 
@@ -102,6 +103,6 @@ public abstract class AbstractRaffleStrategy implements IRaffleStrategy {
      * @param endDateTime 活动结束时间 - 用于设定缓存有效期
      * @return 过滤结果【奖品ID，会根据抽奖次数判断、库存判断、兜底兜里返回最终的可获得奖品信息】
      */
-    public abstract DefaultTreeFactory.StrategyAwardVO raffleLogicTree(String userId, Long strategyId, Integer awardId, Date endDateTime);
+    public abstract DefaultTreeFactory.StrategyAwardVO raffleLogicTree(String userId, Long strategyId, Integer awardId, Date endDateTime, String orderId);
 
 }

@@ -82,6 +82,27 @@ public interface IStrategyRepository {
     void awardStockConsumeSendQueue(StrategyAwardStockKeyVO strategyAwardStockKeyVO);
 
     /**
+     * 预占奖品库存（DECR + lock），不落库队列。
+     *
+     * @param strategyId    策略ID
+     * @param awardId       奖品ID
+     * @param endDateTime   活动结束时间
+     * @param reservationId 预占凭证（复用抽奖订单 orderId）
+     * @return 预占成功返回凭证，库存不足或加锁失败返回 null
+     */
+    StrategyAwardStockKeyVO reserveAwardStock(Long strategyId, Integer awardId, Date endDateTime, String reservationId);
+
+    /**
+     * 确认奖品库存预占，入队异步落库。
+     */
+    void confirmAwardStockReservation(StrategyAwardStockKeyVO reservation);
+
+    /**
+     * 释放奖品库存预占，恢复 Redis 库存。
+     */
+    void releaseAwardStockReservation(StrategyAwardStockKeyVO reservation);
+
+    /**
      * 获取奖品库存消费队列
      */
     StrategyAwardStockKeyVO takeQueueValue() throws InterruptedException;
@@ -98,6 +119,13 @@ public interface IStrategyRepository {
      * @param awardId    奖品ID
      */
     void updateStrategyAwardStock(Long strategyId, Integer awardId);
+
+    /**
+     * 按 reservationId 幂等扣减 MySQL 库存。
+     */
+    void updateStrategyAwardStockOnce(StrategyAwardStockKeyVO stockKey);
+
+    void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId);
 
     /**
      * 根据策略ID+奖品ID的唯一值组合，查询奖品信息

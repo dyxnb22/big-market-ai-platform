@@ -13,7 +13,9 @@ import lombok.Getter;
 public enum OrderStateVO {
 
     wait_pay("wait_pay","待支付"),
+    compensating("compensating", "补偿中"),
     completed("completed", "完成"),
+    failed("failed", "失败"),
     ;
 
     private final String code;

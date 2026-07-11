@@ -28,7 +28,7 @@ public interface IActivityRepository {
 
     void cacheActivitySkuStockCount(String cacheKey, Integer stockCount);
 
-    boolean subtractionActivitySkuStock(Long sku, String cacheKey, Date endDateTime);
+    boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey, Date endDateTime);
 
     void activitySkuStockConsumeSendQueue(ActivitySkuStockKeyVO activitySkuStockKeyVO);
 
@@ -41,6 +41,8 @@ public interface IActivityRepository {
     void clearQueueValue(Long sku);
 
     void updateActivitySkuStock(Long sku);
+
+    void syncActivitySkuStockFromQueue(Long sku);
 
     void clearActivitySkuStock(Long sku);
 
@@ -75,6 +77,11 @@ public interface IActivityRepository {
 
     UnpaidActivityOrderEntity queryUnpaidActivityOrder(SkuRechargeEntity skuRechargeEntity);
 
+    /**
+     * 按 outBusinessNo 查询配额订单（任意 state），用于返利/兑换幂等。
+     */
+    UnpaidActivityOrderEntity queryQuotaOrderByOutBusinessNo(String userId, String outBusinessNo);
+
     List<SkuProductEntity> querySkuProductEntityListByActivityId(Long activityId);
 
     BigDecimal queryUserCreditAccountAmount(String userId);
@@ -82,6 +89,10 @@ public interface IActivityRepository {
     void appendStageActivity(String channel, String source, Long activityId);
 
     void updateStageActivity2Active(Long id);
+
+    void updateStageActivity2Expire(Long id);
+
+    void updateRaffleActivityState(Long activityId, String state);
 
     Long queryStageActiveBySC(String channel, String source);
 

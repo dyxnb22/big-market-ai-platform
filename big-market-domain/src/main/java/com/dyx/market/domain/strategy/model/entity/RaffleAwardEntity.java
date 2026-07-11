@@ -1,5 +1,6 @@
 package com.dyx.market.domain.strategy.model.entity;
 
+import com.dyx.market.domain.strategy.model.valobj.StrategyAwardStockKeyVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,5 +25,9 @@ public class RaffleAwardEntity {
     private String awardConfig;
     /** 奖品顺序号 */
     private Integer sort;
+    /** 是否已在 Redis 预占奖品库存 */
+    private Boolean stockReserved;
+    /** 奖品库存预占信息（确认后入队落库，失败时释放） */
+    private StrategyAwardStockKeyVO stockReservation;
 
 }

@@ -1,0 +1,38 @@
+groups:
+  - name: big-market-business
+    rules:
+      - alert: PendingRemoteWriteBacklog
+        expr: sum(big_market_pending_remote_write_tasks) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "pending_remote_write_task backlog high"
+          description: "Remote write pending+continuation count is {{ $value }} for >5m"
+
+      - alert: MqDeadLetterPending
+        expr: big_market_mq_dead_letter_pending > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "mq_dead_letter has pending rows"
+          description: "DLQ pending count is {{ $value }} for >10m"
+
+      - alert: ChatRefundPending
+        expr: big_market_chat_refund_pending > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "chat credit refund backlog"
+          description: "chat_credit_session refund_state=pending count is {{ $value }} for >10m"
+
+      - alert: StrategyStockConfirmPending
+        expr: big_market_strategy_stock_confirm_pending > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "strategy award stock confirm backlog"
+          description: "strategy_award_stock_confirm_task pending count is {{ $value }} for >5m"

@@ -1,0 +1,9 @@
+app:
+  internal-rpc:
+    enforce: true
+    token: ${APP_INTERNAL_RPC_TOKEN}
+  jwt:
+    secret: ${JWT_SECRET:}
+xxl:
+  job:
+    accessToken: ${XXL_JOB_TOKEN}

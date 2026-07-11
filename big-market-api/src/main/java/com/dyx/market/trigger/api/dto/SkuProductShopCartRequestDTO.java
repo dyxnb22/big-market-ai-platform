@@ -21,4 +21,9 @@ public class SkuProductShopCartRequestDTO implements Serializable {
      */
     private Long sku;
 
+    /**
+     * 客户端幂等键（重试必须复用同一 requestId）
+     */
+    private String requestId;
+
 }

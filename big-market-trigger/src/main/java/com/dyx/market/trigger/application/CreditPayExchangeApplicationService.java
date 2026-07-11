@@ -18,8 +18,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 /**
  * 积分兑换商品应用服务：编排下单、扣积分、发货与库存补偿。
@@ -27,8 +25,6 @@ import java.time.format.DateTimeFormatter;
 @Slf4j
 @Service
 public class CreditPayExchangeApplicationService {
-
-    private static final DateTimeFormatter DATE_FORMAT_DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Resource
     private IAccountQuotaWriteAdapter accountQuotaWriteAdapter;
@@ -40,11 +36,10 @@ public class CreditPayExchangeApplicationService {
     public void creditPayExchange(SkuProductShopCartRequestDTO request) {
         Long sku = request.getSku();
         log.info("积分兑换商品开始 userId:{} sku:{}", request.getUserId(), sku);
-        if (StringUtils.isBlank(request.getUserId()) || null == sku) {
+        if (StringUtils.isBlank(request.getUserId()) || null == sku || StringUtils.isBlank(request.getRequestId())) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
-        String outBusinessNo = request.getUserId() + "_" + sku + "_"
-                + LocalDate.now().format(DATE_FORMAT_DAY) + "_" + System.currentTimeMillis();
+        String outBusinessNo = buildOutBusinessNo(request.getUserId(), sku, request.getRequestId());
 
         UnpaidActivityOrderEntity unpaidActivityOrder = accountQuotaWriteAdapter.createOrder(SkuRechargeEntity.builder()
                 .userId(request.getUserId())
@@ -55,24 +50,43 @@ public class CreditPayExchangeApplicationService {
         log.info("积分兑换商品，创建订单完成 userId:{} sku:{} outBusinessNo:{}",
                 request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
 
+        payAndDeliver(unpaidActivityOrder, sku, request.getUserId());
+    }
+
+    /**
+     * 远程 quota 对账成功后继续扣积分与发货（NR-006 continuation）。
+     */
+    public void continueAfterRemoteQuotaCreated(String userId, String outBusinessNo, Long sku) {
+        UnpaidActivityOrderEntity unpaid = accountQuotaWriteAdapter.createOrder(SkuRechargeEntity.builder()
+                .userId(userId)
+                .sku(sku)
+                .outBusinessNo(outBusinessNo)
+                .orderTradeType(OrderTradeTypeVO.credit_pay_trade)
+                .build());
+        payAndDeliver(unpaid, sku, userId);
+    }
+
+    private void payAndDeliver(UnpaidActivityOrderEntity unpaidActivityOrder, Long sku, String userId) {
         try {
             String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
                     .userId(unpaidActivityOrder.getUserId())
                     .tradeName(TradeNameVO.CONVERT_SKU)
                     .tradeType(TradeTypeVO.REVERSE)
-                    .amount(unpaidActivityOrder.getPayAmount().negate())
+                    .amount(unpaidActivityOrder.getPayAmount() != null
+                            ? unpaidActivityOrder.getPayAmount().negate()
+                            : null)
                     .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
                     .build());
-            log.info("积分兑换商品，支付订单完成 userId:{} sku:{} orderId:{}", request.getUserId(), sku, orderId);
+            log.info("积分兑换商品，支付订单完成 userId:{} sku:{} orderId:{}", userId, sku, orderId);
         } catch (AppException e) {
             if (!ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
                 log.warn("积分兑换商品，支付扣积分失败，恢复SKU库存 userId:{} sku:{} outBusinessNo:{}",
-                        request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
+                        userId, sku, unpaidActivityOrder.getOutBusinessNo());
                 restoreActivitySkuStock(sku);
                 throw e;
             }
             log.warn("积分兑换商品，支付订单已存在，继续补偿发货 userId:{} sku:{} outBusinessNo:{}",
-                    request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
+                    userId, sku, unpaidActivityOrder.getOutBusinessNo());
         }
 
         try {
@@ -81,11 +95,17 @@ public class CreditPayExchangeApplicationService {
                     .outBusinessNo(unpaidActivityOrder.getOutBusinessNo())
                     .build());
             log.info("积分兑换商品，发货完成 userId:{} sku:{} outBusinessNo:{}",
-                    request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo());
+                    userId, sku, unpaidActivityOrder.getOutBusinessNo());
         } catch (Exception deliveryEx) {
-            log.error("积分兑换商品，发货失败（MQ异步补偿将重试） userId:{} sku:{} outBusinessNo:{}",
-                    request.getUserId(), sku, unpaidActivityOrder.getOutBusinessNo(), deliveryEx);
+            log.error("积分兑换商品，发货失败，等待补偿任务重试 userId:{} sku:{} outBusinessNo:{}",
+                    userId, sku, unpaidActivityOrder.getOutBusinessNo(), deliveryEx);
+            throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                    "积分已扣减，发货处理中，请稍后刷新查看兑换结果");
         }
+    }
+
+    public static String buildOutBusinessNo(String userId, Long sku, String requestId) {
+        return userId + "_" + sku + "_" + requestId;
     }
 
     private void restoreActivitySkuStock(Long sku) {

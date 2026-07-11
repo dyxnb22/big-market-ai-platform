@@ -1,0 +1,48 @@
+# Secure overlay for the application stack.
+# Usage:
+#   export JWT_SECRET=... APP_INTERNAL_RPC_TOKEN=... ADMIN_TOKEN=... \
+#          CHAT_INTERNAL_SERVICE_TOKEN=... XXL_JOB_TOKEN=... APP_AUTH_DEV_USERS=...
+#   docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
+#
+# Requires non-default secrets; DefaultCredentialGuard refuses known defaults when
+# SPRING_PROFILES_ACTIVE includes "secure".
+
+x-secure-env: &secure-env
+  SPRING_PROFILES_ACTIVE: docker,secure
+  APP_INTERNAL_RPC_TOKEN: ${APP_INTERNAL_RPC_TOKEN:?APP_INTERNAL_RPC_TOKEN is required for secure compose}
+  APP_INTERNAL_RPC_ENFORCE: "true"
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for secure compose}
+  ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN is required for secure compose}
+  CHAT_INTERNAL_SERVICE_TOKEN: ${CHAT_INTERNAL_SERVICE_TOKEN:?CHAT_INTERNAL_SERVICE_TOKEN is required for secure compose}
+  XXL_JOB_TOKEN: ${XXL_JOB_TOKEN:?XXL_JOB_TOKEN is required for secure compose}
+  APP_AUTH_DEV_USERS: ${APP_AUTH_DEV_USERS:?APP_AUTH_DEV_USERS is required for secure compose}
+  APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://127.0.0.1:5173}
+  CROSS_ORIGIN: ${APP_CORS_ALLOWED_ORIGINS:-http://127.0.0.1:5173}
+  GATEWAY_RATE_LIMITER_ENABLED: "true"
+
+services:
+  big-market-auth-service:
+    environment:
+      <<: *secure-env
+  big-market-admin-service:
+    environment:
+      <<: *secure-env
+  big-market-chatbot-service:
+    environment:
+      <<: *secure-env
+  big-market-market-service:
+    environment:
+      <<: *secure-env
+  big-market-message-job-service:
+    environment:
+      <<: *secure-env
+  big-market-account-service:
+    environment:
+      <<: *secure-env
+  big-market-fulfillment-service:
+    environment:
+      <<: *secure-env
+  big-market-gateway:
+    environment:
+      <<: *secure-env
+      GATEWAY_RATE_LIMITER_ENABLED: "true"

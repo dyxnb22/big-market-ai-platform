@@ -16,6 +16,9 @@ import org.springframework.context.annotation.ImportResource;
  *   <li>{@code com.dyx.market.market} — 本服务配置</li>
  *   <li>{@code trigger.http} — REST 控制器</li>
  *   <li>{@code trigger.rpc} — Dubbo RPC 提供方（如 RebateServiceRPC）</li>
+ *   <li>{@code trigger.application} — 应用编排服务（Facade / ApplicationService）</li>
+ *   <li>{@code trigger.support} — HTTP 鉴权等支撑组件</li>
+ *   <li>{@code trigger.adapter} — 本地写适配器（remote 关闭时生效）</li>
  *   <li>{@code domain} — 领域服务</li>
  *   <li>{@code infrastructure} — DAO、仓储、Redis、事件发布</li>
  * </ul>
@@ -25,6 +28,9 @@ import org.springframework.context.annotation.ImportResource;
         "com.dyx.market.market",
         "com.dyx.market.trigger.http",
         "com.dyx.market.trigger.rpc",
+        "com.dyx.market.trigger.application",
+        "com.dyx.market.trigger.support",
+        "com.dyx.market.trigger.adapter",
         "com.dyx.market.domain",
         "com.dyx.market.infrastructure"
 })

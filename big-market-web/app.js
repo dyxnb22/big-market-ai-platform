@@ -126,6 +126,7 @@ function initApp() {
   var ctxTargetId = null;
   var signedToday = false;
   var chatbotEnabled = true;
+  var activityDisplayReady = true;
   var metricsLoading = true;
   var pendingAssistant = false;
 
@@ -216,6 +217,20 @@ function initApp() {
   }
 
   // ---- Chatbot gate / activity display ----
+  function applyActivityGate(state) {
+    var preparing = state !== "active" && state !== "online";
+    if (d.drawBtn) {
+      d.drawBtn.disabled = preparing || !activityDisplayReady;
+    }
+    if (preparing && d.drawResult && !d.drawResult.textContent.startsWith("恭喜")) {
+      d.drawResult.textContent = "活动准备中，请稍后再试";
+    }
+    if (d.activityCopy && preparing) {
+      d.activityCopy.textContent = "活动准备中，请等待管理员上架后再参与抽奖。";
+      d.activityCopy.style.display = "";
+    }
+  }
+
   function applyChatbotGate() {
     var disabled = !chatbotEnabled;
     if (d.msgInput) {
@@ -238,16 +253,14 @@ function initApp() {
   }
 
   /**
-   * 解析当前活动 ID：仅当上架活动与演示默认 ID 一致时采用动态值，
-   * 避免 stage 与演示账户数据不一致导致查询失败。
+   * 解析当前活动 ID：采用 stage API 返回值，与后端上架活动保持一致。
    */
   function resolveActivityId() {
     return apiRequest("/raffle/activity/query_stage_activity_id?channel=" + encodeURIComponent(CONFIG.CHANNEL) + "&source=" + encodeURIComponent(CONFIG.SOURCE), {
       method: "GET"
     }).then(function(r) {
       var staged = (r.data && Number(r.data) > 0) ? Number(r.data) : null;
-      // 上架活动 ID 与演示账户数据可能不一致（如 stage=100401、演示=100301），仅匹配时采用动态值
-      CONFIG.ACTIVITY_ID = (staged === CONFIG.DEFAULT_ACTIVITY_ID) ? staged : CONFIG.DEFAULT_ACTIVITY_ID;
+      CONFIG.ACTIVITY_ID = staged || CONFIG.DEFAULT_ACTIVITY_ID;
       return CONFIG.ACTIVITY_ID;
     }).catch(function() {
       CONFIG.ACTIVITY_ID = CONFIG.DEFAULT_ACTIVITY_ID;
@@ -297,6 +310,8 @@ function initApp() {
         }
         chatbotEnabled = data.chatbotEnabled !== false;
         applyChatbotGate();
+        activityDisplayReady = data.state === "online" || data.state === "active";
+        applyActivityGate(data.state);
       })
       .catch(function() {
         if (d.activityLabel) d.activityLabel.textContent = "活动 " + CONFIG.ACTIVITY_ID;
@@ -348,8 +363,14 @@ function initApp() {
 
   // ---- Logout ----
   function logout() {
-    clearAuth();
-    location.reload();
+    var token = auth.token;
+    var revoke = token
+      ? apiRequest("/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }).catch(function() {})
+      : Promise.resolve();
+    revoke.finally(function() {
+      clearAuth();
+      location.reload();
+    });
   }
 
   // ---- Wheel / campaign / draw ----
@@ -387,9 +408,6 @@ function initApp() {
     var seq = ++loadCampaignSeq;
     setMetricsLoading(true);
     var proms = [];
-
-    // Armory (fire-and-forget, may fail silently)
-    apiRequest("/raffle/activity/armory?activityId=" + CONFIG.ACTIVITY_ID, {method:"GET"}).catch(function(){});
 
     // User activity account
     proms.push(
@@ -470,6 +488,10 @@ function initApp() {
 
   // ---- Draw（随机积分奖需轮询余额变化以展示实际到账） ----
   function draw() {
+    if (!activityDisplayReady) {
+      toast("活动准备中，请稍后再试");
+      return;
+    }
     busy(d.drawBtn, true);
     if (d.drawBtn) d.drawBtn.textContent = "抽奖中...";
     var creditBefore = currentCreditBalance();
@@ -806,7 +828,7 @@ function initApp() {
     if (d.ucExchangeBtn) { busy(d.ucExchangeBtn, true); d.ucExchangeBtn.textContent = "兑换中..."; }
     apiRequest("/raffle/activity/credit_pay_exchange_sku_by_token", {
       method: "POST",
-      body: JSON.stringify({ sku: exchangeSku.sku })
+      body: JSON.stringify({ sku: exchangeSku.sku, requestId: crypto.randomUUID() })
     }).then(function() {
       toast("兑换成功，获得 1 次抽奖机会");
       var cost = exchangeSku ? (exchangeSku.productAmount || 0) : 0;

@@ -20,5 +20,9 @@ public class StrategyAwardStockKeyVO {
     private Long strategyId;
     // 奖品ID
     private Integer awardId;
+    // 预占凭证（复用抽奖订单 orderId）
+    private String reservationId;
+    // DECR 后的剩余库存，用于释放时删除对应 lock key
+    private Long lockSurplus;
 
 }

@@ -5,6 +5,8 @@ import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
+import com.dyx.market.infrastructure.dao.IUserCreditOrderDao;
+import com.dyx.market.infrastructure.dao.po.UserCreditOrder;
 import com.dyx.market.trigger.api.dto.CreditTradeRequestDTO;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
@@ -24,6 +26,8 @@ public class AccountCreditApplicationService {
 
     @Resource
     private ICreditAdjustService creditAdjustService;
+    @Resource
+    private IUserCreditOrderDao userCreditOrderDao;
 
     /** 创建积分交易订单（赚取或消费积分）。 */
     public String createOrder(CreditTradeRequestDTO request) {
@@ -50,6 +54,17 @@ public class AccountCreditApplicationService {
         }
         CreditAccountEntity entity = creditAdjustService.queryUserCreditAccount(userId);
         return entity != null ? entity.getAdjustAmount() : BigDecimal.ZERO;
+    }
+
+    /** 按 outBusinessNo 查询积分流水是否已存在。 */
+    public boolean existsCreditOrder(String userId, String outBusinessNo) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        UserCreditOrder query = new UserCreditOrder();
+        query.setUserId(userId);
+        query.setOutBusinessNo(outBusinessNo);
+        return userCreditOrderDao.queryByOutBusinessNo(query) != null;
     }
 
     private TradeNameVO resolveTradeNameVO(String name) {

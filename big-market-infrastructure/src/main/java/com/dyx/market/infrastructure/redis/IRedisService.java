@@ -135,6 +135,16 @@ public interface IRedisService {
     void addToSet(String key, String value);
 
     /**
+     * 从集合中移除指定值
+     */
+    void removeFromSet(String key, String value);
+
+    /**
+     * 读取集合全部成员
+     */
+    java.util.Set<String> getSetMembers(String key);
+
+    /**
      * 判断指定的值是否是集合的成员
      *
      * @param key   键
@@ -266,5 +276,10 @@ public interface IRedisService {
     Boolean setNx(String key);
 
     Boolean setNx(String key, long expired, TimeUnit timeUnit);
+
+    /**
+     * 原子 SET key value NX PX，成功返回 true。
+     */
+    <T> Boolean setValueIfAbsent(String key, T value, long expired, TimeUnit timeUnit);
 
 }

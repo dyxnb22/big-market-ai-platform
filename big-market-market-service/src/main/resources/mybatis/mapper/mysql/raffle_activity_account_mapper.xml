@@ -82,4 +82,22 @@
         where user_id = #{userId} and activity_id = #{activityId}
     </select>
 
+    <update id="addAccountTotalSurplusQuota" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccount">
+        update raffle_activity_account
+        set total_count_surplus = total_count_surplus + 1, update_time = now()
+        where user_id = #{userId} and activity_id = #{activityId}
+    </update>
+
+    <update id="addAccountMonthSurplusQuota" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccount">
+        update raffle_activity_account
+        set month_count_surplus = month_count_surplus + 1, update_time = now()
+        where user_id = #{userId} and activity_id = #{activityId}
+    </update>
+
+    <update id="addAccountDaySurplusQuota" parameterType="com.dyx.market.infrastructure.dao.po.RaffleActivityAccount">
+        update raffle_activity_account
+        set day_count_surplus = day_count_surplus + 1, update_time = now()
+        where user_id = #{userId} and activity_id = #{activityId}
+    </update>
+
 </mapper>

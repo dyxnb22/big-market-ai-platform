@@ -2,15 +2,23 @@
 # Validate the full microservices stack from a clean build through smoke test.
 #
 # Usage:
-#   ./scripts/validate-microservices-stack.sh [--skip-docker] [--skip-build]
+#   ./scripts/validate-microservices-stack.sh [--start-stack] [--skip-build]
+#   ./scripts/validate-microservices-stack.sh [--skip-docker] [--skip-build]  # legacy alias
 #
 # Options:
-#   --skip-docker   Skip docker compose steps (useful when infra is already running)
-#   --skip-build    Skip mvn clean package (useful when JARs are already built)
+#   --start-stack   Start infra + app via docker compose (opt-in; default does NOT start)
+#   --skip-docker   Legacy alias: do not start docker (same as default)
+#   --skip-build    Skip mvn verify (useful when JARs are already built)
+#
+# By default this script does NOT auto-start Docker. Start the stack yourself:
+#   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+#   ./scripts/apply-stack-migrations.sh
+#   docker compose up --build -d
+# Then run this script (health poll + smoke only).
 #
 # Prerequisites:
 #   - JDK 8, Maven 3.x
-#   - Docker + Docker Compose v2
+#   - Docker + Docker Compose v2 (when using --start-stack or for smoke against local stack)
 #   - python3 (used by smoke test for JSON parsing)
 #
 # IMPORTANT: This script does NOT destroy data. It does NOT purge queues.
@@ -18,13 +26,14 @@
 
 set -euo pipefail
 
-SKIP_DOCKER=false
+START_STACK=false
 SKIP_BUILD=false
 HOST=""
 
 for arg in "$@"; do
   case "$arg" in
-    --skip-docker) SKIP_DOCKER=true ;;
+    --start-stack) START_STACK=true ;;
+    --skip-docker) START_STACK=false ;;
     --skip-build)  SKIP_BUILD=true ;;
     --*) echo "Unknown option: $arg"; exit 1 ;;
     *) HOST="$arg" ;;
@@ -35,19 +44,21 @@ HOST="${HOST:-localhost}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=lib/health-poll.sh
+source "$ROOT/scripts/lib/health-poll.sh"
 
 echo "================================================================="
 echo "  big-market microservices stack validation"
-echo "  $(date)"
+echo "  start_stack=${START_STACK}  $(date)"
 echo "================================================================="
 echo ""
 
 # ── Step 1: Build ──────────────────────────────────────────────────────────────
 
 if [ "$SKIP_BUILD" = false ]; then
-  echo "Step 1/4: Building all modules (mvn clean package -DskipTests)"
+  echo "Step 1/4: Building all modules (mvn verify)"
   echo "-----------------------------------------------------------------"
-  if ! mvn clean package -DskipTests; then
+  if ! mvn verify -DfailIfNoTests=false; then
     echo ""
     echo "BUILD FAILED. Fix compilation errors before proceeding."
     echo ""
@@ -66,7 +77,7 @@ fi
 
 # ── Step 2: Infrastructure stack ──────────────────────────────────────────────
 
-if [ "$SKIP_DOCKER" = false ]; then
+if [ "$START_STACK" = true ]; then
   echo "Step 2/4: Starting infrastructure stack"
   echo "-----------------------------------------------------------------"
   echo "  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d"
@@ -81,17 +92,40 @@ if [ "$SKIP_DOCKER" = false ]; then
     exit 1
   fi
   echo ""
-  echo "  Infrastructure stack started. Waiting 10s for services to settle..."
-  sleep 10
+  echo "  Infrastructure stack started. Applying stack migrations (idempotent)..."
+  if ! ./scripts/apply-stack-migrations.sh; then
+    echo ""
+    echo "Stack migrations failed. Old MySQL volumes may need reconcile DDL / XXL seeds."
+    echo "  ./scripts/apply-stack-migrations.sh"
+    exit 1
+  fi
+  wait_for_http_up "http://${HOST}:3306" 60 "mysql-port" || true
+  echo "  Waiting for MySQL to accept connections..."
+  for _ in $(seq 1 30); do
+    if docker exec mysql mysqladmin ping -uroot -p123456 --silent 2>/dev/null; then
+      echo "  UP  mysql"
+      break
+    fi
+    sleep 2
+  done
   echo ""
 else
-  echo "Step 2/4: SKIPPED (--skip-docker)"
+  echo "Step 2/4: SKIPPED (no --start-stack; Docker will not be started)"
+  if docker exec mysql mysqladmin ping -uroot -p123456 --silent 2>/dev/null; then
+    echo "  MySQL reachable — applying stack migrations..."
+    if ! ./scripts/apply-stack-migrations.sh; then
+      echo "Stack migrations failed."
+      exit 1
+    fi
+  else
+    echo "  MySQL not reachable. Start infra manually or pass --start-stack."
+  fi
   echo ""
 fi
 
 # ── Step 3: Application stack ──────────────────────────────────────────────────
 
-if [ "$SKIP_DOCKER" = false ]; then
+if [ "$START_STACK" = true ]; then
   echo "Step 3/4: Building and starting application services"
   echo "-----------------------------------------------------------------"
   echo "  docker compose up --build -d"
@@ -105,39 +139,35 @@ if [ "$SKIP_DOCKER" = false ]; then
     echo "  docker compose logs big-market-message-job-service"
     echo "  docker compose logs big-market-gateway"
     echo ""
-    # ── RabbitMQ queue argument conflict note ────────────────────────────────
     echo "If you see 'inequivalent arg' errors in RabbitMQ logs:"
-    echo "  RabbitMQ queue arguments (x-dead-letter-exchange, x-message-ttl, etc.)"
-    echo "  are IMMUTABLE once a queue is created. If the DLQ configuration was"
-    echo "  changed, the existing queues must be deleted before the new declarations"
-    echo "  take effect. The safest way to reset local dev queues is:"
-    echo ""
-    echo "    # 1. Stop the app stack first"
-    echo "    docker compose down"
-    echo ""
-    echo "    # 2. Open the RabbitMQ management UI at http://localhost:15672"
-    echo "    #    (login: admin / admin) and manually delete the conflicting queues."
-    echo "    #    OR stop and remove only the RabbitMQ container/volume:"
-    echo "    docker compose -f docs/dev-ops/docker-compose-environment.yml stop rabbitmq"
-    echo "    docker compose -f docs/dev-ops/docker-compose-environment.yml rm -f rabbitmq"
-    echo "    docker volume rm dev-ops_rabbitmq-data  # adjust volume name if different"
-    echo ""
-    echo "    # 3. Restart the infra stack"
-    echo "    docker compose -f docs/dev-ops/docker-compose-environment.yml up -d"
-    echo ""
-    echo "    # 4. Re-run this script"
-    echo "    ./scripts/validate-microservices-stack.sh --skip-build"
-    echo ""
-    echo "  WARNING: deleting queues discards unprocessed messages. Only do this"
-    echo "  on a local dev environment, never on a shared or production broker."
+    echo "  RabbitMQ queue arguments are IMMUTABLE once a queue is created."
+    echo "  Reset local queues only on a local dev environment (see docs/operations-checklist.md)."
     exit 1
   fi
   echo ""
-  echo "  Application stack started. Waiting 30s for health checks..."
-  sleep 30
+  echo "  Application stack started. Polling health endpoints..."
+  if ! wait_for_stack_healthy "$HOST" 180; then
+    echo ""
+    echo "Stack health polling timed out."
+    echo "  docker compose ps"
+    echo "  docker compose logs --tail=50 big-market-gateway"
+    exit 1
+  fi
   echo ""
 else
-  echo "Step 3/4: SKIPPED (--skip-docker)"
+  echo "Step 3/4: SKIPPED (no --start-stack) — polling existing stack health..."
+  if ! wait_for_stack_healthy "$HOST" 60; then
+    echo ""
+    echo "Stack is not healthy and --start-stack was not set (no auto-start)."
+    echo ""
+    echo "Start manually:"
+    echo "  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d"
+    echo "  ./scripts/apply-stack-migrations.sh"
+    echo "  docker compose up --build -d"
+    echo ""
+    echo "Or: ./scripts/validate-microservices-stack.sh --start-stack --skip-build"
+    exit 1
+  fi
   echo ""
 fi
 
@@ -145,6 +175,12 @@ fi
 
 echo "Step 4/4: Running smoke test"
 echo "-----------------------------------------------------------------"
+chmod +x ./scripts/ensure-demo-activity-online.sh
+if ! ./scripts/ensure-demo-activity-online.sh "http://${HOST}:8080"; then
+  echo ""
+  echo "Demo activity online ensure FAILED (fail-closed)."
+  exit 1
+fi
 if ! ./scripts/smoke-test-microservices.sh "$HOST"; then
   echo ""
   echo "SMOKE TEST FAILED. Check the failures above, then:"

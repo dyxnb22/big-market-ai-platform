@@ -2,6 +2,7 @@ package com.dyx.market.trigger.adapter;
 
 import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -13,7 +14,8 @@ import javax.annotation.Resource;
  * 不经 Dubbo、不依赖远程开关。
  */
 @Component
-@ConditionalOnMissingBean(IRebateReadAdapter.class) // 远程适配器未注册时的本地回退
+@ConditionalOnProperty(name = "rebate.service.remote-read.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnMissingBean(IRebateReadAdapter.class)
 public class LocalRebateReadAdapter implements IRebateReadAdapter {
 
     @Resource

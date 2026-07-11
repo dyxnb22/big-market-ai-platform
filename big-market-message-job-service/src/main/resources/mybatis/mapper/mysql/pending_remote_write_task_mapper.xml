@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao">
+
+    <resultMap id="dataMap" type="com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask">
+        <id column="id" property="id"/>
+        <result column="out_business_no" property="outBusinessNo"/>
+        <result column="operation" property="operation"/>
+        <result column="payload" property="payload"/>
+        <result column="state" property="state"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask">
+        insert into pending_remote_write_task(out_business_no, operation, payload, state, retry_count, create_time, update_time)
+        values (#{outBusinessNo}, #{operation}, #{payload}, 'pending', 0, now(), now())
+    </insert>
+
+    <select id="queryPendingTasks" resultMap="dataMap">
+        select id, out_business_no, operation, payload, state, retry_count
+        from pending_remote_write_task
+        where state IN ('pending', 'continuation_pending') and retry_count &lt; #{maxRetry}
+        order by create_time asc
+        limit #{limit}
+    </select>
+
+    <update id="updateContinuationPending" parameterType="com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask">
+        update pending_remote_write_task set state = 'continuation_pending', update_time = now()
+        where id = #{id} and state = 'pending'
+    </update>
+
+    <update id="updateDone" parameterType="com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask">
+        update pending_remote_write_task set state = 'done', update_time = now()
+        where id = #{id} and state IN ('pending', 'continuation_pending')
+    </update>
+
+    <update id="updateRetryFailed">
+        update pending_remote_write_task
+        set retry_count = retry_count + 1,
+            state = case
+                when retry_count + 1 >= #{maxRetry} then 'failed'
+                when state = 'continuation_pending' then 'continuation_pending'
+                else 'pending'
+            end,
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <select id="countByState" resultType="int">
+        select count(1) from pending_remote_write_task where state = #{state}
+    </select>
+
+</mapper>

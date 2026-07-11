@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Repo-only runtime safety validator.
 #
-# Validates final-architecture guardrails and verifies that no regression has
+# WARNING: This script can report PASS while Spring Context / mapper / XXL
+# alignment issues remain (see docs/audit-remediation-plan.md). Do not use it
+# as the sole gate for boot or closed-loop readiness.
 # occurred in default credentials, mutually exclusive flag paths,
 # shared mapper copies, learning DDL isolation, or the presence of safety
 # hardening classes.
@@ -60,6 +62,40 @@ assert_pattern_present() {
   else
     fail "$label — not found in $(basename "$file")"
   fi
+}
+
+# Read a scalar from the repository's simple, indentation-based application.yml
+# files and resolve a Spring placeholder default such as ${ENV_VAR:true}.
+# This deliberately avoids treating nested YAML as flattened dotted text.
+yaml_default_value() {
+  local file="$1" property_path="$2"
+  python3 - "$file" "$property_path" <<'PY'
+import re
+import sys
+
+path, wanted = sys.argv[1], sys.argv[2]
+keys = {}
+with open(path, encoding="utf-8") as stream:
+    for raw in stream:
+        match = re.match(r"^(\s*)([A-Za-z0-9_.-]+):(?:\s*(.*?))?\s*$", raw.rstrip("\n"))
+        if not match:
+            continue
+        indent, key, value = match.groups()
+        level = len(indent.expandtabs(2)) // 2
+        keys[level] = key
+        for stale in [item for item in keys if item > level]:
+            del keys[stale]
+        current = ".".join(keys[item] for item in sorted(keys) if item <= level)
+        if current != wanted:
+            continue
+        value = (value or "").strip().strip('"\'')
+        placeholder = re.fullmatch(r"\$\{[^}:]+:(-?)([^}]*)}", value)
+        if placeholder:
+            value = placeholder.group(2)
+        print(value.lower())
+        sys.exit(0)
+sys.exit(1)
+PY
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -215,18 +251,22 @@ assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_J
 echo ""
 echo "── 2.1 Mutual-exclusion: embedded provider vs service provider ──"
 
+MARKET_YML="$REPO_ROOT/big-market-market-service/src/main/resources/application.yml"
+
+if [[ "$(yaml_default_value "$MARKET_YML" "rebate.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" \
+   && "$(yaml_default_value "$MARKET_YML" "strategy.service.remote-read.enabled" 2>/dev/null)" == "false" ]]; then
+  pass "Nested YAML/default-placeholder parser resolves known market defaults"
+else
+  fail "Nested YAML/default-placeholder parser could not resolve known market defaults"
+fi
+
 # Rebate: embedded provider must NOT be default-true WHILE service create is default-true
 REBATE_EMBEDDED_DEFAULT_TRUE=0
 REBATE_REMOTE_DEFAULT_TRUE=0
-for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources; do
-  [[ -d "$dir" ]] || continue
-  if grep -RqE 'REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true|rebate\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    REBATE_EMBEDDED_DEFAULT_TRUE=1
-  fi
-  if grep -RqE 'REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-true|rebate\.service\.remote-create-order\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    REBATE_REMOTE_DEFAULT_TRUE=1
-  fi
-done
+[[ "$(yaml_default_value "$MARKET_YML" "rebate.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" ]] \
+  && REBATE_EMBEDDED_DEFAULT_TRUE=1
+[[ "$(yaml_default_value "$MARKET_YML" "rebate.service.remote-create-order.enabled" 2>/dev/null)" == "true" ]] \
+  && REBATE_REMOTE_DEFAULT_TRUE=1
 if [[ "$REBATE_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
   fail "Rebate embedded provider AND remote create-order both default to true — dual-provider risk"
 else
@@ -236,15 +276,10 @@ fi
 # Strategy: embedded provider must NOT be default-true WHILE remote read is default-true
 STRATEGY_EMBEDDED_DEFAULT_TRUE=0
 STRATEGY_REMOTE_DEFAULT_TRUE=0
-for dir in "$REPO_ROOT"/big-market-market-service/src/main/resources; do
-  [[ -d "$dir" ]] || continue
-  if grep -RqE 'STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:-true|strategy\.embedded-rpc-provider\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    STRATEGY_EMBEDDED_DEFAULT_TRUE=1
-  fi
-  if grep -RqE 'STRATEGY_SERVICE_REMOTE_READ_ENABLED:-true|strategy\.service\.remote-read\.enabled.*:.*true' "$dir" 2>/dev/null; then
-    STRATEGY_REMOTE_DEFAULT_TRUE=1
-  fi
-done
+[[ "$(yaml_default_value "$MARKET_YML" "strategy.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" ]] \
+  && STRATEGY_EMBEDDED_DEFAULT_TRUE=1
+[[ "$(yaml_default_value "$MARKET_YML" "strategy.service.remote-read.enabled" 2>/dev/null)" == "true" ]] \
+  && STRATEGY_REMOTE_DEFAULT_TRUE=1
 if [[ "$STRATEGY_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
   fail "Strategy embedded provider AND remote read both default to true — dual-provider risk"
 else
@@ -257,13 +292,19 @@ echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ─
 # Shared task dispatch (SendMessageTaskJob) must NOT be active while
 # per-domain outbox dispatchers (DispatchCreditAwardTaskJob) are enabled.
 MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
+COMPOSE_OUTBOX_ENABLED=0
+COMPOSE_SHARED_TASK_DISABLED=0
+grep -q 'ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}' "$COMPOSE_MAIN" 2>/dev/null \
+  && COMPOSE_OUTBOX_ENABLED=1
+grep -q 'JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-true}' "$COMPOSE_MAIN" 2>/dev/null \
+  && COMPOSE_SHARED_TASK_DISABLED=1
 if [[ -f "$MESSAGE_JOB_YML" ]]; then
-  if grep -qE 'ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true|account\.award-credit-outbox\.enabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
+  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "account.award-credit-outbox.enabled" 2>/dev/null)" == "true" ]]; then
     OUTBOX_ENABLED=1
   else
     OUTBOX_ENABLED=0
   fi
-  if grep -qE 'job\.shared-task-dispatch\.credit-award-disabled.*:.*true' "$MESSAGE_JOB_YML" 2>/dev/null; then
+  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "job.shared-task-dispatch.credit-award-disabled" 2>/dev/null)" == "true" ]]; then
     SHARED_TASK_DISABLED=1
   else
     SHARED_TASK_DISABLED=0
@@ -272,6 +313,11 @@ if [[ -f "$MESSAGE_JOB_YML" ]]; then
     fail "message-job outbox enabled but shared-task-dispatch.credit-award-disabled is not true — dual-dispatch risk"
   else
     pass "message-job outbox+shared-task config: outbox_enabled_default=$OUTBOX_ENABLED shared_task_disabled=$SHARED_TASK_DISABLED (safe)"
+  fi
+  if [[ "$COMPOSE_OUTBOX_ENABLED" -eq 1 && "$COMPOSE_SHARED_TASK_DISABLED" -eq 1 ]]; then
+    pass "Docker default selects award-credit outbox and disables the shared credit-award path"
+  else
+    fail "Docker default must enable award-credit outbox and disable shared credit-award dispatch"
   fi
 else
   pass "message-job config absent (skip)"
@@ -446,10 +492,75 @@ assert_file "MICROSERVICES.md is authoritative entry point" "$MICROSERVICES_MD"
 assert_pattern_present "MICROSERVICES.md declares itself authoritative" "$MICROSERVICES_MD" 'authoritative entry point'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 8: Final naming guardrail for current docs and scripts
+# Section 8: XXL handler ↔ seed alignment + market scan exclusion (boot P0)
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 8. Final naming guardrail for docs and scripts ──"
+echo "── 8. XXL @XxlJob handlers ⊆ xxl_job.sql seeds; market excludes job/listener ──"
+
+XXL_SQL="$REPO_ROOT/docs/dev-ops/mysql/sql/xxl_job.sql"
+MARKET_APP="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/market/market/MarketServiceApplication.java"
+
+if [[ -f "$XXL_SQL" ]]; then
+  SEEDED_HANDLERS=$(grep -E "^\s*\([0-9]+,1," "$XXL_SQL" \
+    | grep -oE "'(updateAwardStockJob|SendMessageTaskJob_DB[12]|UpdateActivitySkuStockJob|DispatchCreditAwardTaskJob_DB[12]|StrategyAwardStockConfirmJob_DB[12]|CreditPayDeliveryReconcileJob_DB[12]|RemoteWriteReconcileJob|DlqReplayJob|ChatRefundReconcileJob)'" \
+    | tr -d "'" \
+    | sort -u)
+  while IFS= read -r handler; do
+    [[ -z "$handler" ]] && continue
+    if printf '%s\n' "$SEEDED_HANDLERS" | grep -qx "$handler"; then
+      pass "@XxlJob(\"$handler\") seeded in xxl_job.sql"
+    else
+      fail "@XxlJob(\"$handler\") missing from xxl_job.sql seeds"
+    fi
+  done < <(grep -RhoE '^[[:space:]]*@XxlJob\("[^"]+"\)' \
+      "$REPO_ROOT/big-market-trigger" \
+      "$REPO_ROOT/big-market-message-job-service" \
+      --include='*.java' 2>/dev/null \
+    | sed -E 's/.*@XxlJob\("([^"]+)"\).*/\1/' \
+    | sort -u)
+
+  if [[ "${COMPOSE_OUTBOX_ENABLED:-0}" -eq 1 ]]; then
+    for handler in DispatchCreditAwardTaskJob_DB1 DispatchCreditAwardTaskJob_DB2; do
+      if grep -E "'$handler'.*,'',1,0,0\)[,;]?$" "$XXL_SQL" >/dev/null; then
+        pass "$handler seed runs with Docker's default award-credit outbox"
+      else
+        fail "$handler seed must run with Docker's default award-credit outbox"
+      fi
+    done
+  fi
+  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "job.dlq-replay.enabled" 2>/dev/null)" == "false" ]]; then
+    if grep -E "'DlqReplayJob'.*,'',0,0,0\)[,;]?$" "$XXL_SQL" >/dev/null; then
+      pass "DlqReplayJob seed is stopped while reviewed replay defaults off"
+    else
+      fail "DlqReplayJob seed must be stopped while reviewed replay defaults off"
+    fi
+  else
+    fail "DLQ replay must default off pending explicit idempotency review"
+  fi
+else
+  fail "xxl_job.sql missing"
+fi
+
+if [[ -f "$MARKET_APP" ]]; then
+  if grep -qE 'com\.dyx\.market\.trigger\.(job|listener)' "$MARKET_APP"; then
+    fail "market-service must not scan trigger.job / trigger.listener"
+  else
+    pass "market-service scanBasePackages excludes trigger.job / trigger.listener"
+  fi
+  if grep -q 'com.dyx.market.trigger.http' "$MARKET_APP"; then
+    pass "market-service scans trigger.http"
+  else
+    fail "market-service missing trigger.http scan"
+  fi
+else
+  fail "MarketServiceApplication.java missing"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Section 9: Final naming guardrail for current docs and scripts
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo "── 9. Final naming guardrail for docs and scripts ──"
 
 FINAL_STATE_FORBIDDEN_PATTERN="$(IFS='|'; echo \
   "P""hase" \

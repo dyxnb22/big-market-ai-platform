@@ -13,3 +13,7 @@ nacos:
   config:
     sync:
       serverAddr: ${NACOS_HOST:nacos}:${NACOS_PORT:8848}
+
+gateway:
+  config:
+    apiHost: http://${GATEWAY_API_HOST:big-market-gateway}:8080

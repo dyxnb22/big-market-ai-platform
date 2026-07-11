@@ -26,6 +26,9 @@ redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
 
+chat:
+  internal-service-token: ${CHAT_INTERNAL_SERVICE_TOKEN:change-me-chat-internal-docker}
+
 dubbo:
   registry:
     id: nacos-registry
@@ -34,6 +37,7 @@ dubbo:
 zookeeper:
   sdk:
     config:
+      enable: ${ZOOKEEPER_SDK_CONFIG_ENABLE:true}
       connect-string: ${ZOOKEEPER_HOST:zookeeper}:2181
 
 xxl:

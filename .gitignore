@@ -47,5 +47,11 @@ build/
 
 ### Node / Playwright ###
 node_modules/
+.playwright-browsers/
 test-results/
 playwright-report/
+
+### Service runtime logs ###
+**/data/log/
+
+.m2-workspace/

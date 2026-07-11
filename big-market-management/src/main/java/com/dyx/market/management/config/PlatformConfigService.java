@@ -15,6 +15,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -40,6 +42,9 @@ public class PlatformConfigService implements InitializingBean {
     @Autowired(required = false)
     private NacosConfigSyncService nacosConfigSyncService;
 
+    @Autowired(required = false)
+    private DynamicConfigSyncPort dynamicConfigSyncPort;
+
     @Override
     public void afterPropertiesSet() throws Exception {
         putDefault("chatbot", "enabled",  "true",                        "Chatbot entrance switch");
@@ -49,6 +54,12 @@ public class PlatformConfigService implements InitializingBean {
         putDefault("chatbot", "model",    "deepseek-chat",               "LLM model name");
         putDefault("system",  "degradeSwitch",    "close", "Global raffle degrade switch");
         putDefault("system",  "rateLimiterSwitch","close", "Global rate limiter switch");
+        putDefault("activity.100301", "state", "online", "Demo activity display state");
+        putDefault("activity.100301", "title", "幸运轮盘活动", "Demo activity title");
+        putDefault("activity.100301", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Demo activity copy");
+        putDefault("activity.100401", "state", "online", "Staged demo activity display state");
+        putDefault("activity.100401", "title", "OpenAi抽奖活动", "Staged demo activity title");
+        putDefault("activity.100401", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Staged demo activity copy");
         loadFromDisk();
         // 启动时以 Nacos 为权威源：用远端最新配置覆盖本地磁盘快照
         if (nacosConfigSyncService != null) {
@@ -77,10 +88,15 @@ public class PlatformConfigService implements InitializingBean {
 
     public String getValue(String namespace, String configKey, String defaultValue) {
         AdminConfigResponseDTO config = get(namespace, configKey);
+        if (config != null && "__DELETED__".equals(config.getDescription())) {
+            return defaultValue;
+        }
         return config == null || StringUtils.isBlank(config.getConfigValue()) ? defaultValue : config.getConfigValue();
     }
 
     public synchronized AdminConfigResponseDTO save(AdminConfigRequestDTO request) throws IOException {
+        String key = storeKey(request.getNamespace(), request.getConfigKey());
+        AdminConfigResponseDTO previous = configStore.get(key);
         AdminConfigResponseDTO config = AdminConfigResponseDTO.builder()
                 .namespace(request.getNamespace())
                 .configKey(request.getConfigKey())
@@ -88,16 +104,57 @@ public class PlatformConfigService implements InitializingBean {
                 .description(request.getDescription())
                 .updateTime(System.currentTimeMillis())
                 .build();
-        configStore.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
+        configStore.put(key, config);
+        try {
+            saveToDisk();
+            String content = serializePropertiesContent();
+            String contentHash = contentHash(content);
+            boolean nacosPublished = publishToNacos(content);
+            String source = nacosConfigSyncService == null ? "local" : (nacosPublished ? "nacos" : "local");
+            syncDynamicConfigIfNeeded(config);
+            return config.toBuilder()
+                    .contentHash(contentHash)
+                    .nacosPublished(nacosPublished)
+                    .source(source)
+                    .build();
+        } catch (RuntimeException e) {
+            rollbackConfig(key, previous);
+            throw e;
+        } catch (IOException e) {
+            rollbackConfig(key, previous);
+            throw e;
+        }
+    }
+
+    private void rollbackConfig(String key, AdminConfigResponseDTO previous) throws IOException {
+        if (previous != null) {
+            configStore.put(key, previous);
+        } else {
+            configStore.remove(key);
+        }
         saveToDisk();
-        publishToNacos();
-        return config;
+        publishToNacosBestEffort();
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {
-        configStore.remove(storeKey(namespace, configKey));
-        saveToDisk();
-        publishToNacos();
+        String key = storeKey(namespace, configKey);
+        AdminConfigResponseDTO previous = configStore.get(key);
+        AdminConfigResponseDTO tombstone = AdminConfigResponseDTO.builder()
+                .namespace(namespace)
+                .configKey(configKey)
+                .configValue("")
+                .description("__DELETED__")
+                .updateTime(System.currentTimeMillis())
+                .build();
+        configStore.put(key, tombstone);
+        try {
+            saveToDisk();
+            String content = serializePropertiesContent();
+            publishToNacos(content);
+        } catch (IOException e) {
+            rollbackConfig(key, previous);
+            throw e;
+        }
     }
 
     public synchronized void refreshFromContent(String content) {
@@ -108,12 +165,16 @@ public class PlatformConfigService implements InitializingBean {
             Properties properties = new Properties();
             properties.load(new StringReader(content));
             for (String propertyName : properties.stringPropertyNames()) {
-                String[] parts = propertyName.split("\\.", 3);
-                if (parts.length != 3 || !"value".equals(parts[2])) {
+                if (!propertyName.endsWith(".value")) {
                     continue;
                 }
-                String namespace = parts[0];
-                String configKey = parts[1];
+                String withoutValue = propertyName.substring(0, propertyName.length() - ".value".length());
+                int lastDot = withoutValue.lastIndexOf('.');
+                if (lastDot < 0) {
+                    continue;
+                }
+                String namespace = withoutValue.substring(0, lastDot);
+                String configKey = withoutValue.substring(lastDot + 1);
                 String description = properties.getProperty(namespace + "." + configKey + ".description", "");
                 configStore.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
                         .namespace(namespace)
@@ -150,12 +211,16 @@ public class PlatformConfigService implements InitializingBean {
             properties.load(inputStream);
         }
         for (String propertyName : properties.stringPropertyNames()) {
-            String[] parts = propertyName.split("\\.", 3);
-            if (parts.length != 3 || !"value".equals(parts[2])) {
+            if (!propertyName.endsWith(".value")) {
                 continue;
             }
-            String namespace = parts[0];
-            String configKey = parts[1];
+            String withoutValue = propertyName.substring(0, propertyName.length() - ".value".length());
+            int lastDot = withoutValue.lastIndexOf('.');
+            if (lastDot < 0) {
+                continue;
+            }
+            String namespace = withoutValue.substring(0, lastDot);
+            String configKey = withoutValue.substring(lastDot + 1);
             String description = properties.getProperty(namespace + "." + configKey + ".description", "");
             configStore.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
                     .namespace(namespace)
@@ -178,16 +243,59 @@ public class PlatformConfigService implements InitializingBean {
         }
     }
 
-    private void publishToNacos() {
+    private void syncDynamicConfigIfNeeded(AdminConfigResponseDTO config) {
+        if (dynamicConfigSyncPort == null) {
+            return;
+        }
+        if ("system".equals(config.getNamespace()) && "degradeSwitch".equals(config.getConfigKey())) {
+            dynamicConfigSyncPort.syncDegradeSwitch(config.getConfigValue());
+        }
+        if ("system".equals(config.getNamespace()) && "rateLimiterSwitch".equals(config.getConfigKey())) {
+            dynamicConfigSyncPort.syncRateLimiterSwitch(config.getConfigValue());
+        }
+    }
+
+    private void publishToNacosBestEffort() {
         if (nacosConfigSyncService == null) {
             return;
         }
         try {
-            StringWriter writer = new StringWriter();
-            buildProperties().store(writer, "Big Market platform runtime configuration");
-            nacosConfigSyncService.publish(writer.toString());
+            publishToNacos(serializePropertiesContent());
         } catch (Exception e) {
-            log.warn("Failed to serialize config for Nacos publish: {}", e.getMessage());
+            log.warn("Best-effort Nacos publish after rollback failed: {}", e.getMessage());
+        }
+    }
+
+    private String serializePropertiesContent() throws IOException {
+        StringWriter writer = new StringWriter();
+        buildProperties().store(writer, "Big Market platform runtime configuration");
+        return writer.toString();
+    }
+
+    private boolean publishToNacos(String content) throws IOException {
+        if (nacosConfigSyncService == null) {
+            return false;
+        }
+        try {
+            return nacosConfigSyncService.publish(content);
+        } catch (IllegalStateException e) {
+            throw new IOException(e.getMessage(), e);
+        } catch (Exception e) {
+            throw new IOException("Failed to publish config to Nacos: " + e.getMessage(), e);
+        }
+    }
+
+    private String contentHash(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 8; i++) {
+                sb.append(String.format("%02x", hash[i]));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
 

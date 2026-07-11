@@ -2,7 +2,7 @@ package com.dyx.market.trigger.adapter;
 
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -14,7 +14,7 @@ import javax.annotation.Resource;
  * 不经 Dubbo、不依赖远程开关。
  */
 @Component
-@ConditionalOnMissingBean(IAccountCreditWriteAdapter.class) // 远程适配器未注册时的本地回退
+@ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "false", matchIfMissing = true)
 public class LocalAccountCreditWriteAdapter implements IAccountCreditWriteAdapter {
 
     @Resource

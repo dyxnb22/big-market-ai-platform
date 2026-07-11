@@ -30,6 +30,11 @@ public class RaffleActivityStageService implements IRaffleActivityStageService {
     }
 
     @Override
+    public void updateStageActivity2Expire(Long id) {
+        repository.updateStageActivity2Expire(id);
+    }
+
+    @Override
     public Long queryStageActivityId(String channel, String source) {
         return repository.queryStageActiveBySC(channel, source);
     }

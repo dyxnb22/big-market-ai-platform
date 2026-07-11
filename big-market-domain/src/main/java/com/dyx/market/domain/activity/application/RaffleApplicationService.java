@@ -10,6 +10,8 @@ import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
 import com.dyx.market.domain.award.model.valobj.AwardStateVO;
 import com.dyx.market.domain.strategy.model.entity.RaffleAwardEntity;
 import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
+import com.dyx.market.domain.strategy.adapter.port.IStrategyStockConfirmCompensationPort;
+import com.dyx.market.domain.strategy.repository.IStrategyRepository;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,10 @@ public class RaffleApplicationService {
     private IActivityRepository activityRepository;
     @Resource
     private IActivityAccountPort activityAccountPort;
+    @Resource
+    private IStrategyRepository strategyRepository;
+    @Resource
+    private IStrategyStockConfirmCompensationPort strategyStockConfirmCompensationPort;
     @Value("${account.service.remote-quota-decrement.enabled:false}")
     private boolean remoteQuotaDecrementEnabled;
 
@@ -63,12 +69,15 @@ public class RaffleApplicationService {
         UserRaffleOrderEntity orderEntity = raffleActivityPartakeService.createOrder(userId, activityId);
         log.info("活动抽奖，创建订单 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
 
+        RaffleAwardEntity raffleAwardEntity = null;
+        boolean awardSaved = false;
         try {
             // 3. 抽奖策略 - 执行抽奖
-            RaffleAwardEntity raffleAwardEntity = strategyDecisionPort.performRaffle(RaffleFactorEntity.builder()
+            raffleAwardEntity = strategyDecisionPort.performRaffle(RaffleFactorEntity.builder()
                     .userId(orderEntity.getUserId())
                     .strategyId(orderEntity.getStrategyId())
                     .endDateTime(orderEntity.getEndDateTime())
+                    .orderId(orderEntity.getOrderId())
                     .build());
 
             // 4. 存放结果 - 写入中奖记录
@@ -85,6 +94,18 @@ public class RaffleApplicationService {
                     .build();
 
             awardFulfillmentPort.saveUserAwardRecord(userAwardRecord);
+            awardSaved = true;
+
+            if (Boolean.TRUE.equals(raffleAwardEntity.getStockReserved()) && null != raffleAwardEntity.getStockReservation()) {
+                try {
+                    strategyRepository.confirmAwardStockReservation(raffleAwardEntity.getStockReservation());
+                } catch (Exception confirmEx) {
+                    log.error("活动抽奖奖品库存确认失败，写入补偿任务 userId:{} activityId:{} orderId:{}",
+                            userId, activityId, orderEntity.getOrderId(), confirmEx);
+                    strategyStockConfirmCompensationPort.enqueuePendingConfirm(
+                            userId, raffleAwardEntity.getStockReservation());
+                }
+            }
 
             return ActivityDrawResponseEntity.builder()
                     .awardId(raffleAwardEntity.getAwardId())
@@ -92,25 +113,40 @@ public class RaffleApplicationService {
                     .awardIndex(raffleAwardEntity.getSort())
                     .build();
         } catch (Exception e) {
-            // Always compensate on failure regardless of whether the order was newly created or
-            // reused from a previous stuck 'create' order. compensatePartakeQuota uses a CAS
-            // state transition (create -> failed), so it is safe to call idempotently and will
-            // no-op if the order was already moved to a terminal state.
-            log.error("活动抽奖执行异常，补偿回退额度 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), e);
-            try {
-                if (remoteQuotaDecrementEnabled) {
-                    if (activityRepository.markRaffleOrderFailed(userId, orderEntity.getOrderId())) {
-                        activityAccountPort.rollbackQuota(userId, activityId, orderEntity.getOrderId());
-                    } else {
-                        log.warn("活动抽奖订单已非创建态，跳过远程额度回滚避免重复补偿 userId:{} activityId:{} orderId:{}",
-                                userId, activityId, orderEntity.getOrderId());
-                    }
-                } else {
-                    activityRepository.compensatePartakeQuota(userId, activityId, orderEntity.getOrderId(), orderEntity.getOrderTime());
+            if (!awardSaved
+                    && null != raffleAwardEntity
+                    && Boolean.TRUE.equals(raffleAwardEntity.getStockReserved())
+                    && null != raffleAwardEntity.getStockReservation()) {
+                try {
+                    strategyRepository.releaseAwardStockReservation(raffleAwardEntity.getStockReservation());
+                    log.info("活动抽奖异常，释放奖品库存预占 userId:{} activityId:{} orderId:{}",
+                            userId, activityId, orderEntity.getOrderId());
+                } catch (Exception releaseEx) {
+                    log.error("活动抽奖释放奖品库存预占失败 userId:{} activityId:{} orderId:{}",
+                            userId, activityId, orderEntity.getOrderId(), releaseEx);
                 }
-                log.info("活动抽奖补偿回退额度完成 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
-            } catch (Exception ce) {
-                log.error("活动抽奖补偿回退额度失败 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), ce);
+            }
+
+            // Only compensate quota when award record was not persisted.
+            if (!awardSaved) {
+                log.error("活动抽奖执行异常，补偿回退额度 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), e);
+                try {
+                    if (remoteQuotaDecrementEnabled) {
+                        if (activityRepository.markRaffleOrderFailed(userId, orderEntity.getOrderId())) {
+                            activityAccountPort.rollbackQuota(userId, activityId, orderEntity.getOrderId());
+                        } else {
+                            log.warn("活动抽奖订单已非创建态，跳过远程额度回滚避免重复补偿 userId:{} activityId:{} orderId:{}",
+                                    userId, activityId, orderEntity.getOrderId());
+                        }
+                    } else {
+                        activityRepository.compensatePartakeQuota(userId, activityId, orderEntity.getOrderId(), orderEntity.getOrderTime());
+                    }
+                    log.info("活动抽奖补偿回退额度完成 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
+                } catch (Exception ce) {
+                    log.error("活动抽奖补偿回退额度失败 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), ce);
+                }
+            } else {
+                log.error("活动抽奖中奖已落库后异常 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), e);
             }
             throw e;
         }

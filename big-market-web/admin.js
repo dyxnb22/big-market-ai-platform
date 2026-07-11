@@ -11,10 +11,13 @@ var dom = {
   adminLoginBtn: document.getElementById("adminLoginBtn"),
   activityIdInput: document.getElementById("activityIdInput"),
   activityTitleInput: document.getElementById("activityTitleInput"),
+  erpStageStatus: document.getElementById("erpStageStatus"),
   activityStateInput: document.getElementById("activityStateInput"),
   activityCopyInput: document.getElementById("activityCopyInput"),
   loadActivityBtn: document.getElementById("loadActivityBtn"),
   saveActivityConfigBtn: document.getElementById("saveActivityConfigBtn"),
+  publishActivityBtn: document.getElementById("publishActivityBtn"),
+  unpublishActivityBtn: document.getElementById("unpublishActivityBtn"),
   armoryBtn: document.getElementById("armoryBtn"),
   skuTable: document.getElementById("skuTable"),
   loadAwardsBtn: document.getElementById("loadAwardsBtn"),
@@ -29,6 +32,7 @@ var dom = {
 
 var auth = readAuth();
 var redirectingToLogin = false;
+var currentStageId = null;
 
 // ===== Auth helpers =====
 function requireLogin() {
@@ -109,25 +113,66 @@ async function loadConfigs() {
   setSwitch(chatbot?.configValue !== "false");
 }
 
+async function resolveAdminActivityId() {
+  var raw = dom.activityIdInput.value.trim();
+  if (raw) {
+    return raw;
+  }
+  var stageRes = await safeRequest(
+    "/raffle/activity/query_stage_activity_id?channel=" + encodeURIComponent(CONFIG.CHANNEL) +
+    "&source=" + encodeURIComponent(CONFIG.SOURCE),
+    {method: "GET"}
+  );
+  var staged = stageRes.data && Number(stageRes.data) > 0 ? String(stageRes.data) : "";
+  if (!staged) {
+    throw new Error("无法解析 stage 活动 ID");
+  }
+  dom.activityIdInput.value = staged;
+  return staged;
+}
+
 async function loadActivity() {
   if (!requireLogin()) return;
-  var activityId = dom.activityIdInput.value.trim() || "100301";
-  dom.activityIdInput.value = activityId;
+  var activityId;
+  try {
+    activityId = await resolveAdminActivityId();
+  } catch (e) {
+    toast(e.message || "无法解析活动 ID，请手动输入 100401");
+    return;
+  }
   var stageRes = await safeRequest("/raffle/erp/query_raffle_activity_stage_list", {method: "GET"});
   var skuRes = await safeRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + activityId, {method: "POST", body: "{}"});
   var stage = (stageRes.data || []).find(function(item) { return String(item.activityId) === String(activityId); });
-  dom.activityStateInput.value = stage?.state || "online";
+  currentStageId = stage?.id || null;
+  if (dom.erpStageStatus) {
+    dom.erpStageStatus.textContent = stage
+      ? ("#" + stage.id + " · " + (stage.state || "unknown"))
+      : "未找到上架记录";
+  }
+  try {
+    var displayState = await adminRequest("/admin/config/get?namespace=activity." + activityId + "&configKey=state", {method: "GET"});
+    if (displayState?.data?.configValue) {
+      dom.activityStateInput.value = displayState.data.configValue;
+    }
+  } catch (e) { /* use default */ }
   if (dom.activityStateInput.tagName === "SELECT") {
-    var opt = dom.activityStateInput.querySelector('option[value="' + (stage?.state || "online") + '"]');
+    var opt = dom.activityStateInput.querySelector('option[value="' + dom.activityStateInput.value + '"]');
     if (!opt) dom.activityStateInput.value = "online";
   }
   renderSkuTable(skuRes.data || []);
-  toast("已读取活动 " + activityId + "，SKU 数量：" + (skuRes.data?.length || 0));
+  var erpState = stage?.state || "unknown";
+  toast("已读取活动 " + activityId + "（ERP:" + erpState + "），SKU 数量：" + (skuRes.data?.length || 0));
 }
 
 async function loadAwards() {
   if (!requireLogin()) return;
-  var activityId = Number(dom.activityIdInput.value || 100301);
+  var activityId;
+  try {
+    activityId = Number(await resolveAdminActivityId());
+  } catch (e) {
+    toast(e.message || "无法解析活动 ID，请手动输入 100401");
+    return;
+  }
   try {
     var res = await safeRequest("/raffle/strategy/query_raffle_award_list_by_token", {
       method: "POST",
@@ -162,7 +207,7 @@ async function saveActivityDisplay() {
   if (!requireLogin()) return;
   var activityId = dom.activityIdInput.value.trim();
   await saveConfig("activity." + activityId, "title", dom.activityTitleInput.value, "用户端活动标题");
-  await saveConfig("activity." + activityId, "state", dom.activityStateInput.value, "用户端活动状态");
+  await saveConfig("activity." + activityId, "state", dom.activityStateInput.value, "用户端活动展示状态");
   await saveConfig("activity." + activityId, "copy", dom.activityCopyInput.value, "用户端活动文案");
   toast("活动展示配置已保存");
   await loadConfigs();
@@ -174,6 +219,35 @@ async function saveAwardDisplay() {
   await saveConfig("award." + activityId, "note", dom.awardNoteInput.value, "奖品展示备注");
   toast("奖品展示配置已保存");
   await loadConfigs();
+}
+
+async function publishActivity() {
+  if (!requireLogin()) return;
+  if (!currentStageId) {
+    toast("请先读取线上活动以获取上架流水 ID");
+    return;
+  }
+  await safeRequest("/raffle/erp/update_stage_activity_2_active", {
+    method: "POST",
+    body: JSON.stringify({id: currentStageId})
+  });
+  toast("活动已上架（stage=active，已预热装配）");
+  await loadActivity();
+}
+
+async function unpublishActivity() {
+  if (!requireLogin()) return;
+  if (!currentStageId) {
+    toast("请先读取线上活动以获取上架流水 ID");
+    return;
+  }
+  if (!confirm("确认下架活动？下架后用户端将无法抽奖。")) return;
+  await safeRequest("/raffle/erp/update_stage_activity_2_expire", {
+    method: "POST",
+    body: JSON.stringify({id: currentStageId})
+  });
+  toast("活动已下架（stage=expire，抽奖将被拒绝）");
+  await loadActivity();
 }
 
 async function armory() {
@@ -218,17 +292,25 @@ dom.adminLoginBtn.addEventListener("click", function() {
   if (!auth.token) {
     location.href = "./admin-login.html";
   } else {
-    clearAuth();
-    auth = {token: "", userId: ""};
-    if (dom.adminUserBadge) dom.adminUserBadge.textContent = "未登录";
-    if (dom.adminLoginLink) dom.adminLoginLink.textContent = "🔑 登录";
-    dom.adminLoginBtn.textContent = "登录";
-    toast("已退出");
-    setTimeout(function() { location.replace(adminLoginUrl()); }, 300);
+    var token = auth.token;
+    var revoke = token
+      ? apiRequest("/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + token } }).catch(function() {})
+      : Promise.resolve();
+    revoke.finally(function() {
+      clearAuth();
+      auth = {token: "", userId: ""};
+      if (dom.adminUserBadge) dom.adminUserBadge.textContent = "未登录";
+      if (dom.adminLoginLink) dom.adminLoginLink.textContent = "🔑 登录";
+      dom.adminLoginBtn.textContent = "登录";
+      toast("已退出");
+      setTimeout(function() { location.replace(adminLoginUrl()); }, 300);
+    });
   }
 });
 bind(dom.loadActivityBtn, loadActivity);
 bind(dom.saveActivityConfigBtn, saveActivityDisplay);
+if (dom.publishActivityBtn) bind(dom.publishActivityBtn, publishActivity);
+if (dom.unpublishActivityBtn) bind(dom.unpublishActivityBtn, unpublishActivity);
 bind(dom.armoryBtn, armory);
 bind(dom.loadAwardsBtn, loadAwards);
 bind(dom.saveAwardConfigBtn, saveAwardDisplay);

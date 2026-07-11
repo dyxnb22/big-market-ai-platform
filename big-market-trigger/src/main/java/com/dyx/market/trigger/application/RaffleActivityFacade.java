@@ -86,13 +86,18 @@ public class RaffleActivityFacade {
         return true;
     }
 
-    public BigDecimal chatCreditRefund(String userId, int amount, String originalRequestId) {
-        log.info("AI Chat积分退还开始 userId:{} amount:{} requestId:{}", userId, amount, originalRequestId);
-        return chatCreditApplicationService.refund(userId, amount, originalRequestId);
+    public BigDecimal chatCreditRefund(String userId, String originalRequestId) {
+        log.info("AI Chat积分退还开始 userId:{} requestId:{}", userId, originalRequestId);
+        return chatCreditApplicationService.refund(userId, originalRequestId);
     }
 
     public BigDecimal chatCreditDeduct(String userId, int amount, String requestId) {
         log.info("AI Chat积分扣减开始 userId:{} amount:{} requestId:{}", userId, amount, requestId);
         return chatCreditApplicationService.deduct(userId, amount, requestId);
+    }
+
+    public Boolean chatCreditMarkRefundPending(String userId, String requestId) {
+        chatCreditApplicationService.markRefundPending(userId, requestId, 0);
+        return true;
     }
 }

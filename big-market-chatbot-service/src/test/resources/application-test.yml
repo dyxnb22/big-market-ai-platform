@@ -1,0 +1,56 @@
+spring:
+  main:
+    lazy-initialization: true
+  cloud:
+    inetutils:
+      preferred-networks: 127.0.0.1
+      use-only-site-local-interfaces: true
+    client:
+      hostname: localhost
+      ip-address: 127.0.0.1
+
+logging:
+  file:
+    path: target/test-logs
+
+mini-db-router:
+  jdbc:
+    datasource:
+      db00:
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      db01:
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_01?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      db02:
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:13306}/big_market_02?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+
+redis:
+  sdk:
+    config:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:16379}
+
+dubbo:
+  registry:
+    check: false
+    address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
+  consumer:
+    check: false
+  application:
+    qos-enable: false
+
+nacos:
+  config:
+    sync:
+      enabled: false
+
+chat:
+  internal-service-token: test-chat-internal-token
+
+chatbot:
+  provider: local
+  cost-per-ask: 0
+
+gateway:
+  config:
+    enable: true
+    apiHost: http://127.0.0.1:8080

@@ -76,7 +76,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
     private void writeError(HttpServletResponse response, String code, String info) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_OK);
+        response.setStatus(com.dyx.market.types.web.ResponseHttpStatusMapper.toStatusCode(code));
         response.getWriter().write(JSON.toJSONString(Response.builder()
                 .code(code)
                 .info(info)

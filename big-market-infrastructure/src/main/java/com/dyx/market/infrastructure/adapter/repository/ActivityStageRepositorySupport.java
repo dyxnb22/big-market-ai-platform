@@ -27,6 +27,10 @@ public class ActivityStageRepositorySupport {
         raffleActivityStageDao.updateStageActivity2ActiveById(id);
     }
 
+    public void updateStageActivity2Expire(Long id) {
+        raffleActivityStageDao.updateStageActivity2ExpireById(id);
+    }
+
     public Long queryStageActiveBySC(String channel, String source) {
         return raffleActivityStageDao.queryStageActiveBySC(
                 RaffleActivityStage.builder().channel(channel).source(source).build());

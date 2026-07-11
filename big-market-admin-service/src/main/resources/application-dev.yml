@@ -1,7 +1,7 @@
 # Local development: infra on mapped host ports.
 token-revocation:
   redis:
-    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:false}
+    enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:true}
 
 redis:
   sdk:
@@ -13,3 +13,7 @@ nacos:
   config:
     sync:
       serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+
+gateway:
+  config:
+    apiHost: ${GATEWAY_API_HOST:http://127.0.0.1:8080}
