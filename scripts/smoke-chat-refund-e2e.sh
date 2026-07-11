@@ -11,6 +11,10 @@ DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
 DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
 DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin}"
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=lib/health-poll.sh
+source "$ROOT/scripts/lib/health-poll.sh"
+
 pass() { echo "  PASS  $*"; }
 fail() { echo "  FAIL  $*"; exit 1; }
 
@@ -19,6 +23,7 @@ CHAT_REFUND_JOB_ID="$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT
 if [ -z "$CHAT_REFUND_JOB_ID" ]; then
   fail "ChatRefundReconcileJob not found in xxl_job_info (run ./scripts/apply-xxl-job-seeds.sh)"
 fi
+wait_for_xxl_executor "big-market-message-job" 120 || fail "XXL executor is not registered"
 
 json_field() {
   python3 -c "import json,sys; d=json.load(sys.stdin); print($1)" 2>/dev/null

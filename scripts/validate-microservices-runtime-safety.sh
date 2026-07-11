@@ -292,6 +292,12 @@ echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ─
 # Shared task dispatch (SendMessageTaskJob) must NOT be active while
 # per-domain outbox dispatchers (DispatchCreditAwardTaskJob) are enabled.
 MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
+COMPOSE_OUTBOX_ENABLED=0
+COMPOSE_SHARED_TASK_DISABLED=0
+grep -q 'ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}' "$COMPOSE_MAIN" 2>/dev/null \
+  && COMPOSE_OUTBOX_ENABLED=1
+grep -q 'JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-true}' "$COMPOSE_MAIN" 2>/dev/null \
+  && COMPOSE_SHARED_TASK_DISABLED=1
 if [[ -f "$MESSAGE_JOB_YML" ]]; then
   if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "account.award-credit-outbox.enabled" 2>/dev/null)" == "true" ]]; then
     OUTBOX_ENABLED=1
@@ -307,6 +313,11 @@ if [[ -f "$MESSAGE_JOB_YML" ]]; then
     fail "message-job outbox enabled but shared-task-dispatch.credit-award-disabled is not true — dual-dispatch risk"
   else
     pass "message-job outbox+shared-task config: outbox_enabled_default=$OUTBOX_ENABLED shared_task_disabled=$SHARED_TASK_DISABLED (safe)"
+  fi
+  if [[ "$COMPOSE_OUTBOX_ENABLED" -eq 1 && "$COMPOSE_SHARED_TASK_DISABLED" -eq 1 ]]; then
+    pass "Docker default selects award-credit outbox and disables the shared credit-award path"
+  else
+    fail "Docker default must enable award-credit outbox and disable shared credit-award dispatch"
   fi
 else
   pass "message-job config absent (skip)"
@@ -508,12 +519,12 @@ if [[ -f "$XXL_SQL" ]]; then
     | sed -E 's/.*@XxlJob\("([^"]+)"\).*/\1/' \
     | sort -u)
 
-  if [[ "${OUTBOX_ENABLED:-0}" -eq 0 ]]; then
+  if [[ "${COMPOSE_OUTBOX_ENABLED:-0}" -eq 1 ]]; then
     for handler in DispatchCreditAwardTaskJob_DB1 DispatchCreditAwardTaskJob_DB2; do
-      if grep -E "'$handler'.*,'',0,0,0\)[,;]?$" "$XXL_SQL" >/dev/null; then
-        pass "$handler seed is stopped while award-credit outbox defaults off"
+      if grep -E "'$handler'.*,'',1,0,0\)[,;]?$" "$XXL_SQL" >/dev/null; then
+        pass "$handler seed runs with Docker's default award-credit outbox"
       else
-        fail "$handler seed must be stopped while award-credit outbox defaults off"
+        fail "$handler seed must run with Docker's default award-credit outbox"
       fi
     done
   fi

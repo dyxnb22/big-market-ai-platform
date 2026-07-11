@@ -207,7 +207,9 @@ begin_gate() {
 }
 
 count_playwright_tests() {
-  npx playwright test --list 2>/dev/null | grep -c 'tests/e2e' || true
+  # Playwright 1.54 prints relative spec names (without the tests/e2e prefix)
+  # and finishes with: "Total: N tests in M files".
+  npx playwright test --list 2>/dev/null | awk '/^Total: [0-9]+ tests? / { print $2; found=1 } END { if (!found) print 0 }'
 }
 
 assert_playwright_artifacts() {
@@ -346,6 +348,18 @@ if ! wait_for_xxl_admin "$HOST" 120; then
 fi
 pass_gate "xxl-job-admin health"
 
+begin_gate "xxl executor registration"
+if ! wait_for_xxl_executor "big-market-message-job" 120; then
+  fail_gate "xxl executor registration"
+fi
+pass_gate "xxl executor registration"
+
+begin_gate "smoke-raffle-award-e2e"
+if ! ./scripts/smoke-raffle-award-e2e.sh; then
+  fail_gate "smoke-raffle-award-e2e"
+fi
+pass_gate "smoke-raffle-award-e2e"
+
 begin_gate "smoke-chat-refund-e2e"
 if ! ./scripts/smoke-chat-refund-e2e.sh; then
   fail_gate "smoke-chat-refund-e2e"
@@ -373,6 +387,10 @@ if [ "$SKIP_PLAYWRIGHT" = false ]; then
   ./scripts/web-start.sh
   if ! ./scripts/ensure-demo-activity-online.sh "http://${HOST}:8080"; then
     fail_gate "ensure-demo-activity-online (pre-playwright)"
+  fi
+  if [ -z "${PLAYWRIGHT_BROWSERS_PATH:-}" ] && [ -d "${ROOT}/.playwright-browsers" ]; then
+    export PLAYWRIGHT_BROWSERS_PATH="${ROOT}/.playwright-browsers"
+    echo "Using repository-local Playwright browser cache: ${PLAYWRIGHT_BROWSERS_PATH}"
   fi
   local_listed="$(count_playwright_tests)"
   if [ "${local_listed:-0}" -lt 1 ]; then

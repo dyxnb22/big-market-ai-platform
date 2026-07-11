@@ -16,3 +16,17 @@ ON DUPLICATE KEY UPDATE
   `executor_handler` = VALUES(`executor_handler`),
   `schedule_conf` = VALUES(`schedule_conf`),
   `trigger_status` = VALUES(`trigger_status`);
+
+-- Default Docker compose enables account.award-credit-outbox, so its two
+-- shard dispatchers must run. The account service still deduplicates by
+-- award_order_id/out_business_no; enabling the schedules does not add a
+-- second write path because shared-task credit-award dispatch is disabled.
+UPDATE `xxl_job_info`
+SET `trigger_status` = 1,
+    `schedule_type` = 'CRON',
+    `schedule_conf` = '0/5 * * * * ?',
+    `update_time` = NOW()
+WHERE `executor_handler` IN (
+  'DispatchCreditAwardTaskJob_DB1',
+  'DispatchCreditAwardTaskJob_DB2'
+);

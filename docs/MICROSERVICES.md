@@ -1,25 +1,25 @@
 # 微服务架构
 
-最后修订：2026-07-10。
+最后修订：2026-07-11。
 
 本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot 服务、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。
 
-**就绪说明：** 2026-07-10 审批整改（BM-001～015）代码已合入。服务默认仍可本地启动，但「可演示完整闭环」以 fresh Docker + smoke/Playwright 验收为准，见 `docs/audit-remediation-plan.md` §8。生产向演示可叠加 `secure` profile（`application-secure.yml`：`internal-rpc.enforce`、`gateway.rate-limiter`）。
+**就绪说明：** 默认复用栈已于 2026-07-11 通过完整 acceptance，但 fresh 空卷和完整 secure overlay 未验证，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`；历史 BM 计划不作为当前状态来源。
 
 本文档是当前架构的 authoritative entry point（权威入口文档）。较早的实现说明仅作为历史归档材料保留在 `docs/archive/` 下。
 
 ## 服务列表
 
-| 服务 | 端口 | 当前状态 | 职责 |
+| 服务 | 端口 | 默认部署 | 职责 |
 | --- | ---: | --- | --- |
-| `big-market-gateway` | 8080 | 稳定，已启用 | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
-| `big-market-auth-service` | 8081 | 稳定，已启用 | 登录、JWT 签发、Token 校验、登出吊销 |
-| `big-market-admin-service` | 8082 | 稳定，已启用 | 管理端配置 API 与 Nacos 配置同步 |
-| `big-market-market-service` | 8083 | 已修复启动扫描（BM-001） | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
-| `big-market-chatbot-service` | 8084 | 已启用 | 聊天机器人 API、平台配置消费、积分扣费/退款集成（BM-010 requestId FSM） |
-| `big-market-message-job-service` | 8085 | 已修复 Mapper+扫描（BM-002）；XXL `big-market-message-job`（BM-003） | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
-| `big-market-account-service` | 8086 | 稳定，已归属 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
-| `big-market-fulfillment-service` | 8087 | 稳定，已归属 | 奖品履约 RPC、中奖记录完成、奖品积分 Outbox 集成 |
+| `big-market-gateway` | 8080 | 已验证 | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
+| `big-market-auth-service` | 8081 | 已验证 | 登录、JWT 签发、Token 校验、登出吊销 |
+| `big-market-admin-service` | 8082 | 已验证 | 管理端配置 API 与 Nacos 配置同步 |
+| `big-market-market-service` | 8083 | 已验证 | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
+| `big-market-chatbot-service` | 8084 | 已验证 | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
+| `big-market-message-job-service` | 8085 | 已验证 | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
+| `big-market-account-service` | 8086 | 已验证 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
+| `big-market-fulfillment-service` | 8087 | 健康已验证；默认积分奖不必经远程 RPC | 奖品履约 RPC provider |
 | `big-market-rebate-service` | 8088 | 可选独立部署 | 行为返利创建/查询 RPC 契约与返利任务归属 |
 | `big-market-strategy-service` | 8089 | 可选独立部署 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
 
@@ -65,7 +65,9 @@
 
 ### 奖品履约（Award Fulfillment）
 
-抽奖路径写入中奖记录并发布 `send_award` 事件。message-job 服务消费该事件后调用奖品领域发放积分或外部配额，再将中奖记录标记为完成。
+抽奖路径写入中奖记录并发布 `send_award` 事件。默认 compose 关闭 remote fulfillment，message-job 消费事件后调用本地奖品领域；积分奖写入 `credit_award_task`，由 `DispatchCreditAwardTaskJob` / `DispatchCreditAwardToAccountJob` 派发到 account RPC。可选部署才切换到 fulfillment RPC。
+
+`user_award_record.award_state=completed` 表示发奖动作已被持久化接管；对积分奖，最终闭环必须继续核对 `credit_award_task=dispatched` 和账户积分流水，不能只看中奖记录。
 
 代码路径：
 
@@ -113,10 +115,10 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 
 ## 本地完成标准
 
-在本学习环境中，当满足以下条件时，可认为架构已完整：
+在本学习环境中，只有明确记录验证模式后才能声称完成：
 
-- `mvn clean package -DskipTests` 构建成功。
-- 验收：`./scripts/acceptance.sh`（默认 `--reuse`，**不**自动 `compose up`；干净卷用 `--fresh --confirm-destroy-volumes`；安全链加 `--secure`；CI/自举加 `--start-stack`）。
+- `mvn -B verify -DfailIfNoTests=false` 成功。
+- 验收：`./scripts/acceptance.sh`（默认 `--reuse`，**不**自动 `compose up`；包含真实抽奖发奖入账、Chat 补偿和 Playwright 双跑）。
 - `--reuse` 只证明旧卷兼容；`--fresh` 才证明初始化完整。失败产物在 `target/acceptance-artifacts/`。
 - `./scripts/validate-microservices-stack.sh`（默认不自启 Docker，加 `--start-stack` 才起栈）与强化后的 `validate-microservices-runtime-safety.sh`（后者 alone 仍不足以替代 Context/smoke）。
 - 核心流程可从 Controller 到领域服务、Repository、MQ/XXL-Job，以及回滚/幂等处理完整说明。

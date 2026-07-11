@@ -14,7 +14,7 @@ Code paths:
 Idempotency keys include `out_business_no`, chatbot `requestId`, and
 award-credit `award_order_id`.
 
-Chat billing (BM-010 / NR-002): Redis idempotency key is `chat:request:{userId}:{requestId}`.
+Chat billing: Redis idempotency key is `chat:request:{userId}:{requestId}`.
 `ChatCreditSession` lives on shards `big_market_01` / `big_market_02` only (see
 `z-reconcile-tables.sql`). Both `ChatCreditSessionRepository` (market/job) and
 `ChatCreditSessionSupport` (chatbot) must call `IDBRouterStrategy.doRouter(userId)`
@@ -32,6 +32,18 @@ is derived as `{userId}_{sku}_{requestId}` (no millisecond suffix).
 Award data is represented by `award`, `user_award_record`, and award dispatch
 task rows. Draw writes the award record and message task; consumers complete
 distribution.
+
+In the default Docker topology, `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true` and
+shared-task credit dispatch is disabled. `SendAwardConsumer` therefore writes a
+`credit_award_task`; XXL jobs 5/6 must move it to `dispatched` and call account
+RPC. Their seeds are enabled by both fresh init SQL and
+`z-learning-freeze-demo.sql` for reused volumes.
+
+`user_award_record.award_state=completed` means that the award action has been
+durably accepted by the local award flow. For a credit award it does **not** by
+itself prove final account delivery. Operational verification must correlate
+`award_order_id` across the award record, `credit_award_task`, and
+`user_credit_order`/balance. `smoke-raffle-award-e2e.sh` enforces that closure.
 
 Code paths:
 
@@ -67,7 +79,7 @@ and related events. Learning DDL references describe per-domain outbox tables:
 These SQL files show table shape, shard key, unique key, state machine, and
 retry indexes for local study.
 
-## Stock flush (BM-008)
+## Stock flush
 
 Strategy award stock uses `reservationId` per queue event. Activity SKU stock uses
 **`lockSurplus`** (Redis decr snapshot) per queue event. Durable idempotency is a
@@ -77,7 +89,7 @@ MySQL ledger (`strategy_award_stock_decrement_ledger` /
 must still apply the ledger on retry. Pending queue keys are tracked in Redis
 sets so flush jobs can drain work after an activity goes offline.
 
-## Chat billing intent (BM-010)
+## Chat billing intent
 
 `ChatCreditApplicationService.deduct` inserts `chat_credit_session` with
 `deduct_state=deducting` **before** remote debit (`chat_{userId}_{requestId}`).
@@ -85,7 +97,7 @@ On SUCCESS / INDEX_DUP the session CAS/marks `deducted`. Explicit REJECTED may
 mark `failed`; UNKNOWN keeps `deducting` for reconcile. Refund keys remain
 `chat_refund_{userId}_{requestId}`.
 
-## Pending remote write (BM-007)
+## Pending remote write
 
 `PendingRemoteWriteSupport.enqueue(..., userId)` routes inserts through
 `dbRouter.doRouter(userId)` so compensation tasks land on the correct shard.
@@ -152,5 +164,6 @@ WHERE id = ? AND state IN ('pending', 'manual_pending');
 
 ## Verification
 
-For local learning, verify data/outbox behavior by explaining each write path
-from controller/listener to repository, then running build and smoke scripts.
+For local learning, explain each write path from controller/listener to
+repository and then run `./scripts/acceptance.sh --reuse`. A health endpoint or
+static validator alone is not outbox proof.

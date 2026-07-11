@@ -6,9 +6,9 @@ Portfolio talking tracks for the Big Market AI Platform. Prefer **code + accepta
 
 1. **What:** Learning/portfolio marketing raffle platform — Spring Boot microservices (gateway, auth, market, chatbot, message-job, account, fulfillment; rebate/strategy often embedded in market).
 2. **Why interesting:** Shared domain/infrastructure kernels with independent launchers; money-like paths use idempotency keys, outbox/`task` rows, and reconcile jobs.
-3. **Honest readiness:** Boot P0 fixes (BM-001–003) and write-path items are in tree; “demo closed loop” means Docker + smoke/Playwright, not README alone.
+3. **Honest readiness:** Default reused stack has a dated green acceptance, including real raffle/outbox/account closure and Playwright twice; fresh and secure remain unverified.
 4. **Frontend:** Static `big-market-web` (HTML/JS) via gateway `:8080`, not React.
-5. **Pointer:** Architecture entry `docs/MICROSERVICES.md`; fix backlog `docs/audit-remediation-plan.md`.
+5. **Pointer:** Current baseline `docs/LEARNING-FREEZE.md`; architecture `docs/MICROSERVICES.md`; independent evidence `docs/audit/2026-07-11-learning-freeze-audit.md`.
 
 ## 15 minutes — architecture & flows
 
@@ -22,7 +22,7 @@ Portfolio talking tracks for the Big Market AI Platform. Prefer **code + accepta
 ## 30 minutes — deep dive & tradeoffs
 
 1. Walk one money path end-to-end (e.g. SKU credit exchange or award credit) with idempotency and UNKNOWN/timeout handling (`docs/data-and-outbox.md`, money-path skill constraints).
-2. Explain BM remediation phases and why Phase 1 boot fixes precede features.
+2. Explain why health checks were insufficient and how database/business-terminal evidence exposed a false-green award path.
 3. Show a Context/`@SpringBootTest` or smoke script; call out false-green risks of static-only validators.
 4. Discuss tech debt consciously: Java 8 / Boot 2.7 baseline, mapper XML copies (~101), frontend modularization plan, Java 17/Boot 3 checklist (PoC only).
 5. Q&A: what you would **not** do next (premature physical DB split, claiming production HA).

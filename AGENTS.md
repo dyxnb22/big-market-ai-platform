@@ -10,8 +10,10 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 
 | Doc | Use for |
 | --- | --- |
+| `docs/LEARNING-FREEZE.md` | **Current readiness, verified commands, limits, freeze constraints** |
 | `docs/MICROSERVICES.md` | Architecture entry, service ports, core flows |
-| `docs/audit-remediation-plan.md` | **Current fix backlog** (BM-001…); phase order |
+| `docs/audit/2026-07-11-learning-freeze-audit.md` | Current independent audit evidence and P0–P3 findings |
+| `docs/audit-remediation-plan.md` | Historical BM backlog; clue only, not current status |
 | `docs/data-and-outbox.md` | Outbox, idempotency keys, duplicate handling |
 | `docs/microservices-dao-ownership.md` | Table/DAO ownership (logical; not hard-enforced) |
 | `docs/operations-checklist.md` | Local ops checks |
@@ -20,11 +22,11 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 
 **Doc vs code:** prefer **code + config + Docker init SQL**. If docs claim “stable / completed closed loop” but code cannot boot, treat docs as stale and fix code first (or update docs).
 
-## Current readiness (as of audit remediation 2026-07-10)
+## Current readiness (learning freeze 2026-07-11)
 
-- **Phase 1 (boot P0)** code + slice tests: BM-001/002/003; message-job `IAccountReadAdapter`; full `@SpringBootTest` on entire apps still partial.
-- **Phase 2–3** code in tree (BM-004–015); **demo closed loop** needs Docker + smoke/Playwright.
-- Phase 4 (BM-016/017) deferred. Track in `docs/audit-remediation-plan.md` §8.
+- Result: **conditional learning freeze**. Reused default stack passed Maven, static gates, real raffle → award outbox → account credit, Chat refund/reconcile, security smoke, and 18 Playwright tests twice.
+- Not verified in that audit: fresh empty volumes, full secure overlay, dedicated rebate/strategy, remote/external awards, production HA/capacity/security.
+- Do not infer current readiness from BM numbers or historical PASS records. Re-run the target working tree and preserve the verified/unverified boundary.
 
 ## Service map (default ports)
 
@@ -51,12 +53,12 @@ Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://1
 
 ## Default agent behavior
 
-1. Prefer smallest change that fixes the stated BM / bug; follow remediation **phase order** unless user overrides.
+1. Prefer the smallest change that fixes the stated bug; the historical BM phase order is not an active backlog.
 2. Money-like paths (credit, quota, award, rebate, SKU/award stock): preserve idempotency keys; see skill `money-path-change`.
 3. `market-service` must **not** scan `trigger.job` / `trigger.listener`; those belong to `message-job-service`.
 4. Mapper XML is copied per launcher — change one service’s copy carefully; avoid duplicate MyBatis statement ids.
-5. XXL executor `appname` must match `docs/dev-ops/mysql/sql/xxl_job.sql` group; new `@XxlJob` needs seed + enable.
-6. Verification: do not trust `validate-microservices-runtime-safety.sh` alone (known false green). Prefer Context tests + stack/smoke scripts; see skill `local-verify`.
+5. XXL executor `appname` must match `docs/dev-ops/mysql/sql/xxl_job.sql` group; new `@XxlJob` needs a deliberate seed/status and an executor-registration check.
+6. Verification: never trust a static validator or health endpoint alone. Prefer Context tests + `acceptance.sh`, including the real raffle-award E2E.
 7. Commit only when the user asks.
 
 ## Useful commands
@@ -68,6 +70,8 @@ docker compose up --build -d
 ./scripts/validate-microservices-stack.sh
 ./scripts/smoke-test-microservices.sh
 ./scripts/smoke-api.sh
+./scripts/smoke-raffle-award-e2e.sh
+./scripts/acceptance.sh --reuse
 ./scripts/web-start.sh
 npm test
 ```

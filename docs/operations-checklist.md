@@ -7,7 +7,7 @@ Use this checklist for the local learning stack.
 - `docker compose -f docs/dev-ops/docker-compose-environment.yml ps`
 - `docker compose ps`
 - `curl -s http://127.0.0.1:8080/actuator/health`
-- Check service health on ports `8081` through `8089`.
+- Check default service health on ports `8081` through `8087`; `8088`/`8089` are optional dedicated deployments and are not default health requirements.
 
 ## Interface Checks
 
@@ -23,6 +23,7 @@ Script: `scripts/smoke-api.sh`.
 ## Task Checks
 
 - XXL executor `appname` must be **`big-market-message-job`** (see `docs/dev-ops/mysql/sql/xxl_job.sql` and `message-job-service` `application.yml`). Handler catalog (seed id, default `trigger_status`, money-replay notes): `docs/xxl-job-handlers.md`.
+- Do not stop at XXL Admin HTTP health: its executor group must contain a non-empty registered address. `acceptance.sh` enforces this.
 - `SendMessageTaskJob` scans shared task rows.
 - `UpdateActivitySkuStockJob` flushes activity SKU stock.
 - `UpdateAwardStockJob` flushes award stock.
@@ -80,7 +81,7 @@ Gauges are published by `BusinessMetricsPublisher` on **message-job** (`big_mark
 | `StrategyStockConfirmPending` | `big_market_strategy_stock_confirm_pending` | Confirm `StrategyAwardStockConfirmJob`; inspect `strategy_award_stock_confirm_task` pending rows vs award save failures | Restore DB/Redis connectivity; replay job after root cause; avoid double-confirming stock |
 | `PendingRemoteWriteBacklog` / `MqDeadLetterPending` | existing rules | Remote-write reconcile / DLQ review flow above | Same as Task Checks: review before `DlqReplayJob` |
 
-## Secure profile (BM-015)
+## Secure profile
 
 - Learning/default compose: `SPRING_PROFILES_ACTIVE=docker` (or local equivalents) — permissive RPC/gateway defaults.
 - Production-like demo:
@@ -94,7 +95,7 @@ Gauges are published by `BusinessMetricsPublisher` on **message-job** (`big_mark
 
 ## Acceptance entry (preferred)
 
-Gates (Maven + health + DDL/XXL + smokes; optional Playwright/secure). **No implicit `docker compose up`.**
+Gates (Maven + health + DDL/XXL + real raffle-award/account closure + Chat compensation + Playwright twice; optional secure). **No implicit `docker compose up`.**
 
 | Mode | Proves | Notes |
 | --- | --- | --- |
@@ -121,6 +122,7 @@ Do not treat `validate-microservices-runtime-safety.sh` alone as closed-loop pro
 
 For this learning project, local build and smoke validation replace real
 production observation windows. Record any unavailable dependency honestly and
-rerun once the dependency is available. Prefer `./scripts/acceptance.sh` after
-BM-001–015 and write-path closure; confirm Maven module tests green, Docker
-stack up, `smoke-api.sh`, and Playwright (`npm test` with web on `:5173`).
+rerun once the dependency is available. Prefer `./scripts/acceptance.sh`;
+confirm Maven module tests green, Docker stack up, real raffle-award/account
+closure, Chat compensation, and Playwright. Current verified/unverified
+boundaries are recorded in `docs/LEARNING-FREEZE.md`.

@@ -421,7 +421,7 @@ RuleStockLogicTreeNode
     }
 ```
 
-当 `account.award-credit-outbox.enabled=false`（默认）时，代码走 `saveWithDirectCredit()`，在本事务内直接更新或创建积分账户；当开关为 `true` 时，写 `credit_award_task(state=pending)`，由 `big-market-message-job-service` 的 `DispatchCreditAwardTaskJob_DB1/DB2` 扫描派发，成功后标记 `dispatched`，失败累计 `retry_count`，达到阈值转 `failed`。
+当 `account.award-credit-outbox.enabled=false`（application.yml 的代码缺省值）时，代码走 `saveWithDirectCredit()`；**默认 Docker 学习拓扑覆盖为 `true`**，写 `credit_award_task(state=pending)`，由 `big-market-message-job-service` 的 `DispatchCreditAwardTaskJob_DB1/DB2` 扫描派发到账户服务，成功后标记 `dispatched`，失败累计 `retry_count`，达到阈值转 `failed`。因此讲解“默认运行态”时必须同时看 compose，不能只看 application.yml。
 
 #### 面试口述
 

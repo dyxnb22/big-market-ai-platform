@@ -60,6 +60,8 @@ mvn -B verify -DfailIfNoTests=false
 # Start stack yourself first (acceptance does NOT auto-start Docker):
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 docker compose up --build -d
+npm install
+npx playwright install chromium
 ./scripts/acceptance.sh --reuse
 # Clean volumes: --fresh --confirm-destroy-volumes --start-stack
 # CI bootstrap: add --start-stack
@@ -79,25 +81,18 @@ docker compose up --build -d
 npx playwright test --workers=1
 ```
 
-`validate-microservices-runtime-safety.sh` is a coarse guardrail only — it can pass while Spring Context or XXL wiring is still broken. Prefer `./scripts/acceptance.sh` plus the Maven tests above after audit remediation (see `docs/audit-remediation-plan.md`).
+`validate-microservices-runtime-safety.sh` is a guardrail, not closed-loop proof. Prefer `./scripts/acceptance.sh` plus Maven tests. Docker Desktop should have at least 12 GB available for a reliable full-stack rebuild; an 8 GB allocation can OOM the XXL-Job container.
 
 ### Acceptance evidence
 
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-11 |
-| Git | working tree on top of `8df5311` (governance changes uncommitted) |
-| Command | `./scripts/acceptance.sh --reuse --skip-build --skip-playwright` |
-| Result | **FAIL** — gateway `:8080` unreachable; no `--start-stack` (by design). Artifacts: `target/acceptance-artifacts/`. Partial health: 8081–8087 HTTP 200. |
+| Git | working tree on top of `8d51601` (learning-freeze changes uncommitted) |
+| Command | `./scripts/acceptance.sh --reuse --skip-build` |
+| Result | **PASS** — HTTP contracts, 21/21 microservice smoke, API smoke, XXL executor registration, real raffle → award outbox → account credit, Chat refund/reconcile, and 18 Playwright tests twice; 80 seconds. |
 
-**Next step for green acceptance:** start gateway (and any missing app containers) manually, then re-run without `--start-stack`:
-
-```bash
-docker compose up -d big-market-gateway
-./scripts/acceptance.sh --reuse
-```
-
-Do not treat historical `4278a8c` PASS as current-HEAD evidence.
+This proves the reused local volumes only. Fresh-volume and full secure-overlay acceptance were not run in this audit; see [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md). Failure artifacts are written to `target/acceptance-artifacts/`.
 
 ## Frontend
 
@@ -111,8 +106,10 @@ Frontend API calls use `http://127.0.0.1:8080/api/v1` by default.
 ## Documentation
 
 - [AGENTS.md](AGENTS.md) - guidance for Cursor/Codex agents (rules & skills under `.cursor/`)
+- [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md) - current learning baseline, evidence, and limits
 - [docs/MICROSERVICES.md](docs/MICROSERVICES.md) - authoritative architecture entry
-- [docs/audit-remediation-plan.md](docs/audit-remediation-plan.md) - audit fix backlog and phases
+- [docs/audit/2026-07-11-learning-freeze-audit.md](docs/audit/2026-07-11-learning-freeze-audit.md) - independent freeze audit
+- [docs/audit-remediation-plan.md](docs/audit-remediation-plan.md) - historical remediation backlog
 - [docs/learning/README.md](docs/learning/README.md) - final-state learning guide
 - [docs/production-readiness-learning.md](docs/production-readiness-learning.md) - learning readiness notes
 - [docs/operations-checklist.md](docs/operations-checklist.md) - local operations checklist
