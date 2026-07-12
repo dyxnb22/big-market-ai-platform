@@ -24,11 +24,7 @@
 | **B. 可演示闭环** | fresh Docker 下：登录 → 签到/兑换 → 抽奖 → 发奖/积分到账 → 库存落库，前端用真实 stage 活动 |
 | **C. 准生产基线** | 关键写路径幂等正确、补偿语义正确、默认安全边界成立、门禁能拦住启动级回归 |
 
-**当前状态（2026-07-11 治理执行后）：**
-
-- **A. 可启动** — 代码已修：BM-001/002/003；Context 测试在树。
-- **B. 可演示闭环** — 历史快照 `4278a8c` 曾全绿。**当前工作树**（基线 `8df5311` + 治理改动）：`acceptance.sh` 默认**不**自启 Docker；本机 8081–8087 healthy、**gateway 8080 down**；`--reuse --skip-build` 于 1s fail-closed，产物 `target/acceptance-artifacts/`。完整 reuse/fresh/secure 需本机启动 gateway 后重跑。
-- **C. 准生产基线** — BM-015 secure + 写路径测试在树；观测告警已扩展 chat refund / stock confirm pending。
+**历史状态快照（勿当作当前验收结论）：** 曾记录 gateway `:8080` down、acceptance blocked 等。**当前有条件冻结结论与证据一律以 `docs/LEARNING-FREEZE.md` 与 `docs/audit/2026-07-11-learning-freeze-audit.md` 为准。**
 
 **执行约定：**
 
@@ -363,19 +359,13 @@ npm test
 
 ## 8. 进度跟踪（勾选）
 
-> 本表记录代码落地与历史验收快照。只有在目标 HEAD 重跑对应命令后，才能将其作为当前验收结论。
+> 本表是历史整改勾选记录，**不是**当前就绪结论。当前结论：[`LEARNING-FREEZE.md`](LEARNING-FREEZE.md)。
 
-**当前状态（2026-07-11 治理执行后）：**
+| 阶段 | 历史备注（BM 追溯） |
+| --- | --- |
+| 1 启动阻塞 | BM-001/002/003；market/message-job Context 测试；CI `build-verify.yml` |
+| 2 核心闭环 | 发奖/库存/幂等等代码落地；动态验收以冻结审计重跑为准 |
+| 3 演示与安全 | BM-011～015；secure overlay 需单独 `--secure` 验证 |
+| 4 观测与架构债 | BM-016/017、治理文档；不阻塞学习主路径 |
 
-- **A. 可启动** — 代码已修：BM-001/002/003；Context 测试在树。
-- **B. 可演示闭环** — 历史快照 `4278a8c` 曾全绿。**当前工作树**（基线 `8df5311` + 治理改动）：`acceptance.sh` 默认**不**自启 Docker；本机 8081–8087 healthy、**gateway 8080 down**；`--reuse --skip-build` 于 1s fail-closed，产物 `target/acceptance-artifacts/`。完整 reuse/fresh/secure 需本机启动 gateway 后重跑。
-- **C. 准生产基线** — BM-015 secure + 写路径测试在树；观测告警已扩展 chat refund / stock confirm pending。
-
-| 阶段 | 状态 | 完成日期 | 备注 |
-| --- | --- | --- | --- |
-| 1 启动阻塞 | 基本完成（代码+Context 测试） | 2026-07-10 | BM-001/002/003；market/message-job `@SpringBootTest`；CI `build-verify.yml` 含 `dev` |
-| 2 核心闭环 | 代码已落地；HEAD acceptance **blocked** | 2026-07-11 | gateway `:8080` down；agent 无法 `compose up`；见 `target/acceptance-artifacts/latest-summary.txt` |
-| 3 演示与安全 | 代码已落地；secure 待复验 | 2026-07-11 | BM-011～015；需 `--secure --start-stack` 或手动 secure overlay |
-| 4 观测与架构债 | 静态门禁+告警扩展 | 2026-07-11 | BM-016 增 ChatRefund/StockConfirm 告警；BM-017 ArchUnit 扩 message-job；治理 GOV-D* 文档落地 |
-
-更新本表时同步更新「当前状态」一节的目标档结论。
+更新 BM 追溯时可在本表追加备注；**禁止**在本文件维护与 `LEARNING-FREEZE.md` 冲突的「当前 gateway/acceptance」状态。

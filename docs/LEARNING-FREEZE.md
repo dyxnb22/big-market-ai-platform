@@ -26,7 +26,7 @@ fulfillment :8087 -- optional remote award RPC in the default topology
 
 MySQL、Redis、RabbitMQ、Nacos、XXL-Job Admin、Prometheus/Grafana 等由 `docs/dev-ops/docker-compose-environment.yml` 提供。`rebate-service:8088` 与 `strategy-service:8089` 是可选独立部署，默认 compose 不启动；默认由 market 内嵌对应 Dubbo provider。
 
-默认 compose 中积分奖走本地 outbox：`send_award` 消费者写 `credit_award_task`，XXL 任务 5/6 派发到账户服务。`user_award_record.award_state=completed` 表示发奖已被持久化接管，不单独证明账户已入账；最终结果应同时检查 outbox 与账户流水。
+默认 compose 中积分奖走本地 outbox：`SendAwardConsumer`（message-job）写 `credit_award_task`，XXL `DispatchCreditAwardTaskJob` handlers（任务 5/6）派发到账户服务。`user_award_record.award_state=completed` 表示发奖已被持久化接管，不单独证明账户已入账；最终结果应同时检查 outbox 与账户流水。
 
 ## 前置条件
 

@@ -299,7 +299,24 @@ task
     └──多次重试仍失败──→ [fail]（进 DLQ）
 ```
 
-`SendMessageTaskJob` 每秒扫描 state=create 的 task，补偿重发。
+`SendMessageTaskJob`（message-job）扫描 state=`create` 的 task，补偿重发。更新成功后库中一般为 `completed`（mapper 硬编码；领域枚举名可能写作 `complete`——查库以列值为准）。
+
+---
+
+### 2.6.1 credit_award_task（积分发奖二级 Outbox）
+
+默认 Docker 学习栈开启 `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true` 时使用。权威说明见 [`docs/data-and-outbox.md`](../data-and-outbox.md)。
+
+```
+credit_award_task
+├── user_id / award_order_id   幂等与对账键
+├── state                      pending → dispatched / failed（以代码与 DDL 为准）
+├── retry_count                派发重试
+└── （分片库 big_market_01/02）
+```
+
+`DispatchCreditAwardTaskJob_DB1/DB2` 扫描 pending → 调 account RPC → `dispatched`。
+**勿**仅用 `user_award_record.award_state=completed` 证明积分已入账。
 
 ---
 
@@ -372,8 +389,10 @@ strategy_award.rule_models ──tree_id──→ rule_tree
 用户参与一次抽奖写入：
   user_raffle_order（抽奖单）
   user_award_record（中奖记录）
-  task（Outbox 发奖任务）
-  ──MQ──→ user_credit_account（发积分类奖品）
+  task（MQ Outbox）
+  ──MQ──→ SendAwardConsumer（message-job）
+           ├── 积分奖 + Docker outbox → credit_award_task → account RPC
+           └── 其它奖品类型 → 对应履约路径
 ```
 
 ---
@@ -385,7 +404,8 @@ strategy_award.rule_models ──tree_id──→ rule_tree
 | `raffle_activity` | `state` | create / open / close / restart | 活动生命周期 |
 | `raffle_activity_stage` | `state` | create / active / expire | 展台上架状态 |
 | `user_raffle_order` | `order_state` | create / used / cancel | 抽奖单使用状态 |
-| `user_award_record` | `award_state` | create / completed | 发奖完成状态 |
+| `user_award_record` | `award_state` | create / completed | 发奖完成态（库值；勿等同账户入账） |
 | `task` | `state` | create / completed / fail | MQ Outbox 状态 |
+| `credit_award_task` | `state` | pending / dispatched / failed | 积分二级 Outbox |
 | `user_credit_account` | `account_status` | open / close | 积分账户冻结 |
 | `user_credit_order` | `trade_type` | forward / reverse | 积分增加/扣减 |

@@ -1,23 +1,6 @@
 # 03 架构总览
 
-## 运行时形态
-
-仓库由可独立部署的服务启动器与共享库模块组成。服务启动器包括：
-
-- `big-market-gateway`
-- `big-market-auth-service`
-- `big-market-admin-service`
-- `big-market-market-service`
-- `big-market-chatbot-service`
-- `big-market-message-job-service`
-- `big-market-account-service`
-- `big-market-fulfillment-service`
-- `big-market-rebate-service`
-- `big-market-strategy-service`
-
-共享库包括 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types`、`big-market-starter-db-router`、`big-market-starter-dcc`、`big-market-starter-ratelimiter`、`big-market-starter-web` 和 `big-market-starter-data`。
-
-用户端 `big-market-web` 为原生 HTML/CSS/JS 静态前端（非 React），经 Nginx 或 `server.py` 提供页面，API 统一走网关 `8080`。面向桌面/Web 布局，无独立移动端导航。
+> 服务端口、职责与核心流程的权威表见 [`../MICROSERVICES.md`](../MICROSERVICES.md)。就绪边界见 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md)。本文保留总览图与前端要点，避免与 MICROSERVICES 重复维护服务清单。
 
 ## 架构图
 
@@ -35,7 +18,7 @@ flowchart TD
     Market -.->|"可选独立部署"| Strategy["strategy-service:8089"]
     Market --> MQ["RabbitMQ"]
     MQ --> MessageJob["message-job-service:8085"]
-    MessageJob -->|"credit award outbox"| Account
+    MessageJob -->|"credit_award_task"| Account
     MessageJob --> XXL["XXL-Job Admin"]
     Auth --> Redis["Redis"]
     Market --> MySQL["MySQL"]
@@ -45,28 +28,32 @@ flowchart TD
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
 
-> **说明：** `rebate-service` 和 `strategy-service` 在默认配置下以 **embedded provider** 模式运行于 `market-service` 进程内，docker-compose 默认栈不启动 8088/8089。默认积分奖也不调用 remote fulfillment，而由 message-job 写 credit outbox 后派发到 account。独立 provider/remote award 是未纳入本次动态验收的可选模式。
+> **说明：** 默认 compose 不启 8088/8089；rebate/strategy 由 market **embedded** provider 托管。默认积分奖不走 remote fulfillment：`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。独立 provider / remote award / fresh / secure 未纳入冻结审计动态验收。
 
-## 主要职责
+## 主要职责（摘要）
 
-- **Gateway**：`big-market-gateway/src/main/resources/application.yml` 定义路径路由与熔断降级 fallback。
-- **Auth**：`big-market-auth-service/src/main/java/com/dyx/market/auth/AuthAccessController.java` 签发与校验 JWT。
-- **Market**：`big-market-trigger/src/main/java/com/dyx/market/trigger/http` 暴露 raffle、activity、strategy、ERP、DCC 等 API。
-- **Admin**：`big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java` 管理平台配置；`GET /api/v1/admin/config/public/display?activityId=` 为公开只读接口（无需管理员鉴权，走现有 `/admin/**` 网关路由，无需改 gateway 配置）。
-- **Message jobs**：`big-market-message-job-service/src/main/java/com/dyx/market/message/job` 运行 outbox 派发与 RabbitMQ/XXL-Job 基础设施。
-- **Account/Fulfillment/Rebate/Strategy**：provider 模块暴露 `big-market-api/src/main/java/com/dyx/market/trigger/api` 中定义的 Dubbo 服务契约。
-- **big-market-web**：`index.html` / `login.html` / `admin.html` 等页面；`app.js` 编排活动 ID 解析、展示配置、抽奖、Chatbot、本地历史记录等。
+| 组件 | 要点 |
+| --- | --- |
+| Gateway | 路由、trace、Resilience4j fallback |
+| Auth | JWT 签发 / 校验 / 吊销 |
+| Market | raffle / activity / strategy / ERP / DCC HTTP；不扫 `trigger.job`/`listener` |
+| Message-job | RabbitMQ 消费者 + XXL-Job（含积分 outbox 派发） |
+| Account | 积分 / 配额 Dubbo |
+| Admin | 平台配置；`GET .../public/display` 公开只读 |
+| Web | 原生 HTML/CSS/JS，API 统一经 `8080` |
+
+共享库：`domain` / `infrastructure` / `api` / `types` / starters。模块边界见 [04-module-or-service-boundaries.md](04-module-or-service-boundaries.md)。
 
 ## 前端与公开配置
 
 `big-market-web` 启动流程要点：
 
-1. 调用 `query_stage_activity_id` 按渠道/来源解析 `activityId`。
-2. 调用 `GET /api/v1/admin/config/public/display?activityId=` 获取活动标题、文案、`chatbotEnabled` 等展示配置。
-3. 根据 `chatbotEnabled` 控制 Chatbot 入口；消息渲染使用 DOMPurify 防 XSS。
-4. 抽奖记录与积分流水保存在浏览器 `localStorage`；抽奖/用户中心侧栏抽屉互斥打开。
-5. 未登录落地页支持整页滚动；主应用聊天区消息居中布局。
+1. `query_stage_activity_id` 按渠道/来源解析 `activityId`。
+2. `GET /api/v1/admin/config/public/display?activityId=` 取标题、文案、`chatbotEnabled`。
+3. 按 `chatbotEnabled` 控制 Chatbot；消息渲染用 DOMPurify。
+4. 抽奖记录与积分流水在 `localStorage`；侧栏抽屉互斥。
+5. 未登录落地页可整页滚动；主应用聊天区居中。
 
 ## 基础设施
 
-本地基础设施定义在 `docs/dev-ops/docker-compose-environment.yml`：MySQL、Redis、RabbitMQ、Nacos、Elasticsearch、XXL-Job Admin、Prometheus、Grafana 及配套 UI。应用容器定义在 `docker-compose.yml`。
+本地中间件：`docs/dev-ops/docker-compose-environment.yml`。应用容器：`docker-compose.yml`。启动步骤：[16-local-setup.md](16-local-setup.md)。

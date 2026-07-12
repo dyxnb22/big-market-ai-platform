@@ -65,7 +65,7 @@
 
 ### 奖品履约（Award Fulfillment）
 
-抽奖路径写入中奖记录并发布 `send_award` 事件。默认 compose 关闭 remote fulfillment，message-job 消费事件后调用本地奖品领域；积分奖写入 `credit_award_task`，由 `DispatchCreditAwardTaskJob` / `DispatchCreditAwardToAccountJob` 派发到 account RPC。可选部署才切换到 fulfillment RPC。
+抽奖路径写入中奖记录并发布 `send_award` 事件。默认 compose 关闭 remote fulfillment，message-job 的 `SendAwardConsumer` 消费事件后调用本地奖品领域；积分奖写入 `credit_award_task`，由 `DispatchCreditAwardTaskJob`（handlers `_DB1`/`_DB2`）派发到 account RPC。可选部署才切换到 fulfillment RPC。
 
 `user_award_record.award_state=completed` 表示发奖动作已被持久化接管；对积分奖，最终闭环必须继续核对 `credit_award_task=dispatched` 和账户积分流水，不能只看中奖记录。
 

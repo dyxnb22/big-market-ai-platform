@@ -1,5 +1,7 @@
 # 09 代码地图
 
+> **运行时归属：** `trigger.http` / `trigger.rpc` / `trigger.application` 由 **market-service** 扫描；`trigger.listener` / `trigger.job` 仅由 **message-job-service** 扫描。源码仍在 `big-market-trigger` JAR 中，勿在 market 日志里找 MQ 消费者。
+
 ## Gateway
 
 - `big-market-gateway/src/main/resources/application.yml`
@@ -42,7 +44,6 @@
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/application/RaffleApplicationService.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/activity/service/partake/AbstractRaffleActivityPartake.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/raffle/DefaultRaffleStrategy.java`
-- `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityRepository.java`（门面）
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityQuerySupport.java`（活动/SKU/账户查询）
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/ActivityPartakeOrderSupport.java`
@@ -66,7 +67,7 @@
 - `big-market-account-service/src/main/java/com/dyx/market/account/application/AccountCreditApplicationService.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountCreditServiceRPC.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java`
-- `big-market-account-service/src/main/java/com/dyx/market/account/support/RpcApiResponses.java`
+- `big-market-api/src/main/java/com/dyx/market/trigger/api/support/ApiResponses.java`（account/fulfillment RPC 共用）
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/CreditRepository.java`
 
 ## Rebate
@@ -91,18 +92,23 @@
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/award/service/AwardService.java`
 - `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/application/FulfillmentAwardApplicationService.java`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/support/RpcApiResponses.java`
+- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java`（默认 Docker 积分奖不经 remote RPC）
+
+## Tasks, Outbox, And Operations（仅 message-job 运行时）
+
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
-
-## Tasks, Outbox, And Operations
-
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/CreditAdjustSuccessConsumer.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/ActivitySkuStockZeroConsumer.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/SendMessageTaskJob.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateActivitySkuStockJob.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/job/UpdateAwardStockJob.java`
-- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java`
-- `docs/data-and-outbox.md`
+- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java`（handlers `_DB1`/`_DB2`）
+- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/RabbitMQDlqConfig.java`
+- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/XxlJobConfig.java`
+- `docs/data-and-outbox.md`（权威：Outbox / 幂等 / compose 覆盖）
 - `docs/operations-checklist.md`
+- `docs/xxl-job-handlers.md`
 
 ## Admin And Chatbot
 

@@ -30,14 +30,9 @@
 
 ## MQ 与 XXL-Job 重点阅读
 
-建议一起阅读：
+源码在 `big-market-trigger`，**Bean 仅在 message-job-service 激活**。完整跳转表见 [09-code-map.md](09-code-map.md)「Tasks, Outbox, And Operations」；运维检查见 [`../operations-checklist.md`](../operations-checklist.md)；handler 目录见 [`../xxl-job-handlers.md`](../xxl-job-handlers.md)。
 
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/CreditAdjustSuccessConsumer.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/job/SendMessageTaskJob.java`
-- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java`
-- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/XxlJobConfig.java`
+核心入口：`SendAwardConsumer`、`SendMessageTaskJob`、`DispatchCreditAwardTaskJob`、`XxlJobConfig`。
 
 ## 未作为核心机制使用的技术
 

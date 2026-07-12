@@ -84,14 +84,15 @@ Gateway 日志 → 目标 Service 日志 → Domain 日志 → 数据库/Redis �
 
 ## 场景 4：抽奖成功但奖品一直未发放
 
-**现象：** `user_award_record` 中 `award_state = create`，长时间未变为 `complete`。
+**现象：** `user_award_record` 中 `award_state = create`，长时间未变为 `completed`。
 
-**排查路径（outbox 链路）：**
+**排查路径（outbox 链路；消费者与 Job 在 message-job，不在 market）：**
 
 1. 查 `task` 表：找到对应 `orderId` 的 task 行，检查 `state` 是否为 `create`（MQ 未发出）还是 `completed`（已发出）。
-2. 若 task state = `create`：检查 RabbitMQ 是否正常，`SendMessageTaskJob` 是否在运行。
-3. 若 task state = `completed`：检查 `SendAwardConsumer` 消费日志，确认消费者是否正常处理。
-4. 查 MQ 死信队列（DLQ）：`big-market-message-job-service` 中的 `RabbitMQDlqConfig` 配置了 DLQ，死信消息在此积压。
+2. 若 task state = `create`：检查 RabbitMQ 是否正常，`SendMessageTaskJob`（message-job）是否在运行。
+3. 若 task state = `completed`：查 **message-job** 日志中的 `SendAwardConsumer`，确认是否正常处理。
+4. 积分奖额外查 `credit_award_task` 是否 `dispatched`，以及账户流水；见 `docs/data-and-outbox.md`。
+5. 查 MQ 死信：`RabbitMQDlqConfig`（message-job）与 `mq_dead_letter`。
 
 ---
 
@@ -139,7 +140,7 @@ Gateway 日志 → 目标 Service 日志 → Domain 日志 → 数据库/Redis �
 
 1. 登录 RabbitMQ 管理界面（默认 `http://127.0.0.1:15672`）查看队列积压数量。
 2. 检查消费者 prefetch 配置（`application.yml` 中 `listener.simple.prefetch: 1`）是否过低。
-3. 检查 `SendAwardConsumer`、`RebateMessageConsumer`、`CreditAdjustSuccessConsumer` 的异常日志，消费失败会触发重试，最终进 DLQ。
+3. 检查 **message-job** 中 `SendAwardConsumer`、`RebateMessageConsumer`、`CreditAdjustSuccessConsumer` 的异常日志；消费失败会触发重试，最终进 DLQ。
 4. 查 `RabbitMQDlqConfig`：DLQ 中积压的消息需手动处理后再重新入队。
 
 ---

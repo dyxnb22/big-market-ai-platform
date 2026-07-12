@@ -234,12 +234,12 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 **参考回答：**
 
-四个 Job：
+四个**核心** Job（完整 handler 目录见 [`../xxl-job-handlers.md`](../xxl-job-handlers.md)；均在 **message-job**）：
 
 1. **`SendMessageTaskJob`：** 扫描 `task` 表中 state=create 的记录，补偿重发 MQ（outbox 兜底）。
 2. **`UpdateAwardStockJob`：** 消费 Redis 延迟队列，将奖品库存扣减同步到 MySQL。
-3. **`UpdateActivitySkuStockJob`：** 同步 SKU 库存到 MySQL（类似 UpdateAwardStockJob）。
-4. **`DispatchCreditAwardTaskJob`**（在 `big-market-message-job-service`）：处理积分发放任务，扫描待处理的 credit award task 行。
+3. **`UpdateActivitySkuStockJob`：** 同步 SKU 库存到 MySQL。
+4. **`DispatchCreditAwardTaskJob`：** 扫描 `credit_award_task`，派发积分到 account（默认 Docker outbox 路径）。
 
 ---
 

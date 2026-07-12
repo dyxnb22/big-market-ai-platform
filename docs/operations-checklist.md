@@ -22,6 +22,8 @@ Script: `scripts/smoke-api.sh`.
 
 ## Task Checks
 
+MQ 消费者与 XXL handlers 运行在 **`big-market-message-job-service`**；market 日志只覆盖 HTTP/RPC。排障时先看 message-job。
+
 - XXL executor `appname` must be **`big-market-message-job`** (see `docs/dev-ops/mysql/sql/xxl_job.sql` and `message-job-service` `application.yml`). Handler catalog (seed id, default `trigger_status`, money-replay notes): `docs/xxl-job-handlers.md`.
 - Do not stop at XXL Admin HTTP health: its executor group must contain a non-empty registered address. `acceptance.sh` enforces this.
 - `SendMessageTaskJob` scans shared task rows.
@@ -36,7 +38,7 @@ Script: `scripts/smoke-api.sh`.
 - `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes.
 - `ChatRefundReconcileJob` retries chat `refund_state=pending` sessions.
 
-Check logs from `big-market-message-job-service` and `big-market-market-service`.
+Check consumer/job logs primarily from `big-market-message-job-service`; use `big-market-market-service` for draw/HTTP path only.
 
 ## DDL / Init
 

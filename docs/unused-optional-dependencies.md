@@ -1,6 +1,6 @@
 # Unused / optional dependency inventory (GOV-B07)
 
-Status as of 2026-07-11. These libraries appear in dependencyManagement or module POMs but are **not** part of the default demo closed loop.
+Status as of 2026-07-11. These libraries appear in dependencyManagement or module POMs but are **not** required for the default conditional learning-freeze acceptance path (`acceptance.sh --reuse`).
 
 | Capability | Artifact | Current use | Action |
 | --- | --- | --- | --- |

@@ -2,7 +2,7 @@
 
 ## 一、DDD 四层架构
 
-本项目严格遵循 DDD（领域驱动设计）分层架构，理解这一点是读懂整个项目的钥匙。
+本项目采用 DDD（领域驱动设计）分层架构（chatbot 等应用编排可落在服务模块内），理解分层是读懂主路径的钥匙。
 
 ```text
 ┌─────────────────────────────────────────────────────┐
@@ -24,7 +24,7 @@
 ├─────────────────────────────────────────────────────┤
 │  infrastructure 层（基础设施层）                    │
 │  big-market-infrastructure/                         │
-│  职责：实现 domain 的 port/repos00itory 接口           │
+│  职责：实现 domain 的 port/repository 接口             │
 │  包括 MyBatis DAO、Redis、MQ 发布、ES 查询           │
 └─────────────────────────────────────────────────────┘
 ```
@@ -100,14 +100,11 @@ public interface IStrategyDecisionPort {
     RaffleAwardEntity performRaffle(RaffleFactorEntity raffleFactorEntity);
 }
 
-// infrastructure 层实现（本地调用策略领域）
+// infrastructure 层实现（本地调用策略领域；@ConditionalOnMissingBean）
 public class LocalStrategyDecisionPort implements IStrategyDecisionPort { ... }
-
-// infrastructure 层实现（远程 Dubbo RPC 调用 strategy-service）
-public class RemoteStrategyDecisionPort implements IStrategyDecisionPort { ... }
 ```
 
-这样 domain 层完全不知道"策略执行"是本地还是远程，可以通过配置开关切换。
+当前树**没有** `RemoteStrategyDecisionPort`：抽奖决策默认进程内 `LocalStrategyDecisionPort`。跨服务切换的同类模式见 `AccountRemoteCreditWriteAdapter` / `LocalAccountCreditWriteAdapter`，以及 strategy **读**侧的 `IStrategyReadAdapter`（local / remote）。
 
 ---
 
@@ -267,7 +264,7 @@ public class LocalAccountCreditWriteAdapter implements IAccountCreditWriteAdapte
 
 // 远程实现（调用 account-service Dubbo RPC）
 @ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "true")
-public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapter { ... }
+public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapter { ... }
 ```
 
 **项目中共有 5 组适配器：**
@@ -290,7 +287,7 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
 
 **问题：** 写数据库和发 MQ 消息是两个操作，如果先写库再发消息，库已写但 MQ 宕机则消息丢失；如果先发消息再写库，消息已发但库写失败则数据不一致。
 
-**实现：** 将 MQ 消息先存入同库的 `task` 表（与业务数据同一本地事务），事务提交后再异步发送 MQ。发送成功后更新 task 状态为 completed；发送失败则 task 保持 create 状态，由 `SendMessageTaskJob` 定时扫描重发。
+**实现：** 将 MQ 消息先存入同库的 `task` 表（与业务数据同一本地事务），事务提交后再异步发送 MQ。发送成功后更新 task 状态为 completed；发送失败则 task 保持 create 状态，由 `SendMessageTaskJob`（**message-job**）定时扫描重发。
 
 ```text
 ┌──────────────────────────────────────────┐
@@ -301,12 +298,15 @@ public class RemoteAccountCreditWriteAdapter implements IAccountCreditWriteAdapt
                    │ 事务提交后
                    ▼
           ③ 异步发送 RabbitMQ
-          ④ 成功 → task.status = completed
+          ④ 成功 → task.state = completed
              失败 → task 保留，等 Job 重扫
 ```
+
+**默认 Docker 二级 Outbox（积分奖）：** compose 将 `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true`（覆盖 yml 缺省 `false`）。`SendAwardConsumer` 写 `credit_award_task`，再由 `DispatchCreditAwardTaskJob` 调 account RPC。细节以 [`docs/data-and-outbox.md`](../data-and-outbox.md) 为准；`award_state=completed` ≠ 账户已入账。
 
 **代码位置：**
 
 - `AwardRepository.saveUserAwardRecord()`：写 `user_award_record` + `task`，事务提交后调用 `eventPublisher` 发 MQ
-- `SendMessageTaskJob.java`：扫描 status=create 的 task，补偿重发
+- `SendMessageTaskJob.java`：扫描 status=create 的 task，补偿重发（message-job）
+- `DispatchCreditAwardTaskJob.java`：积分奖二级 outbox 派发（message-job）
 

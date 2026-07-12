@@ -25,34 +25,30 @@
 
 ## 0. 端到端主链路（先背这条）
 
+与 [18 §0](18-resume-project-deep-dive.md) 同一条链；此处只保留走读锚点：
+
 ```text
-POST /api/v1/raffle/activity/draw_by_token
-  → RaffleActivityController
-  → RaffleDrawApplicationService.draw()          # trigger 薄封装
-  → RaffleApplicationService.executeDraw()       # domain 编排
-      ① createOrder          # 活动域：额度 + 抽奖单
-      ② performRaffle        # 策略域：责任链 →（可选）规则树
-      ③ saveUserAwardRecord  # 奖品域：中奖记录 + Outbox task → MQ
-  catch → 补偿额度（本地 CAS / 远程 rollback）
-异步：
-  SendMessageTaskJob         # MQ 补偿
-  UpdateAwardStockJob        # Redis 库存回写 MySQL
-  SendAwardConsumer          # 真正发奖（可能进积分域）
+draw_by_token
+  → RaffleActivityController → RaffleDrawApplicationService
+  → RaffleApplicationService.executeDraw
+      ① createOrder → ② performRaffle → ③ saveUserAwardRecord (+ task Outbox)
+  异步（message-job）：SendMessageTaskJob / SendAwardConsumer
+      → 默认 Docker：credit_award_task → DispatchCreditAwardTaskJob → account
 ```
 
-**编排入口（必看）：**
+**编排入口：** `RaffleApplicationService.executeDraw()`
 
-`big-market-domain/.../activity/application/RaffleApplicationService.java` → `executeDraw()`
-
-**走读顺序建议（约 30 分钟）：**
+**走读顺序（约 30 分钟）：**
 
 1. `RaffleApplicationService.executeDraw`
-2. `AbstractRaffleActivityPartake.createOrder` → `ActivityPartakeOrderSupport.saveCreatePartakeOrderAggregate`
+2. `AbstractRaffleActivityPartake.createOrder` → `ActivityPartakeOrderSupport`
 3. `LocalStrategyDecisionPort` → `AbstractRaffleStrategy.performRaffle`
 4. `DefaultChainFactory` + 三个 `*LogicChain`
 5. `DecisionTreeEngine` + `RuleLock` / `RuleStock` / `RuleLuckAward`
 6. `AwardService.saveUserAwardRecord` → `AwardDispatchSupport`
-7. `SendMessageTaskJob` + `UpdateAwardStockJob`
+7. `SendMessageTaskJob` → `SendAwardConsumer` →（积分）`DispatchCreditAwardTaskJob`
+
+详细口述与简历映射见 **18**；二级 outbox / compose 覆盖见 **18** 与 [`../data-and-outbox.md`](../data-and-outbox.md)。
 
 ---
 
@@ -68,7 +64,7 @@ POST /api/v1/raffle/activity/draw_by_token
 
 | 层 | 模块 | 抽奖相关入口 |
 |----|------|--------------|
-| trigger | `big-market-trigger` | `RaffleActivityController`、`RaffleDrawApplicationService`、`SendAwardConsumer`、`SendMessageTaskJob` |
+| trigger | `big-market-trigger` | HTTP/应用编排在 **market**；`SendAwardConsumer` / `SendMessageTaskJob` 在 **message-job** |
 | application | `domain/.../application` | `RaffleApplicationService` |
 | domain | `big-market-domain` | `AbstractRaffleStrategy`、`AwardService`、`CreditAdjustService` |
 | infrastructure | `big-market-infrastructure` | `*Repository`、`*Support`、`Local*Port` |
@@ -370,20 +366,21 @@ AwardService.saveUserAwardRecord
 2. `insert task`（Outbox）  
 3. CAS 将 `user_raffle_order`：`create → used`（失败则整单回滚）  
 
-事务提交后尽力发 MQ：
-
-- 成功 → task `complete`  
-- 失败 → task `fail`，留给 Job  
+事务提交后尽力发 MQ；成功后库内 task 多为 `completed`（见 mapper）。失败保留待 Job 重扫。
 
 文件：
 
 - `domain/award/service/AwardService.java`
 - `infrastructure/.../AwardDispatchSupport.java`
-- `domain/award/model/valobj/TaskStateVO.java`（`create` / `complete` / `fail`）
+- `domain/award/model/valobj/TaskStateVO.java`（枚举名 `complete`；**查库以 `completed` 为准**）
+
+#### 二级 Outbox（默认 Docker 积分奖）
+
+勿在本节重复长叙述：见 [18 积分发奖段](18-resume-project-deep-dive.md) 与 [`../data-and-outbox.md`](../data-and-outbox.md)。要点：`SendAwardConsumer`（message-job）→ `credit_award_task` → `DispatchCreditAwardTaskJob` → account；`award_state=completed` ≠ 已入账。
 
 #### 补偿 Job
 
-`SendMessageTaskJob`（XXL-Job，按库分片 DB1/DB2）：
+`SendMessageTaskJob`（XXL-Job，按库分片 DB1/DB2，**message-job**）：
 
 1. Redisson 锁  
 2. 查未发送/失败任务  
@@ -428,7 +425,7 @@ Job：UpdateAwardStockJob 拉取 → updateStrategyAwardStock（MySQL -1）
 
 **Q2：task 有哪些状态？Job 扫什么？**
 
-> `create` 入库；发送成功 `complete`；失败 `fail`。Job 扫未完成任务补偿发送。
+> `create` 入库；发送成功后库内多为 `completed`（枚举名可能写作 `complete`）；失败 `fail`。Job 扫未完成任务补偿发送。积分奖默认 Docker 另见 `credit_award_task`。
 
 **Q3：如何防超卖？**
 

@@ -17,9 +17,9 @@ XXL-Job tasks, MySQL, Redis, Nacos, Prometheus, and Grafana.
 | `big-market-chatbot-service` | 8084 | Chatbot API and credit charge/refund integration |
 | `big-market-message-job-service` | 8085 | MQ consumers, XXL-Job handlers, retry dispatch |
 | `big-market-account-service` | 8086 | Credit and quota RPC provider |
-| `big-market-fulfillment-service` | 8087 | Award fulfillment RPC provider |
-| `big-market-rebate-service` | 8088 | Rebate create/read RPC provider (dedicated deployment) |
-| `big-market-strategy-service` | 8089 | Strategy read RPC provider (dedicated deployment) |
+| `big-market-fulfillment-service` | 8087 | Award fulfillment RPC (optional remote path; default credit awards use message-job outbox) |
+| `big-market-rebate-service` | 8088 | Rebate RPC (optional dedicated; default embedded in market) |
+| `big-market-strategy-service` | 8089 | Strategy read RPC (optional dedicated; default embedded in market) |
 
 Shared modules such as `big-market-domain`, `big-market-infrastructure`,
 `big-market-api`, `big-market-types`, and starter modules are reused as JAR

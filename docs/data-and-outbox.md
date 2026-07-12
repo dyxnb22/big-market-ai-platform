@@ -34,10 +34,15 @@ task rows. Draw writes the award record and message task; consumers complete
 distribution.
 
 In the default Docker topology, `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true` and
-shared-task credit dispatch is disabled. `SendAwardConsumer` therefore writes a
-`credit_award_task`; XXL jobs 5/6 must move it to `dispatched` and call account
-RPC. Their seeds are enabled by both fresh init SQL and
-`z-learning-freeze-demo.sql` for reused volumes.
+shared-task credit dispatch is disabled. `SendAwardConsumer` runs only in
+**message-job-service** (market must not scan `trigger.listener`). It writes a
+`credit_award_task`; XXL handlers `DispatchCreditAwardTaskJob_DB1/DB2` (jobs 5/6)
+must move it to `dispatched` and call account RPC. Their seeds are enabled by
+both fresh init SQL and `z-learning-freeze-demo.sql` for reused volumes.
+
+Bare `application.yml` defaults `account.award-credit-outbox.enabled=false`
+(direct credit). Always cite **compose + yml** together when describing the
+learning stack; do not infer Docker behavior from yml alone.
 
 `user_award_record.award_state=completed` means that the award action has been
 durably accepted by the local award flow. For a credit award it does **not** by
@@ -49,8 +54,9 @@ Code paths:
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/award`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java` (runtime: message-job)
+- `big-market-message-job-service/.../config/DispatchCreditAwardTaskJob.java`
+- `big-market-fulfillment-service/.../FulfillmentAwardServiceRPC.java` (optional remote path)
 
 ## Rebate
 

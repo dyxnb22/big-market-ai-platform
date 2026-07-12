@@ -27,7 +27,9 @@
 - 先写库再发 MQ：库已写但 MQ 宕机 → **消息永久丢失**，奖品不发
 - 先发 MQ 再写库：消息已发但库失败 → **重复发奖**
 
-Outbox 模式的关键：task 表和业务数据**在同一数据库同一事务**，本地事务保证两者同时成功或失败。MQ 发送失败只影响 task 状态，不影响业务数据，由 `SendMessageTaskJob` 定时重试补偿。
+Outbox 模式的关键：task 表和业务数据**在同一数据库同一事务**，本地事务保证两者同时成功或失败。MQ 发送失败只影响 task 状态，不影响业务数据，由 `SendMessageTaskJob`（message-job）定时重试补偿。
+
+默认 Docker 学习栈还有**积分二级 Outbox**（`credit_award_task` + `DispatchCreditAwardTaskJob`）。细则只维护一份：[`docs/data-and-outbox.md`](../data-and-outbox.md)。
 
 **代价：** 增加了 task 表和补偿 Job，系统复杂度上升；消息不是严格实时（有毫秒级到秒级延迟）。
 

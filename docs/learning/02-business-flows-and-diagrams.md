@@ -101,21 +101,24 @@ stateDiagram-v2
 ## 机制 5：发奖
 
 - Business meaning: 抽中奖品后异步完成奖品发放。
-- Code location: `AwardRepository.saveUserAwardRecord`、`SendAwardConsumer`、`AwardService.distributeAward`、`AwardRepository.saveGiveOutPrizesAggregate`。
-- Data written: `user_award_record`、task/outbox、积分账户或外部 OpenAI 额度。
-- Async: `send_award` MQ。
-- Risk: 外部 OpenAI 额度网关失败依赖异常和任务补偿，未发现独立熔断实现。
+- Code location: `AwardRepository.saveUserAwardRecord`、`SendAwardConsumer`（**message-job**）、`AwardService.distributeAward`、`AwardCreditGrantSupport` / `DispatchCreditAwardTaskJob`。
+- Data written: `user_award_record`、shared `task` outbox、默认 Docker 下积分奖另写 `credit_award_task`；或外部 OpenAI 额度。
+- Async: `send_award` MQ → message-job 消费。
+- Risk: 外部 OpenAI 额度网关失败依赖异常和任务补偿；`award_state=completed` 不单独证明账户已入账。权威细节：[`docs/data-and-outbox.md`](../data-and-outbox.md)。
 
 ```mermaid
 flowchart TD
-    A["中奖记录创建"] --> B["写发奖 task"]
-    B --> C["发布 send_award"]
-    C --> D["SendAwardConsumer 消费"]
-    D --> E{"奖品类型"}
-    E -->|积分| F["写用户积分账户"]
-    E -->|OpenAI额度| G["调用外部额度网关"]
-    F --> H["更新中奖记录 complete"]
-    G --> H
+    A["中奖记录 + task Outbox"] --> B["发布 send_award"]
+    B --> C["SendAwardConsumer\n(message-job)"]
+    C --> D{"奖品类型"}
+    D -->|积分 + Docker 默认 outbox| E["写 credit_award_task"]
+    E --> F["DispatchCreditAwardTaskJob"]
+    F --> G["account RPC 入账"]
+    D -->|积分 + outbox 关闭| H["直接写用户积分账户"]
+    D -->|OpenAI额度| I["调用外部额度网关"]
+    G --> J["user_award_record\naward_state=completed"]
+    H --> J
+    I --> J
 ```
 
 ## 机制 6：运营上架和查询

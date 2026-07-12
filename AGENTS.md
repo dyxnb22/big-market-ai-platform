@@ -39,7 +39,7 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 | chatbot | 8084 | Chat + credit charge |
 | message-job | 8085 | MQ consumers + XXL-Job |
 | account | 8086 | Credit/quota RPC |
-| fulfillment | 8087 | Award fulfillment RPC |
+| fulfillment | 8087 | Award fulfillment RPC (optional remote; default credit path uses message-job outbox) |
 | rebate | 8088 | Dedicated rebate (optional; often embedded in market) |
 | strategy | 8089 | Dedicated strategy (optional; often embedded in market) |
 

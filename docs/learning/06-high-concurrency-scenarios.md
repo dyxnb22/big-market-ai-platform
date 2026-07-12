@@ -52,12 +52,12 @@ SKU 兑换使用 Redis 计数器与库存归零消息。奖品库存由策略逻
 
 ## MQ 与任务并发
 
-重复消息通过 message id、business id 与重复键处理消化。Job 扫描任务行前先加锁。
+重复消息通过 message id、business id 与重复键处理消化。Job 扫描任务行前先加锁。监听器与 Job **仅在 message-job** 激活；跳转表见 [09-code-map.md](09-code-map.md)。
 
 代码路径：
 
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/CreditAdjustSuccessConsumer.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/job/SendMessageTaskJob.java`
-- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java`
+- `big-market-trigger/.../listener/RebateMessageConsumer.java`
+- `big-market-trigger/.../listener/SendAwardConsumer.java`
+- `big-market-trigger/.../listener/CreditAdjustSuccessConsumer.java`
+- `big-market-trigger/.../job/SendMessageTaskJob.java`
+- `big-market-message-job-service/.../config/DispatchCreditAwardTaskJob.java`
