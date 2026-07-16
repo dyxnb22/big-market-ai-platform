@@ -1,15 +1,10 @@
 ---
-description: Java module and coding conventions for Big Market
-globs: "**/*.java"
+description: Historical note — Java sources removed
 alwaysApply: false
 ---
 
-# Java conventions
+# Java conventions (retired)
 
-- Package root: `com.dyx.market.*`. Layers: `trigger` (http/rpc/job/listener/application/adapter) → `domain` → `infrastructure`.
-- HTTP/RPC stay thin; orchestration in `trigger.application` or domain application services.
-- Prefer existing patterns: Port + adapter, Redisson locks, unique keys / CAS for idempotency, outbox `task` rows for MQ retry.
-- Do not introduce React/TS patterns; backend is Java/Maven multi-module.
-- Avoid swallowing exceptions into `false`/`0` when the caller needs **SUCCESS / REJECTED / UNKNOWN**.
-- New `@Service` in `trigger.application` / `trigger.adapter` must be covered by the consuming service’s `scanBasePackages` or `@Import`.
-- Match surrounding style: existing annotations, logging, and Response wrappers — no drive-by refactors.
+Java/Maven modules were deleted from this repository. See `rust-refactor/JAVA-DELETION-LEDGER.md`.
+
+Do not add new `.java` files or a root `pom.xml` unless the user explicitly requests restoring a Java track.

@@ -2,21 +2,8 @@ name: rust
 
 on:
   push:
-    paths:
-      - "big-market-rs/**"
-      - "scripts/*rust*"
-      - "scripts/acceptance-dual-stack.sh"
-      - "scripts/smoke-rust-mysql.sh"
-      - "docs/dev-ops/mysql/sql/z-reconcile-tables.sql"
-      - ".github/workflows/rust.yml"
   pull_request:
-    paths:
-      - "big-market-rs/**"
-      - "scripts/*rust*"
-      - "scripts/acceptance-dual-stack.sh"
-      - "scripts/smoke-rust-mysql.sh"
-      - "docs/dev-ops/mysql/sql/z-reconcile-tables.sql"
-      - ".github/workflows/rust.yml"
+  workflow_dispatch:
 
 jobs:
   test:

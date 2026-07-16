@@ -1,48 +1,28 @@
-# Secure overlay for the application stack.
-# Usage:
-#   export JWT_SECRET=... APP_INTERNAL_RPC_TOKEN=... ADMIN_TOKEN=... \
-#          CHAT_INTERNAL_SERVICE_TOKEN=... XXL_JOB_TOKEN=... APP_AUTH_DEV_USERS=...
-#   docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
+# Secure overlay for default Rust docker-compose.yml
 #
-# Requires non-default secrets; DefaultCredentialGuard refuses known defaults when
-# SPRING_PROFILES_ACTIVE includes "secure".
+# Usage:
+#   export JWT_SECRET=... CHAT_INTERNAL_SERVICE_TOKEN=... APP_AUTH_DEV_USERS=...
+#   docker compose -f docker-compose.yml -f docker-compose.secure.yml up -d
+#
+# Host binaries: ./scripts/run-rust-secure.sh
 
-x-secure-env: &secure-env
-  SPRING_PROFILES_ACTIVE: docker,secure
-  APP_INTERNAL_RPC_TOKEN: ${APP_INTERNAL_RPC_TOKEN:?APP_INTERNAL_RPC_TOKEN is required for secure compose}
-  APP_INTERNAL_RPC_ENFORCE: "true"
-  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for secure compose}
-  ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN is required for secure compose}
-  CHAT_INTERNAL_SERVICE_TOKEN: ${CHAT_INTERNAL_SERVICE_TOKEN:?CHAT_INTERNAL_SERVICE_TOKEN is required for secure compose}
-  XXL_JOB_TOKEN: ${XXL_JOB_TOKEN:?XXL_JOB_TOKEN is required for secure compose}
-  APP_AUTH_DEV_USERS: ${APP_AUTH_DEV_USERS:?APP_AUTH_DEV_USERS is required for secure compose}
-  APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://127.0.0.1:5173}
-  CROSS_ORIGIN: ${APP_CORS_ALLOWED_ORIGINS:-http://127.0.0.1:5173}
-  GATEWAY_RATE_LIMITER_ENABLED: "true"
+x-rust-secure-env: &rust-secure-env
+  BM_SECURE: "1"
+  BM_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for secure overlay}
+  BM_GW_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for secure overlay}
+  BM_INTERNAL_TOKEN: ${CHAT_INTERNAL_SERVICE_TOKEN:?CHAT_INTERNAL_SERVICE_TOKEN is required}
+  BM_DEV_USERS: ${APP_AUTH_DEV_USERS:?APP_AUTH_DEV_USERS is required}
+  BM_GW_RATE_LIMIT: ${BM_GW_RATE_LIMIT:-500}
 
 services:
-  big-market-auth-service:
+  bm-app:
     environment:
-      <<: *secure-env
-  big-market-admin-service:
+      <<: *rust-secure-env
+
+  bm-gateway:
     environment:
-      <<: *secure-env
-  big-market-chatbot-service:
+      <<: *rust-secure-env
+
+  bm-worker:
     environment:
-      <<: *secure-env
-  big-market-market-service:
-    environment:
-      <<: *secure-env
-  big-market-message-job-service:
-    environment:
-      <<: *secure-env
-  big-market-account-service:
-    environment:
-      <<: *secure-env
-  big-market-fulfillment-service:
-    environment:
-      <<: *secure-env
-  big-market-gateway:
-    environment:
-      <<: *secure-env
-      GATEWAY_RATE_LIMITER_ENABLED: "true"
+      <<: *rust-secure-env

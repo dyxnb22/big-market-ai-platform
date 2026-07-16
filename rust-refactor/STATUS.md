@@ -27,6 +27,7 @@
 | Dual-stack contract check | ✅ | `acceptance-dual-stack.sh` (+ `--dual` on acceptance-rust) |
 | CI MySQL smoke | ✅ | `.github/workflows/rust.yml` `mysql-smoke` job |
 | Rust learning freeze doc | ✅ | `docs/RUST-LEARNING-FREEZE.md` |
+| **Java sources removed** | ✅ | All Maven modules deleted; ledger `JAVA-DELETION-LEDGER.md` |
 
 ## Verified commands
 
@@ -51,18 +52,16 @@
 | `memory` | Pure RAM (tests) |
 | `mysql` | **All stores** via sqlx (sharded + `big_market` catalog); no `state.json` persist |
 
-## Honest limits vs Java
+## Honest limits (vs historical Java learning stack)
 
-| Area | Rust track | Java learning stack |
+| Area | Rust now | Historical Java (sources removed) |
 | --- | --- | --- |
-| Strategy | DB weights + `tree_lock_N` list/draw + optional chain lite | Full DB rule-tree engine |
-| MQ / jobs | Optional lapin + `JOB_CATALOG`; embed disabled when Rabbit URL set | RabbitMQ + XXL-Job handlers |
-| Chatbot | Local echo tools (1 credit) | Optional OpenAI integration |
-| MySQL | Full learning schema subset + `activity_soft_stock` flush | Same tables + Java ORM |
-| Legacy :8098 | Skipped in Rust Playwright profile | Java compose maps 8098→gateway |
-| Secure compose | `BM_SECURE=1` + `docker-compose.rust.secure.yml` | `docker-compose.secure.yml` |
+| Strategy | DB weights + `tree_lock_N` + optional chain lite | Full DB rule-tree engine |
+| MQ / jobs | Optional lapin + `JOB_CATALOG` | RabbitMQ + XXL-Job handlers |
+| Chatbot | Local echo | Optional OpenAI |
+| MySQL | sqlx full port + `activity_soft_stock` | Same learning schema + ORM |
 
-Java modules remain **legacy**对照. Default demo path is Rust.
+Java application sources are **gone**. Concepts remain in `docs/learning/` and `docs/MICROSERVICES.md` (historical).
 
 ## Remaining depth phases (post M0–M7)
 

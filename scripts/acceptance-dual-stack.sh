@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Java stack removed — dual compare runs Rust-only unless JAVA_API_BASE is set externally.
 # Compare Rust vs Java API contracts when both stacks are reachable.
 # Rust default: http://127.0.0.1:8080/api/v1
 # Java legacy (optional): JAVA_API_BASE e.g. http://127.0.0.1:8098/api/v1

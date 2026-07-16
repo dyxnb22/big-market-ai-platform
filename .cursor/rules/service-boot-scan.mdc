@@ -1,32 +1,9 @@
 ---
-description: Spring Boot scan boundaries for market vs message-job
-globs:
-  - "**/*Application.java"
-  - "**/message/job/**/*.java"
-  - "**/market/**/*.java"
-  - "**/trigger/application/**/*.java"
-  - "**/trigger/adapter/**/*.java"
+description: Historical note — Spring scan boundaries retired with Java
 alwaysApply: false
 ---
 
-# Service boot / component scan
+# Service boot scan (retired)
 
-## market-service (`MarketServiceApplication`)
-
-Must include (directly or via `@Import`):
-
-- `com.dyx.market.trigger.http`, `trigger.rpc`
-- `com.dyx.market.trigger.application`, `trigger.support`, `trigger.adapter` (BM-001)
-- `domain`, `infrastructure`, `com.dyx.market.market`
-
-Must **exclude**: `trigger.job`, `trigger.listener` (owned by message-job).
-
-## message-job-service (`MessageJobServiceApplication`)
-
-Must include: `message.job`, `trigger.job`, `trigger.listener`, `domain`, `infrastructure`, and `trigger.application` (or import services used by consumers/jobs — BM-002).
-
-Must **exclude**: `trigger.http`, `trigger.rpc`.
-
-## Tests
-
-Any scan/`@Import` change needs a `@SpringBootTest` context load for that service. Compilation alone does not catch missing beans.
+Spring `market-service` / `message-job-service` sources were removed.  
+Rust equivalent constraint: **`bm-app` must not** own MQ consumers / credit dispatch — use **`bm-worker`** (`docs/MICROSERVICES-RUST.md`).

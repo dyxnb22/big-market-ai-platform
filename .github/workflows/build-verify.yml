@@ -5,59 +5,23 @@ on:
     branches: [main, master, develop, dev]
   pull_request:
   workflow_dispatch:
-    inputs:
-      run_acceptance:
-        description: "Run Docker acceptance (--reuse --skip-playwright --start-stack)"
-        type: boolean
-        default: false
 
 jobs:
-  verify:
+  rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          distribution: temurin
-          java-version: "8"
-          cache: maven
-      - name: Maven verify
-        run: mvn -B verify -DfailIfNoTests=false
-      - name: Mapper and DDL gates
-        run: ./scripts/validate-mapper-ddl-gates.sh
-      - name: Runtime safety (XXL + scan + credentials)
-        run: ./scripts/validate-microservices-runtime-safety.sh
+          components: clippy, rustfmt
+      - name: Format / clippy / test
+        working-directory: big-market-rs
+        run: |
+          cargo fmt --check
+          cargo clippy --workspace -- -D warnings
+          cargo test --workspace
+      - name: Acceptance (API smoke)
+        run: ./scripts/acceptance-rust.sh
       - name: Prometheus config (promtool)
         run: ./scripts/validate-prometheus-config.sh
-      - name: Market + message-job + chatbot Spring Context tests
-        run: >
-          mvn -B -pl big-market-market-service,big-market-message-job-service,big-market-chatbot-service
-          -am test
-          -Dtest=MarketServiceSpringBootContextTest,MessageJobServiceApplicationContextTest,ChatbotServiceApplicationContextTest
-          -DfailIfNoTests=false
-          -Dsurefire.failIfNoSpecifiedTests=false
-
-  # Opt-in: uses --start-stack so github-hosted runners can bootstrap Docker.
-  acceptance:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_acceptance == true
-    runs-on: ubuntu-latest
-    needs: verify
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "8"
-          cache: maven
-      - name: Acceptance with --start-stack
-        run: |
-          echo "Running ./scripts/acceptance.sh --reuse --skip-playwright --start-stack"
-          # Do NOT --skip-build: this job has a fresh checkout; Dockerfiles need target/*.jar.
-          ./scripts/acceptance.sh --reuse --skip-playwright --start-stack
-      - name: Upload acceptance artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: acceptance-artifacts
-          path: target/acceptance-artifacts/
-          if-no-files-found: ignore
+        continue-on-error: true

@@ -49,10 +49,11 @@ Authoritative doc: [`MICROSERVICES-RUST.md`](./MICROSERVICES-RUST.md).
 
 ## Rollback
 
-Java legacy stack remains in-repo for对照 (except deleted Batch 1 dedicated rebate/strategy launchers — see `rust-refactor/JAVA-DELETION-LEDGER.md`):
+Java application sources are **removed** from this repository (not a runnable rollback path).  
+Infra compose under `docs/dev-ops/` remains for MySQL/Redis/Rabbit.  
+Historical Java architecture notes: [`MICROSERVICES.md`](./MICROSERVICES.md). Deletion ledger: [`../rust-refactor/JAVA-DELETION-LEDGER.md`](../rust-refactor/JAVA-DELETION-LEDGER.md).
 
 ```bash
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
-docker compose up --build -d
-./scripts/acceptance.sh --reuse
+./scripts/run-rust-stack.sh
+./scripts/acceptance-rust.sh
 ```

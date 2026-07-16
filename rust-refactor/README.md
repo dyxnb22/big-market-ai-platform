@@ -1,7 +1,7 @@
 # Big Market → Rust 重构（至替代 Java）
 
 > **目标：** 用 Rust 重写并最终 **替代** 原 Java 微服务默认演示路径，降低内存与延迟，保留业务语义与幂等契约。  
-> **状态：** M0–M7 已在本分支落地（memory 后端 + HTTP 闭环）。详见 [STATUS.md](./STATUS.md)。  
+> **状态：** M0–M7 完成；深度阶段 C–F 完成；**Java 源码已全部删除**（见 [JAVA-DELETION-LEDGER.md](./JAVA-DELETION-LEDGER.md)）。  
 > **默认本地命令：** `./scripts/acceptance-rust.sh`
 
 ## 文档索引

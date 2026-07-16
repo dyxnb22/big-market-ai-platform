@@ -1,19 +1,15 @@
 ---
-description: Follow audit remediation phases; do not skip boot P0
+description: Remediation priority — Rust-first after Java removal
 alwaysApply: true
 ---
 
 # Remediation priority
 
-Source of truth: `docs/audit-remediation-plan.md`.
+Java Spring sources were **removed**. Prefer Rust fixes in `big-market-rs/`.
 
-1. **Phase 1 (P0 boot)** before feature work: BM-001 market scan, BM-002 message-job mapper+scan, BM-003 XXL appname/seed.
-2. **Phase 2**: award dispatch, strategy stock takeover, SKU idempotency, shard routing, stock ACK, remote quota, chat requestId.
-3. **Phase 3**: frontend stage/logout, DCC, ERP atomicity, secure defaults.
-4. **Phase 4**: observability, ArchUnit/mapper single-source — do not block demo fixes.
+1. Money-path / idempotency / outbox correctness (`docs/data-and-outbox.md`, skill `money-path-change`).
+2. Boot / worker / gateway regressions (`bm-app`, `bm-worker`, `bm-gateway`).
+3. MySQL backend (`BM_BACKEND=mysql`) and smoke scripts.
+4. Docs sync when readiness claims change (`docs-sync` skill).
 
-When the user asks to “fix closed loop” without a BM id, start at the earliest incomplete phase in §8 of the plan.
-
-PR slices preferred: `boot-scan-fixers` → `xxl-job-wiring` → money/stock slices → web/DCC → secure-defaults.
-
-Do not expand into market service-split or physical DB-per-service while closing BM items.
+Historical BM-001… plan in `docs/audit-remediation-plan.md` is **clue only** (pre-deletion Java audit). Do not restore Java modules to “fix” BM items unless the user explicitly requests a Java track.

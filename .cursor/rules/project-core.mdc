@@ -5,12 +5,10 @@ alwaysApply: true
 
 # Project core
 
-- **Default stack:** Rust `big-market-rs/` — `bm-gateway` :8080, `bm-app` :8083, `bm-worker` :8085 (modular monolith, **not** 1:1 Java microservices).
-- **Legacy stack:** Spring Boot microservices + Dubbo/Nacos + RabbitMQ + XXL-Job + MySQL + Redis (see `docs/MICROSERVICES.md`).
-- **Rust architecture (authoritative):** `docs/MICROSERVICES-RUST.md`. Agent entry: `AGENTS.md`.
-- Frontend: `big-market-web` static HTML/JS (not React) → `http://127.0.0.1:8080/api/v1`.
+- **Only application stack:** Rust `big-market-rs/` — `bm-gateway` :8080, `bm-app` :8083, optional `bm-worker` :8085 (modular monolith).
+- **Java sources:** removed from the repository (`rust-refactor/JAVA-DELETION-LEDGER.md`). Do not reintroduce Spring/Maven modules unless the user explicitly requests a Java restore.
+- **Architecture (authoritative):** `docs/MICROSERVICES-RUST.md`. Agent entry: `AGENTS.md`.
+- Frontend: `big-market-web` static HTML/JS → `http://127.0.0.1:8080/api/v1`.
 - `bm-app` must **not** register MQ consumers / credit dispatch loops (worker only).
-- Java `market-service` must **not** scan `trigger.job` / `trigger.listener` (message-job only).
 - Doc vs code → trust **code/config/SQL**, then update docs.
-- Prefer domain ports/adapters over cross-domain DAO use.
 - Commit only when the user explicitly asks.

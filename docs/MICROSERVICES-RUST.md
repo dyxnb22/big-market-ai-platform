@@ -5,7 +5,8 @@
 本文档是 **Big Market Rust 轨（`big-market-rs/`）的权威架构入口**。  
 默认本地演示、CI 与前端对接均以此为准。
 
-Java Spring 微服务栈见 [`MICROSERVICES.md`](./MICROSERVICES.md)（**legacy 对照**，非默认路径）。
+历史 Java 说明（源码已删除）：[`MICROSERVICES.md`](./MICROSERVICES.md)。  
+删除台账：[`rust-refactor/JAVA-DELETION-LEDGER.md`](../rust-refactor/JAVA-DELETION-LEDGER.md)。
 
 ## 设计立场：不按 Java 1:1 拆服务
 

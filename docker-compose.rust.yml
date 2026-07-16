@@ -1,16 +1,17 @@
-# Optional Rust stack overlay. Does not replace Java services unless you stop them
-# and point traffic here.
+# Alias of docker-compose.yml — Rust-only stack.
+# Prefer: docker compose up --build -d
+
+# Default stack: Rust modular monolith (bm-gateway + bm-app [+ optional bm-worker]).
 #
 # Host binaries (recommended for learning):
 #   ./scripts/run-rust-stack.sh
-#   BM_BACKEND=mysql BM_MYSQL_URL=mysql://root:123456@127.0.0.1:13306/big_market \
-#     BM_REDIS_URL=redis://127.0.0.1:16379 \
-#     BM_RABBIT_URL=amqp://guest:guest@127.0.0.1:5672/%2f \
-#     ./scripts/run-rust-stack.sh
 #
-# Docker (requires build):
+# Docker (infra must be up first when using mysql/redis/rabbit):
 #   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
-#   docker compose -f docker-compose.rust.yml --profile rust up --build -d
+#   docker compose up --build -d
+#
+# Secure overlay:
+#   docker compose -f docker-compose.yml -f docker-compose.secure.yml up -d
 
 services:
   bm-app:
@@ -33,11 +34,10 @@ services:
       - BM_INITIAL_CREDIT=100.00
       - BM_MYSQL_URL=${BM_MYSQL_URL:-mysql://root:123456@mysql:3306/big_market}
       - BM_REDIS_URL=${BM_REDIS_URL:-redis://redis:6379}
-      - BM_RABBIT_URL=${BM_RABBIT_URL:-amqp://guest:guest@rabbitmq:5672/%2f}
+      - BM_RABBIT_URL=${BM_RABBIT_URL:-}
       - RUST_LOG=info
     volumes:
       - bm-rs-data:/data/bm-rs
-    profiles: ["rust"]
 
   bm-gateway:
     build:
@@ -57,7 +57,6 @@ services:
       - RUST_LOG=info
     depends_on:
       - bm-app
-    profiles: ["rust"]
 
   bm-worker:
     build:
@@ -75,13 +74,13 @@ services:
       - BM_DATA_DIR=/data/bm-rs
       - BM_MYSQL_URL=${BM_MYSQL_URL:-mysql://root:123456@mysql:3306/big_market}
       - BM_REDIS_URL=${BM_REDIS_URL:-redis://redis:6379}
-      - BM_RABBIT_URL=${BM_RABBIT_URL:-amqp://guest:guest@rabbitmq:5672/%2f}
+      - BM_RABBIT_URL=${BM_RABBIT_URL:-}
       - RUST_LOG=info
     volumes:
       - bm-rs-data:/data/bm-rs
+    profiles: ["worker"]
     depends_on:
       - bm-app
-    profiles: ["rust"]
 
 volumes:
   bm-rs-data:

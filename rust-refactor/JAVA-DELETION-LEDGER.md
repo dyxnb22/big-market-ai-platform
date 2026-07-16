@@ -1,57 +1,56 @@
-# Java deletion ledger (safe removals only)
+# Java deletion ledger
 
-**Rule:** Delete a Java path only when Rust (or remaining Java embedded path still required for legacy compose) covers the **demo/learning capability**.  
-Full rule-tree engine / XXL Admin / Nacos / OpenAI / Dubbo stay until explicitly replaced.
+**Rule (historical):** delete only with Rust coverage for the demo path.  
+**Final decision (2026-07-16):** remove **all** Java/Maven application sources. Rust modular monolith is the sole runnable app stack. Capabilities that remain “lite” vs historical Java (full rule-tree graph, XXL Admin, Nacos, OpenAI, Dubbo) are **intentionally out of scope** — documented in [`docs/RUST-LEARNING-FREEZE.md`](../docs/RUST-LEARNING-FREEZE.md) — not reasons to keep Spring sources.
 
-**Date:** 2026-07-16  
-**Batch:** 1 — optional dedicated launchers (never in default `docker-compose.yml`)
+## Batch 1 — optional dedicated launchers
 
-## Batch 1 — deleted
+Deleted `big-market-rebate-service`, `big-market-strategy-service` (see git history `ebeed48`).
 
-### `big-market-rebate-service` (optional :8088)
+## Batch final — complete Java removal
 
-| Deleted path | Rust (or remaining) equivalent | Why safe |
-| --- | --- | --- |
-| `…/RebateServiceApplication.java` | `bm-app` process | Bootstrap only |
-| `…/provider/RebateServiceRPC.java` | `bm_domain::RebateService` + HTTP `calendar_sign_rebate_by_token` / `is_calendar_sign_rebate_by_token`; Java embedded remains in `big-market-trigger/.../RebateServiceRPC.java` | Dedicated Dubbo host duplicate of embedded market provider |
-| `…/config/PrometheusConfiguration.java` | `bm-app` `/metrics` | Metrics wiring |
-| `…/RebateServiceApplicationScanTest.java` | n/a (launcher test) | Module gone |
-| Mapper XML copies (`daily_behavior_rebate_*`, `task_*`, `user_behavior_rebate_order_*`) | `bm-infra` mysql rebate/outbox; originals remain under infrastructure / market-service | Process-local MyBatis copies only |
-| `application*.yml`, `logback*`, `spring-config*`, `pom.xml` | Rust env / `AppConfig` | Config for deleted process |
+Deleted every remaining Maven module and root `pom.xml` / `Dockerfile.service`:
 
-### `big-market-strategy-service` (optional :8089)
-
-| Deleted path | Rust (or remaining) equivalent | Why safe |
-| --- | --- | --- |
-| `…/StrategyServiceApplication.java` | `bm-app` | Bootstrap only |
-| `…/provider/StrategyReadServiceRPC.java` | HTTP `query_raffle_award_list_by_token` + `query_raffle_strategy_rule_weight_by_token`; Java embedded `LocalStrategyReadAdapter` remains | Dedicated Dubbo host duplicate |
-| `…/application/StrategyReadApplicationService.java` | `award_lock_view` + `rule_weight_list_views` + `ParticipationStore` / `StrategyStore` | Same read models on Rust HTTP |
-| `…/port/IStrategyAccountParticipationPort.java` | `ParticipationStore` | Port |
-| `…/port/LocalStrategyAccountParticipationPort.java` | `mysql_participation` / memory `count_draws` | Adapter |
-| `…/StrategyServiceApplicationScanTest.java` | n/a | Module gone |
-| Mapper XML copies (`strategy_*`, `rule_tree_*`) | sqlx `mysql_strategy` (+ award list); **rule-tree engine code stays in `big-market-domain`** | Copies only — engine not deleted |
-| `application*.yml`, `logback*`, `spring-config*`, `pom.xml` | Rust env | Config for deleted process |
-
-## Explicitly NOT deleted (Batch 1)
-
-| Keep | Reason |
+| Removed module | Rust (or doc) replacement |
 | --- | --- |
-| `big-market-domain/**/strategy/service/rule/tree/**` | Full rule-tree **not** in Rust lite |
-| `big-market-domain/**/rebate/**` | Still used by Java market embedded + learning对照 |
-| `big-market-trigger` strategy/rebate adapters & HTTP | Default Java compose still boots market |
-| All other launchers (gateway/auth/admin/…) | Still on Java compose / rollback path |
+| `big-market-gateway` | `bm-gateway` |
+| `big-market-auth-service` | `bm-app` auth (`AuthFacade` / JWT) |
+| `big-market-admin-service` | `bm-app` admin + `platform_config` |
+| `big-market-market-service` | `bm-app` raffle/SKU/ERP/DCC HTTP |
+| `big-market-chatbot-service` | `bm-app` chatbot (local echo) |
+| `big-market-message-job-service` | `bm-worker` + `WorkerScheduler` / `JOB_CATALOG` |
+| `big-market-account-service` | `CreditStore` / `QuotaStore` in-process |
+| `big-market-fulfillment-service` | local credit award path in app/worker |
+| `big-market-trigger` | `bm-app` HTTP + `bm-worker` jobs/consumers |
+| `big-market-domain` | `bm-domain` (lite strategy/rebate/award/…) |
+| `big-market-infrastructure` | `bm-infra` (sqlx / redis / rabbit / memory) |
+| `big-market-api` | `bm-api` DTOs |
+| `big-market-types` | `bm-types` |
+| `big-market-management` | admin config / ENV (no Nacos) |
+| `big-market-starter-*` | Rust middleware / figment / gateway rate limit |
 
-## Next batches (not started)
+**Kept (non-Java):** `big-market-rs/`, `big-market-web/`, `docs/` (incl. SQL + learning guides), Rust scripts, infra compose under `docs/dev-ops/`.
 
-| Batch | Prerequisite | Candidates |
-| --- | --- | --- |
-| 2 | Retire Java compose from CI/rollback OR prove each file | Thin launchers with full HTTP parity (`auth-service`, …) |
-| 3 | Dual-stack dropped | Remaining Spring Boot services |
-| 4 | Explicit “drop Java learning depth” | Rule-tree / XXL / Nacos / Dubbo / OpenAI (archive or delete) |
+## Compose / CI
+
+- Default `docker-compose.yml` → Rust services only.
+- `./scripts/acceptance.sh` → forwards to `acceptance-rust.sh`.
+- GitHub `build-verify.yml` → Cargo + `acceptance-rust.sh`.
+- Former Java smoke/validate scripts → retired stubs or Rust forwards.
+
+## Intentionally not ported 1:1 (do not re-add Java for these)
+
+| Area | Status |
+| --- | --- |
+| Full `rule_tree` engine | Rust lite: weights + `tree_lock_N` + optional chain |
+| XXL-Job Admin / all handlers | `JOB_CATALOG` tick only |
+| Nacos | ENV / `platform_config` |
+| OpenAI chatbot / award | Local echo |
+| Dubbo RPC | In-process traits |
 
 ## Verification
 
 ```bash
 ./scripts/acceptance-rust.sh
-# parent POM no longer lists rebate/strategy modules
+find . -name '*.java'   # expect 0
 ```
