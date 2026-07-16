@@ -36,11 +36,12 @@ BM_RABBIT_URL=amqp://guest:guest@127.0.0.1:5672/%2f \
 ./scripts/run-rust-stack.sh
 ```
 
-Credit + award writes go to MySQL shards; catalog/quota/chat/admin stay on `BM_DATA_DIR/state.json` companion until full schema port.
+All domain stores use sqlx when `BM_BACKEND=mysql` (see [`docs/MICROSERVICES-RUST.md`](docs/MICROSERVICES-RUST.md)).
 
 Details: [`big-market-rs/README.md`](big-market-rs/README.md), roadmap
 [`rust-refactor/ROADMAP.md`](rust-refactor/ROADMAP.md), status
-[`rust-refactor/STATUS.md`](rust-refactor/STATUS.md).
+[`rust-refactor/STATUS.md`](rust-refactor/STATUS.md).  
+**Rust architecture (authoritative):** [`docs/MICROSERVICES-RUST.md`](docs/MICROSERVICES-RUST.md).
 
 ## Legacy Java microservices
 

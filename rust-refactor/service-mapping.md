@@ -1,4 +1,6 @@
-# Java → Rust 服务与模块映射
+# Java → Rust 能力映射（非 1:1 进程克隆）
+
+**架构立场：** Rust 轨采用 **模块化单体 + 2～3 进程**，不按 Java 服务表逐一枚举二进制。权威说明见 [`docs/MICROSERVICES-RUST.md`](../docs/MICROSERVICES-RUST.md)。
 
 终局拓扑与切流见 [ROADMAP.md](./ROADMAP.md) M6–M7；技术栈见 [tech-stack.md](./tech-stack.md)。
 

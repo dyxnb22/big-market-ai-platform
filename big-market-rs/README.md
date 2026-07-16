@@ -4,7 +4,9 @@ Rust rewrite of the Big Market raffle platform. Default backend is **file-backed
 (`BM_DATA_DIR/state.json`, no Docker required). Optional MySQL/Redis/RabbitMQ
 adapters wire through the same domain ports.
 
-## Binaries
+## Architecture
+
+**Default stack:** modular monolith — see [`docs/MICROSERVICES-RUST.md`](../docs/MICROSERVICES-RUST.md) (not a 1:1 Java microservice clone).
 
 | Binary | Port | Role |
 | --- | ---: | --- |

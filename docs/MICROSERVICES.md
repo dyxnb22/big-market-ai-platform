@@ -1,4 +1,7 @@
-# 微服务架构
+# 微服务架构（Java legacy）
+
+> **默认栈已切到 Rust。** 新开发与本地演示请以 [`MICROSERVICES-RUST.md`](./MICROSERVICES-RUST.md) 为准。  
+> 下文描述 **Spring Boot 学习栈**（对照 / 回滚），证据见 `docs/LEARNING-FREEZE.md`。
 
 最后修订：2026-07-11。
 
@@ -6,7 +9,7 @@
 
 **就绪说明：** 默认复用栈已于 2026-07-11 通过完整 acceptance，但 fresh 空卷和完整 secure overlay 未验证，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`；历史 BM 计划不作为当前状态来源。
 
-本文档是当前架构的 authoritative entry point（权威入口文档）。较早的实现说明仅作为历史归档材料保留在 `docs/archive/` 下。
+本文档是 **Java 栈**的架构说明（legacy）。Rust 默认架构见 [`MICROSERVICES-RUST.md`](./MICROSERVICES-RUST.md)。较早的实现说明保留在 `docs/archive/` 下。
 
 ## 服务列表
 
@@ -130,6 +133,7 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 
 ## 文档索引
 
+- [`MICROSERVICES-RUST.md`](./MICROSERVICES-RUST.md) — **默认 Rust 架构（权威）**
 - `docs/learning/README.md` — 最终态学习指南
 - `docs/production-readiness-learning.md` — 学习版就绪性说明
 - `docs/operations-checklist.md` — 本地运维检查清单

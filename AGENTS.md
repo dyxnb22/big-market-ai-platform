@@ -4,14 +4,19 @@ Guidance for Cursor / Codex agents working in this repository.
 
 ## What this repo is
 
-Java microservices **marketing raffle** learning/portfolio project: gateway, auth, admin, market, chatbot, message-job, account, fulfillment, rebate, strategy; shared `domain` / `infrastructure` / `api` / `types` / starters; frontend `big-market-web` (static HTML/JS, not React).
+**Default path:** Rust modular monolith in `big-market-rs/` (gateway + app + worker).  
+**Legacy path:** Java Spring microservices (gateway, auth, admin, market, chatbot, message-job, account, …) for对照 / rollback.
+
+Frontend: `big-market-web` (static HTML/JS, not React).
 
 ## Authoritative docs (read before large changes)
 
 | Doc | Use for |
 | --- | --- |
-| `docs/LEARNING-FREEZE.md` | **Current readiness, verified commands, limits, freeze constraints** |
-| `docs/MICROSERVICES.md` | Architecture entry, service ports, core flows |
+| **`docs/MICROSERVICES-RUST.md`** | **Rust default architecture, ports, flows, limits** |
+| `rust-refactor/STATUS.md` | Rust track readiness and verified commands |
+| `docs/LEARNING-FREEZE.md` | Java stack readiness (conditional freeze 2026-07-11) |
+| `docs/MICROSERVICES.md` | **Java legacy** architecture entry |
 | `docs/audit/2026-07-11-learning-freeze-audit.md` | Current independent audit evidence and P0–P3 findings |
 | `docs/audit-remediation-plan.md` | Historical BM backlog; clue only, not current status |
 | `docs/data-and-outbox.md` | Outbox, idempotency keys, duplicate handling |
@@ -28,22 +33,30 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 - Not verified in that audit: fresh empty volumes, full secure overlay, dedicated rebate/strategy, remote/external awards, production HA/capacity/security.
 - Do not infer current readiness from BM numbers or historical PASS records. Re-run the target working tree and preserve the verified/unverified boundary.
 
-## Service map (default ports)
+## Service map (Rust default)
+
+| Process | Port | Owns |
+| --- | ---: | --- |
+| `bm-gateway` | 8080 | Routing, rate limit, health |
+| `bm-app` | 8083 | Auth, raffle, chat, admin/DCC, embedded worker (default) |
+| `bm-worker` | 8085 | Outbox dispatch, rebate/chat reconcile, stock flush (optional standalone) |
+
+Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://127.0.0.1:8080/api/v1`.
+
+## Service map (Java legacy)
 
 | Service | Port | Owns |
 | --- | ---: | --- |
 | gateway | 8080 | Routing, CB fallback |
 | auth | 8081 | JWT login/verify/logout |
 | admin | 8082 | Platform config / Nacos |
-| market | 8083 | Raffle/activity HTTP + embedded rebate/strategy providers by default |
+| market | 8083 | Raffle HTTP + embedded rebate/strategy |
 | chatbot | 8084 | Chat + credit charge |
 | message-job | 8085 | MQ consumers + XXL-Job |
 | account | 8086 | Credit/quota RPC |
-| fulfillment | 8087 | Award fulfillment RPC (optional remote; default credit path uses message-job outbox) |
-| rebate | 8088 | Dedicated rebate (optional; often embedded in market) |
-| strategy | 8089 | Dedicated strategy (optional; often embedded in market) |
-
-Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://127.0.0.1:8080/api/v1`.
+| fulfillment | 8087 | Award fulfillment RPC (optional) |
+| rebate | 8088 | Dedicated rebate (optional) |
+| strategy | 8089 | Dedicated strategy (optional) |
 
 ## Cursor project assets
 
@@ -55,23 +68,24 @@ Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://1
 
 1. Prefer the smallest change that fixes the stated bug; the historical BM phase order is not an active backlog.
 2. Money-like paths (credit, quota, award, rebate, SKU/award stock): preserve idempotency keys; see skill `money-path-change`.
-3. `market-service` must **not** scan `trigger.job` / `trigger.listener`; those belong to `message-job-service`.
-4. Mapper XML is copied per launcher — change one service’s copy carefully; avoid duplicate MyBatis statement ids.
-5. XXL executor `appname` must match `docs/dev-ops/mysql/sql/xxl_job.sql` group; new `@XxlJob` needs a deliberate seed/status and an executor-registration check.
-6. Verification: never trust a static validator or health endpoint alone. Prefer Context tests + `acceptance.sh`, including the real raffle-award E2E.
+3. **`bm-app` must not** register MQ consumers or credit-dispatch loops — those belong in **`bm-worker`** (see `docs/MICROSERVICES-RUST.md`).
+4. Java `market-service` must **not** scan `trigger.job` / `trigger.listener`; those belong to `message-job-service`.
+5. Java mapper XML is copied per launcher — change one service’s copy carefully; avoid duplicate MyBatis statement ids.
+6. Verification: Rust — `acceptance-rust.sh`; Java — Context tests + `acceptance.sh --reuse`.
 7. Commit only when the user asks.
 
 ## Useful commands
 
 ```bash
+# Rust (default)
+./scripts/run-rust-stack.sh
+./scripts/acceptance-rust.sh
+./scripts/acceptance-rust.sh --e2e
+
+# Java (legacy)
 mvn clean package -DskipTests
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 docker compose up --build -d
-./scripts/validate-microservices-stack.sh
-./scripts/smoke-test-microservices.sh
-./scripts/smoke-api.sh
-./scripts/smoke-raffle-award-e2e.sh
 ./scripts/acceptance.sh --reuse
 ./scripts/web-start.sh
-npm test
 ```

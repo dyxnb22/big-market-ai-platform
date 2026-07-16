@@ -1,3 +1,5 @@
+mod scheduler;
+
 use anyhow::Context;
 use axum::{routing::get, Json, Router};
 use bm_domain::{AwardDispatchService, ChatBillingService, RebateService, SendAwardMessage};
@@ -128,29 +130,16 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(not(feature = "rabbit"))]
     let _ = rabbit_url;
 
-    let d = dispatch.clone();
-    let r = rebate.clone();
-    let c = chat.clone();
-    let poll = cfg.poll_secs;
-    let stock = stores.stock.clone();
-    let rabbit_flag = rabbit_active.clone();
-    tokio::spawn(async move {
-        loop {
-            if !rabbit_flag.load(Ordering::SeqCst) {
-                let _ = d.consume_send_award(50).await;
-                let _ = r.consume_rebate(50).await;
-            }
-            let _ = d.dispatch_pending(50).await;
-            let _ = c.reconcile_pending(20).await;
-            if let Ok(dirty) = bm_domain::StockStore::list_dirty(stock.as_ref()).await {
-                if !dirty.is_empty() {
-                    let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
-                    let _ = bm_domain::StockStore::clear_dirty(stock.as_ref(), &keys).await;
-                }
-            }
-            tokio::time::sleep(Duration::from_secs(poll)).await;
-        }
-    });
+    let rabbit_for_scheduler = rabbit_active.clone();
+    scheduler::WorkerScheduler {
+        dispatch,
+        rebate,
+        chat,
+        stock: stores.stock.clone(),
+        rabbit_active: rabbit_for_scheduler,
+        poll_secs: cfg.poll_secs,
+    }
+    .spawn();
 
     let app = Router::new()
         .route(
