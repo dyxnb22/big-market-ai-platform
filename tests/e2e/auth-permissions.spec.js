@@ -174,12 +174,11 @@ test("login redirect param only allows same-origin destinations", async ({ page 
   await page.locator("#loginBtn").click();
   await expect(page).toHaveURL(/\/index\.html\?from=login/);
 
-  // Logout to reset state for next test
-  await page.evaluate(() => { localStorage.clear(); location.reload(); });
-  await page.waitForLoadState("networkidle");
-
-  await page.goto("/index.html");
-  await expect(page.locator("#landingView")).toBeVisible();
+  // Logout to reset state for next test (real logout — survives bfcache)
+  await page.locator("#userMenuBtn").click();
+  await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
+  await page.locator("#logoutBtn").click();
+  await expect(page.locator("#landingView")).toBeVisible({ timeout: 10000 });
 
   // External URL param is ignored — falls back to index.html
   await page.goto("/login.html?redirect=http://evil.com");
@@ -191,6 +190,10 @@ test("login redirect param only allows same-origin destinations", async ({ page 
 });
 
 test("frontend assets are cache-safe and legacy 8098 API remains compatible", async ({ request, baseURL }) => {
+  test.skip(
+    process.env.E2E_STACK === "rust",
+    "Rust default stack does not expose Java legacy :8098 direct port"
+  );
   const login = await request.get("/login.html");
   await expect(login).toBeOK();
   expect(login.headers()["cache-control"]).toContain("no-store");

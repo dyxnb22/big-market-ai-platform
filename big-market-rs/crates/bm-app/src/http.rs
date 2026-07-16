@@ -6,7 +6,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use bm_api::*;
 use bm_domain::DEFAULT_ACTIVITY_ID;
-use bm_types::{ApiResponse, BmError, CODE_LOGIN_ERROR, INFO_LOGIN_ERROR};
+use bm_types::{ApiResponse, BmError, CODE_LOGIN_ERROR, CODE_PERMISSION_DENIED, INFO_LOGIN_ERROR};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -194,6 +194,13 @@ async fn draw_by_token(
         Ok(u) => u,
         Err(r) => return r,
     };
+    if let Ok(ms) = std::env::var("BM_DEV_SLOW_DRAW_MS") {
+        if let Ok(n) = ms.parse::<u64>() {
+            if n > 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(n)).await;
+            }
+        }
+    }
     match state.raffle.draw(&user, req.activity_id).await {
         Ok(d) => Json(ApiResponse::ok(ActivityDrawResponse {
             award_id: d.award_id,
@@ -481,7 +488,7 @@ async fn admin_list(
     if user != "admin" {
         return (
             StatusCode::FORBIDDEN,
-            Json(ApiResponse::<Vec<AdminConfigResponse>>::err("0001", "forbidden")),
+            Json(ApiResponse::<Vec<AdminConfigResponse>>::err(CODE_PERMISSION_DENIED, "forbidden")),
         )
             .into_response();
     }
@@ -524,7 +531,7 @@ async fn admin_get(
     if user != "admin" {
         return (
             StatusCode::FORBIDDEN,
-            Json(ApiResponse::<AdminConfigResponse>::err("0001", "forbidden")),
+            Json(ApiResponse::<AdminConfigResponse>::err(CODE_PERMISSION_DENIED, "forbidden")),
         )
             .into_response();
     }
@@ -554,7 +561,7 @@ async fn admin_save(
     if user != "admin" {
         return (
             StatusCode::FORBIDDEN,
-            Json(ApiResponse::<AdminConfigResponse>::err("0001", "forbidden")),
+            Json(ApiResponse::<AdminConfigResponse>::err(CODE_PERMISSION_DENIED, "forbidden")),
         )
             .into_response();
     }
@@ -583,7 +590,7 @@ async fn admin_save_legacy(
     if user != "admin" {
         return (
             StatusCode::FORBIDDEN,
-            Json(ApiResponse::<bool>::err("0001", "forbidden")),
+            Json(ApiResponse::<bool>::err(CODE_PERMISSION_DENIED, "forbidden")),
         )
             .into_response();
     }
@@ -605,7 +612,7 @@ async fn admin_delete(
     if user != "admin" {
         return (
             StatusCode::FORBIDDEN,
-            Json(ApiResponse::<bool>::err("0001", "forbidden")),
+            Json(ApiResponse::<bool>::err(CODE_PERMISSION_DENIED, "forbidden")),
         )
             .into_response();
     }

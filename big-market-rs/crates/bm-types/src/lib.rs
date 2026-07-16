@@ -7,6 +7,7 @@ use thiserror::Error;
 pub const CODE_SUCCESS: &str = "0000";
 pub const CODE_FAIL: &str = "0001";
 pub const CODE_ILLEGAL_PARAM: &str = "0002";
+pub const CODE_PERMISSION_DENIED: &str = "0008";
 pub const CODE_LOGIN_ERROR: &str = "0009";
 pub const CODE_CREDIT_INSUFFICIENT: &str = "ERR_CREDIT_001";
 

@@ -58,5 +58,6 @@ Seeded: activity `100401`, SKU `9901` (5 credits → 1 draw), deterministic awar
 | `BM_REDIS_URL` | unset |
 | `BM_RABBIT_URL` | unset (enables `bm.send_award` / `bm.send_rebate` in `bm-worker`) |
 | `BM_SECURE` | `0` (set `1` to reject default JWT/internal token) |
+| `BM_DEV_SLOW_DRAW_MS` | unset (E2E sets `300` so Playwright can observe draw UI) |
 | `BM_GW_PORT` | 8080 |
 | `BM_GW_APP_URL` | `http://127.0.0.1:8083` |

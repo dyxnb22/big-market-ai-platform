@@ -105,6 +105,20 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
     inner.admin.insert("activity.100401::copy".into(), "登录参与抽奖，AI 帮你解读活动权益。".into());
     inner.admin.insert("activity.100401::state".into(), "online".into());
     inner.admin.insert("chatbot::enabled".into(), "true".into());
+    // Demo draw quota (aligns with E2E / learning freeze expectations).
+    let demo_quota = ActivityAccount {
+        user_id: "xiaofuge".into(),
+        activity_id: 100401,
+        total_count: 10,
+        total_count_surplus: 10,
+        day_count: 10,
+        day_count_surplus: 10,
+        month_count: 10,
+        month_count_surplus: 10,
+    };
+    inner
+        .quotas
+        .insert(quota_key("xiaofuge", 100401), demo_quota);
 }
 
 #[async_trait]
