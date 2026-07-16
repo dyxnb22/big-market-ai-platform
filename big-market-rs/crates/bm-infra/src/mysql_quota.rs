@@ -18,11 +18,6 @@ impl MysqlStores {
         Utc::now().format("%Y-%m-%d").to_string()
     }
 
-    fn is_duplicate_key(err: &sqlx::Error) -> bool {
-        err.as_database_error()
-            .is_some_and(|e| e.is_unique_violation())
-    }
-
     async fn load_account(
         &self,
         schema: &str,
@@ -394,7 +389,7 @@ impl QuotaStore for MysqlStores {
             .execute(&mut *tx)
             .await
         {
-            if Self::is_duplicate_key(&e) {
+            if MysqlStores::is_duplicate_key(&e) {
                 tx.rollback()
                     .await
                     .map_err(|e| BmError::Internal(e.to_string()))?;
@@ -493,7 +488,7 @@ impl QuotaStore for MysqlStores {
             .await
         {
             Ok(_) => {}
-            Err(e) if Self::is_duplicate_key(&e) => {
+            Err(e) if MysqlStores::is_duplicate_key(&e) => {
                 tx.commit()
                     .await
                     .map_err(|e| BmError::Internal(e.to_string()))?;

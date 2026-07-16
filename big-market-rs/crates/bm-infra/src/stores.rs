@@ -23,7 +23,6 @@ pub struct ServiceStores {
 
 impl ServiceStores {
     pub fn from_bootstrapped(boot: &Bootstrapped) -> Self {
-        let mem = boot.memory.backend.clone();
         match &boot.kind {
             #[cfg(feature = "mysql")]
             BackendKind::Mysql(mysql, _) => Self {
@@ -34,14 +33,13 @@ impl ServiceStores {
                 catalog: mysql.clone(),
                 admin: mysql.clone(),
                 stages: mysql.clone(),
-                // Stock/strategy/rebate outbox stay on file companion until full MySQL port.
-                rebate: mem.clone(),
-                stock: mem.clone(),
-                orders: mem.clone(),
-                strategy: mem.clone(),
-                outbox: mem.clone(),
+                stock: mysql.clone(),
+                strategy: mysql.clone(),
+                rebate: mysql.clone(),
+                orders: mysql.clone(),
+                outbox: mysql.clone(),
             },
-            _ => Self::all_memory(mem),
+            _ => Self::all_memory(boot.memory.backend.clone()),
         }
     }
 

@@ -5,11 +5,17 @@ on:
     paths:
       - "big-market-rs/**"
       - "scripts/*rust*"
+      - "scripts/acceptance-dual-stack.sh"
+      - "scripts/smoke-rust-mysql.sh"
+      - "docs/dev-ops/mysql/sql/z-reconcile-tables.sql"
       - ".github/workflows/rust.yml"
   pull_request:
     paths:
       - "big-market-rs/**"
       - "scripts/*rust*"
+      - "scripts/acceptance-dual-stack.sh"
+      - "scripts/smoke-rust-mysql.sh"
+      - "docs/dev-ops/mysql/sql/z-reconcile-tables.sql"
       - ".github/workflows/rust.yml"
 
 jobs:
@@ -44,3 +50,25 @@ jobs:
         run: cargo build --release -p bm-app -p bm-gateway
       - name: Playwright E2E (Rust)
         run: ./scripts/acceptance-rust-e2e.sh
+
+  mysql-smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Start MySQL (dev init SQL)
+        run: |
+          docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql
+          for i in $(seq 1 60); do
+            if docker exec mysql mysqladmin ping -h localhost -uroot -p123456 --silent 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          docker exec mysql mysqladmin ping -h localhost -uroot -p123456
+      - name: Build Rust binaries
+        working-directory: big-market-rs
+        run: cargo build --release -p bm-app -p bm-gateway
+      - name: MySQL backend smoke
+        run: ./scripts/smoke-rust-mysql.sh

@@ -31,4 +31,11 @@ docker compose -f docker-compose.rust.yml --profile rust up --build -d
 
 ## 完成标准对照
 
-见 `STATUS.md` 与 `ROADMAP.md` D1–D7。当前默认演示与 CI 友好路径为 Rust memory 栈；与 Java 共享 MySQL 的生产级双跑需后续启用 `mysql`/`redis` features。
+见 `STATUS.md` 与 `ROADMAP.md` D1–D7。默认演示与 CI 路径为 Rust file 栈；`BM_BACKEND=mysql` 可走完整 sqlx 存储（CI `mysql-smoke` job）。
+
+```bash
+BM_BACKEND=mysql BM_MYSQL_URL=mysql://root:123456@127.0.0.1:13306/big_market ./scripts/run-rust-stack.sh
+./scripts/smoke-rust-mysql.sh
+# 可选：Java 对照（需 Java 栈在 JAVA_API_BASE）
+JAVA_API_BASE=http://127.0.0.1:8098/api/v1 ./scripts/acceptance-dual-stack.sh
+```

@@ -3,15 +3,15 @@
 
 use async_trait::async_trait;
 use bm_domain::{
-    AwardStore, AwardTaskState, CreditAwardTask, CreditOrder, CreditStore, SendAwardMessage,
-    TradeType, UserAwardRecord,
+    AwardStore, AwardTaskState, CreditAwardTask, CreditOrder, CreditStore, RebateMessage,
+    SendAwardMessage, TradeType, UserAwardRecord,
 };
 use bm_types::{BmError, Money};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool, Row};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -23,6 +23,11 @@ pub struct MysqlStores {
     pub router: DbRouter,
     /// Chat idempotent response cache (aligns Java Redis `chat:request:{userId}:{requestId}`).
     pub chat_idem: Arc<Mutex<HashMap<String, Decimal>>>,
+    /// Activity-level soft stock (not in DB); flushed/cleared by worker.
+    pub activity_stocks: Arc<Mutex<HashMap<i64, i64>>>,
+    pub dirty_activity_stocks: Arc<Mutex<HashSet<i64>>>,
+    /// Local rebate outbox before optional RabbitMQ publish.
+    pub rebate_outbox: Arc<Mutex<VecDeque<RebateMessage>>>,
 }
 
 impl MysqlStores {
@@ -36,6 +41,9 @@ impl MysqlStores {
             pool,
             router: DbRouter::default(),
             chat_idem: Arc::new(Mutex::new(HashMap::new())),
+            activity_stocks: Arc::new(Mutex::new(HashMap::new())),
+            dirty_activity_stocks: Arc::new(Mutex::new(HashSet::new())),
+            rebate_outbox: Arc::new(Mutex::new(VecDeque::new())),
         }))
     }
 
@@ -50,6 +58,11 @@ impl MysqlStores {
     /// Shared catalog tables (`raffle_activity_sku`, `raffle_activity_stage`, …).
     pub(crate) fn catalog_schema(&self) -> &'static str {
         "big_market"
+    }
+
+    pub(crate) fn is_duplicate_key(err: &sqlx::Error) -> bool {
+        err.as_database_error()
+            .is_some_and(|e| e.is_unique_violation())
     }
 }
 

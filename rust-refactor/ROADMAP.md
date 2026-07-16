@@ -236,4 +236,4 @@ M3/M4 可部分并行（例如 Chat 与 Admin），但 **M5 前必须齐活**。
 | `big-market-rs/` 代码 | ✅ M0–M7 + frontend API parity |
 | 默认演示路径 | ✅ Rust（`acceptance-rust.sh` / README） |
 | Java | ✅ 保留为 legacy 对照（未删模块） |
-| 可选后续 | Playwright vs Rust、bench 数字、full MySQL schema |
+| 可选后续 | OpenAI chatbot、完整 XXL-Job、Java rule-tree lock 引擎 |

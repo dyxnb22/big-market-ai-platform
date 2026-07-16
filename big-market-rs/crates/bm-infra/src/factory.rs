@@ -56,15 +56,13 @@ pub async fn bootstrap(cfg: &RuntimeConfig) -> Result<Bootstrapped, BmError> {
                     .as_deref()
                     .ok_or_else(|| BmError::IllegalParam("BM_MYSQL_URL required".into()))?;
                 let mysql = crate::mysql_store::MysqlStores::connect(url).await?;
-                // Catalog/quota/chat still use memory/file companion for learning demos.
-                let path = cfg.data_dir.join("state.json");
-                let mem = SharedMemory::load_or_seed(&path, initial).await?;
+                let mem = SharedMemory::seeded(initial);
                 let revocation = resolve_revocation(cfg, mem.backend.clone()).await;
                 Ok(Bootstrapped {
                     kind: BackendKind::Mysql(mysql, mem.clone()),
                     memory: mem,
                     revocation,
-                    persist_path: Some(path),
+                    persist_path: None,
                 })
             }
             #[cfg(not(feature = "mysql"))]
@@ -126,15 +124,15 @@ pub fn spawn_persist_loop(memory: SharedMemory, path: PathBuf, every_ms: u64) {
     });
 }
 
-pub fn spawn_stock_flush_loop(memory: SharedMemory, every_secs: u64) {
+pub fn spawn_stock_flush_loop(stock: Arc<dyn StockStore>, every_secs: u64) {
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(every_secs)).await;
-            match memory.backend.list_dirty().await {
+            match stock.list_dirty().await {
                 Ok(dirty) if !dirty.is_empty() => {
-                    tracing::info!(count = dirty.len(), "stock flush (memory/file mark clean)");
+                    tracing::debug!(count = dirty.len(), "stock flush mark clean");
                     let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
-                    let _ = memory.backend.clear_dirty(&keys).await;
+                    let _ = stock.clear_dirty(&keys).await;
                 }
                 _ => {}
             }

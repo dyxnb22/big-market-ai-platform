@@ -39,10 +39,10 @@ async fn main() -> anyhow::Result<()> {
     if let Some(path) = &boot.persist_path {
         spawn_persist_loop(boot.memory.clone(), path.clone(), 500);
     }
-    spawn_stock_flush_loop(boot.memory.clone(), 5);
 
     let revocation = boot.revocation.clone();
     let state = AppState::from_bootstrapped(cfg.clone(), &boot, revocation);
+    spawn_stock_flush_loop(state.stock.clone(), 5);
 
     let recorder = metrics_exporter_prometheus::PrometheusBuilder::new()
         .install_recorder()

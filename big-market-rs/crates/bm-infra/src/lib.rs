@@ -24,6 +24,18 @@ pub mod mysql_catalog;
 #[cfg(feature = "mysql")]
 pub mod mysql_admin;
 
+#[cfg(feature = "mysql")]
+pub mod mysql_strategy;
+
+#[cfg(feature = "mysql")]
+pub mod mysql_stock;
+
+#[cfg(feature = "mysql")]
+pub mod mysql_rebate;
+
+#[cfg(feature = "mysql")]
+pub mod mysql_orders;
+
 #[cfg(feature = "rabbit")]
 pub mod rabbit;
 
