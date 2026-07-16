@@ -2,6 +2,7 @@
 
 | File | Purpose |
 | --- | --- |
+| [LEARNING-FREEZE.md](./LEARNING-FREEZE.md) | Freeze status & verified commands |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Processes & crates |
 | [FLOWS.md](./FLOWS.md) | Product flows |
 | [DATA.md](./DATA.md) | Idempotency / outbox |

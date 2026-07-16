@@ -371,8 +371,10 @@ impl AwardStore for MemoryBackend {
     ) -> Result<(), BmError> {
         let mut g = self.inner.lock().await;
         if let Some(t) = g.credit_tasks.get_mut(award_order_id) {
+            if state == AwardTaskState::Failed {
+                t.retry_count += 1;
+            }
             t.state = state;
-            t.retry_count += 1;
         }
         Ok(())
     }

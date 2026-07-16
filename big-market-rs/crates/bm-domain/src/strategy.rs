@@ -481,6 +481,8 @@ mod tests {
 
     #[test]
     fn chain_blacklist_forces_award() {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
         std::env::set_var("BM_STRATEGY_CHAIN", "1");
         std::env::set_var("BM_RULE_BLACKLIST", "203:xiaofuge");
         let w = default_stage_weights(100402);

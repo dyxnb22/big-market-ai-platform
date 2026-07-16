@@ -22,7 +22,10 @@ draw → send_award message (local queue / Rabbit)
 
 When Rabbit is active, worker publishes/consumes queues and skips local outbox consume in the same tick.
 
-Query: `POST /api/v1/raffle/activity/query_credit_award_task_by_token` `{ "awardOrderId": "..." }`.
+**MySQL note:** `enqueue_send_award_message` may write `credit_award_task` directly (no local `send_award` queue). File/memory backends keep the two-step queue → ingest path. Chat deduct idempotency under MySQL is in-process for this freeze (restart can replay the same `requestId`); file/memory persist session maps.
+
+Query: `POST /api/v1/raffle/activity/query_credit_award_task_by_token` `{ "awardOrderId": "..." }`  
+States: `pending` | `dispatched` | `failed` | `missing`.
 
 ## Stock
 

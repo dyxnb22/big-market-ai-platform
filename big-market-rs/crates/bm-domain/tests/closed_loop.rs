@@ -2,7 +2,7 @@
 
 use bm_domain::*;
 use bm_infra::SharedMemory;
-use bm_types::money;
+use bm_types::{money, BmError};
 
 #[tokio::test]
 async fn raffle_award_credit_closed_loop() {
@@ -271,4 +271,37 @@ async fn lock_demo_activity_filters_pool() {
         .any(|r| r == "tree_lock"));
     assert_eq!(draw.strategy_trace.pool_before, 4);
     assert_eq!(draw.strategy_trace.pool_after, 2);
+}
+
+#[tokio::test]
+async fn stock_exhaustion_does_not_consume_quota() {
+    let mem = SharedMemory::seeded(money("100.00"));
+    let backend = mem.backend.clone();
+    let raffle = RaffleService {
+        catalog: backend.clone(),
+        quota: backend.clone(),
+        credit: backend.clone(),
+        award: backend.clone(),
+        strategy: backend.clone(),
+        stock: backend.clone(),
+        participation: backend.clone(),
+    };
+    raffle.armory(100401).await.unwrap();
+    backend
+        .set_stock(&award_stock_key(101), 0)
+        .await
+        .unwrap();
+    let before = raffle
+        .query_account("xiaofuge", 100401)
+        .await
+        .unwrap()
+        .total_count_surplus;
+    let err = raffle.draw("xiaofuge", 100401).await.unwrap_err();
+    assert!(matches!(err, BmError::IllegalParam(_)));
+    let after = raffle
+        .query_account("xiaofuge", 100401)
+        .await
+        .unwrap()
+        .total_count_surplus;
+    assert_eq!(before, after);
 }

@@ -33,6 +33,7 @@ API: `http://127.0.0.1:8080/api/v1`
 
 | Doc | Content |
 | --- | --- |
+| [`docs/LEARNING-FREEZE.md`](docs/LEARNING-FREEZE.md) | **Freeze status, verified cmds, honesty bounds** |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Processes, crates, strategy lite chain |
 | [`docs/FLOWS.md`](docs/FLOWS.md) | Business flows |
 | [`docs/DATA.md`](docs/DATA.md) | Idempotency & outbox |

@@ -34,6 +34,12 @@ impl CatalogStore for MysqlStores {
             .await
             .map_err(|e| BmError::Internal(e.to_string()))?;
         row.map(|r| r.get::<i64, _>("activity_id"))
+            .or(match (channel, source) {
+                // Demo stage fallbacks when SQL seed is absent (file/mysql interview path).
+                ("c01", "s01") => Some(100401),
+                ("c02", "s02") => Some(100402),
+                _ => None,
+            })
             .ok_or_else(|| BmError::NotFound("stage activity missing".into()))
     }
 

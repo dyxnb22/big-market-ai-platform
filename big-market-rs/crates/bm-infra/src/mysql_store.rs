@@ -217,22 +217,24 @@ impl AwardStore for MysqlStores {
     async fn save_award_record(&self, record: UserAwardRecord) -> Result<(), BmError> {
         let schema = self.schema(&record.user_id);
         let tb = self.tb(&record.user_id);
-        // Best-effort upsert into user_award_record shard if table exists.
+        // Learning schema requires strategy_id + award_time; use activity_id as strategy stand-in.
         let sql = format!(
             "INSERT INTO `{schema}`.user_award_record_{tb:03} \
-             (user_id, activity_id, order_id, award_id, award_title, award_state) \
-             VALUES (?, ?, ?, ?, ?, ?) \
+             (user_id, activity_id, strategy_id, order_id, award_id, award_title, award_time, award_state) \
+             VALUES (?, ?, ?, ?, ?, ?, NOW(), ?) \
              ON DUPLICATE KEY UPDATE award_state = VALUES(award_state), award_title = VALUES(award_title)"
         );
-        let _ = sqlx::query(&sql)
+        sqlx::query(&sql)
             .bind(&record.user_id)
+            .bind(record.activity_id)
             .bind(record.activity_id)
             .bind(&record.order_id)
             .bind(record.award_id)
             .bind(&record.award_title)
             .bind(&record.award_state)
             .execute(&self.pool)
-            .await;
+            .await
+            .map_err(|e| BmError::Internal(e.to_string()))?;
         Ok(())
     }
 
@@ -367,11 +369,19 @@ impl AwardStore for MysqlStores {
             AwardTaskState::Dispatched => "dispatched",
             AwardTaskState::Failed => "failed",
         };
-        let sql = format!(
-            "UPDATE `{schema}`.credit_award_task_{tb:03} \
-             SET state = ?, retry_count = retry_count + 1, update_time = NOW() \
-             WHERE user_id = ? AND award_order_id = ?"
-        );
+        let sql = if matches!(state, AwardTaskState::Failed) {
+            format!(
+                "UPDATE `{schema}`.credit_award_task_{tb:03} \
+                 SET state = ?, retry_count = retry_count + 1, update_time = NOW() \
+                 WHERE user_id = ? AND award_order_id = ?"
+            )
+        } else {
+            format!(
+                "UPDATE `{schema}`.credit_award_task_{tb:03} \
+                 SET state = ?, update_time = NOW() \
+                 WHERE user_id = ? AND award_order_id = ?"
+            )
+        };
         sqlx::query(&sql)
             .bind(st)
             .bind(user_id)

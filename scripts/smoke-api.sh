@@ -82,6 +82,9 @@ DRAW="$(curl -fsS -X POST "$API/raffle/activity/draw_by_token" \
 [ "$(printf '%s' "$DRAW" | json_field "d['data']['awardId']")" = "101" ] || fail "draw: $DRAW"
 ORDER_ID="$(printf '%s' "$DRAW" | json_field "d['data']['orderId']")"
 [ -n "$ORDER_ID" ] || fail "draw missing orderId: $DRAW"
+[ "$(printf '%s' "$DRAW" | json_field "len(d['data']['orderId'])")" = "12" ] || fail "orderId len: $DRAW"
+POOL_BEFORE="$(printf '%s' "$DRAW" | json_field "d['data']['strategyTrace']['poolBefore']")"
+[ "$POOL_BEFORE" = "1" ] || fail "strategyTrace: $DRAW"
 pass "draw award 101"
 
 # wait for embedded worker to credit
@@ -104,6 +107,12 @@ TASK="$(curl -fsS -X POST "$API/raffle/activity/query_credit_award_task_by_token
 [ "$(printf '%s' "$TASK" | json_field "d['code']")" = "0000" ] || fail "credit task: $TASK"
 [ "$(printf '%s' "$TASK" | json_field "d['data']['state']")" = "dispatched" ] || fail "credit task state: $TASK"
 pass "credit award task dispatched by orderId"
+
+MISSING="$(curl -fsS -X POST "$API/raffle/activity/query_credit_award_task_by_token" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"awardOrderId":"missing000001"}')"
+[ "$(printf '%s' "$MISSING" | json_field "d['data']['state']")" = "missing" ] || fail "missing task: $MISSING"
+pass "credit award task missing state"
 
 CHAT_REQ="chat-$REQ"
 DED="$(curl -fsS -X POST "$API/raffle/activity/chat_credit_deduct_by_token?amount=2&requestId=$CHAT_REQ" \

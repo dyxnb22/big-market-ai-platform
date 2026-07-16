@@ -88,11 +88,6 @@ impl RaffleService {
     }
 
     pub async fn draw(&self, user_id: &str, activity_id: i64) -> Result<DrawResult, BmError> {
-        let consume_no = format!("draw_{user_id}_{activity_id}_{}", Uuid::new_v4());
-        self.quota
-            .consume_one(user_id, activity_id, &consume_no)
-            .await?;
-
         let prior_draws = self
             .participation
             .count_draws(user_id, activity_id)
@@ -106,7 +101,7 @@ impl RaffleService {
         )
         .ok_or_else(|| BmError::Internal("no award weight".into()))?;
 
-        // Stock gate (soft): refuse if award stock exhausted.
+        // Stock gate before quota consume — exhausted stock must not burn a chance.
         let ak = award_stock_key(picked.award_id);
         if !self.stock.decr_stock(&ak, 1).await? {
             return Err(BmError::IllegalParam("奖品库存不足".into()));
@@ -116,10 +111,16 @@ impl RaffleService {
             .decr_stock(&activity_stock_key(activity_id), 1)
             .await;
 
+        let consume_no = format!("draw_{user_id}_{activity_id}_{}", Uuid::new_v4());
+        self.quota
+            .consume_one(user_id, activity_id, &consume_no)
+            .await?;
+
         let award_id = picked.award_id;
         let award_title = picked.award_title;
         let award_index = picked.award_index;
-        let order_id = Uuid::new_v4().to_string();
+        // Compact id fits legacy MySQL `order_id varchar(12)` and remains unique enough for demo.
+        let order_id = Uuid::new_v4().simple().to_string()[..12].to_string();
         let credit_amount = picked.credit_amount;
 
         self.award

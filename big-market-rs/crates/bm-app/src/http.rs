@@ -259,7 +259,13 @@ async fn query_credit_award_task(
             }))
             .into_response()
         }
-        Ok(None) => Json(ApiResponse::<()>::ok_empty()).into_response(),
+        Ok(None) => Json(ApiResponse::ok(CreditAwardTaskResponse {
+            award_order_id: req.award_order_id,
+            credit_amount: Decimal::ZERO,
+            state: "missing".into(),
+            retry_count: 0,
+        }))
+        .into_response(),
         Err(e) => err_response(e),
     }
 }
@@ -357,7 +363,7 @@ async fn sign_in(State(state): State<AppState>, headers: HeaderMap) -> impl Into
             message: if signed_today {
                 "今日已签到".into()
             } else {
-                "签到成功".into()
+                "签到成功，+1 积分".into()
             },
         }))
         .into_response(),

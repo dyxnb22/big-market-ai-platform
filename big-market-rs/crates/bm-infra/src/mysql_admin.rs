@@ -11,9 +11,17 @@ fn default_admin_value(key: &str) -> Option<String> {
     match key {
         "chatbot::enabled" => Some("true".into()),
         "activity.100401::title" => Some("幸运轮盘活动".into()),
-        "activity.100401::copy" => Some("登录参与抽奖，AI 帮你解读活动权益。".into()),
+        "activity.100401::copy" => {
+            Some("登录参与抽奖；对话计费真实，回复为本地 echo。".into())
+        }
         "activity.100401::state" => Some("online".into()),
+        "activity.100402::title" => Some("锁奖演示活动".into()),
+        "activity.100402::copy" => {
+            Some("多权重奖池 + tree_lock 解锁；用于面试演示规则链。".into())
+        }
+        "activity.100402::state" => Some("online".into()),
         "stage.activity.c01.s01" => Some("100401".into()),
+        "stage.activity.c02.s02" => Some("100402".into()),
         _ => None,
     }
 }
@@ -65,9 +73,19 @@ impl AdminStore for MysqlStores {
         for (k, v) in [
             ("chatbot::enabled", "true"),
             ("activity.100401::title", "幸运轮盘活动"),
-            ("activity.100401::copy", "登录参与抽奖，AI 帮你解读活动权益。"),
+            (
+                "activity.100401::copy",
+                "登录参与抽奖；对话计费真实，回复为本地 echo。",
+            ),
             ("activity.100401::state", "online"),
+            ("activity.100402::title", "锁奖演示活动"),
+            (
+                "activity.100402::copy",
+                "多权重奖池 + tree_lock 解锁；用于面试演示规则链。",
+            ),
+            ("activity.100402::state", "online"),
             ("stage.activity.c01.s01", "100401"),
+            ("stage.activity.c02.s02", "100402"),
         ] {
             map.entry(k.into()).or_insert_with(|| v.into());
         }

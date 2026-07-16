@@ -236,7 +236,7 @@ function initApp() {
     var disabled = !chatbotEnabled;
     if (d.msgInput) {
       d.msgInput.disabled = disabled;
-      d.msgInput.placeholder = disabled ? "AI 对话已在管理端关闭" : "给 AI 发送消息...";
+      d.msgInput.placeholder = disabled ? "对话已在管理端关闭" : "发送消息（本地 echo，真实扣费）...";
     }
     if (d.sendBtn) d.sendBtn.disabled = disabled;
     if (d.chatForm) d.chatForm.classList.toggle("disabled-hint", disabled);
@@ -247,7 +247,7 @@ function initApp() {
         hint.className = "composer-disabled-msg";
         d.chatForm.insertBefore(hint, d.chatForm.firstChild);
       }
-      if (hint) hint.textContent = "AI 对话入口已关闭，请联系管理员或稍后再试。";
+      if (hint) hint.textContent = "对话入口已关闭，请联系管理员或稍后再试。";
     } else if (hint) {
       hint.remove();
     }
@@ -477,7 +477,7 @@ function initApp() {
         } else {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +1 积分"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
         }
@@ -485,7 +485,7 @@ function initApp() {
         if (e.raw && e.raw.data === false) {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +1 积分"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
           return;
@@ -581,7 +581,7 @@ function initApp() {
       if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
       if (d.signInStatus) d.signInStatus.textContent = data.message || "签到成功！";
       if (d.ucSigned) d.ucSigned.textContent = "是";
-      toast(data.message || "签到成功，+10 积分");
+      toast(data.message || "签到成功，+1 积分");
       if (data.creditBalance !== undefined && data.creditBalance !== null) {
         var bal = parseFloat(data.creditBalance);
         var prev = currentCreditBalance();
@@ -600,7 +600,7 @@ function initApp() {
         loadCampaign().catch(function(){});
       } else {
         if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +1 积分"; d.ucSignInBtn.classList.remove("done"); }
         toast(e.message || "签到失败，请稍后重试");
       }
     }).finally(function() {

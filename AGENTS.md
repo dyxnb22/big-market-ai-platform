@@ -4,6 +4,7 @@ Rust raffle platform: `bm-gateway` + `bm-app` + optional `bm-worker`. Frontend i
 
 ## Docs to read first
 
+- `docs/LEARNING-FREEZE.md` — freeze status & honesty bounds
 - `docs/ARCHITECTURE.md` — topology + strategy lite
 - `docs/FLOWS.md` — raffle / credit / chat flows
 - `docs/DATA.md` — idempotency keys & outbox
