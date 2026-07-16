@@ -12,6 +12,12 @@ pub mod redis_revocation;
 #[cfg(feature = "mysql")]
 pub mod mysql_store;
 
+#[cfg(feature = "mysql")]
+pub mod mysql_quota;
+
+#[cfg(feature = "mysql")]
+pub mod mysql_chat;
+
 #[cfg(feature = "rabbit")]
 pub mod rabbit;
 

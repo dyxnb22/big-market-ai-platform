@@ -81,6 +81,23 @@ CREATE TABLE IF NOT EXISTS `chat_credit_session` (
     KEY `idx_deduct_state` (`deduct_state`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
+    `id`              BIGINT        NOT NULL AUTO_INCREMENT,
+    `user_id`         VARCHAR(128)  NOT NULL,
+    `activity_id`     BIGINT(12)    NOT NULL,
+    `out_business_no` VARCHAR(64)   NOT NULL,
+    `status`          VARCHAR(16)   NOT NULL DEFAULT 'applied',
+    `create_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_user_activity_biz` (`user_id`, `activity_id`, `out_business_no`),
+    KEY `idx_status_create` (`status`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `raffle_quota_decrement_ledger_000`;
+
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `user_id`         VARCHAR(32)  NOT NULL,
@@ -103,6 +120,10 @@ USE `big_market_02`;
 CREATE TABLE IF NOT EXISTS `mq_dead_letter` LIKE `big_market_01`.`mq_dead_letter`;
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` LIKE `big_market_01`.`pending_remote_write_task`;
 CREATE TABLE IF NOT EXISTS `chat_credit_session` LIKE `big_market_01`.`chat_credit_session`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` LIKE `big_market_01`.`raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `big_market_01`.`raffle_quota_decrement_ledger_001`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `big_market_01`.`raffle_quota_decrement_ledger_002`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `big_market_01`.`raffle_quota_decrement_ledger_003`;
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` LIKE `big_market_01`.`strategy_award_stock_confirm_task`;
 
 -- Older volumes: deduct_state is added by scripts/apply-reconcile-ddl.sh (idempotent).

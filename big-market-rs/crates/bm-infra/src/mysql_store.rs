@@ -11,7 +11,9 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool, Row};
+use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::DbRouter;
 
@@ -19,6 +21,8 @@ use crate::DbRouter;
 pub struct MysqlStores {
     pub pool: Pool<MySql>,
     pub router: DbRouter,
+    /// Chat idempotent response cache (aligns Java Redis `chat:request:{userId}:{requestId}`).
+    pub chat_idem: Arc<Mutex<HashMap<String, Decimal>>>,
 }
 
 impl MysqlStores {
@@ -31,14 +35,15 @@ impl MysqlStores {
         Ok(Arc::new(Self {
             pool,
             router: DbRouter::default(),
+            chat_idem: Arc::new(Mutex::new(HashMap::new())),
         }))
     }
 
-    fn schema(&self, user_id: &str) -> String {
+    pub(crate) fn schema(&self, user_id: &str) -> String {
         self.router.schema_name(user_id)
     }
 
-    fn tb(&self, user_id: &str) -> u32 {
+    pub(crate) fn tb(&self, user_id: &str) -> u32 {
         self.router.route(user_id).1
     }
 }

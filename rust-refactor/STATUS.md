@@ -14,7 +14,7 @@
 | Playwright vs Rust | ✅ | `acceptance-rust-e2e.sh` — 17 PASS ×2 (legacy :8098 skipped) |
 | Weighted strategy + stock | ✅ | `strategy` + `StockStore`; demo quota seeded; flush loop |
 | Redis JWT revoke | ✅ | `fred` adapter when `BM_REDIS_URL` set (fail-open → memory) |
-| MySQL credit/outbox | ✅ | `BM_BACKEND=mysql` routes **credit + award** to sqlx; catalog/quota/chat on file companion |
+| MySQL credit/outbox | ✅ | `BM_BACKEND=mysql` routes **credit + award + quota + chat** to sqlx; catalog/admin/stock on file companion |
 | RabbitMQ bridge (optional) | ✅ | `BM_RABBIT_URL` → `bm.send_award` / `bm.send_rebate` |
 | Embedded + standalone worker | ✅ | `BM_EMBED_WORKER=1` in app; `bm-worker` for dispatch/reconcile/stock |
 | Gateway rate limit + health | ✅ | `bm-gateway` proxy + `/actuator/health` |
@@ -31,6 +31,7 @@
 ./scripts/acceptance-rust-e2e.sh
 ./scripts/bench-rust.sh
 ./scripts/run-rust-secure.sh && DEMO_USER_PASSWORD=SecureDemo1! ./scripts/smoke-rust-security.sh
+./scripts/smoke-rust-mysql.sh          # skips if MySQL :13306 unavailable
 ```
 
 ## Backend selection
@@ -39,7 +40,7 @@
 | --- | --- |
 | `file` (default) | JSON snapshot under `BM_DATA_DIR` |
 | `memory` | Pure RAM (tests) |
-| `mysql` | sqlx credit + credit_award_task; companion file for catalog/quota/chat |
+| `mysql` | sqlx credit + award + quota + chat; companion file for catalog/admin/stock |
 
 ## Honest limits vs Java
 
@@ -48,7 +49,7 @@
 | MQ / jobs | Optional lapin + in-process outbox; no full XXL job set | RabbitMQ + XXL-Job handlers |
 | Strategy | Hardcoded weights / deterministic demo | DB rule-tree |
 | Chatbot | Local echo tools (1 credit) | Optional OpenAI integration |
-| MySQL | Credit + `credit_award_task` subset | Full table set + sharding |
+| MySQL | Credit + award + quota + chat sessions | Full table set + sharding |
 | Legacy :8098 | Skipped in Rust Playwright profile | Java compose maps 8098→gateway |
 | Secure compose | `BM_SECURE=1` + `docker-compose.rust.secure.yml` | `docker-compose.secure.yml` |
 

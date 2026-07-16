@@ -29,10 +29,10 @@ impl ServiceStores {
             BackendKind::Mysql(mysql, _) => Self {
                 credit: mysql.clone(),
                 award: mysql.clone(),
-                // Quota/catalog/chat stay on file companion until full MySQL port.
-                quota: mem.clone(),
+                quota: mysql.clone(),
+                chat: mysql.clone(),
+                // Catalog/admin/stock stay on file companion until full MySQL port.
                 catalog: mem.clone(),
-                chat: mem.clone(),
                 rebate: mem.clone(),
                 admin: mem.clone(),
                 stock: mem.clone(),
