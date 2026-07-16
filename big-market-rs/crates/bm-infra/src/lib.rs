@@ -4,6 +4,7 @@ pub mod config;
 pub mod factory;
 pub mod memory;
 pub mod router;
+pub mod stores;
 
 #[cfg(feature = "redis")]
 pub mod redis_revocation;
@@ -20,6 +21,7 @@ pub use factory::{
 };
 pub use memory::{MemoryBackend, SharedMemory};
 pub use router::DbRouter;
+pub use stores::ServiceStores;
 
 #[cfg(feature = "rabbit")]
 pub use rabbit::{RabbitBridge, QUEUE_SEND_AWARD, QUEUE_SEND_REBATE};

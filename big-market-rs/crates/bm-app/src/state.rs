@@ -2,7 +2,7 @@ use bm_domain::{
     parse_dev_users, AuthFacade, AwardDispatchService, ChatBillingService, ChatbotService,
     JwtService, RaffleService, RebateService, TokenRevocation,
 };
-use bm_infra::{AppConfig, SharedMemory};
+use bm_infra::{AppConfig, Bootstrapped, ServiceStores};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -22,12 +22,12 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn from_shared(
+    pub fn from_bootstrapped(
         cfg: AppConfig,
-        memory: SharedMemory,
+        boot: &Bootstrapped,
         revocation: Arc<dyn TokenRevocation>,
     ) -> Self {
-        let backend = memory.backend.clone();
+        let stores = ServiceStores::from_bootstrapped(boot);
         let jwt = JwtService::new(&cfg.jwt_secret);
         let auth = Arc::new(AuthFacade {
             jwt,
@@ -35,30 +35,30 @@ impl AppState {
             revoked: revocation,
         });
         let raffle = Arc::new(RaffleService {
-            catalog: backend.clone(),
-            quota: backend.clone(),
-            credit: backend.clone(),
-            award: backend.clone(),
-            strategy: backend.clone(),
-            stock: backend.clone(),
+            catalog: stores.catalog.clone(),
+            quota: stores.quota.clone(),
+            credit: stores.credit.clone(),
+            award: stores.award.clone(),
+            strategy: stores.strategy.clone(),
+            stock: stores.stock.clone(),
         });
         let chat = Arc::new(ChatBillingService {
-            credit: backend.clone(),
-            chat: backend.clone(),
+            credit: stores.credit.clone(),
+            chat: stores.chat.clone(),
         });
         let rebate = Arc::new(RebateService {
-            rebate: backend.clone(),
-            credit: backend.clone(),
-            outbox: backend.clone(),
+            rebate: stores.rebate.clone(),
+            credit: stores.credit.clone(),
+            outbox: stores.outbox.clone(),
         });
         let chatbot = Arc::new(ChatbotService {
             chat: chat.clone(),
-            admin: backend.clone(),
-            credit: backend.clone(),
+            admin: stores.admin.clone(),
+            credit: stores.credit.clone(),
         });
         let dispatch = Arc::new(AwardDispatchService {
-            award: backend.clone(),
-            credit: backend.clone(),
+            award: stores.award.clone(),
+            credit: stores.credit.clone(),
         });
         Self {
             cfg,
@@ -68,11 +68,11 @@ impl AppState {
             rebate,
             chatbot,
             dispatch,
-            admin: backend.clone(),
-            stock: backend.clone(),
-            stages: backend.clone(),
-            orders: backend.clone(),
-            strategy: backend,
+            admin: stores.admin.clone(),
+            stock: stores.stock.clone(),
+            stages: stores.stages.clone(),
+            orders: stores.orders.clone(),
+            strategy: stores.strategy.clone(),
         }
     }
 }

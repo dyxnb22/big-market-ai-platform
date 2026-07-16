@@ -1,7 +1,7 @@
 use anyhow::Context;
 use axum::{routing::get, Json, Router};
-use bm_domain::{AwardDispatchService, ChatBillingService, RebateService, SendAwardMessage, StockStore};
-use bm_infra::{bootstrap, spawn_persist_loop, RuntimeConfig, WorkerConfig};
+use bm_domain::{AwardDispatchService, ChatBillingService, RebateService, SendAwardMessage};
+use bm_infra::{bootstrap, spawn_persist_loop, RuntimeConfig, ServiceStores, WorkerConfig};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -48,18 +48,20 @@ async fn main() -> anyhow::Result<()> {
         spawn_persist_loop(boot.memory.clone(), path.clone(), 500);
     }
 
+    let stores = ServiceStores::from_bootstrapped(&boot);
+
     let dispatch = Arc::new(AwardDispatchService {
-        award: boot.memory.backend.clone(),
-        credit: boot.memory.backend.clone(),
+        award: stores.award.clone(),
+        credit: stores.credit.clone(),
     });
     let rebate = Arc::new(RebateService {
-        rebate: boot.memory.backend.clone(),
-        credit: boot.memory.backend.clone(),
-        outbox: boot.memory.backend.clone(),
+        rebate: stores.rebate.clone(),
+        credit: stores.credit.clone(),
+        outbox: stores.outbox.clone(),
     });
     let chat = Arc::new(ChatBillingService {
-        credit: boot.memory.backend.clone(),
-        chat: boot.memory.backend.clone(),
+        credit: stores.credit.clone(),
+        chat: stores.chat.clone(),
     });
 
     let rabbit_active = Arc::new(AtomicBool::new(false));
@@ -130,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
     let r = rebate.clone();
     let c = chat.clone();
     let poll = cfg.poll_secs;
-    let stock = boot.memory.backend.clone();
+    let stock = stores.stock.clone();
     let rabbit_flag = rabbit_active.clone();
     tokio::spawn(async move {
         loop {
@@ -140,10 +142,10 @@ async fn main() -> anyhow::Result<()> {
             }
             let _ = d.dispatch_pending(50).await;
             let _ = c.reconcile_pending(20).await;
-            if let Ok(dirty) = stock.list_dirty().await {
+            if let Ok(dirty) = bm_domain::StockStore::list_dirty(stock.as_ref()).await {
                 if !dirty.is_empty() {
                     let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
-                    let _ = stock.clear_dirty(&keys).await;
+                    let _ = bm_domain::StockStore::clear_dirty(stock.as_ref(), &keys).await;
                 }
             }
             tokio::time::sleep(Duration::from_secs(poll)).await;

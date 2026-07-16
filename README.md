@@ -14,6 +14,30 @@ JWT auth, SKU/chat idempotency, and raffle→award-credit closed loop.
 ./scripts/web-start.sh   # frontend → http://127.0.0.1:8080/api/v1
 ```
 
+## Secure profile
+
+```bash
+./scripts/run-rust-secure.sh
+DEMO_USER_PASSWORD=SecureDemo1! ./scripts/smoke-rust-security.sh
+./scripts/acceptance-rust.sh --secure
+```
+
+Docker: `docker compose -f docker-compose.rust.yml -f docker-compose.rust.secure.yml --profile rust up -d`
+
+## Optional MySQL / Redis / RabbitMQ
+
+```bash
+# Infra (Java learning stack)
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+
+BM_BACKEND=mysql BM_MYSQL_URL=mysql://root:123456@127.0.0.1:13306/big_market \
+BM_REDIS_URL=redis://127.0.0.1:16379 \
+BM_RABBIT_URL=amqp://guest:guest@127.0.0.1:5672/%2f \
+./scripts/run-rust-stack.sh
+```
+
+Credit + award writes go to MySQL shards; catalog/quota/chat/admin stay on `BM_DATA_DIR/state.json` companion until full schema port.
+
 Details: [`big-market-rs/README.md`](big-market-rs/README.md), roadmap
 [`rust-refactor/ROADMAP.md`](rust-refactor/ROADMAP.md), status
 [`rust-refactor/STATUS.md`](rust-refactor/STATUS.md).

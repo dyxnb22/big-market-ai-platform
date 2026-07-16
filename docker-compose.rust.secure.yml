@@ -1,0 +1,30 @@
+# Secure overlay for Rust stack (host binaries or docker-compose.rust.yml).
+#
+# Usage:
+#   export JWT_SECRET=... CHAT_INTERNAL_SERVICE_TOKEN=... APP_AUTH_DEV_USERS=...
+#   ./scripts/run-rust-secure.sh
+#   ./scripts/smoke-rust-security.sh
+#
+# Docker:
+#   docker compose -f docker-compose.rust.yml -f docker-compose.rust.secure.yml --profile rust up -d
+
+x-rust-secure-env: &rust-secure-env
+  BM_SECURE: "1"
+  BM_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for rust secure overlay}
+  BM_GW_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required for rust secure overlay}
+  BM_INTERNAL_TOKEN: ${CHAT_INTERNAL_SERVICE_TOKEN:?CHAT_INTERNAL_SERVICE_TOKEN is required}
+  BM_DEV_USERS: ${APP_AUTH_DEV_USERS:?APP_AUTH_DEV_USERS is required}
+  BM_GW_RATE_LIMIT: ${BM_GW_RATE_LIMIT:-500}
+
+services:
+  bm-app:
+    environment:
+      <<: *rust-secure-env
+
+  bm-gateway:
+    environment:
+      <<: *rust-secure-env
+
+  bm-worker:
+    environment:
+      <<: *rust-secure-env

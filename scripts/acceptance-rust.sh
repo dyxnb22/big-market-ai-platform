@@ -3,12 +3,15 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUN_E2E=false
+RUN_SECURE=false
 for arg in "$@"; do
   case "$arg" in
     --e2e|--playwright) RUN_E2E=true ;;
+    --secure) RUN_SECURE=true ;;
     --help|-h)
-      echo "Usage: $0 [--e2e]"
-      echo "  --e2e  Also run Playwright against Rust stack (requires Node + Chromium)"
+      echo "Usage: $0 [--e2e] [--secure]"
+      echo "  --e2e     Also run Playwright against Rust stack"
+      echo "  --secure  Run smoke-rust-security (use run-rust-secure.sh first)"
       exit 0
       ;;
   esac
@@ -21,6 +24,10 @@ echo "=== clippy ==="
 cargo clippy --workspace -- -D warnings
 echo "=== API smoke ==="
 "$ROOT/scripts/smoke-rust-api.sh"
+if [[ "$RUN_SECURE" == true ]]; then
+  echo "=== Rust security smoke ==="
+  "$ROOT/scripts/smoke-rust-security.sh"
+fi
 if [[ "$RUN_E2E" == true ]]; then
   echo "=== Playwright E2E ==="
   "$ROOT/scripts/acceptance-rust-e2e.sh"

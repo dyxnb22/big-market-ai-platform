@@ -14,11 +14,11 @@
 | Playwright vs Rust | ✅ | `acceptance-rust-e2e.sh` — 17 PASS ×2 (legacy :8098 skipped) |
 | Weighted strategy + stock | ✅ | `strategy` + `StockStore`; demo quota seeded; flush loop |
 | Redis JWT revoke | ✅ | `fred` adapter when `BM_REDIS_URL` set (fail-open → memory) |
-| MySQL credit/outbox | ✅ | `sqlx` adapter when `BM_BACKEND=mysql` + `BM_MYSQL_URL` |
+| MySQL credit/outbox | ✅ | `BM_BACKEND=mysql` routes **credit + award** to sqlx; catalog/quota/chat on file companion |
 | RabbitMQ bridge (optional) | ✅ | `BM_RABBIT_URL` → `bm.send_award` / `bm.send_rebate` |
 | Embedded + standalone worker | ✅ | `BM_EMBED_WORKER=1` in app; `bm-worker` for dispatch/reconcile/stock |
 | Gateway rate limit + health | ✅ | `bm-gateway` proxy + `/actuator/health` |
-| Secure overlay hook | ✅ | `BM_SECURE=1` rejects default JWT/internal token |
+| Secure overlay hook | ✅ | `BM_SECURE=1` + `run-rust-secure.sh` / `smoke-rust-security.sh` / `docker-compose.rust.secure.yml` |
 | Prometheus metrics | ✅ | `bm-app` `/metrics` |
 | Bench snapshot | ✅ | `rust-refactor/bench/RESULTS.md` (~12 MiB RSS, ~9 ms cold ready) |
 
@@ -26,9 +26,11 @@
 
 ```bash
 ./scripts/acceptance-rust.sh          # test + clippy + API smoke
-./scripts/acceptance-rust.sh --e2e  # + Playwright 17×2
+./scripts/acceptance-rust.sh --e2e    # + Playwright 17×2
+./scripts/acceptance-rust.sh --secure # + smoke-rust-security (after run-rust-secure.sh)
 ./scripts/acceptance-rust-e2e.sh
 ./scripts/bench-rust.sh
+./scripts/run-rust-secure.sh && DEMO_USER_PASSWORD=SecureDemo1! ./scripts/smoke-rust-security.sh
 ```
 
 ## Backend selection
@@ -48,7 +50,7 @@
 | Chatbot | Local echo tools (1 credit) | Optional OpenAI integration |
 | MySQL | Credit + `credit_award_task` subset | Full table set + sharding |
 | Legacy :8098 | Skipped in Rust Playwright profile | Java compose maps 8098→gateway |
-| Secure compose | `BM_SECURE=1` env gate | `docker-compose.secure.yml` |
+| Secure compose | `BM_SECURE=1` + `docker-compose.rust.secure.yml` | `docker-compose.secure.yml` |
 
 Java modules remain **legacy**对照. Default demo path is Rust.
 

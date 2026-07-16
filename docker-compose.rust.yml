@@ -1,11 +1,16 @@
 # Optional Rust stack overlay. Does not replace Java services unless you stop them
 # and point traffic here.
 #
-# Usage (host binaries preferred when Docker Rust image not built):
+# Host binaries (recommended for learning):
 #   ./scripts/run-rust-stack.sh
+#   BM_BACKEND=mysql BM_MYSQL_URL=mysql://root:123456@127.0.0.1:13306/big_market \
+#     BM_REDIS_URL=redis://127.0.0.1:16379 \
+#     BM_RABBIT_URL=amqp://guest:guest@127.0.0.1:5672/%2f \
+#     ./scripts/run-rust-stack.sh
 #
-# Or build release image (requires Docker):
-#   docker compose -f docker-compose.rust.yml up --build -d
+# Docker (requires build):
+#   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+#   docker compose -f docker-compose.rust.yml --profile rust up --build -d
 
 services:
   bm-app:
@@ -21,9 +26,17 @@ services:
     environment:
       - BM_PORT=8083
       - BM_EMBED_WORKER=1
+      - BM_BACKEND=${BM_BACKEND:-file}
+      - BM_DATA_DIR=/data/bm-rs
       - BM_JWT_SECRET=${JWT_SECRET:-change-me-in-dev-only}
+      - BM_INTERNAL_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-dev-internal-token}
       - BM_INITIAL_CREDIT=100.00
+      - BM_MYSQL_URL=${BM_MYSQL_URL:-mysql://root:123456@mysql:3306/big_market}
+      - BM_REDIS_URL=${BM_REDIS_URL:-redis://redis:6379}
+      - BM_RABBIT_URL=${BM_RABBIT_URL:-amqp://guest:guest@rabbitmq:5672/%2f}
       - RUST_LOG=info
+    volumes:
+      - bm-rs-data:/data/bm-rs
     profiles: ["rust"]
 
   bm-gateway:
@@ -39,6 +52,8 @@ services:
     environment:
       - BM_GW_PORT=8080
       - BM_GW_APP_URL=http://bm-app:8083
+      - BM_GW_JWT_SECRET=${JWT_SECRET:-change-me-in-dev-only}
+      - BM_GW_RATE_LIMIT=${BM_GW_RATE_LIMIT:-2000}
       - RUST_LOG=info
     depends_on:
       - bm-app
@@ -56,5 +71,17 @@ services:
       - "8085:8085"
     environment:
       - BM_WORKER_PORT=8085
+      - BM_BACKEND=${BM_BACKEND:-file}
+      - BM_DATA_DIR=/data/bm-rs
+      - BM_MYSQL_URL=${BM_MYSQL_URL:-mysql://root:123456@mysql:3306/big_market}
+      - BM_REDIS_URL=${BM_REDIS_URL:-redis://redis:6379}
+      - BM_RABBIT_URL=${BM_RABBIT_URL:-amqp://guest:guest@rabbitmq:5672/%2f}
       - RUST_LOG=info
+    volumes:
+      - bm-rs-data:/data/bm-rs
+    depends_on:
+      - bm-app
     profiles: ["rust"]
+
+volumes:
+  bm-rs-data:

@@ -41,7 +41,8 @@ async fn main() -> anyhow::Result<()> {
     }
     spawn_stock_flush_loop(boot.memory.clone(), 5);
 
-    let state = AppState::from_shared(cfg.clone(), boot.memory.clone(), boot.revocation);
+    let revocation = boot.revocation.clone();
+    let state = AppState::from_bootstrapped(cfg.clone(), &boot, revocation);
 
     let recorder = metrics_exporter_prometheus::PrometheusBuilder::new()
         .install_recorder()
