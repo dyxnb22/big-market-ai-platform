@@ -17,6 +17,7 @@ pub struct AppConfig {
     pub gateway_app_url: String,
     pub internal_token: String,
     pub initial_credit: String,
+    pub data_dir: String,
 }
 
 impl Default for AppConfig {
@@ -26,13 +27,14 @@ impl Default for AppConfig {
             port: 8083,
             jwt_secret: "change-me-in-dev-only".into(),
             dev_users: "xiaofuge:demo,admin:admin".into(),
-            backend: "memory".into(),
+            backend: "file".into(),
             mysql_url: None,
             redis_url: None,
             rabbit_url: None,
             gateway_app_url: "http://127.0.0.1:8083".into(),
             internal_token: "dev-internal-token".into(),
             initial_credit: "100.00".into(),
+            data_dir: "data/bm-rs".into(),
         }
     }
 }
@@ -90,6 +92,7 @@ pub struct WorkerConfig {
     pub poll_secs: u64,
     pub jwt_secret: String,
     pub initial_credit: String,
+    pub data_dir: String,
 }
 
 impl Default for WorkerConfig {
@@ -97,10 +100,11 @@ impl Default for WorkerConfig {
         Self {
             host: "0.0.0.0".into(),
             port: 8085,
-            backend: "memory".into(),
+            backend: "file".into(),
             poll_secs: 1,
             jwt_secret: "change-me-in-dev-only".into(),
             initial_credit: "100.00".into(),
+            data_dir: "data/bm-rs".into(),
         }
     }
 }

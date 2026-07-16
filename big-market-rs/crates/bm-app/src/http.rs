@@ -60,6 +60,8 @@ pub fn routes(state: AppState) -> Router {
         .route("/api/v1/admin/config", get(admin_list).post(admin_upsert))
         .route("/api/v1/chatbot/health", get(health))
         .route("/api/v1/dcc/value", get(dcc_get))
+        .route("/api/v1/internal/worker/tick", post(worker_tick))
+        .route("/api/v1/raffle/activity/query_stock", get(query_stock))
         .with_state(state)
 }
 
@@ -388,6 +390,47 @@ async fn dcc_get(State(state): State<AppState>, Query(q): Query<DccQuery>) -> im
     match state.admin.get(&q.key).await {
         Ok(Some(v)) => Json(ApiResponse::ok(v)).into_response(),
         Ok(None) => Json(ApiResponse::<String>::err("0001", "not found")).into_response(),
+        Err(e) => err_response(e),
+    }
+}
+
+async fn worker_tick(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    let token = headers
+        .get("x-internal-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if token != state.cfg.internal_token {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiResponse::<serde_json::Value>::err(
+                CODE_LOGIN_ERROR,
+                "unauthorized",
+            )),
+        )
+            .into_response();
+    }
+    let consumed = state.dispatch.consume_send_award(50).await.unwrap_or(0);
+    let dispatched = state.dispatch.dispatch_pending(50).await.unwrap_or(0);
+    let refunded = state.chat.reconcile_pending(20).await.unwrap_or(0);
+    Json(ApiResponse::ok(serde_json::json!({
+        "consumed": consumed,
+        "dispatched": dispatched,
+        "refunded": refunded,
+    })))
+    .into_response()
+}
+
+#[derive(Deserialize)]
+struct StockQuery {
+    key: String,
+}
+
+async fn query_stock(
+    State(state): State<AppState>,
+    Query(q): Query<StockQuery>,
+) -> impl IntoResponse {
+    match state.stock.get_stock(&q.key).await {
+        Ok(v) => Json(ApiResponse::ok(v)).into_response(),
         Err(e) => err_response(e),
     }
 }

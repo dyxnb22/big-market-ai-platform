@@ -1,19 +1,22 @@
 //! In-memory backend implementing all domain ports. Seeds demo learning data.
+//! Supports JSON snapshot for file-backed durability (`persist` / `load_snapshot`).
 
 use async_trait::async_trait;
 use bm_domain::*;
 use bm_types::{money, BmError, Money};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 struct Inner {
     credits: HashMap<String, Money>,
     credit_orders: HashSet<String>,
-    quotas: HashMap<(String, i64), ActivityAccount>,
+    #[serde(default)]
+    quotas: HashMap<String, ActivityAccount>,
     quota_ops: HashSet<String>,
     awards: HashMap<String, UserAwardRecord>,
     credit_tasks: HashMap<String, CreditAwardTask>,
@@ -24,7 +27,20 @@ struct Inner {
     admin: HashMap<String, String>,
     revoked: HashMap<String, i64>,
     skus: HashMap<i64, SkuProduct>,
-    stage: HashMap<(String, String), i64>,
+    #[serde(default)]
+    stage: HashMap<String, i64>,
+    #[serde(default)]
+    stocks: HashMap<String, i64>,
+    #[serde(default)]
+    dirty_stocks: HashSet<String>,
+}
+
+fn quota_key(user_id: &str, activity_id: i64) -> String {
+    format!("{user_id}:{activity_id}")
+}
+
+fn stage_key(channel: &str, source: &str) -> String {
+    format!("{channel}:{source}")
 }
 
 pub struct MemoryBackend {
@@ -34,26 +50,45 @@ pub struct MemoryBackend {
 impl MemoryBackend {
     pub fn new_seeded(initial_credit: Money) -> Arc<Self> {
         let mut inner = Inner::default();
-        inner.credits.insert("xiaofuge".into(), initial_credit);
-        inner.credits.insert("admin".into(), initial_credit);
-        inner.stage.insert(("c01".into(), "s01".into()), 100401);
-        inner.skus.insert(
-            9901,
-            SkuProduct {
-                sku: 9901,
-                activity_id: 100401,
-                product_name: "抽奖次数兑换".into(),
-                product_amount: money("5.00"),
-                quota_count: 1,
-            },
-        );
-        inner
-            .admin
-            .insert("stage.activity.c01.s01".into(), "100401".into());
+        seed_demo(&mut inner, initial_credit);
         Arc::new(Self {
             inner: Mutex::new(inner),
         })
     }
+
+    pub async fn snapshot_json(&self) -> Result<String, BmError> {
+        let g = self.inner.lock().await;
+        serde_json::to_string_pretty(&*g).map_err(|e| BmError::Internal(e.to_string()))
+    }
+
+    pub async fn load_snapshot_json(&self, json: &str) -> Result<(), BmError> {
+        let snap: Inner =
+            serde_json::from_str(json).map_err(|e| BmError::Internal(e.to_string()))?;
+        let mut g = self.inner.lock().await;
+        *g = snap;
+        Ok(())
+    }
+}
+
+fn seed_demo(inner: &mut Inner, initial_credit: Money) {
+    inner.credits.insert("xiaofuge".into(), initial_credit);
+    inner.credits.insert("admin".into(), initial_credit);
+    inner.stage.insert(stage_key("c01", "s01"), 100401);
+    inner.skus.insert(
+        9901,
+        SkuProduct {
+            sku: 9901,
+            activity_id: 100401,
+            product_name: "抽奖次数兑换".into(),
+            product_amount: money("5.00"),
+            quota_count: 1,
+        },
+    );
+    inner
+        .admin
+        .insert("stage.activity.c01.s01".into(), "100401".into());
+    inner.stocks.insert(activity_stock_key(100401), 10_000);
+    inner.stocks.insert(award_stock_key(101), 1_000);
 }
 
 #[async_trait]
@@ -104,7 +139,7 @@ impl QuotaStore for MemoryBackend {
     ) -> Result<ActivityAccount, BmError> {
         let g = self.inner.lock().await;
         Ok(g.quotas
-            .get(&(user_id.into(), activity_id))
+            .get(&quota_key(user_id, activity_id))
             .cloned()
             .unwrap_or_else(|| ActivityAccount::empty(user_id, activity_id)))
     }
@@ -117,16 +152,17 @@ impl QuotaStore for MemoryBackend {
         out_business_no: &str,
     ) -> Result<ActivityAccount, BmError> {
         let mut g = self.inner.lock().await;
+        let key = quota_key(user_id, activity_id);
         if g.quota_ops.contains(out_business_no) {
             return Ok(g
                 .quotas
-                .get(&(user_id.into(), activity_id))
+                .get(&key)
                 .cloned()
                 .unwrap_or_else(|| ActivityAccount::empty(user_id, activity_id)));
         }
         let acc = g
             .quotas
-            .entry((user_id.into(), activity_id))
+            .entry(key)
             .or_insert_with(|| ActivityAccount::empty(user_id, activity_id));
         acc.total_count += count;
         acc.total_count_surplus += count;
@@ -151,7 +187,7 @@ impl QuotaStore for MemoryBackend {
         }
         let acc = g
             .quotas
-            .entry((user_id.into(), activity_id))
+            .entry(quota_key(user_id, activity_id))
             .or_insert_with(|| ActivityAccount::empty(user_id, activity_id));
         if acc.total_count_surplus <= 0 {
             return Err(BmError::IllegalParam("抽奖次数不足".into()));
@@ -173,7 +209,7 @@ impl CatalogStore for MemoryBackend {
     async fn stage_activity_id(&self, channel: &str, source: &str) -> Result<i64, BmError> {
         let g = self.inner.lock().await;
         g.stage
-            .get(&(channel.into(), source.into()))
+            .get(&stage_key(channel, source))
             .copied()
             .ok_or_else(|| BmError::NotFound("stage activity missing".into()))
     }
@@ -405,6 +441,55 @@ impl TokenRevocation for MemoryBackend {
     }
 }
 
+#[async_trait]
+impl StrategyStore for MemoryBackend {
+    async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError> {
+        Ok(default_stage_weights(activity_id))
+    }
+}
+
+#[async_trait]
+impl StockStore for MemoryBackend {
+    async fn get_stock(&self, key: &str) -> Result<i64, BmError> {
+        let g = self.inner.lock().await;
+        Ok(*g.stocks.get(key).unwrap_or(&0))
+    }
+
+    async fn set_stock(&self, key: &str, qty: i64) -> Result<(), BmError> {
+        let mut g = self.inner.lock().await;
+        g.stocks.insert(key.into(), qty);
+        g.dirty_stocks.insert(key.into());
+        Ok(())
+    }
+
+    async fn decr_stock(&self, key: &str, delta: i64) -> Result<bool, BmError> {
+        let mut g = self.inner.lock().await;
+        let cur = g.stocks.entry(key.into()).or_insert(0);
+        if *cur < delta {
+            return Ok(false);
+        }
+        *cur -= delta;
+        g.dirty_stocks.insert(key.into());
+        Ok(true)
+    }
+
+    async fn list_dirty(&self) -> Result<Vec<(String, i64)>, BmError> {
+        let g = self.inner.lock().await;
+        Ok(g.dirty_stocks
+            .iter()
+            .filter_map(|k| g.stocks.get(k).map(|v| (k.clone(), *v)))
+            .collect())
+    }
+
+    async fn clear_dirty(&self, keys: &[String]) -> Result<(), BmError> {
+        let mut g = self.inner.lock().await;
+        for k in keys {
+            g.dirty_stocks.remove(k);
+        }
+        Ok(())
+    }
+}
+
 /// Shared handle implementing every store trait via Arc.
 #[derive(Clone)]
 pub struct SharedMemory {
@@ -417,4 +502,30 @@ impl SharedMemory {
             backend: MemoryBackend::new_seeded(initial),
         }
     }
+
+    pub async fn load_or_seed(path: &std::path::Path, initial: Money) -> Result<Self, BmError> {
+        let backend = MemoryBackend::new_seeded(initial);
+        if path.exists() {
+            let json =
+                std::fs::read_to_string(path).map_err(|e| BmError::Internal(e.to_string()))?;
+            if !json.trim().is_empty() {
+                backend.load_snapshot_json(&json).await?;
+            }
+        }
+        Ok(Self { backend })
+    }
+
+    pub async fn persist(&self, path: &std::path::Path) -> Result<(), BmError> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| BmError::Internal(e.to_string()))?;
+        }
+        let json = self.backend.snapshot_json().await?;
+        let tmp = path.with_extension("json.tmp");
+        std::fs::write(&tmp, json).map_err(|e| BmError::Internal(e.to_string()))?;
+        std::fs::rename(&tmp, path).map_err(|e| BmError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
+
+#[allow(dead_code)]
+fn _keep_datetime(_: DateTime<Utc>) {}

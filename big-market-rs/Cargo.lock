@@ -274,6 +274,7 @@ dependencies = [
  "bm-types",
  "chrono",
  "jsonwebtoken",
+ "rand 0.8.7",
  "rust_decimal",
  "serde",
  "serde_json",

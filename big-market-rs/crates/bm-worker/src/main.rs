@@ -1,9 +1,9 @@
 use anyhow::Context;
 use axum::{routing::get, Json, Router};
 use bm_domain::AwardDispatchService;
-use bm_infra::{SharedMemory, WorkerConfig};
-use bm_types::money;
+use bm_infra::{bootstrap, spawn_persist_loop, RuntimeConfig, WorkerConfig};
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tower_http::trace::TraceLayer;
@@ -26,13 +26,30 @@ async fn main() -> anyhow::Result<()> {
             cfg.poll_secs = n;
         }
     }
+    if let Ok(b) = std::env::var("BM_BACKEND") {
+        cfg.backend = b;
+    }
+    if let Ok(d) = std::env::var("BM_DATA_DIR") {
+        cfg.data_dir = d;
+    }
 
-    // Standalone worker uses its own memory unless BM_APP shares via mysql (future).
-    // For local memory demos, prefer BM_EMBED_WORKER=1 inside bm-app.
-    let memory = SharedMemory::seeded(money(&cfg.initial_credit));
+    let runtime = RuntimeConfig {
+        backend: cfg.backend.clone(),
+        data_dir: PathBuf::from(&cfg.data_dir),
+        initial_credit: cfg.initial_credit.clone(),
+        mysql_url: std::env::var("BM_MYSQL_URL").ok(),
+        redis_url: std::env::var("BM_REDIS_URL").ok(),
+    };
+    let boot = bootstrap(&runtime)
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    if let Some(path) = &boot.persist_path {
+        spawn_persist_loop(boot.memory.clone(), path.clone(), 500);
+    }
+
     let dispatch = Arc::new(AwardDispatchService {
-        award: memory.backend.clone(),
-        credit: memory.backend.clone(),
+        award: boot.memory.backend.clone(),
+        credit: boot.memory.backend.clone(),
     });
 
     let d = dispatch.clone();
@@ -57,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(TraceLayer::new_for_http());
 
     let addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port).parse()?;
-    tracing::info!(%addr, "bm-worker listening (poll loop active)");
+    tracing::info!(%addr, backend=%cfg.backend, "bm-worker listening");
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await.context("serve")?;
     Ok(())

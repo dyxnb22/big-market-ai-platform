@@ -52,7 +52,7 @@ pub fn award_credit_amount_default() -> Money {
     money("5.00")
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivityAccount {
     pub user_id: String,
     pub activity_id: i64,
@@ -101,7 +101,7 @@ pub trait QuotaStore: Send + Sync {
     ) -> Result<(), BmError>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkuProduct {
     pub sku: i64,
     pub activity_id: i64,
@@ -126,7 +126,7 @@ pub enum AwardTaskState {
     Failed,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreditAwardTask {
     pub user_id: String,
     pub award_order_id: String,
@@ -136,7 +136,7 @@ pub struct CreditAwardTask {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserAwardRecord {
     pub user_id: String,
     pub activity_id: i64,
@@ -173,7 +173,7 @@ pub trait AwardStore: Send + Sync {
     ) -> Result<Vec<SendAwardMessage>, BmError>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SendAwardMessage {
     pub user_id: String,
     pub order_id: String,
@@ -190,7 +190,7 @@ pub enum RefundState {
     Refunded,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatCreditSession {
     pub user_id: String,
     pub request_id: String,
@@ -239,10 +239,42 @@ pub trait AdminStore: Send + Sync {
     async fn list(&self) -> Result<Vec<(String, String)>, BmError>;
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AwardWeight {
+    pub award_id: i32,
+    pub award_title: String,
+    pub award_index: i32,
+    pub weight: u32,
+    pub credit_amount: Money,
+}
+
+#[async_trait]
+pub trait StrategyStore: Send + Sync {
+    async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError>;
+}
+
+#[async_trait]
+pub trait StockStore: Send + Sync {
+    async fn get_stock(&self, key: &str) -> Result<i64, BmError>;
+    async fn set_stock(&self, key: &str, qty: i64) -> Result<(), BmError>;
+    /// Atomically decrement; returns false if insufficient.
+    async fn decr_stock(&self, key: &str, delta: i64) -> Result<bool, BmError>;
+    async fn list_dirty(&self) -> Result<Vec<(String, i64)>, BmError>;
+    async fn clear_dirty(&self, keys: &[String]) -> Result<(), BmError>;
+}
+
 pub struct AppStores {
     // marker for grouping — actual wiring in infra/app
 }
 
 pub fn sku_price_9901() -> Decimal {
     money("5.00")
+}
+
+pub fn activity_stock_key(activity_id: i64) -> String {
+    format!("activity_stock:{activity_id}")
+}
+
+pub fn award_stock_key(award_id: i32) -> String {
+    format!("award_stock:{award_id}")
 }

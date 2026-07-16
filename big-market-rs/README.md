@@ -46,11 +46,15 @@ Seeded: activity `100401`, SKU `9901` (5 credits → 1 draw), deterministic awar
 
 | Env | Default |
 | --- | --- |
+| `BM_BACKEND` | `file` (`memory` / `mysql`) |
+| `BM_DATA_DIR` | `data/bm-rs` |
 | `BM_PORT` | 8083 |
 | `BM_JWT_SECRET` | `change-me-in-dev-only` |
 | `BM_DEV_USERS` | `xiaofuge:demo,admin:admin` |
 | `BM_INITIAL_CREDIT` | `100.00` |
 | `BM_EMBED_WORKER` | `1` |
 | `BM_INTERNAL_TOKEN` | `dev-internal-token` |
+| `BM_MYSQL_URL` | unset |
+| `BM_REDIS_URL` | unset |
 | `BM_GW_PORT` | 8080 |
 | `BM_GW_APP_URL` | `http://127.0.0.1:8083` |

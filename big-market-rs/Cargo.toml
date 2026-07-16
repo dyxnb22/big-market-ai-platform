@@ -30,7 +30,7 @@ base64 = "0.22"
 bytes = "1"
 chrono = { version = "0.4", features = ["serde"] }
 figment = { version = "0.10", features = ["env", "toml"] }
-fred = { version = "9", default-features = false, features = ["enable-rustls", "subscriber-client"] }
+fred = { version = "9", default-features = false, features = ["enable-rustls", "i-keys", "i-std", "transactions"] }
 futures = "0.3"
 hex = "0.4"
 jsonwebtoken = "9"

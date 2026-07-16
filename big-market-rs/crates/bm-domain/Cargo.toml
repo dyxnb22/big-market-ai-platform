@@ -14,9 +14,11 @@ sha2 = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 rust_decimal = { workspace = true }
+rand = { workspace = true }
 bm-types = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
+uuid = { workspace = true }
 bm-infra = { path = "../bm-infra" }

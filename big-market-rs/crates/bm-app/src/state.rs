@@ -1,9 +1,8 @@
 use bm_domain::{
     parse_dev_users, AuthFacade, AwardDispatchService, ChatBillingService, JwtService,
-    RaffleService, RebateService,
+    RaffleService, RebateService, TokenRevocation,
 };
-use bm_infra::AppConfig;
-use bm_infra::SharedMemory;
+use bm_infra::{AppConfig, SharedMemory};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -15,22 +14,29 @@ pub struct AppState {
     pub rebate: Arc<RebateService>,
     pub dispatch: Arc<AwardDispatchService>,
     pub admin: Arc<dyn bm_domain::AdminStore>,
+    pub stock: Arc<dyn bm_domain::StockStore>,
 }
 
 impl AppState {
-    pub fn from_memory(cfg: AppConfig, memory: SharedMemory) -> Self {
+    pub fn from_shared(
+        cfg: AppConfig,
+        memory: SharedMemory,
+        revocation: Arc<dyn TokenRevocation>,
+    ) -> Self {
         let backend = memory.backend.clone();
         let jwt = JwtService::new(&cfg.jwt_secret);
         let auth = Arc::new(AuthFacade {
             jwt,
             users: parse_dev_users(&cfg.dev_users),
-            revoked: backend.clone(),
+            revoked: revocation,
         });
         let raffle = Arc::new(RaffleService {
             catalog: backend.clone(),
             quota: backend.clone(),
             credit: backend.clone(),
             award: backend.clone(),
+            strategy: backend.clone(),
+            stock: backend.clone(),
         });
         let chat = Arc::new(ChatBillingService {
             credit: backend.clone(),
@@ -51,7 +57,8 @@ impl AppState {
             chat,
             rebate,
             dispatch,
-            admin: backend,
+            admin: backend.clone(),
+            stock: backend,
         }
     }
 }

@@ -16,6 +16,8 @@ pub struct RaffleService {
     pub quota: Arc<dyn QuotaStore>,
     pub credit: Arc<dyn CreditStore>,
     pub award: Arc<dyn AwardStore>,
+    pub strategy: Arc<dyn StrategyStore>,
+    pub stock: Arc<dyn StockStore>,
 }
 
 impl RaffleService {
@@ -24,7 +26,19 @@ impl RaffleService {
     }
 
     pub async fn armory(&self, activity_id: i64) -> Result<bool, BmError> {
-        self.catalog.armory(activity_id).await
+        let ok = self.catalog.armory(activity_id).await?;
+        // Seed activity/award stock counters if missing (align Update*StockJob learning path).
+        let key = activity_stock_key(activity_id);
+        if self.stock.get_stock(&key).await? <= 0 {
+            self.stock.set_stock(&key, 10_000).await?;
+        }
+        for w in self.strategy.award_weights(activity_id).await? {
+            let ak = award_stock_key(w.award_id);
+            if self.stock.get_stock(&ak).await? <= 0 {
+                self.stock.set_stock(&ak, 1_000).await?;
+            }
+        }
+        Ok(ok)
     }
 
     pub async fn query_credit(&self, user_id: &str) -> Result<Money, BmError> {
@@ -75,12 +89,25 @@ impl RaffleService {
             .consume_one(user_id, activity_id, &consume_no)
             .await?;
 
-        // Deterministic default-stage award (align smoke-raffle-award-e2e).
-        let award_id = DEFAULT_AWARD_ID;
-        let award_title = DEFAULT_AWARD_TITLE.to_string();
-        let award_index = 1;
+        let weights = self.strategy.award_weights(activity_id).await?;
+        let picked = crate::strategy::pick_weighted(&weights)
+            .ok_or_else(|| BmError::Internal("no award weight".into()))?;
+
+        // Stock gate (soft): refuse if award stock exhausted.
+        let ak = award_stock_key(picked.award_id);
+        if !self.stock.decr_stock(&ak, 1).await? {
+            return Err(BmError::IllegalParam("奖品库存不足".into()));
+        }
+        let _ = self
+            .stock
+            .decr_stock(&activity_stock_key(activity_id), 1)
+            .await;
+
+        let award_id = picked.award_id;
+        let award_title = picked.award_title.clone();
+        let award_index = picked.award_index;
         let order_id = Uuid::new_v4().to_string();
-        let credit_amount = money("5.00");
+        let credit_amount = picked.credit_amount;
 
         self.award
             .save_award_record(UserAwardRecord {
@@ -93,11 +120,12 @@ impl RaffleService {
             })
             .await?;
 
-        self.award
-            .enqueue_send_award_message(user_id, &order_id, award_id, credit_amount)
-            .await?;
+        if credit_amount > money("0") {
+            self.award
+                .enqueue_send_award_message(user_id, &order_id, award_id, credit_amount)
+                .await?;
+        }
 
-        // Mark completed once persisted for async takeover (Java semantics).
         self.award
             .save_award_record(UserAwardRecord {
                 user_id: user_id.into(),

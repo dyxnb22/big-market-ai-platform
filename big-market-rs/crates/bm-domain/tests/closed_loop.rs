@@ -13,6 +13,8 @@ async fn raffle_award_credit_closed_loop() {
         quota: backend.clone(),
         credit: backend.clone(),
         award: backend.clone(),
+        strategy: backend.clone(),
+        stock: backend.clone(),
     };
     let dispatch = AwardDispatchService {
         award: backend.clone(),
@@ -22,6 +24,7 @@ async fn raffle_award_credit_closed_loop() {
     let before = raffle.query_credit("xiaofuge").await.unwrap();
     assert_eq!(before, money("100.00"));
 
+    raffle.armory(100401).await.unwrap();
     raffle
         .exchange_sku("xiaofuge", 9901, "req-1")
         .await
@@ -44,6 +47,32 @@ async fn raffle_award_credit_closed_loop() {
 
     let final_bal = raffle.query_credit("xiaofuge").await.unwrap();
     assert_eq!(final_bal, money("100.00")); // -5 +5
+}
+
+#[tokio::test]
+async fn file_persist_roundtrip() {
+    let dir = std::env::temp_dir().join(format!("bm-rs-test-{}", uuid::Uuid::new_v4()));
+    let path = dir.join("state.json");
+    let mem = SharedMemory::seeded(money("40.00"));
+    mem.backend
+        .apply_trade(CreditOrder {
+            user_id: "xiaofuge".into(),
+            order_id: "o1".into(),
+            out_business_no: "persist-1".into(),
+            trade_name: "t".into(),
+            trade_type: TradeType::Reverse,
+            trade_amount: money("7.00"),
+        })
+        .await
+        .unwrap();
+    mem.persist(&path).await.unwrap();
+
+    let loaded = SharedMemory::load_or_seed(&path, money("100.00"))
+        .await
+        .unwrap();
+    let bal = loaded.backend.get_balance("xiaofuge").await.unwrap();
+    assert_eq!(bal, money("33.00"));
+    let _ = std::fs::remove_dir_all(dir);
 }
 
 #[tokio::test]

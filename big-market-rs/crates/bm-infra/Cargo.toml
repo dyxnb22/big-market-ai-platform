@@ -21,7 +21,7 @@ bm-types = { workspace = true }
 bm-domain = { workspace = true }
 
 [features]
-default = ["memory"]
+default = ["memory", "redis", "mysql"]
 memory = []
 redis = ["dep:fred"]
 mysql = ["dep:sqlx"]

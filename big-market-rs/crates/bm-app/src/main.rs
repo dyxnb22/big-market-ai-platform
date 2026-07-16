@@ -3,10 +3,10 @@ mod state;
 
 use anyhow::Context;
 use axum::Router;
-use bm_infra::{AppConfig, SharedMemory};
-use bm_types::money;
+use bm_infra::{bootstrap, spawn_persist_loop, spawn_stock_flush_loop, AppConfig, RuntimeConfig};
 use state::AppState;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::time::Duration;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -19,16 +19,34 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let cfg = AppConfig::load().context("load config")?;
+    let runtime = RuntimeConfig {
+        backend: cfg.backend.clone(),
+        data_dir: PathBuf::from(&cfg.data_dir),
+        initial_credit: cfg.initial_credit.clone(),
+        mysql_url: cfg
+            .mysql_url
+            .clone()
+            .or_else(|| std::env::var("BM_MYSQL_URL").ok()),
+        redis_url: cfg
+            .redis_url
+            .clone()
+            .or_else(|| std::env::var("BM_REDIS_URL").ok()),
+    };
+    let boot = bootstrap(&runtime)
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+    if let Some(path) = &boot.persist_path {
+        spawn_persist_loop(boot.memory.clone(), path.clone(), 500);
+    }
+    spawn_stock_flush_loop(boot.memory.clone(), 5);
+
+    let state = AppState::from_shared(cfg.clone(), boot.memory.clone(), boot.revocation);
+
     let recorder = metrics_exporter_prometheus::PrometheusBuilder::new()
         .install_recorder()
         .context("prometheus")?;
-    let state = AppState::from_memory(
-        cfg.clone(),
-        SharedMemory::seeded(money(&cfg.initial_credit)),
-    );
 
-    // Memory backend cannot share queues across processes: embed worker loops in-app.
-    // Set BM_EMBED_WORKER=0 only when using a durable shared backend + dedicated bm-worker.
     let embed_worker = std::env::var("BM_EMBED_WORKER").unwrap_or_else(|_| "1".into()) != "0";
     if embed_worker {
         let dispatch = state.dispatch.clone();
