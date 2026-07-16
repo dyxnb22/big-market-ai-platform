@@ -33,6 +33,10 @@ struct Inner {
     stocks: HashMap<String, i64>,
     #[serde(default)]
     dirty_stocks: HashSet<String>,
+    #[serde(default)]
+    stages: Vec<ActivityStage>,
+    #[serde(default)]
+    rebate_q: VecDeque<RebateMessage>,
 }
 
 fn quota_key(user_id: &str, activity_id: i64) -> String {
@@ -89,6 +93,18 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
         .insert("stage.activity.c01.s01".into(), "100401".into());
     inner.stocks.insert(activity_stock_key(100401), 10_000);
     inner.stocks.insert(award_stock_key(101), 1_000);
+    inner.stages.push(ActivityStage {
+        id: 1,
+        channel: "c01".into(),
+        source: "s01".into(),
+        activity_id: 100401,
+        state: "active".into(),
+    });
+    // Default display + chatbot config (Java AdminConfigController defaults).
+    inner.admin.insert("activity.100401::title".into(), "幸运轮盘活动".into());
+    inner.admin.insert("activity.100401::copy".into(), "登录参与抽奖，AI 帮你解读活动权益。".into());
+    inner.admin.insert("activity.100401::state".into(), "online".into());
+    inner.admin.insert("chatbot::enabled".into(), "true".into());
 }
 
 #[async_trait]
@@ -415,6 +431,75 @@ impl AdminStore for MemoryBackend {
         Ok(g.admin
             .iter()
             .map(|(k, v)| (k.clone(), v.clone()))
+            .collect())
+    }
+
+    async fn delete(&self, key: &str) -> Result<(), BmError> {
+        let mut g = self.inner.lock().await;
+        g.admin.remove(key);
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl StageStore for MemoryBackend {
+    async fn list_stages(&self) -> Result<Vec<ActivityStage>, BmError> {
+        let g = self.inner.lock().await;
+        Ok(g.stages.clone())
+    }
+
+    async fn set_stage_state(&self, id: i64, state: &str) -> Result<bool, BmError> {
+        let mut g = self.inner.lock().await;
+        if let Some(s) = g.stages.iter_mut().find(|s| s.id == id) {
+            s.state = state.into();
+            let channel = s.channel.clone();
+            let source = s.source.clone();
+            let activity_id = s.activity_id;
+            if state == "active" {
+                g.stage.insert(format!("{channel}:{source}"), activity_id);
+            }
+            return Ok(true);
+        }
+        Ok(false)
+    }
+}
+
+#[async_trait]
+impl RebateOutbox for MemoryBackend {
+    async fn enqueue_rebate(&self, msg: RebateMessage) -> Result<(), BmError> {
+        let mut g = self.inner.lock().await;
+        g.rebate_q.push_back(msg);
+        Ok(())
+    }
+
+    async fn take_rebate_messages(&self, limit: usize) -> Result<Vec<RebateMessage>, BmError> {
+        let mut g = self.inner.lock().await;
+        let mut out = Vec::new();
+        for _ in 0..limit {
+            if let Some(m) = g.rebate_q.pop_front() {
+                out.push(m);
+            } else {
+                break;
+            }
+        }
+        Ok(out)
+    }
+}
+
+#[async_trait]
+impl OrderQueryStore for MemoryBackend {
+    async fn list_raffle_orders(&self, limit: usize) -> Result<Vec<UserRaffleOrderView>, BmError> {
+        let g = self.inner.lock().await;
+        Ok(g.awards
+            .values()
+            .take(limit)
+            .map(|a| UserRaffleOrderView {
+                user_id: a.user_id.clone(),
+                activity_id: a.activity_id,
+                order_id: a.order_id.clone(),
+                award_id: a.award_id,
+                award_title: a.award_title.clone(),
+            })
             .collect())
     }
 }

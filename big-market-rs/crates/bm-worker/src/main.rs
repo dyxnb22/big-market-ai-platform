@@ -1,10 +1,11 @@
 use anyhow::Context;
 use axum::{routing::get, Json, Router};
-use bm_domain::AwardDispatchService;
+use bm_domain::{AwardDispatchService, ChatBillingService, RebateService, SendAwardMessage, StockStore};
 use bm_infra::{bootstrap, spawn_persist_loop, RuntimeConfig, WorkerConfig};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -51,16 +52,99 @@ async fn main() -> anyhow::Result<()> {
         award: boot.memory.backend.clone(),
         credit: boot.memory.backend.clone(),
     });
+    let rebate = Arc::new(RebateService {
+        rebate: boot.memory.backend.clone(),
+        credit: boot.memory.backend.clone(),
+        outbox: boot.memory.backend.clone(),
+    });
+    let chat = Arc::new(ChatBillingService {
+        credit: boot.memory.backend.clone(),
+        chat: boot.memory.backend.clone(),
+    });
+
+    let rabbit_active = Arc::new(AtomicBool::new(false));
+    let rabbit_url = std::env::var("BM_RABBIT_URL").ok().filter(|s| !s.is_empty());
+
+    #[cfg(feature = "rabbit")]
+    if let Some(url) = rabbit_url.clone() {
+        match bm_infra::RabbitBridge::connect(&url).await {
+            Ok(bridge) => {
+                rabbit_active.store(true, Ordering::SeqCst);
+                tracing::info!(%url, "rabbit bridge enabled");
+                let d = dispatch.clone();
+                let r = rebate.clone();
+                let b_pub = bridge.clone();
+                let poll = cfg.poll_secs;
+                tokio::spawn(async move {
+                    loop {
+                        if let Ok(msgs) = d.take_send_award_for_publish(50).await {
+                            for m in msgs {
+                                if let Err(e) = b_pub.publish_send_award(&m).await {
+                                    tracing::warn!(error=%e, "publish send_award failed");
+                                }
+                            }
+                        }
+                        if let Ok(msgs) = r.take_rebate_for_publish(50).await {
+                            for m in msgs {
+                                if let Err(e) = b_pub.publish_rebate(&m).await {
+                                    tracing::warn!(error=%e, "publish rebate failed");
+                                }
+                            }
+                        }
+                        tokio::time::sleep(Duration::from_secs(poll)).await;
+                    }
+                });
+
+                let d2 = dispatch.clone();
+                let b_award = bridge.clone();
+                tokio::spawn(async move {
+                    let _ = b_award
+                        .consume_send_award(move |m: SendAwardMessage| {
+                            let d = d2.clone();
+                            async move { d.ingest_send_award(m).await }
+                        })
+                        .await;
+                });
+
+                let r2 = rebate.clone();
+                let b_rebate = bridge;
+                tokio::spawn(async move {
+                    let _ = b_rebate
+                        .consume_rebate(move |m| {
+                            let r = r2.clone();
+                            async move { r.ingest_rebate(m).await }
+                        })
+                        .await;
+                });
+            }
+            Err(e) => {
+                tracing::warn!(error=%e, "rabbit connect failed; falling back to local outbox");
+            }
+        }
+    }
+
+    #[cfg(not(feature = "rabbit"))]
+    let _ = rabbit_url;
 
     let d = dispatch.clone();
+    let r = rebate.clone();
+    let c = chat.clone();
     let poll = cfg.poll_secs;
+    let stock = boot.memory.backend.clone();
+    let rabbit_flag = rabbit_active.clone();
     tokio::spawn(async move {
         loop {
-            if let Err(e) = d.consume_send_award(50).await {
-                tracing::warn!(error=%e, "consume_send_award");
+            if !rabbit_flag.load(Ordering::SeqCst) {
+                let _ = d.consume_send_award(50).await;
+                let _ = r.consume_rebate(50).await;
             }
-            if let Err(e) = d.dispatch_pending(50).await {
-                tracing::warn!(error=%e, "dispatch_pending");
+            let _ = d.dispatch_pending(50).await;
+            let _ = c.reconcile_pending(20).await;
+            if let Ok(dirty) = stock.list_dirty().await {
+                if !dirty.is_empty() {
+                    let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
+                    let _ = stock.clear_dirty(&keys).await;
+                }
             }
             tokio::time::sleep(Duration::from_secs(poll)).await;
         }
@@ -71,10 +155,19 @@ async fn main() -> anyhow::Result<()> {
             "/health",
             get(|| async { Json(serde_json::json!({"status":"UP"})) }),
         )
+        .route(
+            "/actuator/health",
+            get(|| async { Json(serde_json::json!({"status":"UP"})) }),
+        )
         .layer(TraceLayer::new_for_http());
 
     let addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port).parse()?;
-    tracing::info!(%addr, backend=%cfg.backend, "bm-worker listening");
+    tracing::info!(
+        %addr,
+        backend=%cfg.backend,
+        rabbit=rabbit_active.load(Ordering::SeqCst),
+        "bm-worker listening"
+    );
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await.context("serve")?;
     Ok(())

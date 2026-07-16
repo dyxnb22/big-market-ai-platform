@@ -113,7 +113,8 @@ async fn sign_in_once_per_day() {
     let backend = mem.backend.clone();
     let rebate = RebateService {
         rebate: backend.clone(),
-        credit: backend,
+        credit: backend.clone(),
+        outbox: backend,
     };
     let (signed, reward, bal) = rebate.calendar_sign("xiaofuge").await.unwrap();
     assert!(!signed);

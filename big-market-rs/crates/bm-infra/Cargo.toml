@@ -10,6 +10,8 @@ async-trait = { workspace = true }
 chrono = { workspace = true }
 figment = { workspace = true }
 fred = { workspace = true, optional = true }
+futures-lite = "2"
+lapin = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sqlx = { workspace = true, optional = true }
@@ -21,7 +23,8 @@ bm-types = { workspace = true }
 bm-domain = { workspace = true }
 
 [features]
-default = ["memory", "redis", "mysql"]
+default = ["memory", "redis", "mysql", "rabbit"]
 memory = []
 redis = ["dep:fred"]
 mysql = ["dep:sqlx"]
+rabbit = ["dep:lapin"]

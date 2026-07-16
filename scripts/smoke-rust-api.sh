@@ -99,6 +99,34 @@ REF="$(curl -fsS -X POST "$API/internal/raffle/activity/chat_credit_refund_by_to
 [ "$(printf '%s' "$REF" | json_field "d['code']")" = "0000" ] || fail "chat refund: $REF"
 pass "chat refund"
 
+# --- frontend parity extras (before logout) ---
+AWARDS="$(curl -fsS -X POST "$API/raffle/strategy/query_raffle_award_list_by_token" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"activityId":100401}')"
+[ "$(printf '%s' "$AWARDS" | json_field "d['code']")" = "0000" ] || fail "award list: $AWARDS"
+[ "$(printf '%s' "$AWARDS" | json_field "d['data'][0]['awardId']")" = "101" ] || fail "award list empty: $AWARDS"
+pass "strategy award list"
+
+DISPLAY="$(curl -fsS "$API/admin/config/public/display?activityId=100401")"
+[ "$(printf '%s' "$DISPLAY" | json_field "d['data']['state']")" = "online" ] || fail "display: $DISPLAY"
+pass "admin public display"
+
+ASK="$(curl -fsS -X POST "$API/chatbot/ask" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"requestId\":\"ask-$REQ\",\"activityId\":100401,\"message\":\"查询积分\"}")"
+[ "$(printf '%s' "$ASK" | json_field "d['code']")" = "0000" ] || fail "chatbot ask: $ASK"
+SUCCESS="$(printf '%s' "$ASK" | json_field "d['data']['success']")"
+[ "$SUCCESS" = "True" ] || [ "$SUCCESS" = "true" ] || fail "chatbot success: $ASK"
+pass "chatbot ask"
+
+STAGES="$(curl -fsS "$API/raffle/erp/query_raffle_activity_stage_list" -H "Authorization: Bearer $ADMIN_TOKEN")"
+[ "$(printf '%s' "$STAGES" | json_field "d['code']")" = "0000" ] || fail "erp stages: $STAGES"
+pass "erp stage list"
+
+ADMIN_LIST="$(curl -fsS "$API/admin/config/list" -H "Authorization: Bearer $ADMIN_TOKEN")"
+[ "$(printf '%s' "$ADMIN_LIST" | json_field "d['code']")" = "0000" ] || fail "admin list: $ADMIN_LIST"
+pass "admin config list"
+
 curl -fsS -X POST "$API/auth/logout" -H "Authorization: Bearer $TOKEN" >/dev/null
 CODE="$(curl -s -o /tmp/rust-verify.json -w '%{http_code}' "$API/auth/verify" -H "Authorization: Bearer $TOKEN" || true)"
 BODY_CODE="$(python3 -c "import json; print(json.load(open('/tmp/rust-verify.json')).get('code',''))" 2>/dev/null || true)"

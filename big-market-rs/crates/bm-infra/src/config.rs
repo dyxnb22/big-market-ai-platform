@@ -45,7 +45,27 @@ impl AppConfig {
             .merge(Serialized::defaults(AppConfig::default()))
             .merge(Toml::file("config/default.toml").nested())
             .merge(Env::prefixed("BM_").split("__"));
-        Ok(figment.extract()?)
+        let cfg: Self = figment.extract()?;
+        cfg.validate_secure()?;
+        Ok(cfg)
+    }
+
+    /// When `BM_SECURE=1`, reject default JWT / internal-token demo secrets.
+    pub fn validate_secure(&self) -> anyhow::Result<()> {
+        let secure = std::env::var("BM_SECURE")
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
+        if !secure {
+            return Ok(());
+        }
+        let weak_jwt = self.jwt_secret == "change-me-in-dev-only" || self.jwt_secret.len() < 16;
+        let weak_internal = self.internal_token == "dev-internal-token";
+        if weak_jwt || weak_internal {
+            anyhow::bail!(
+                "BM_SECURE=1 requires non-default BM_JWT_SECRET (>=16 chars) and BM_INTERNAL_TOKEN"
+            );
+        }
+        Ok(())
     }
 
     pub fn gateway_load() -> anyhow::Result<GatewayConfig> {

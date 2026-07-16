@@ -49,18 +49,31 @@ async fn main() -> anyhow::Result<()> {
 
     let embed_worker = std::env::var("BM_EMBED_WORKER").unwrap_or_else(|_| "1".into()) != "0";
     if embed_worker {
+        metrics::describe_counter!("bm_outbox_consume_total", "Local outbox consume ticks");
         let dispatch = state.dispatch.clone();
         tokio::spawn(async move {
             loop {
-                let _ = dispatch.consume_send_award(50).await;
-                let _ = dispatch.dispatch_pending(50).await;
+                if let Ok(n) = dispatch.consume_send_award(50).await {
+                    if n > 0 {
+                        metrics::counter!("bm_outbox_consume_total", "kind" => "send_award")
+                            .increment(n as u64);
+                    }
+                }
+                if let Ok(n) = dispatch.dispatch_pending(50).await {
+                    if n > 0 {
+                        metrics::counter!("bm_outbox_consume_total", "kind" => "credit_dispatch")
+                            .increment(n as u64);
+                    }
+                }
                 tokio::time::sleep(Duration::from_millis(200)).await;
             }
         });
         let chat = state.chat.clone();
+        let rebate = state.rebate.clone();
         tokio::spawn(async move {
             loop {
                 let _ = chat.reconcile_pending(20).await;
+                let _ = rebate.consume_rebate(50).await;
                 tokio::time::sleep(Duration::from_secs(2)).await;
             }
         });

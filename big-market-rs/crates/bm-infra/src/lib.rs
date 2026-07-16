@@ -11,9 +11,15 @@ pub mod redis_revocation;
 #[cfg(feature = "mysql")]
 pub mod mysql_store;
 
+#[cfg(feature = "rabbit")]
+pub mod rabbit;
+
 pub use config::{AppConfig, GatewayConfig, WorkerConfig};
 pub use factory::{
     bootstrap, spawn_persist_loop, spawn_stock_flush_loop, BackendKind, Bootstrapped, RuntimeConfig,
 };
 pub use memory::{MemoryBackend, SharedMemory};
 pub use router::DbRouter;
+
+#[cfg(feature = "rabbit")]
+pub use rabbit::{RabbitBridge, QUEUE_SEND_AWARD, QUEUE_SEND_REBATE};

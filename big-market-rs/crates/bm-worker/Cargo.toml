@@ -19,3 +19,7 @@ tracing-subscriber = { workspace = true }
 bm-types = { workspace = true }
 bm-domain = { workspace = true }
 bm-infra = { workspace = true }
+
+[features]
+default = ["rabbit"]
+rabbit = ["bm-infra/rabbit"]

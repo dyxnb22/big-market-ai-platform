@@ -160,23 +160,37 @@ pub struct AwardDispatchService {
 }
 
 impl AwardDispatchService {
+    /// Ingest one send_award message → write credit_award_task (pending).
+    /// Idempotent when the same award_order_id is delivered twice.
+    pub async fn ingest_send_award(&self, m: SendAwardMessage) -> Result<(), BmError> {
+        self.award
+            .enqueue_credit_award(CreditAwardTask {
+                user_id: m.user_id,
+                award_order_id: m.order_id,
+                credit_amount: m.credit_amount,
+                state: AwardTaskState::Pending,
+                retry_count: 0,
+                created_at: Utc::now(),
+            })
+            .await
+    }
+
     /// Consume send_award messages → write credit_award_task (pending).
     pub async fn consume_send_award(&self, limit: usize) -> Result<usize, BmError> {
         let msgs = self.award.take_send_award_messages(limit).await?;
         let n = msgs.len();
         for m in msgs {
-            self.award
-                .enqueue_credit_award(CreditAwardTask {
-                    user_id: m.user_id,
-                    award_order_id: m.order_id,
-                    credit_amount: m.credit_amount,
-                    state: AwardTaskState::Pending,
-                    retry_count: 0,
-                    created_at: Utc::now(),
-                })
-                .await?;
+            self.ingest_send_award(m).await?;
         }
         Ok(n)
+    }
+
+    /// Drain local outbox without creating tasks (for RabbitMQ publish bridge).
+    pub async fn take_send_award_for_publish(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<SendAwardMessage>, BmError> {
+        self.award.take_send_award_messages(limit).await
     }
 
     /// pending → account credit → dispatched (idempotent via award_order_id as out_business_no).
@@ -301,6 +315,7 @@ impl ChatBillingService {
 pub struct RebateService {
     pub rebate: Arc<dyn RebateStore>,
     pub credit: Arc<dyn CreditStore>,
+    pub outbox: Arc<dyn RebateOutbox>,
 }
 
 impl RebateService {
@@ -329,7 +344,134 @@ impl RebateService {
                 trade_amount: reward,
             })
             .await?;
+        // Align Java send_rebate async path (idempotent via same out_business_no semantics).
+        let _ = self
+            .outbox
+            .enqueue_rebate(RebateMessage {
+                user_id: user_id.into(),
+                day: day.clone(),
+                amount: reward,
+            })
+            .await;
         Ok((false, reward, bal))
+    }
+
+    pub async fn ingest_rebate(&self, m: RebateMessage) -> Result<(), BmError> {
+        // Idempotent: same business key as sign credit.
+        let _ = self
+            .credit
+            .apply_trade(CreditOrder {
+                user_id: m.user_id.clone(),
+                order_id: Uuid::new_v4().to_string(),
+                out_business_no: format!("sign_{}_{}", m.user_id, m.day),
+                trade_name: "rebate_consume".into(),
+                trade_type: TradeType::Forward,
+                trade_amount: m.amount,
+            })
+            .await?;
+        Ok(())
+    }
+
+    pub async fn consume_rebate(&self, limit: usize) -> Result<usize, BmError> {
+        let msgs = self.outbox.take_rebate_messages(limit).await?;
+        let n = msgs.len();
+        for m in msgs {
+            self.ingest_rebate(m).await?;
+        }
+        Ok(n)
+    }
+
+    pub async fn take_rebate_for_publish(&self, limit: usize) -> Result<Vec<RebateMessage>, BmError> {
+        self.outbox.take_rebate_messages(limit).await
+    }
+}
+
+pub struct ChatbotService {
+    pub chat: Arc<ChatBillingService>,
+    pub admin: Arc<dyn AdminStore>,
+    pub credit: Arc<dyn CreditStore>,
+}
+
+impl ChatbotService {
+    pub async fn ask(
+        &self,
+        user_id: &str,
+        request_id: &str,
+        message: &str,
+    ) -> Result<(String, String, String, bool, Money, Money), BmError> {
+        let enabled = self
+            .admin
+            .get("chatbot::enabled")
+            .await?
+            .unwrap_or_else(|| "true".into());
+        if enabled.eq_ignore_ascii_case("false") {
+            let bal = self.credit.get_balance(user_id).await?;
+            return Ok((
+                "disabled".into(),
+                "disabled".into(),
+                "AI 对话当前不可用。".into(),
+                false,
+                rust_decimal::Decimal::ZERO,
+                bal,
+            ));
+        }
+        let amount = money("1.00");
+        let bal = self.chat.deduct(user_id, request_id, amount).await?;
+        let lower = message.to_lowercase();
+        let (intent, tool, answer) = if lower.contains("积分") || lower.contains("credit") {
+            (
+                "query_credit",
+                "credit_tool",
+                format!("你当前可用积分为 {bal}。可通过签到或抽奖获得更多积分。"),
+            )
+        } else if lower.contains("签到") || lower.contains("sign") {
+            (
+                "sign_hint",
+                "rebate_tool",
+                "每日可在用户中心签到领取积分；同一天重复签到不会重复发放。".into(),
+            )
+        } else if lower.contains("抽奖") || lower.contains("draw") {
+            (
+                "draw_hint",
+                "raffle_tool",
+                "兑换 SKU 获得抽奖次数后，点击转盘即可抽奖；默认活动固定奖为积分。".into(),
+            )
+        } else {
+            (
+                "chat",
+                "echo_tool",
+                format!("已收到：{message}\n\n（学习版本地回复，未调用外部大模型）"),
+            )
+        };
+        Ok((
+            intent.into(),
+            tool.into(),
+            answer,
+            true,
+            amount,
+            bal,
+        ))
+    }
+}
+
+impl ChatBillingService {
+    pub async fn mark_refund_pending(
+        &self,
+        user_id: &str,
+        request_id: &str,
+    ) -> Result<bool, BmError> {
+        let session = self
+            .chat
+            .get_session(user_id, request_id)
+            .await?
+            .ok_or_else(|| BmError::NotFound("chat session missing".into()))?;
+        if session.refund_state == RefundState::Refunded {
+            return Ok(true);
+        }
+        self.chat
+            .set_refund_state(user_id, request_id, RefundState::Pending)
+            .await?;
+        Ok(true)
     }
 }
 

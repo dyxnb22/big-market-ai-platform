@@ -1,11 +1,14 @@
 use anyhow::Context;
 use axum::body::Body;
 use axum::extract::State;
-use axum::http::{Request, Response, StatusCode, Uri};
-use axum::routing::any;
-use axum::{routing::get, Json, Router};
+use axum::http::{Request, Response, StatusCode};
+use axum::routing::{any, get};
+use axum::{Json, Router};
 use bm_infra::GatewayConfig;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -14,6 +17,35 @@ use tracing_subscriber::EnvFilter;
 struct GwState {
     client: reqwest::Client,
     app_url: String,
+    limiter: Arc<Mutex<RateLimiter>>,
+}
+
+struct RateLimiter {
+    window_start: Instant,
+    count: u32,
+    limit: u32,
+}
+
+impl RateLimiter {
+    fn new(limit: u32) -> Self {
+        Self {
+            window_start: Instant::now(),
+            count: 0,
+            limit,
+        }
+    }
+
+    fn allow(&mut self) -> bool {
+        if self.window_start.elapsed() > Duration::from_secs(1) {
+            self.window_start = Instant::now();
+            self.count = 0;
+        }
+        if self.count >= self.limit {
+            return false;
+        }
+        self.count += 1;
+        true
+    }
 }
 
 #[tokio::main]
@@ -23,7 +55,6 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let cfg = GatewayConfig::default();
-    // allow env override without full figment path issues
     let cfg = GatewayConfig {
         host: std::env::var("BM_GW_HOST").unwrap_or(cfg.host),
         port: std::env::var("BM_GW_PORT")
@@ -33,15 +64,24 @@ async fn main() -> anyhow::Result<()> {
         app_url: std::env::var("BM_GW_APP_URL").unwrap_or(cfg.app_url),
         jwt_secret: std::env::var("BM_GW_JWT_SECRET").unwrap_or(cfg.jwt_secret),
     };
+    let limit: u32 = std::env::var("BM_GW_RATE_LIMIT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(2000);
 
     let state = GwState {
         client: reqwest::Client::new(),
         app_url: cfg.app_url.clone(),
+        limiter: Arc::new(Mutex::new(RateLimiter::new(limit))),
     };
 
     let app = Router::new()
         .route(
             "/health",
+            get(|| async { Json(serde_json::json!({"status":"UP"})) }),
+        )
+        .route(
+            "/actuator/health",
             get(|| async { Json(serde_json::json!({"status":"UP"})) }),
         )
         .fallback(any(proxy))
@@ -50,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
         .with_state(state);
 
     let addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port).parse()?;
-    tracing::info!(%addr, upstream=%cfg.app_url, "bm-gateway listening");
+    tracing::info!(%addr, upstream=%cfg.app_url, rate_limit=limit, "bm-gateway listening");
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await.context("serve")?;
     Ok(())
@@ -60,6 +100,9 @@ async fn proxy(
     State(state): State<GwState>,
     req: Request<Body>,
 ) -> Result<Response<Body>, StatusCode> {
+    if !state.limiter.lock().await.allow() {
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
     let path_and_query = req
         .uri()
         .path_and_query()
@@ -94,14 +137,8 @@ async fn proxy(
         }
         response = response.header(k, v);
     }
-    let bytes = upstream
-        .bytes()
-        .await
-        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let bytes = upstream.bytes().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
     response
         .body(Body::from(bytes))
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
-
-#[allow(dead_code)]
-fn _uri(_: Uri) {}

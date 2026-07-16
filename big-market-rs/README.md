@@ -1,8 +1,8 @@
 # Big Market Rust (`big-market-rs`)
 
-Rust rewrite of the Big Market raffle platform. Default backend is **in-memory**
-(no Docker required for local API + closed-loop tests). Durable MySQL/Redis/RabbitMQ
-adapters are feature-gated for later wiring against the same domain ports.
+Rust rewrite of the Big Market raffle platform. Default backend is **file-backed**
+(`BM_DATA_DIR/state.json`, no Docker required). Optional MySQL/Redis/RabbitMQ
+adapters wire through the same domain ports.
 
 ## Binaries
 
@@ -56,5 +56,7 @@ Seeded: activity `100401`, SKU `9901` (5 credits → 1 draw), deterministic awar
 | `BM_INTERNAL_TOKEN` | `dev-internal-token` |
 | `BM_MYSQL_URL` | unset |
 | `BM_REDIS_URL` | unset |
+| `BM_RABBIT_URL` | unset (enables `bm.send_award` / `bm.send_rebate` in `bm-worker`) |
+| `BM_SECURE` | `0` (set `1` to reject default JWT/internal token) |
 | `BM_GW_PORT` | 8080 |
 | `BM_GW_APP_URL` | `http://127.0.0.1:8083` |

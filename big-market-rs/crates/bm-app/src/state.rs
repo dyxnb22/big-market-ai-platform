@@ -1,6 +1,6 @@
 use bm_domain::{
-    parse_dev_users, AuthFacade, AwardDispatchService, ChatBillingService, JwtService,
-    RaffleService, RebateService, TokenRevocation,
+    parse_dev_users, AuthFacade, AwardDispatchService, ChatBillingService, ChatbotService,
+    JwtService, RaffleService, RebateService, TokenRevocation,
 };
 use bm_infra::{AppConfig, SharedMemory};
 use std::sync::Arc;
@@ -12,9 +12,13 @@ pub struct AppState {
     pub raffle: Arc<RaffleService>,
     pub chat: Arc<ChatBillingService>,
     pub rebate: Arc<RebateService>,
+    pub chatbot: Arc<ChatbotService>,
     pub dispatch: Arc<AwardDispatchService>,
     pub admin: Arc<dyn bm_domain::AdminStore>,
     pub stock: Arc<dyn bm_domain::StockStore>,
+    pub stages: Arc<dyn bm_domain::StageStore>,
+    pub orders: Arc<dyn bm_domain::OrderQueryStore>,
+    pub strategy: Arc<dyn bm_domain::StrategyStore>,
 }
 
 impl AppState {
@@ -45,6 +49,12 @@ impl AppState {
         let rebate = Arc::new(RebateService {
             rebate: backend.clone(),
             credit: backend.clone(),
+            outbox: backend.clone(),
+        });
+        let chatbot = Arc::new(ChatbotService {
+            chat: chat.clone(),
+            admin: backend.clone(),
+            credit: backend.clone(),
         });
         let dispatch = Arc::new(AwardDispatchService {
             award: backend.clone(),
@@ -56,9 +66,13 @@ impl AppState {
             raffle,
             chat,
             rebate,
+            chatbot,
             dispatch,
             admin: backend.clone(),
-            stock: backend,
+            stock: backend.clone(),
+            stages: backend.clone(),
+            orders: backend.clone(),
+            strategy: backend,
         }
     }
 }

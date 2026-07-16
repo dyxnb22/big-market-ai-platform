@@ -237,6 +237,49 @@ pub trait AdminStore: Send + Sync {
     async fn get(&self, key: &str) -> Result<Option<String>, BmError>;
     async fn set(&self, key: &str, value: &str) -> Result<(), BmError>;
     async fn list(&self) -> Result<Vec<(String, String)>, BmError>;
+    async fn delete(&self, key: &str) -> Result<(), BmError>;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityStage {
+    pub id: i64,
+    pub channel: String,
+    pub source: String,
+    pub activity_id: i64,
+    pub state: String,
+}
+
+#[async_trait]
+pub trait StageStore: Send + Sync {
+    async fn list_stages(&self) -> Result<Vec<ActivityStage>, BmError>;
+    async fn set_stage_state(&self, id: i64, state: &str) -> Result<bool, BmError>;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RebateMessage {
+    pub user_id: String,
+    pub day: String,
+    pub amount: Money,
+}
+
+#[async_trait]
+pub trait RebateOutbox: Send + Sync {
+    async fn enqueue_rebate(&self, msg: RebateMessage) -> Result<(), BmError>;
+    async fn take_rebate_messages(&self, limit: usize) -> Result<Vec<RebateMessage>, BmError>;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserRaffleOrderView {
+    pub user_id: String,
+    pub activity_id: i64,
+    pub order_id: String,
+    pub award_id: i32,
+    pub award_title: String,
+}
+
+#[async_trait]
+pub trait OrderQueryStore: Send + Sync {
+    async fn list_raffle_orders(&self, limit: usize) -> Result<Vec<UserRaffleOrderView>, BmError>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
