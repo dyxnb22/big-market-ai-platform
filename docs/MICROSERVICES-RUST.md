@@ -86,12 +86,12 @@ HTTP ─► bm-app ─► bm-domain ◄── bm-infra ──► MySQL / Redis /
 
 1. `bm-app` `draw_by_token` → `RaffleService::draw`
 2. `QuotaStore::consume_one`（幂等键 `draw_{user}_{activity}_{uuid}`）
-3. `StrategyStore::award_weights` → 加权抽取（mysql：读 `strategy_award`；file：确定性 demo 权重）
+3. `ParticipationStore::count_draws` → `StrategyStore::award_weights` → `pick_for_user`（`tree_lock_N` 过滤 + 加权抽取；mysql：读 `strategy_award.rule_models`）
 4. `StockStore::decr_stock`（mysql：扣 `strategy_award.award_count_surplus`）
 5. `AwardStore::save_award_record` + `enqueue_send_award_message`
 6. **Worker tick：** `consume_send_award` → `credit_award_task` pending → `dispatch_pending` → `CreditStore::apply_trade`（幂等 `award_order_id`）
 
-代码：`bm-domain/src/raffle.rs`、`bm-worker/src/scheduler.rs`。
+代码：`bm-domain/src/raffle.rs`、`bm-domain/src/strategy.rs`、`bm-domain/src/worker.rs`（`JOB_CATALOG` + `WorkerScheduler`；`bm-worker` 暴露 `GET /actuator/jobs`）。
 
 ### SKU 兑换
 
@@ -112,8 +112,8 @@ HTTP ─► bm-app ─► bm-domain ◄── bm-infra ──► MySQL / Redis /
 | HTTP `/api/v1/**` | ✅ `bm-app` | ✅ 多服务经 gateway |
 | 幂等 / outbox 语义 | ✅ 对齐 `data-and-outbox.md` | ✅ |
 | MySQL 分片表 | ✅ `BM_BACKEND=mysql` | ✅ |
-| Rule-tree 策略引擎 | 简化（权重表 + 后续插件） | 完整 |
-| XXL-Job | worker 轮询 tick（无控制台） | 全量 handler |
+| Rule-tree 策略引擎 | 简化（权重表 + `tree_lock_N` 参与过滤；非完整 Java 规则树） | 完整 |
+| XXL-Job | `WorkerScheduler` 轮询 tick + `JOB_CATALOG`（无控制台） | 全量 handler |
 | OpenAI Chatbot | 本地 echo | 可选外部 API |
 | Nacos Admin | `platform_config` + ENV | Nacos sync |
 | Dubbo RPC | 同进程 trait 调用 | 跨进程 |

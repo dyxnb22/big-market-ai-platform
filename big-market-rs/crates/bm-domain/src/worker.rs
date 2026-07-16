@@ -1,11 +1,19 @@
-//! Worker job tick — replaces ad-hoc loops; semantic equivalent of XXL handlers
-//! without a job console (see `docs/MICROSERVICES-RUST.md`).
+//! Worker tick — shared between `bm-worker` and embedded worker in `bm-app`.
 
-use bm_domain::{AwardDispatchService, ChatBillingService, RebateService, StockStore};
+use crate::{AwardDispatchService, ChatBillingService, RebateService, StockStore};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::time::sleep;
+
+/// Registered background jobs (semantic equivalent of XXL handlers, no console).
+pub const JOB_CATALOG: &[(&str, &str)] = &[
+    ("consume_send_award", "Local outbox → credit_award_task ingest"),
+    ("consume_rebate", "Local rebate outbox ingest"),
+    ("dispatch_credit_award", "Pending credit_award_task → account credit"),
+    ("chat_reconcile", "Pending chat refund sessions"),
+    ("stock_flush", "Mark activity soft-stock dirty keys clean"),
+];
 
 /// Shared services for one scheduler poll cycle.
 pub struct WorkerScheduler {

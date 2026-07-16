@@ -18,6 +18,7 @@ pub struct RaffleService {
     pub award: Arc<dyn AwardStore>,
     pub strategy: Arc<dyn StrategyStore>,
     pub stock: Arc<dyn StockStore>,
+    pub participation: Arc<dyn ParticipationStore>,
 }
 
 impl RaffleService {
@@ -89,8 +90,12 @@ impl RaffleService {
             .consume_one(user_id, activity_id, &consume_no)
             .await?;
 
+        let prior_draws = self
+            .participation
+            .count_draws(user_id, activity_id)
+            .await?;
         let weights = self.strategy.award_weights(activity_id).await?;
-        let picked = crate::strategy::pick_weighted(&weights)
+        let picked = crate::strategy::pick_for_user(&weights, prior_draws)
             .ok_or_else(|| BmError::Internal("no award weight".into()))?;
 
         // Stock gate (soft): refuse if award stock exhausted.
@@ -104,7 +109,7 @@ impl RaffleService {
             .await;
 
         let award_id = picked.award_id;
-        let award_title = picked.award_title.clone();
+        let award_title = picked.award_title;
         let award_index = picked.award_index;
         let order_id = Uuid::new_v4().to_string();
         let credit_amount = picked.credit_amount;

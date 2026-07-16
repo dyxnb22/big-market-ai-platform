@@ -1,8 +1,9 @@
-mod scheduler;
-
 use anyhow::Context;
 use axum::{routing::get, Json, Router};
-use bm_domain::{AwardDispatchService, ChatBillingService, RebateService, SendAwardMessage};
+use bm_domain::{
+    AwardDispatchService, ChatBillingService, RebateService, SendAwardMessage, WorkerScheduler,
+    JOB_CATALOG,
+};
 use bm_infra::{bootstrap, spawn_persist_loop, RuntimeConfig, ServiceStores, WorkerConfig};
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -131,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
     let _ = rabbit_url;
 
     let rabbit_for_scheduler = rabbit_active.clone();
-    scheduler::WorkerScheduler {
+    WorkerScheduler {
         dispatch,
         rebate,
         chat,
@@ -149,6 +150,18 @@ async fn main() -> anyhow::Result<()> {
         .route(
             "/actuator/health",
             get(|| async { Json(serde_json::json!({"status":"UP"})) }),
+        )
+        .route(
+            "/actuator/jobs",
+            get(|| async {
+                let jobs: Vec<serde_json::Value> = JOB_CATALOG
+                    .iter()
+                    .map(|(name, desc)| {
+                        serde_json::json!({ "name": name, "description": desc })
+                    })
+                    .collect();
+                Json(serde_json::json!({ "jobs": jobs }))
+            }),
         )
         .layer(TraceLayer::new_for_http());
 

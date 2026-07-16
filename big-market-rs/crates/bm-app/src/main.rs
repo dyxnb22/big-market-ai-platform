@@ -3,11 +3,13 @@ mod state;
 
 use anyhow::Context;
 use axum::Router;
+use bm_domain::WorkerScheduler;
 use bm_infra::{bootstrap, spawn_persist_loop, spawn_stock_flush_loop, AppConfig, RuntimeConfig};
 use state::AppState;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -50,34 +52,19 @@ async fn main() -> anyhow::Result<()> {
 
     let embed_worker = std::env::var("BM_EMBED_WORKER").unwrap_or_else(|_| "1".into()) != "0";
     if embed_worker {
-        metrics::describe_counter!("bm_outbox_consume_total", "Local outbox consume ticks");
-        let dispatch = state.dispatch.clone();
-        tokio::spawn(async move {
-            loop {
-                if let Ok(n) = dispatch.consume_send_award(50).await {
-                    if n > 0 {
-                        metrics::counter!("bm_outbox_consume_total", "kind" => "send_award")
-                            .increment(n as u64);
-                    }
-                }
-                if let Ok(n) = dispatch.dispatch_pending(50).await {
-                    if n > 0 {
-                        metrics::counter!("bm_outbox_consume_total", "kind" => "credit_dispatch")
-                            .increment(n as u64);
-                    }
-                }
-                tokio::time::sleep(Duration::from_millis(200)).await;
-            }
-        });
-        let chat = state.chat.clone();
-        let rebate = state.rebate.clone();
-        tokio::spawn(async move {
-            loop {
-                let _ = chat.reconcile_pending(20).await;
-                let _ = rebate.consume_rebate(50).await;
-                tokio::time::sleep(Duration::from_secs(2)).await;
-            }
-        });
+        let poll_secs = std::env::var("BM_WORKER_POLL_SECS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1);
+        WorkerScheduler {
+            dispatch: state.dispatch.clone(),
+            rebate: state.rebate.clone(),
+            chat: state.chat.clone(),
+            stock: state.stock.clone(),
+            rabbit_active: Arc::new(AtomicBool::new(false)),
+            poll_secs,
+        }
+        .spawn();
     }
 
     let app = Router::new()

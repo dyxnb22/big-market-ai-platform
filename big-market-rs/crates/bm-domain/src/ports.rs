@@ -289,11 +289,20 @@ pub struct AwardWeight {
     pub award_index: i32,
     pub weight: u32,
     pub credit_amount: Money,
+    /// From `strategy_award.rule_models` (e.g. `tree_luck_award`, `tree_lock_3`).
+    #[serde(default)]
+    pub rule_model: Option<String>,
 }
 
 #[async_trait]
 pub trait StrategyStore: Send + Sync {
     async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError>;
+}
+
+/// User participation signal for lock/unlock rules (prior completed draws).
+#[async_trait]
+pub trait ParticipationStore: Send + Sync {
+    async fn count_draws(&self, user_id: &str, activity_id: i64) -> Result<i32, BmError>;
 }
 
 #[async_trait]

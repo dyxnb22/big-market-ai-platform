@@ -41,6 +41,7 @@ impl AppState {
             award: stores.award.clone(),
             strategy: stores.strategy.clone(),
             stock: stores.stock.clone(),
+            participation: stores.participation.clone(),
         });
         let chat = Arc::new(ChatBillingService {
             credit: stores.credit.clone(),

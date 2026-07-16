@@ -8,6 +8,7 @@ pub mod ports;
 pub mod raffle;
 pub mod rebate;
 pub mod strategy;
+pub mod worker;
 
 pub use auth::*;
 pub use chat::*;
@@ -15,3 +16,4 @@ pub use credit::*;
 pub use ports::*;
 pub use raffle::*;
 pub use strategy::*;
+pub use worker::*;

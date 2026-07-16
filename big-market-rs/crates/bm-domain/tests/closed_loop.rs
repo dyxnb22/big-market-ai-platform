@@ -15,6 +15,7 @@ async fn raffle_award_credit_closed_loop() {
         award: backend.clone(),
         strategy: backend.clone(),
         stock: backend.clone(),
+        participation: backend.clone(),
     };
     let dispatch = AwardDispatchService {
         award: backend.clone(),

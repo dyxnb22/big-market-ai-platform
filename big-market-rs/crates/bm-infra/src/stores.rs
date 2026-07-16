@@ -18,6 +18,7 @@ pub struct ServiceStores {
     pub stages: Arc<dyn StageStore>,
     pub orders: Arc<dyn OrderQueryStore>,
     pub strategy: Arc<dyn StrategyStore>,
+    pub participation: Arc<dyn ParticipationStore>,
     pub outbox: Arc<dyn RebateOutbox>,
 }
 
@@ -35,6 +36,7 @@ impl ServiceStores {
                 stages: mysql.clone(),
                 stock: mysql.clone(),
                 strategy: mysql.clone(),
+                participation: mysql.clone(),
                 rebate: mysql.clone(),
                 orders: mysql.clone(),
                 outbox: mysql.clone(),
@@ -56,6 +58,7 @@ impl ServiceStores {
             stages: mem.clone(),
             orders: mem.clone(),
             strategy: mem.clone(),
+            participation: mem.clone(),
             outbox: mem.clone(),
         }
     }

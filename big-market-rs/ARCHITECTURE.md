@@ -6,7 +6,7 @@
 
 - **3 processes max:** `bm-gateway`, `bm-app`, `bm-worker` (worker embeddable in app).
 - **Not a 1:1 Java microservice clone** — domain boundaries are `bm-domain` traits, not RPC services.
-- **Sync path** in app; **async/outbox** in worker tick (`bm-worker/src/scheduler.rs`).
+- **Sync path** in app; **async/outbox** in worker tick (`bm-domain/src/worker.rs`, shared by `bm-app` embed + `bm-worker`).
 
 ## Crates
 

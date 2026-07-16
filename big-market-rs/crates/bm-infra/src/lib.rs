@@ -36,6 +36,9 @@ pub mod mysql_rebate;
 #[cfg(feature = "mysql")]
 pub mod mysql_orders;
 
+#[cfg(feature = "mysql")]
+pub mod mysql_participation;
+
 #[cfg(feature = "rabbit")]
 pub mod rabbit;
 

@@ -35,7 +35,7 @@ impl StrategyStore for MysqlStores {
     async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError> {
         let schema = self.catalog_schema();
         let sql = format!(
-            "SELECT sa.award_id, sa.award_title, sa.award_rate, sa.sort \
+            "SELECT sa.award_id, sa.award_title, sa.award_rate, sa.sort, sa.rule_models \
              FROM `{schema}`.strategy_award sa \
              JOIN `{schema}`.raffle_activity ra ON ra.strategy_id = sa.strategy_id \
              WHERE ra.activity_id = ? AND sa.award_rate > 0 \
@@ -54,6 +54,7 @@ impl StrategyStore for MysqlStores {
             let award_id: i32 = r.get("award_id");
             let title: String = r.get("award_title");
             let rate: Decimal = r.get("award_rate");
+            let rule_model: Option<String> = r.try_get("rule_models").ok();
             let weight = rate_to_weight(rate);
             if weight == 0 {
                 continue;
@@ -64,6 +65,7 @@ impl StrategyStore for MysqlStores {
                 award_index: (idx + 1) as i32,
                 weight,
                 credit_amount: credit_for_award(award_id, &title),
+                rule_model,
             });
         }
         if out.is_empty() {

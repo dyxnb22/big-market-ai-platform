@@ -543,7 +543,18 @@ impl TokenRevocation for MemoryBackend {
 #[async_trait]
 impl StrategyStore for MemoryBackend {
     async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError> {
-        Ok(default_stage_weights(activity_id))
+        Ok(bm_domain::strategy::default_stage_weights(activity_id))
+    }
+}
+
+#[async_trait]
+impl ParticipationStore for MemoryBackend {
+    async fn count_draws(&self, user_id: &str, activity_id: i64) -> Result<i32, BmError> {
+        let g = self.inner.lock().await;
+        Ok(g.awards
+            .values()
+            .filter(|a| a.user_id == user_id && a.activity_id == activity_id)
+            .count() as i32)
     }
 }
 
