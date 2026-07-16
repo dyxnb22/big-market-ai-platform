@@ -47,6 +47,21 @@ SQL
 ensure_ledger big_market_01
 ensure_ledger big_market_02
 
+mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" <<'SQL'
+CREATE TABLE IF NOT EXISTS `big_market`.`platform_config` (
+    `cfg_key` VARCHAR(128) NOT NULL PRIMARY KEY,
+    `cfg_value` TEXT NOT NULL,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT IGNORE INTO `big_market`.`platform_config` (`cfg_key`, `cfg_value`) VALUES
+    ('chatbot::enabled', 'true'),
+    ('activity.100401::title', '幸运轮盘活动'),
+    ('activity.100401::copy', '登录参与抽奖，AI 帮你解读活动权益。'),
+    ('activity.100401::state', 'online'),
+    ('stage.activity.c01.s01', '100401');
+SQL
+
 export BM_BACKEND=mysql
 export BM_MYSQL_URL
 export BM_DATA_DIR="${BM_DATA_DIR:-$ROOT/big-market-rs/target/run/mysql-data}"

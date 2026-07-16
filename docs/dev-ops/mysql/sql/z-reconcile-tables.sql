@@ -6,20 +6,6 @@ USE `big_market`;
 
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_decrement_ledger` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
-    `reservation_id`  VARCHAR(64)  NOT NULL,
-    `strategy_id`     BIGINT       NOT NULL,
-    `award_id`        INT          NOT NULL,
-    `lock_surplus`    BIGINT       DEFAULT NULL,
-    `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
-    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_reservation_id` (`reservation_id`),
-    KEY `idx_strategy_award` (`strategy_id`, `award_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
-    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `sku`             BIGINT       NOT NULL,
     `activity_id`     BIGINT       DEFAULT NULL,
     `lock_surplus`    BIGINT       NOT NULL,
@@ -30,6 +16,21 @@ CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
     UNIQUE KEY `uq_sku_lock_surplus` (`sku`, `lock_surplus`),
     KEY `idx_activity` (`activity_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `platform_config` (
+    `cfg_key`     VARCHAR(128) NOT NULL,
+    `cfg_value`   TEXT         NOT NULL,
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`cfg_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Rust admin/DCC KV (learning)';
+
+INSERT IGNORE INTO `platform_config` (`cfg_key`, `cfg_value`) VALUES
+    ('chatbot::enabled', 'true'),
+    ('activity.100401::title', '幸运轮盘活动'),
+    ('activity.100401::copy', '登录参与抽奖，AI 帮你解读活动权益。'),
+    ('activity.100401::state', 'online'),
+    ('stage.activity.c01.s01', '100401');
 
 USE `big_market_01`;
 

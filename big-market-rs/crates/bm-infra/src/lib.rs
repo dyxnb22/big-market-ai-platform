@@ -18,6 +18,12 @@ pub mod mysql_quota;
 #[cfg(feature = "mysql")]
 pub mod mysql_chat;
 
+#[cfg(feature = "mysql")]
+pub mod mysql_catalog;
+
+#[cfg(feature = "mysql")]
+pub mod mysql_admin;
+
 #[cfg(feature = "rabbit")]
 pub mod rabbit;
 

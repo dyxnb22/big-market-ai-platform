@@ -31,12 +31,12 @@ impl ServiceStores {
                 award: mysql.clone(),
                 quota: mysql.clone(),
                 chat: mysql.clone(),
-                // Catalog/admin/stock stay on file companion until full MySQL port.
-                catalog: mem.clone(),
+                catalog: mysql.clone(),
+                admin: mysql.clone(),
+                stages: mysql.clone(),
+                // Stock/strategy/rebate outbox stay on file companion until full MySQL port.
                 rebate: mem.clone(),
-                admin: mem.clone(),
                 stock: mem.clone(),
-                stages: mem.clone(),
                 orders: mem.clone(),
                 strategy: mem.clone(),
                 outbox: mem.clone(),

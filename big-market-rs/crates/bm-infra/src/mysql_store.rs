@@ -46,6 +46,11 @@ impl MysqlStores {
     pub(crate) fn tb(&self, user_id: &str) -> u32 {
         self.router.route(user_id).1
     }
+
+    /// Shared catalog tables (`raffle_activity_sku`, `raffle_activity_stage`, …).
+    pub(crate) fn catalog_schema(&self) -> &'static str {
+        "big_market"
+    }
 }
 
 #[async_trait]
