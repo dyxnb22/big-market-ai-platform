@@ -22,6 +22,8 @@ draw → send_award message (local queue / Rabbit)
 
 When Rabbit is active, worker publishes/consumes queues and skips local outbox consume in the same tick.
 
+Query: `POST /api/v1/raffle/activity/query_credit_award_task_by_token` `{ "awardOrderId": "..." }`.
+
 ## Stock
 
 - Award surplus: MySQL `strategy_award.award_count_surplus` (immediate)  

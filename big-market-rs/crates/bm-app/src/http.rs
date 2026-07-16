@@ -44,6 +44,10 @@ pub fn routes(state: AppState) -> Router {
             post(exchange_sku),
         )
         .route(
+            "/api/v1/raffle/activity/query_credit_award_task_by_token",
+            post(query_credit_award_task),
+        )
+        .route(
             "/api/v1/raffle/activity/calendar_sign_rebate_by_token",
             post(sign_in),
         )
@@ -210,8 +214,52 @@ async fn draw_by_token(
             award_id: d.award_id,
             award_title: d.award_title,
             award_index: d.award_index,
+            order_id: d.order_id,
+            strategy_trace: StrategyTraceResponse {
+                prior_draws: d.strategy_trace.prior_draws,
+                pool_before: d.strategy_trace.pool_before,
+                pool_after: d.strategy_trace.pool_after,
+                rules_applied: d.strategy_trace.rules_applied,
+                picked_rule_model: d.strategy_trace.picked_rule_model,
+            },
         }))
         .into_response(),
+        Err(e) => err_response(e),
+    }
+}
+
+async fn query_credit_award_task(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<CreditAwardTaskQuery>,
+) -> impl IntoResponse {
+    let user = match require_user(&state, &headers).await {
+        Ok(u) => u,
+        Err(r) => return r,
+    };
+    if req.award_order_id.trim().is_empty() {
+        return err_response(BmError::IllegalParam("awardOrderId required".into()));
+    }
+    match state
+        .raffle
+        .query_credit_award_task(&user, &req.award_order_id)
+        .await
+    {
+        Ok(Some(t)) => {
+            let state_s = match t.state {
+                bm_domain::AwardTaskState::Pending => "pending",
+                bm_domain::AwardTaskState::Dispatched => "dispatched",
+                bm_domain::AwardTaskState::Failed => "failed",
+            };
+            Json(ApiResponse::ok(CreditAwardTaskResponse {
+                award_order_id: t.award_order_id,
+                credit_amount: t.credit_amount,
+                state: state_s.into(),
+                retry_count: t.retry_count,
+            }))
+            .into_response()
+        }
+        Ok(None) => Json(ApiResponse::<()>::ok_empty()).into_response(),
         Err(e) => err_response(e),
     }
 }

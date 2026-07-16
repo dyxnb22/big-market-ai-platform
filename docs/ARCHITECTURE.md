@@ -12,7 +12,7 @@ big-market-web (:5173)
    bm-app :8083
    ├── auth (JWT)
    ├── raffle / SKU / strategy
-   ├── chat billing + chatbot
+   ├── chat billing + chatbot (local echo)
    ├── rebate (calendar sign)
    └── admin / DCC / ERP
         │
@@ -20,7 +20,7 @@ big-market-web (:5173)
    bm-worker :8085   (optional; app can embed the same scheduler)
 ```
 
-Default learning path: gateway + app with `BM_EMBED_WORKER=1`.  
+Default path: gateway + app with `BM_EMBED_WORKER=1`.  
 If `BM_RABBIT_URL` is set, app disables embed worker unless `BM_EMBED_WORKER_FORCE=1`.
 
 ## Crates
@@ -43,10 +43,22 @@ If `BM_RABBIT_URL` is set, app disables embed worker unless `BM_EMBED_WORKER_FOR
 | `memory` | Tests only |
 | `mysql` | sqlx against learning schema (+ shards) |
 
-## Strategy (lite)
+## Strategy (lite) chain
 
-- Weighted awards from `strategy_award` (or demo defaults for activity `100401`)
-- `tree_lock_N` unlock based on prior draws
-- Optional `BM_STRATEGY_CHAIN=1` + `BM_RULE_BLACKLIST` / `BM_RULE_WEIGHT`
+Order when evaluating a draw:
+
+```text
+1. rule_blacklist   (only if BM_STRATEGY_CHAIN=1 and BM_RULE_BLACKLIST hits user)
+2. rule_weight      (optional BM_RULE_WEIGHT buckets by prior draws)
+3. tree_lock_N      (filter awards until prior_draws >= N)
+4. weighted pick
+```
+
+| Activity | Channel/source | Purpose |
+| --- | --- | --- |
+| `100401` | `c01` / `s01` | Deterministic smoke (single award 101) — skips chain env |
+| `100402` | `c02` / `s02` | Multi-weight + `tree_lock_1` / `tree_lock_3` interview demo |
+
+Draw responses include `orderId` + `strategyTrace` (`priorDraws`, `poolBefore`/`poolAfter`, `rulesApplied`, `pickedRuleModel`).
 
 Not included: full rule-tree graph engine, XXL console, Nacos, external LLM.

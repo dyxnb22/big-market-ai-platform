@@ -32,13 +32,7 @@ wait_for_stack_healthy() {
   local host="${1:-localhost}"
   local timeout_sec="${2:-180}"
   wait_for_actuator_up "$host" 8080 "gateway" "$timeout_sec"
-  wait_for_actuator_up "$host" 8081 "auth" "$timeout_sec"
-  wait_for_actuator_up "$host" 8082 "admin" "$timeout_sec"
-  wait_for_actuator_up "$host" 8083 "market" "$timeout_sec"
-  wait_for_actuator_up "$host" 8084 "chatbot" "$timeout_sec"
-  wait_for_actuator_up "$host" 8085 "message-job" "$timeout_sec"
-  wait_for_actuator_up "$host" 8086 "account" "$timeout_sec"
-  wait_for_actuator_up "$host" 8087 "fulfillment" "$timeout_sec"
+  wait_for_actuator_up "$host" 8083 "bm-app" "$timeout_sec"
 }
 
 resolve_stage_activity_id() {

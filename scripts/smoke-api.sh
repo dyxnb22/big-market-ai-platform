@@ -11,9 +11,8 @@ json_field() {
   python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"
 }
 
-if ! curl -fsS "${API%/api/v1}/health" >/dev/null 2>&1; then
-  "$ROOT/scripts/run-stack.sh"
-fi
+# Always (re)start so smoke hits the binary just built by acceptance/clippy.
+"$ROOT/scripts/run-stack.sh"
 
 echo "=== API smoke ==="
 
@@ -66,10 +65,23 @@ assert b0 - b1 == Decimal("5.00"), (b0, b1)
 PY
 pass "exchange deducted 5"
 
+# Same requestId must not double-debit.
+EX_REPLAY="$(curl -fsS -X POST "$API/raffle/activity/credit_pay_exchange_sku_by_token" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"sku\":9901,\"requestId\":\"$REQ\"}")"
+[ "$(printf '%s' "$EX_REPLAY" | json_field "d['code']")" = "0000" ] || fail "exchange replay: $EX_REPLAY"
+AFTER_REPLAY="$(curl -fsS "$API/raffle/activity/query_user_credit_account_by_token" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}')"
+BAL_REPLAY="$(printf '%s' "$AFTER_REPLAY" | json_field "d['data']")"
+[ "$BAL_REPLAY" = "$BAL1" ] || fail "exchange replay changed balance: $BAL1 → $BAL_REPLAY"
+pass "sku exchange idempotent replay"
+
 DRAW="$(curl -fsS -X POST "$API/raffle/activity/draw_by_token" \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"activityId":100401}')"
 [ "$(printf '%s' "$DRAW" | json_field "d['data']['awardId']")" = "101" ] || fail "draw: $DRAW"
+ORDER_ID="$(printf '%s' "$DRAW" | json_field "d['data']['orderId']")"
+[ -n "$ORDER_ID" ] || fail "draw missing orderId: $DRAW"
 pass "draw award 101"
 
 # wait for embedded worker to credit
@@ -86,10 +98,21 @@ done
 python3 -c "from decimal import Decimal; assert Decimal('$BAL0')==Decimal('$FINAL'), ('$BAL0','$FINAL')"
 pass "award credit restored balance (outbox dispatched)"
 
+TASK="$(curl -fsS -X POST "$API/raffle/activity/query_credit_award_task_by_token" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"awardOrderId\":\"$ORDER_ID\"}")"
+[ "$(printf '%s' "$TASK" | json_field "d['code']")" = "0000" ] || fail "credit task: $TASK"
+[ "$(printf '%s' "$TASK" | json_field "d['data']['state']")" = "dispatched" ] || fail "credit task state: $TASK"
+pass "credit award task dispatched by orderId"
+
 CHAT_REQ="chat-$REQ"
 DED="$(curl -fsS -X POST "$API/raffle/activity/chat_credit_deduct_by_token?amount=2&requestId=$CHAT_REQ" \
   -H "Authorization: Bearer $TOKEN")"
 [ "$(printf '%s' "$DED" | json_field "d['code']")" = "0000" ] || fail "chat deduct: $DED"
+BAL_CHAT="$(printf '%s' "$DED" | json_field "d['data']")"
+DED_REPLAY="$(curl -fsS -X POST "$API/raffle/activity/chat_credit_deduct_by_token?amount=2&requestId=$CHAT_REQ" \
+  -H "Authorization: Bearer $TOKEN")"
+[ "$(printf '%s' "$DED_REPLAY" | json_field "d['data']")" = "$BAL_CHAT" ] || fail "chat deduct replay: $DED_REPLAY"
 pass "chat deduct"
 
 REF="$(curl -fsS -X POST "$API/internal/raffle/activity/chat_credit_refund_by_token" \

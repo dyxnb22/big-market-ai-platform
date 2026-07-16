@@ -78,6 +78,7 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
     inner.credits.insert("xiaofuge".into(), initial_credit);
     inner.credits.insert("admin".into(), initial_credit);
     inner.stage.insert(stage_key("c01", "s01"), 100401);
+    inner.stage.insert(stage_key("c02", "s02"), 100402);
     inner.skus.insert(
         9901,
         SkuProduct {
@@ -88,11 +89,28 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
             quota_count: 1,
         },
     );
+    inner.skus.insert(
+        9902,
+        SkuProduct {
+            sku: 9902,
+            activity_id: 100402,
+            product_name: "锁奖活动次数兑换".into(),
+            product_amount: money("5.00"),
+            quota_count: 1,
+        },
+    );
     inner
         .admin
         .insert("stage.activity.c01.s01".into(), "100401".into());
+    inner
+        .admin
+        .insert("stage.activity.c02.s02".into(), "100402".into());
     inner.stocks.insert(activity_stock_key(100401), 10_000);
     inner.stocks.insert(award_stock_key(101), 1_000);
+    inner.stocks.insert(activity_stock_key(100402), 10_000);
+    for aid in [201, 202, 203, 204] {
+        inner.stocks.insert(award_stock_key(aid), 1_000);
+    }
     inner.stages.push(ActivityStage {
         id: 1,
         channel: "c01".into(),
@@ -100,12 +118,25 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
         activity_id: 100401,
         state: "active".into(),
     });
-    // Default display + chatbot config (default display + chatbot config).
+    inner.stages.push(ActivityStage {
+        id: 2,
+        channel: "c02".into(),
+        source: "s02".into(),
+        activity_id: 100402,
+        state: "active".into(),
+    });
+    // Default display + chatbot config.
     inner.admin.insert("activity.100401::title".into(), "幸运轮盘活动".into());
-    inner.admin.insert("activity.100401::copy".into(), "登录参与抽奖，AI 帮你解读活动权益。".into());
+    inner.admin.insert("activity.100401::copy".into(), "登录参与抽奖；对话计费真实，回复为本地 echo。".into());
     inner.admin.insert("activity.100401::state".into(), "online".into());
+    inner.admin.insert("activity.100402::title".into(), "锁奖演示活动".into());
+    inner.admin.insert(
+        "activity.100402::copy".into(),
+        "多权重奖池 + tree_lock 解锁；用于面试演示规则链。".into(),
+    );
+    inner.admin.insert("activity.100402::state".into(), "online".into());
     inner.admin.insert("chatbot::enabled".into(), "true".into());
-    // Demo draw quota (aligns with E2E / learning freeze expectations).
+    // Demo draw quota for default activity.
     let demo_quota = ActivityAccount {
         user_id: "xiaofuge".into(),
         activity_id: 100401,
@@ -119,6 +150,19 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
     inner
         .quotas
         .insert(quota_key("xiaofuge", 100401), demo_quota);
+    let lock_quota = ActivityAccount {
+        user_id: "xiaofuge".into(),
+        activity_id: 100402,
+        total_count: 5,
+        total_count_surplus: 5,
+        day_count: 5,
+        day_count_surplus: 5,
+        month_count: 5,
+        month_count_surplus: 5,
+    };
+    inner
+        .quotas
+        .insert(quota_key("xiaofuge", 100402), lock_quota);
 }
 
 #[async_trait]
@@ -274,12 +318,36 @@ impl AwardStore for MemoryBackend {
         Ok(())
     }
 
+    async fn get_award_record(
+        &self,
+        user_id: &str,
+        order_id: &str,
+    ) -> Result<Option<UserAwardRecord>, BmError> {
+        let g = self.inner.lock().await;
+        Ok(g.awards
+            .get(order_id)
+            .filter(|r| r.user_id == user_id)
+            .cloned())
+    }
+
     async fn enqueue_credit_award(&self, task: CreditAwardTask) -> Result<(), BmError> {
         let mut g = self.inner.lock().await;
         g.credit_tasks
             .entry(task.award_order_id.clone())
             .or_insert(task);
         Ok(())
+    }
+
+    async fn get_credit_award(
+        &self,
+        user_id: &str,
+        award_order_id: &str,
+    ) -> Result<Option<CreditAwardTask>, BmError> {
+        let g = self.inner.lock().await;
+        Ok(g.credit_tasks
+            .get(award_order_id)
+            .filter(|t| t.user_id == user_id)
+            .cloned())
     }
 
     async fn list_pending_credit_awards(

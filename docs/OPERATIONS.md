@@ -4,10 +4,22 @@
 
 ```bash
 ./scripts/run-stack.sh          # gateway :8080 + app :8083
-./scripts/acceptance.sh         # test + clippy + API smoke
+./scripts/acceptance.sh         # test + clippy + API smoke (interview baseline)
 ./scripts/web-start.sh          # UI :5173
 ./scripts/bench.sh              # optional RSS snapshot
 ```
+
+## Acceptance flags
+
+```bash
+./scripts/acceptance.sh --strategy   # activity 100402 lock fields + chain blacklist
+./scripts/acceptance.sh --secure     # JWT revoke / internal token / BM_SECURE boot
+./scripts/acceptance.sh --mysql
+./scripts/acceptance.sh --rabbit
+./scripts/acceptance.sh --e2e
+```
+
+Default acceptance is enough for a live interview demo. Optional flags are add-ons.
 
 ## Secure demo
 
@@ -30,7 +42,6 @@ Init SQL lives under `docs/dev-ops/mysql/sql/` (including `z-reconcile-tables.sq
 ## Rabbit
 
 ```bash
-# with Rabbit reachable on :5672
 ./scripts/acceptance.sh --rabbit
 ```
 
@@ -56,9 +67,5 @@ docker compose up --build -d
 | `BM_EMBED_WORKER` | `1` default; forced off when Rabbit URL set |
 | `BM_JWT_SECRET` / `BM_INTERNAL_TOKEN` | auth / internal calls |
 | `BM_STRATEGY_CHAIN` | enable blacklist/weight lite |
-
-## Acceptance flags
-
-```bash
-./scripts/acceptance.sh --e2e --secure --mysql --rabbit
-```
+| `BM_RULE_BLACKLIST` | e.g. `201:xiaofuge` |
+| `BM_RULE_WEIGHT` | e.g. `1:202 3:203` |

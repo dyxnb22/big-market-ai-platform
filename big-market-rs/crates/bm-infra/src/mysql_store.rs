@@ -236,6 +236,33 @@ impl AwardStore for MysqlStores {
         Ok(())
     }
 
+    async fn get_award_record(
+        &self,
+        user_id: &str,
+        order_id: &str,
+    ) -> Result<Option<UserAwardRecord>, BmError> {
+        let schema = self.schema(user_id);
+        let tb = self.tb(user_id);
+        let sql = format!(
+            "SELECT user_id, activity_id, order_id, award_id, award_title, award_state \
+             FROM `{schema}`.user_award_record_{tb:03} WHERE user_id = ? AND order_id = ? LIMIT 1"
+        );
+        let row = sqlx::query(&sql)
+            .bind(user_id)
+            .bind(order_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| BmError::Internal(e.to_string()))?;
+        Ok(row.map(|r| UserAwardRecord {
+            user_id: r.get("user_id"),
+            activity_id: r.get("activity_id"),
+            order_id: r.get("order_id"),
+            award_id: r.get("award_id"),
+            award_title: r.get("award_title"),
+            award_state: r.get("award_state"),
+        }))
+    }
+
     async fn enqueue_credit_award(&self, task: CreditAwardTask) -> Result<(), BmError> {
         let schema = self.schema(&task.user_id);
         let tb = self.tb(&task.user_id);
@@ -252,6 +279,42 @@ impl AwardStore for MysqlStores {
             .await
             .map_err(|e| BmError::Internal(e.to_string()))?;
         Ok(())
+    }
+
+    async fn get_credit_award(
+        &self,
+        user_id: &str,
+        award_order_id: &str,
+    ) -> Result<Option<CreditAwardTask>, BmError> {
+        let schema = self.schema(user_id);
+        let tb = self.tb(user_id);
+        let sql = format!(
+            "SELECT user_id, award_order_id, credit_amount, state, retry_count, create_time \
+             FROM `{schema}`.credit_award_task_{tb:03} \
+             WHERE user_id = ? AND award_order_id = ? LIMIT 1"
+        );
+        let row = sqlx::query(&sql)
+            .bind(user_id)
+            .bind(award_order_id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| BmError::Internal(e.to_string()))?;
+        Ok(row.map(|r| {
+            let st: String = r.get("state");
+            let state = match st.as_str() {
+                "dispatched" => AwardTaskState::Dispatched,
+                "failed" => AwardTaskState::Failed,
+                _ => AwardTaskState::Pending,
+            };
+            CreditAwardTask {
+                user_id: r.get("user_id"),
+                award_order_id: r.get("award_order_id"),
+                credit_amount: r.get("credit_amount"),
+                state,
+                retry_count: r.get::<i8, _>("retry_count") as u32,
+                created_at: r.try_get("create_time").unwrap_or_else(|_| Utc::now()),
+            }
+        }))
     }
 
     async fn list_pending_credit_awards(

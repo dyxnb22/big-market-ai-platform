@@ -34,6 +34,41 @@ pub struct ActivityDrawResponse {
     pub award_title: String,
     #[serde(rename = "awardIndex")]
     pub award_index: i32,
+    #[serde(rename = "orderId")]
+    pub order_id: String,
+    #[serde(rename = "strategyTrace")]
+    pub strategy_trace: StrategyTraceResponse,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct StrategyTraceResponse {
+    #[serde(rename = "priorDraws")]
+    pub prior_draws: i32,
+    #[serde(rename = "poolBefore")]
+    pub pool_before: usize,
+    #[serde(rename = "poolAfter")]
+    pub pool_after: usize,
+    #[serde(rename = "rulesApplied")]
+    pub rules_applied: Vec<String>,
+    #[serde(rename = "pickedRuleModel")]
+    pub picked_rule_model: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreditAwardTaskQuery {
+    #[serde(rename = "awardOrderId")]
+    pub award_order_id: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CreditAwardTaskResponse {
+    #[serde(rename = "awardOrderId")]
+    pub award_order_id: String,
+    #[serde(rename = "creditAmount")]
+    pub credit_amount: Decimal,
+    pub state: String,
+    #[serde(rename = "retryCount")]
+    pub retry_count: u32,
 }
 
 #[derive(Debug, Clone, Deserialize)]

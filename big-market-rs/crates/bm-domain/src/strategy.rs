@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 pub fn default_stage_weights(activity_id: i64) -> Vec<AwardWeight> {
     if activity_id == 100401 {
-        // Deterministic path for learning smoke: single award weight 1.
+        // Deterministic path for smoke: single award weight 1.
         return vec![AwardWeight {
             award_id: 101,
             award_title: "1等奖：积分5".into(),
@@ -16,6 +16,43 @@ pub fn default_stage_weights(activity_id: i64) -> Vec<AwardWeight> {
             credit_amount: money("5.00"),
             rule_model: Some("tree_luck_award".into()),
         }];
+    }
+    if activity_id == 100402 {
+        // Interview demo: multi-weight + lock rules (channel c02/s02).
+        return vec![
+            AwardWeight {
+                award_id: 201,
+                award_title: "积分5".into(),
+                award_index: 1,
+                weight: 40,
+                credit_amount: money("5.00"),
+                rule_model: Some("tree_luck_award".into()),
+            },
+            AwardWeight {
+                award_id: 202,
+                award_title: "积分10".into(),
+                award_index: 2,
+                weight: 25,
+                credit_amount: money("10.00"),
+                rule_model: Some("tree_lock_1".into()),
+            },
+            AwardWeight {
+                award_id: 203,
+                award_title: "积分20".into(),
+                award_index: 3,
+                weight: 15,
+                credit_amount: money("20.00"),
+                rule_model: Some("tree_lock_3".into()),
+            },
+            AwardWeight {
+                award_id: 204,
+                award_title: "谢谢参与".into(),
+                award_index: 4,
+                weight: 20,
+                credit_amount: money("0.00"),
+                rule_model: Some("tree_luck_award".into()),
+            },
+        ];
     }
     vec![
         AwardWeight {
@@ -241,37 +278,91 @@ pub fn rule_weight_list_views(
         .collect()
 }
 
-/// Optional chain lite before lock+weight pick. Demo activity 100401 always skips.
+/// Observability for interview / debug: which lite rules touched the pool.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct StrategyTrace {
+    pub prior_draws: i32,
+    pub pool_before: usize,
+    pub pool_after: usize,
+    pub rules_applied: Vec<String>,
+    pub picked_rule_model: Option<String>,
+}
+
+/// Optional chain lite before lock+weight pick. Demo activity 100401 always skips chain env.
 pub fn pick_with_chain_lite(
     weights: &[AwardWeight],
     prior_draws: i32,
     user_id: &str,
     activity_id: i64,
 ) -> Option<AwardWeight> {
+    pick_with_chain_lite_traced(weights, prior_draws, user_id, activity_id).map(|(w, _)| w)
+}
+
+/// Same as [`pick_with_chain_lite`] plus a rule-application trace.
+pub fn pick_with_chain_lite_traced(
+    weights: &[AwardWeight],
+    prior_draws: i32,
+    user_id: &str,
+    activity_id: i64,
+) -> Option<(AwardWeight, StrategyTrace)> {
+    let mut trace = StrategyTrace {
+        prior_draws,
+        pool_before: weights.len(),
+        pool_after: weights.len(),
+        rules_applied: Vec::new(),
+        picked_rule_model: None,
+    };
+
     if activity_id == 100401 || !strategy_chain_enabled() {
-        return pick_for_user(weights, prior_draws);
+        let eligible = filter_lock_rules(weights, prior_draws);
+        if eligible.len() != weights.len() {
+            trace.rules_applied.push("tree_lock".into());
+        }
+        trace.pool_after = eligible.len();
+        let picked = pick_weighted(&eligible)?.clone();
+        trace.picked_rule_model = picked.rule_model.clone();
+        return Some((picked, trace));
     }
+
     let mut pool = weights.to_vec();
     if let Ok(bl) = std::env::var("BM_RULE_BLACKLIST") {
         let map = parse_blacklist_rule(&bl);
         if let Some(&award_id) = map.get(user_id) {
+            trace.rules_applied.push("rule_blacklist".into());
             if let Some(w) = pool.iter().find(|w| w.award_id == award_id) {
-                return Some(w.clone());
+                let picked = w.clone();
+                trace.pool_after = 1;
+                trace.picked_rule_model = picked.rule_model.clone();
+                return Some((picked, trace));
             }
-            return Some(AwardWeight {
+            let picked = AwardWeight {
                 award_id,
                 award_title: format!("blacklist:{award_id}"),
                 award_index: 0,
                 weight: 1,
                 credit_amount: money("0.00"),
                 rule_model: Some("rule_blacklist".into()),
-            });
+            };
+            trace.pool_after = 1;
+            trace.picked_rule_model = Some("rule_blacklist".into());
+            return Some((picked, trace));
         }
     }
     if let Ok(wv) = std::env::var("BM_RULE_WEIGHT") {
+        let before = pool.len();
         pool = apply_weight_bucket(&pool, prior_draws, &wv);
+        if pool.len() != before {
+            trace.rules_applied.push("rule_weight".into());
+        }
     }
-    pick_for_user(&pool, prior_draws)
+    let eligible = filter_lock_rules(&pool, prior_draws);
+    if eligible.len() != pool.len() {
+        trace.rules_applied.push("tree_lock".into());
+    }
+    trace.pool_after = eligible.len();
+    let picked = pick_weighted(&eligible)?.clone();
+    trace.picked_rule_model = picked.rule_model.clone();
+    Some((picked, trace))
 }
 
 #[cfg(test)]
@@ -283,6 +374,19 @@ mod tests {
         let w = default_stage_weights(100401);
         assert_eq!(w.len(), 1);
         assert_eq!(pick_weighted(&w).unwrap().award_id, 101);
+    }
+
+    #[test]
+    fn lock_demo_activity_has_locks() {
+        let w = default_stage_weights(100402);
+        assert_eq!(w.len(), 4);
+        assert!(w.iter().any(|a| a.rule_model.as_deref() == Some("tree_lock_3")));
+        let unlocked = filter_lock_rules(&w, 0);
+        assert_eq!(unlocked.len(), 2); // 201 + 204
+        let after_one = filter_lock_rules(&w, 1);
+        assert_eq!(after_one.len(), 3); // +202
+        let after_three = filter_lock_rules(&w, 3);
+        assert_eq!(after_three.len(), 4);
     }
 
     #[test]
@@ -366,5 +470,34 @@ mod tests {
         let m = parse_blacklist_rule("101:user001,user002");
         assert_eq!(m.get("user001"), Some(&101));
         assert_eq!(m.get("user002"), Some(&101));
+    }
+
+    #[test]
+    fn pick_for_user_respects_lock() {
+        let w = default_stage_weights(100402);
+        let picked = pick_for_user(&w, 0).unwrap();
+        assert!(picked.award_id == 201 || picked.award_id == 204);
+    }
+
+    #[test]
+    fn chain_blacklist_forces_award() {
+        std::env::set_var("BM_STRATEGY_CHAIN", "1");
+        std::env::set_var("BM_RULE_BLACKLIST", "203:xiaofuge");
+        let w = default_stage_weights(100402);
+        let (picked, trace) =
+            pick_with_chain_lite_traced(&w, 0, "xiaofuge", 100402).unwrap();
+        assert_eq!(picked.award_id, 203);
+        assert!(trace.rules_applied.iter().any(|r| r == "rule_blacklist"));
+        std::env::remove_var("BM_RULE_BLACKLIST");
+        std::env::remove_var("BM_STRATEGY_CHAIN");
+    }
+
+    #[test]
+    fn rule_weight_list_views_buckets() {
+        let w = default_stage_weights(100402);
+        let views = rule_weight_list_views("1:202 3:203", &w);
+        assert_eq!(views.len(), 2);
+        assert_eq!(views[0].0, 1);
+        assert_eq!(views[0].1[0].0, 202);
     }
 }

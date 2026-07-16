@@ -5,11 +5,14 @@ use chrono::Utc;
 use std::sync::Arc;
 use uuid::Uuid;
 
-/// Deterministic award for default learning stage (strategy 10007 → award 101).
+/// Deterministic award for default demo stage (activity 100401 → award 101).
 pub const DEFAULT_ACTIVITY_ID: i64 = 100401;
 pub const DEFAULT_AWARD_ID: i32 = 101;
 pub const DEFAULT_AWARD_TITLE: &str = "1等奖：积分5";
 pub const DEFAULT_SKU: i64 = 9901;
+/// Multi-award + `tree_lock_*` demo activity (channel `c02` / source `s02`).
+pub const LOCK_DEMO_ACTIVITY_ID: i64 = 100402;
+pub const LOCK_DEMO_SKU: i64 = 9902;
 
 pub struct RaffleService {
     pub catalog: Arc<dyn CatalogStore>,
@@ -95,7 +98,7 @@ impl RaffleService {
             .count_draws(user_id, activity_id)
             .await?;
         let weights = self.strategy.award_weights(activity_id).await?;
-        let picked = crate::strategy::pick_with_chain_lite(
+        let (picked, strategy_trace) = crate::strategy::pick_with_chain_lite_traced(
             &weights,
             prior_draws,
             user_id,
@@ -152,7 +155,27 @@ impl RaffleService {
             award_title,
             award_index,
             order_id,
+            strategy_trace,
         })
+    }
+
+    /// Lookup credit award task by business key (`award_order_id`).
+    pub async fn query_credit_award_task(
+        &self,
+        user_id: &str,
+        award_order_id: &str,
+    ) -> Result<Option<CreditAwardTask>, BmError> {
+        self.award
+            .get_credit_award(user_id, award_order_id)
+            .await
+    }
+
+    pub async fn query_award_record(
+        &self,
+        user_id: &str,
+        order_id: &str,
+    ) -> Result<Option<UserAwardRecord>, BmError> {
+        self.award.get_award_record(user_id, order_id).await
     }
 }
 
@@ -162,6 +185,7 @@ pub struct DrawResult {
     pub award_title: String,
     pub award_index: i32,
     pub order_id: String,
+    pub strategy_trace: crate::strategy::StrategyTrace,
 }
 
 pub struct AwardDispatchService {
@@ -451,7 +475,9 @@ impl ChatbotService {
             (
                 "chat",
                 "echo_tool",
-                format!("已收到：{message}\n\n（学习版本地回复，未调用外部大模型）"),
+                format!(
+                    "已收到：{message}\n\n（计费路径真实：已按 requestId 幂等扣积分；回复为本地 echo，未调用外部大模型。）"
+                ),
             )
         };
         Ok((

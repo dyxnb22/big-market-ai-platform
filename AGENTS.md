@@ -1,12 +1,10 @@
-# AGENTS.md — Big Market
-
-## Project
+# Big Market
 
 Rust raffle platform: `bm-gateway` + `bm-app` + optional `bm-worker`. Frontend is static HTML/JS in `big-market-web/`.
 
 ## Docs to read first
 
-- `docs/ARCHITECTURE.md` — topology
+- `docs/ARCHITECTURE.md` — topology + strategy lite
 - `docs/FLOWS.md` — raffle / credit / chat flows
 - `docs/DATA.md` — idempotency keys & outbox
 - `docs/OPERATIONS.md` — verification commands
@@ -24,6 +22,7 @@ Rust raffle platform: `bm-gateway` + `bm-app` + optional `bm-worker`. Frontend i
 ```bash
 ./scripts/run-stack.sh
 ./scripts/acceptance.sh
-./scripts/acceptance.sh --mysql
+./scripts/acceptance.sh --strategy
+./scripts/acceptance.sh --secure
 ./scripts/web-start.sh
 ```

@@ -42,12 +42,131 @@ async fn raffle_award_credit_closed_loop() {
 
     let draw = raffle.draw("xiaofuge", 100401).await.unwrap();
     assert_eq!(draw.award_id, 101);
+    assert!(!draw.order_id.is_empty());
 
     assert_eq!(dispatch.consume_send_award(10).await.unwrap(), 1);
     assert_eq!(dispatch.dispatch_pending(10).await.unwrap(), 1);
 
     let final_bal = raffle.query_credit("xiaofuge").await.unwrap();
     assert_eq!(final_bal, money("100.00")); // -5 +5
+}
+
+#[tokio::test]
+async fn award_completed_is_not_credited_until_dispatch() {
+    let mem = SharedMemory::seeded(money("100.00"));
+    let backend = mem.backend.clone();
+    let raffle = RaffleService {
+        catalog: backend.clone(),
+        quota: backend.clone(),
+        credit: backend.clone(),
+        award: backend.clone(),
+        strategy: backend.clone(),
+        stock: backend.clone(),
+        participation: backend.clone(),
+    };
+    let dispatch = AwardDispatchService {
+        award: backend.clone(),
+        credit: backend.clone(),
+    };
+
+    raffle.armory(100401).await.unwrap();
+    raffle
+        .exchange_sku("xiaofuge", 9901, "req-completed")
+        .await
+        .unwrap();
+    let after_ex = raffle.query_credit("xiaofuge").await.unwrap();
+
+    let draw = raffle.draw("xiaofuge", 100401).await.unwrap();
+    let rec = raffle
+        .query_award_record("xiaofuge", &draw.order_id)
+        .await
+        .unwrap()
+        .expect("award record");
+    assert_eq!(rec.award_state, "completed");
+    assert!(raffle
+        .query_credit_award_task("xiaofuge", &draw.order_id)
+        .await
+        .unwrap()
+        .is_none());
+    assert_eq!(raffle.query_credit("xiaofuge").await.unwrap(), after_ex);
+
+    assert_eq!(dispatch.consume_send_award(10).await.unwrap(), 1);
+    let pending = raffle
+        .query_credit_award_task("xiaofuge", &draw.order_id)
+        .await
+        .unwrap()
+        .expect("pending task");
+    assert_eq!(pending.state, AwardTaskState::Pending);
+    assert_eq!(raffle.query_credit("xiaofuge").await.unwrap(), after_ex);
+
+    assert_eq!(dispatch.dispatch_pending(10).await.unwrap(), 1);
+    let done = raffle
+        .query_credit_award_task("xiaofuge", &draw.order_id)
+        .await
+        .unwrap()
+        .expect("dispatched task");
+    assert_eq!(done.state, AwardTaskState::Dispatched);
+    assert_eq!(raffle.query_credit("xiaofuge").await.unwrap(), money("100.00"));
+}
+
+#[tokio::test]
+async fn dispatch_pending_is_idempotent_on_replay() {
+    let mem = SharedMemory::seeded(money("100.00"));
+    let backend = mem.backend.clone();
+    let raffle = RaffleService {
+        catalog: backend.clone(),
+        quota: backend.clone(),
+        credit: backend.clone(),
+        award: backend.clone(),
+        strategy: backend.clone(),
+        stock: backend.clone(),
+        participation: backend.clone(),
+    };
+    let dispatch = AwardDispatchService {
+        award: backend.clone(),
+        credit: backend.clone(),
+    };
+
+    raffle.armory(100401).await.unwrap();
+    raffle
+        .exchange_sku("xiaofuge", 9901, "req-replay")
+        .await
+        .unwrap();
+    let draw = raffle.draw("xiaofuge", 100401).await.unwrap();
+    assert_eq!(dispatch.consume_send_award(10).await.unwrap(), 1);
+
+    // Duplicate ingest of the same award_order_id must not create a second task.
+    dispatch
+        .ingest_send_award(SendAwardMessage {
+            user_id: "xiaofuge".into(),
+            order_id: draw.order_id.clone(),
+            award_id: 101,
+            credit_amount: money("5.00"),
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(dispatch.dispatch_pending(10).await.unwrap(), 1);
+    let bal = raffle.query_credit("xiaofuge").await.unwrap();
+    assert_eq!(bal, money("100.00"));
+
+    // Second dispatch: nothing pending; credit apply remains idempotent if forced.
+    assert_eq!(dispatch.dispatch_pending(10).await.unwrap(), 0);
+    assert_eq!(raffle.query_credit("xiaofuge").await.unwrap(), bal);
+
+    // Force credit replay with same out_business_no — balance unchanged.
+    backend
+        .apply_trade(CreditOrder {
+            user_id: "xiaofuge".into(),
+            order_id: "forced-replay".into(),
+            out_business_no: draw.order_id.clone(),
+            trade_name: "award_credit".into(),
+            trade_type: TradeType::Forward,
+            trade_amount: money("5.00"),
+        })
+        .await
+        .unwrap();
+    assert_eq!(raffle.query_credit("xiaofuge").await.unwrap(), money("100.00"));
 }
 
 #[tokio::test]
@@ -124,4 +243,32 @@ async fn sign_in_once_per_day() {
     let (signed2, reward2, _) = rebate.calendar_sign("xiaofuge").await.unwrap();
     assert!(signed2);
     assert_eq!(reward2, money("0"));
+}
+
+#[tokio::test]
+async fn lock_demo_activity_filters_pool() {
+    let mem = SharedMemory::seeded(money("100.00"));
+    let backend = mem.backend.clone();
+    let raffle = RaffleService {
+        catalog: backend.clone(),
+        quota: backend.clone(),
+        credit: backend.clone(),
+        award: backend.clone(),
+        strategy: backend.clone(),
+        stock: backend.clone(),
+        participation: backend.clone(),
+    };
+    raffle.armory(LOCK_DEMO_ACTIVITY_ID).await.unwrap();
+    let draw = raffle
+        .draw("xiaofuge", LOCK_DEMO_ACTIVITY_ID)
+        .await
+        .unwrap();
+    assert!(draw.award_id == 201 || draw.award_id == 204);
+    assert!(draw
+        .strategy_trace
+        .rules_applied
+        .iter()
+        .any(|r| r == "tree_lock"));
+    assert_eq!(draw.strategy_trace.pool_before, 4);
+    assert_eq!(draw.strategy_trace.pool_after, 2);
 }

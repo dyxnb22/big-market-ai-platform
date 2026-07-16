@@ -149,7 +149,17 @@ pub struct UserAwardRecord {
 #[async_trait]
 pub trait AwardStore: Send + Sync {
     async fn save_award_record(&self, record: UserAwardRecord) -> Result<(), BmError>;
+    async fn get_award_record(
+        &self,
+        user_id: &str,
+        order_id: &str,
+    ) -> Result<Option<UserAwardRecord>, BmError>;
     async fn enqueue_credit_award(&self, task: CreditAwardTask) -> Result<(), BmError>;
+    async fn get_credit_award(
+        &self,
+        user_id: &str,
+        award_order_id: &str,
+    ) -> Result<Option<CreditAwardTask>, BmError>;
     async fn list_pending_credit_awards(
         &self,
         limit: usize,

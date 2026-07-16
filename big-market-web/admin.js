@@ -401,7 +401,7 @@ async function refreshOps() {
   var services = [
     {name: "gateway", url: gatewayBase + "/actuator/health"},
     {name: "auth-service", path: "/auth/login", method: "OPTIONS"},
-    {name: "market-service", path: "/raffle/activity/query_user_credit_account_by_token", method: "POST", needsAuth: true},
+    {name: "bm-app", path: "/raffle/activity/query_user_credit_account_by_token", method: "POST", needsAuth: true},
     {name: "admin-service", path: "/admin/config/list", needsAuth: true},
     {name: "chatbot-service", path: "/chatbot/ask", method: "OPTIONS"},
   ];
