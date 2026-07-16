@@ -1,0 +1,60 @@
+# Optional Rust stack overlay. Does not replace Java services unless you stop them
+# and point traffic here.
+#
+# Usage (host binaries preferred when Docker Rust image not built):
+#   ./scripts/run-rust-stack.sh
+#
+# Or build release image (requires Docker):
+#   docker compose -f docker-compose.rust.yml up --build -d
+
+services:
+  bm-app:
+    build:
+      context: ./big-market-rs
+      dockerfile: docker/Dockerfile
+      args:
+        BIN: bm-app
+    image: big-market-rs-app:latest
+    container_name: bm-app
+    ports:
+      - "8083:8083"
+    environment:
+      - BM_PORT=8083
+      - BM_EMBED_WORKER=1
+      - BM_JWT_SECRET=${JWT_SECRET:-change-me-in-dev-only}
+      - BM_INITIAL_CREDIT=100.00
+      - RUST_LOG=info
+    profiles: ["rust"]
+
+  bm-gateway:
+    build:
+      context: ./big-market-rs
+      dockerfile: docker/Dockerfile
+      args:
+        BIN: bm-gateway
+    image: big-market-rs-gateway:latest
+    container_name: bm-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - BM_GW_PORT=8080
+      - BM_GW_APP_URL=http://bm-app:8083
+      - RUST_LOG=info
+    depends_on:
+      - bm-app
+    profiles: ["rust"]
+
+  bm-worker:
+    build:
+      context: ./big-market-rs
+      dockerfile: docker/Dockerfile
+      args:
+        BIN: bm-worker
+    image: big-market-rs-worker:latest
+    container_name: bm-worker
+    ports:
+      - "8085:8085"
+    environment:
+      - BM_WORKER_PORT=8085
+      - RUST_LOG=info
+    profiles: ["rust"]

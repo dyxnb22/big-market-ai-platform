@@ -232,7 +232,8 @@ M3/M4 可部分并行（例如 Chat 与 Admin），但 **M5 前必须齐活**。
 
 | 项 | 状态 |
 | --- | --- |
-| 方案与路线图文档 | ✅ 本目录 |
-| `big-market-rs/` 代码 | ❌ 未开始 |
-| 默认栈 | Java（学习冻结基线） |
-| 下一动作 | 启动 **M0** 骨架 |
+| 方案与路线图文档 | ✅ |
+| `big-market-rs/` 代码 | ✅ M0–M5 实现（memory 后端） |
+| 默认演示路径 | ✅ Rust（`acceptance-rust.sh` / README） |
+| Java | ✅ 保留为 legacy 对照（未删模块） |
+| 下一步 | 可选：启用 sqlx/fred/lapin 对接现有 Docker 中间件 |

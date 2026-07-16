@@ -1,12 +1,28 @@
 # Big Market AI Platform
 
-Big Market is a Java microservices learning and portfolio project for a
-marketing raffle platform. It includes gateway routing, authentication,
-admin/config APIs, raffle/activity APIs, chatbot credit charging, account and
-quota services, award fulfillment, rebate, strategy reads, RabbitMQ messages,
-XXL-Job tasks, MySQL, Redis, Nacos, Prometheus, and Grafana.
+Big Market is a marketing raffle learning/portfolio platform.
 
-## Services
+## Default local stack (Rust)
+
+The **default demo path** is the Rust rewrite under `big-market-rs/`
+(gateway + app + embedded outbox worker). It preserves the HTTP envelope,
+JWT auth, SKU/chat idempotency, and raffle→award-credit closed loop.
+
+```bash
+./scripts/run-rust-stack.sh
+./scripts/acceptance-rust.sh
+./scripts/web-start.sh   # frontend → http://127.0.0.1:8080/api/v1
+```
+
+Details: [`big-market-rs/README.md`](big-market-rs/README.md), roadmap
+[`rust-refactor/ROADMAP.md`](rust-refactor/ROADMAP.md), status
+[`rust-refactor/STATUS.md`](rust-refactor/STATUS.md).
+
+## Legacy Java microservices
+
+The original Spring Boot stack remains in-repo for对照 and rollback
+(`docker compose` + `./scripts/acceptance.sh`). See cutover notes in
+[`rust-refactor/CUTOVER.md`](rust-refactor/CUTOVER.md).
 
 | Service | Port | Responsibility |
 | --- | ---: | --- |
@@ -26,7 +42,7 @@ Shared modules such as `big-market-domain`, `big-market-infrastructure`,
 dependencies.
 
 > **Legacy note:** the pre-split monolith launcher has been removed. Use the
-> microservice stack above for local development and tests.
+> microservice stack above for Java local development and tests.
 
 > **Deployment note:** `big-market-rebate-service` and `big-market-strategy-service` are not
 > included in the default `docker-compose.yml` stack. By default, `big-market-market-service`
@@ -37,11 +53,27 @@ dependencies.
 
 ## Build
 
+### Rust (default)
+
+```bash
+cd big-market-rs && cargo build --release
+```
+
+### Java (legacy)
+
 ```bash
 mvn clean package -DskipTests
 ```
 
 ## Start
+
+### Rust
+
+```bash
+./scripts/run-rust-stack.sh
+```
+
+### Java + infra
 
 ```bash
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
@@ -51,6 +83,14 @@ docker compose up --build -d
 Gateway address: `http://127.0.0.1:8080`.
 
 ## Verify
+
+### Rust
+
+```bash
+./scripts/acceptance-rust.sh
+```
+
+### Java (legacy)
 
 ```bash
 ./scripts/validate-mapper-ddl-gates.sh
@@ -87,37 +127,17 @@ npx playwright test --workers=1
 
 | Field | Value |
 | --- | --- |
-| Date | 2026-07-11 |
-| Git | working tree on top of `8d51601` (learning-freeze changes uncommitted) |
-| Command | `./scripts/acceptance.sh --reuse --skip-build` |
-| Result | **PASS** — HTTP contracts, 21/21 microservice smoke, API smoke, XXL executor registration, real raffle → award outbox → account credit, Chat refund/reconcile, and 18 Playwright tests twice; 80 seconds. |
+| Date | 2026-07-16 |
+| Track | Rust `big-market-rs` (memory backend) |
+| Command | `./scripts/acceptance-rust.sh` |
+| Result | **PASS** — cargo test, clippy, HTTP smoke (login → SKU −5 → draw 101 → credit +5 → chat refund → logout revoke) |
 
-This proves the reused local volumes only. Fresh-volume and full secure-overlay acceptance were not run in this audit; see [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md). Failure artifacts are written to `target/acceptance-artifacts/`.
+Java learning-freeze evidence (2026-07-11) remains valid for the legacy stack; see [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md).
 
 ## Frontend
 
 ```bash
 ./scripts/web-start.sh
-open http://127.0.0.1:5173/login.html
 ```
 
-Frontend API calls use `http://127.0.0.1:8080/api/v1` by default.
-
-## Documentation
-
-- [AGENTS.md](AGENTS.md) - guidance for Cursor/Codex agents (rules & skills under `.cursor/`)
-- [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md) - current learning baseline, evidence, and limits
-- [docs/MICROSERVICES.md](docs/MICROSERVICES.md) - authoritative architecture entry
-- [docs/audit/2026-07-11-learning-freeze-audit.md](docs/audit/2026-07-11-learning-freeze-audit.md) - independent freeze audit
-- [docs/audit-remediation-plan.md](docs/audit-remediation-plan.md) - historical remediation backlog
-- [docs/learning/README.md](docs/learning/README.md) - final-state learning guide
-- [docs/production-readiness-learning.md](docs/production-readiness-learning.md) - learning readiness notes
-- [docs/operations-checklist.md](docs/operations-checklist.md) - local operations checklist
-- [docs/data-and-outbox.md](docs/data-and-outbox.md) - data, outbox, idempotency, duplicate handling
-- [docs/microservices-dao-ownership.md](docs/microservices-dao-ownership.md) - DAO/table ownership matrix
-
-## Scope
-
-This repository is a learning environment. Build success, local smoke tests,
-guardrail scripts, and code/documentation consistency are the completion
-standard. It does not include a real production canary or observation period.
+API base: `http://127.0.0.1:8080/api/v1`.
