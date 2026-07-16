@@ -49,7 +49,7 @@ Authoritative doc: [`MICROSERVICES-RUST.md`](./MICROSERVICES-RUST.md).
 
 ## Rollback
 
-Java legacy stack remains in-repo:
+Java legacy stack remains in-repo for对照 (except deleted Batch 1 dedicated rebate/strategy launchers — see `rust-refactor/JAVA-DELETION-LEDGER.md`):
 
 ```bash
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d

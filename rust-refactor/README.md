@@ -9,6 +9,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | **[STATUS.md](./STATUS.md)** | **当前完成状态与验收命令** |
+| **[JAVA-DELETION-LEDGER.md](./JAVA-DELETION-LEDGER.md)** | **Java 安全删除台账（逐文件对照）** |
 | **[NEXT-PHASES.md](./NEXT-PHASES.md)** | **M0–M7 之后深度阶段 C–F（已完成）** |
 | **[docs/RUST-LEARNING-FREEZE.md](../docs/RUST-LEARNING-FREEZE.md)** | **Rust 轨冻结边界** |
 | **[ROADMAP.md](./ROADMAP.md)** | 主路线图 M0→M7 + 完成定义 |

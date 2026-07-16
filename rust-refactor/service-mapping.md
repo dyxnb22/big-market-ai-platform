@@ -16,8 +16,8 @@
 | `big-market-message-job-service` | 8085 | `bm-worker` | 同左 |
 | `big-market-account-service` | 8086 | `bm-app` · `account` | `bm-account` + tonic |
 | `big-market-fulfillment-service` | 8087 | `bm-app` / `bm-worker` 本地履约 | `bm-fulfillment` |
-| `big-market-rebate-service` | 8088 | embedded in `bm-app` | `bm-rebate` |
-| `big-market-strategy-service` | 8089 | embedded in `bm-app` | `bm-strategy` |
+| `big-market-rebate-service` | 8088 | **Deleted Batch 1** — use `bm-app` · rebate / market embedded | — |
+| `big-market-strategy-service` | 8089 | **Deleted Batch 1** — use `bm-app` · strategy / market embedded | — |
 
 替代完成后默认仅保留 **3 个进程**：`bm-gateway` + `bm-app` + `bm-worker`。
 

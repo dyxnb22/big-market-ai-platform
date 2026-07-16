@@ -213,6 +213,34 @@ pub fn apply_weight_bucket(
     }
 }
 
+/// Build rule-weight list views (Java `RaffleStrategyRuleWeightResponseDTO` shape).
+/// Returns `(threshold_count, [(award_id, title), ...])` per bucket.
+pub fn rule_weight_list_views(
+    rule_value: &str,
+    awards: &[AwardWeight],
+) -> Vec<(i32, Vec<(i32, String)>)> {
+    let title_by_id: HashMap<i32, String> = awards
+        .iter()
+        .map(|w| (w.award_id, w.award_title.clone()))
+        .collect();
+    parse_weight_buckets(rule_value)
+        .into_iter()
+        .map(|(th, ids)| {
+            let list: Vec<(i32, String)> = ids
+                .into_iter()
+                .map(|id| {
+                    let title = title_by_id
+                        .get(&id)
+                        .cloned()
+                        .unwrap_or_else(|| format!("award:{id}"));
+                    (id, title)
+                })
+                .collect();
+            (th, list)
+        })
+        .collect()
+}
+
 /// Optional chain lite before lock+weight pick. Demo activity 100401 always skips.
 pub fn pick_with_chain_lite(
     weights: &[AwardWeight],

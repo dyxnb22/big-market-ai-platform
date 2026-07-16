@@ -59,8 +59,6 @@ The original Spring Boot stack remains in-repo for对照 and rollback
 | `big-market-message-job-service` | 8085 | MQ consumers, XXL-Job handlers, retry dispatch |
 | `big-market-account-service` | 8086 | Credit and quota RPC provider |
 | `big-market-fulfillment-service` | 8087 | Award fulfillment RPC (optional remote path; default credit awards use message-job outbox) |
-| `big-market-rebate-service` | 8088 | Rebate RPC (optional dedicated; default embedded in market) |
-| `big-market-strategy-service` | 8089 | Strategy read RPC (optional dedicated; default embedded in market) |
 
 Shared modules such as `big-market-domain`, `big-market-infrastructure`,
 `big-market-api`, `big-market-types`, and starter modules are reused as JAR
@@ -69,12 +67,9 @@ dependencies.
 > **Legacy note:** the pre-split monolith launcher has been removed. Use the
 > microservice stack above for Java local development and tests.
 
-> **Deployment note:** `big-market-rebate-service` and `big-market-strategy-service` are not
-> included in the default `docker-compose.yml` stack. By default, `big-market-market-service`
-> hosts their Dubbo providers internally via embedded provider beans
-> (`rebate.embedded-rpc-provider.enabled=true`, `strategy.embedded-rpc-provider.enabled=true`).
-> The dedicated service containers are available for service-oriented deployment — set the
-> corresponding `embedded-rpc-provider.enabled=false` and start the dedicated service to switch modes.
+> **Deletion Batch 1:** dedicated `big-market-rebate-service` / `big-market-strategy-service`
+> were removed. Rebate/strategy remain **embedded in market** (Java) / **`bm-app`** (Rust).
+> Ledger: [`rust-refactor/JAVA-DELETION-LEDGER.md`](rust-refactor/JAVA-DELETION-LEDGER.md).
 
 ## Build
 

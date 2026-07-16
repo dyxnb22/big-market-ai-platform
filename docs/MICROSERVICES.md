@@ -23,10 +23,10 @@
 | `big-market-message-job-service` | 8085 | 已验证 | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
 | `big-market-account-service` | 8086 | 已验证 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
 | `big-market-fulfillment-service` | 8087 | 健康已验证；默认积分奖不必经远程 RPC | 奖品履约 RPC provider |
-| `big-market-rebate-service` | 8088 | 可选独立部署 | 行为返利创建/查询 RPC 契约与返利任务归属 |
-| `big-market-strategy-service` | 8089 | 可选独立部署 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
 
-> **部署默认：** `big-market-rebate-service` / `big-market-strategy-service` **不是**默认 compose 必启服务。本地学习栈由 `big-market-market-service` 通过 embedded Dubbo provider（`rebate.embedded-rpc-provider.enabled=true`、`strategy.embedded-rpc-provider.enabled=true`）托管契约。需要独立进程时，将对应 `embedded-rpc-provider.enabled=false` 并启动 8088/8089。
+> **删除 Batch 1：** 独立进程 `big-market-rebate-service` / `big-market-strategy-service` 已移除。  
+> 返利/策略由 `big-market-market-service` embedded Dubbo provider 托管（Java legacy）；Rust 默认在 `bm-app`。  
+> 台账：[`rust-refactor/JAVA-DELETION-LEDGER.md`](../rust-refactor/JAVA-DELETION-LEDGER.md)。
 
 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types` 以及各 starter 模块等共享模块，是各服务启动器所依赖的库。
 
@@ -80,23 +80,23 @@
 
 ### 返利（Rebate）
 
-签到会创建行为返利订单与任务，发布 `send_rebate` 事件，消费者据此发放积分或活动配额。返利归属由 `big-market-rebate-service` 的 RPC 契约及本地任务/Outbox Port 表示。
+签到会创建行为返利订单与任务，发布 `send_rebate` 事件，消费者据此发放积分或活动配额。返利由 market **embedded** `IRebateService` 契约及本地任务/Outbox Port 表示（独立 `big-market-rebate-service` 已删除）。
 
 代码路径：
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/rebate/service/BehaviorRebateService.java`
-- `big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider/RebateServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RebateServiceRPC.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
 
 ### 策略读取（Strategy Reads）
 
-策略读取对外提供奖品列表、规则权重与账户参与信号。Market HTTP 控制器通过 `IStrategyReadAdapter` 调用；策略服务提供对应的 RPC 实现。
+策略读取对外提供奖品列表、规则权重与账户参与信号。Market HTTP 控制器通过 `IStrategyReadAdapter` 调用（独立 `big-market-strategy-service` 已删除；Rust 见 `bm-app` strategy 路由）。
 
 代码路径：
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleStrategyController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/IStrategyReadAdapter.java`
-- `big-market-strategy-service/src/main/java/com/dyx/market/strategy/provider/StrategyReadServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalStrategyReadAdapter.java`
 
 ### 消息与任务（Messages And Jobs）
 

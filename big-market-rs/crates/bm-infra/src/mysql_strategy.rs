@@ -73,4 +73,26 @@ impl StrategyStore for MysqlStores {
         }
         Ok(out)
     }
+
+    async fn rule_weight_value(&self, activity_id: i64) -> Result<Option<String>, BmError> {
+        if let Ok(v) = std::env::var("BM_RULE_WEIGHT") {
+            if !v.is_empty() {
+                return Ok(Some(v));
+            }
+        }
+        let schema = self.catalog_schema();
+        let sql = format!(
+            "SELECT sr.rule_value FROM `{schema}`.strategy_rule sr \
+             JOIN `{schema}`.raffle_activity ra ON ra.strategy_id = sr.strategy_id \
+             WHERE ra.activity_id = ? AND sr.rule_model = 'rule_weight' LIMIT 1"
+        );
+        match sqlx::query(&sql)
+            .bind(activity_id)
+            .fetch_optional(&self.pool)
+            .await
+        {
+            Ok(Some(row)) => Ok(row.try_get::<String, _>("rule_value").ok()),
+            _ => Ok(None),
+        }
+    }
 }

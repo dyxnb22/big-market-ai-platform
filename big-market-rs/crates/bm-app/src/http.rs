@@ -65,6 +65,10 @@ pub fn routes(state: AppState) -> Router {
             "/api/v1/raffle/strategy/query_raffle_award_list_by_token",
             post(query_award_list),
         )
+        .route(
+            "/api/v1/raffle/strategy/query_raffle_strategy_rule_weight_by_token",
+            post(query_rule_weight),
+        )
         // erp
         .route(
             "/api/v1/raffle/erp/query_raffle_activity_stage_list",
@@ -406,6 +410,49 @@ async fn query_award_list(
         }
         Err(e) => err_response(e),
     }
+}
+
+async fn query_rule_weight(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<RaffleStrategyRuleWeightRequest>,
+) -> impl IntoResponse {
+    let user_id = match require_user(&state, &headers).await {
+        Ok(u) => u,
+        Err(r) => return r,
+    };
+    let prior = match state
+        .participation
+        .count_draws(&user_id, req.activity_id)
+        .await
+    {
+        Ok(n) => n,
+        Err(e) => return err_response(e),
+    };
+    let weights = match state.strategy.award_weights(req.activity_id).await {
+        Ok(w) => w,
+        Err(e) => return err_response(e),
+    };
+    let rule_value = match state.strategy.rule_weight_value(req.activity_id).await {
+        Ok(v) => v.unwrap_or_default(),
+        Err(e) => return err_response(e),
+    };
+    let data: Vec<RaffleStrategyRuleWeightResponse> =
+        bm_domain::strategy::rule_weight_list_views(&rule_value, &weights)
+            .into_iter()
+            .map(|(th, awards)| RaffleStrategyRuleWeightResponse {
+                rule_weight_count: th,
+                user_activity_account_total_use_count: prior,
+                strategy_awards: awards
+                    .into_iter()
+                    .map(|(award_id, award_title)| RaffleStrategyRuleWeightAward {
+                        award_id,
+                        award_title,
+                    })
+                    .collect(),
+            })
+            .collect();
+    Json(ApiResponse::ok(data)).into_response()
 }
 
 async fn erp_stage_list(State(state): State<AppState>) -> impl IntoResponse {

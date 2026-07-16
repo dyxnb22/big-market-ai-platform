@@ -429,7 +429,6 @@ check_mapper_copy "big-market-market-service task_mapper.xml" "big-market-market
 check_mapper_copy "big-market-message-job-service task_mapper.xml" "big-market-message-job-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 check_mapper_copy "big-market-account-service raffle_activity_account_mapper.xml" "big-market-account-service/src/main/resources/mybatis/mapper/mysql/raffle_activity_account_mapper.xml"
 check_mapper_copy "big-market-account-service task_mapper.xml" "big-market-account-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
-check_mapper_copy "big-market-rebate-service task_mapper.xml" "big-market-rebate-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 6: Learning DDL location

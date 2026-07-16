@@ -297,6 +297,8 @@ pub struct AwardWeight {
 #[async_trait]
 pub trait StrategyStore: Send + Sync {
     async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError>;
+    /// Raw `strategy_rule.rule_value` for `rule_weight` (e.g. `60:102,103 200:106`), if any.
+    async fn rule_weight_value(&self, activity_id: i64) -> Result<Option<String>, BmError>;
 }
 
 /// User participation signal for lock/unlock rules (prior completed draws).

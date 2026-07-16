@@ -55,8 +55,8 @@ Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://1
 | message-job | 8085 | MQ consumers + XXL-Job |
 | account | 8086 | Credit/quota RPC |
 | fulfillment | 8087 | Award fulfillment RPC (optional) |
-| rebate | 8088 | Dedicated rebate (optional) |
-| strategy | 8089 | Dedicated strategy (optional) |
+
+Dedicated rebate/strategy Java processes removed (Batch 1); embedded in market / `bm-app`. See `rust-refactor/JAVA-DELETION-LEDGER.md`.
 
 ## Cursor project assets
 

@@ -545,6 +545,10 @@ impl StrategyStore for MemoryBackend {
     async fn award_weights(&self, activity_id: i64) -> Result<Vec<AwardWeight>, BmError> {
         Ok(bm_domain::strategy::default_stage_weights(activity_id))
     }
+
+    async fn rule_weight_value(&self, _activity_id: i64) -> Result<Option<String>, BmError> {
+        Ok(std::env::var("BM_RULE_WEIGHT").ok().filter(|s| !s.is_empty()))
+    }
 }
 
 #[async_trait]

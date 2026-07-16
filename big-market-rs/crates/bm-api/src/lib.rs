@@ -166,6 +166,32 @@ pub struct RaffleAwardListResponse {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct RaffleStrategyRuleWeightRequest {
+    #[serde(rename = "userId")]
+    pub user_id: Option<String>,
+    #[serde(rename = "activityId")]
+    pub activity_id: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RaffleStrategyRuleWeightAward {
+    #[serde(rename = "awardId")]
+    pub award_id: i32,
+    #[serde(rename = "awardTitle")]
+    pub award_title: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RaffleStrategyRuleWeightResponse {
+    #[serde(rename = "ruleWeightCount")]
+    pub rule_weight_count: i32,
+    #[serde(rename = "userActivityAccountTotalUseCount")]
+    pub user_activity_account_total_use_count: i32,
+    #[serde(rename = "strategyAwards")]
+    pub strategy_awards: Vec<RaffleStrategyRuleWeightAward>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct ChatbotAskRequest {
     pub token: Option<String>,
     #[serde(rename = "userId")]
