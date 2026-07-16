@@ -1,0 +1,11 @@
+[package]
+name = "bm-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+rust_decimal = { workspace = true }
+bm-types = { workspace = true }

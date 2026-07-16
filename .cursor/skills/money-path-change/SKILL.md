@@ -1,42 +1,35 @@
 ---
 name: money-path-change
 description: >-
-  Safely changes credit, quota, award fulfillment, rebate, SKU/award stock,
-  outbox, DLQ, or remote write/reconcile paths in Big Market. Use when editing
-  debit/credit, draw stock, send_award/send_rebate, pending remote write, chat
-  billing, or any idempotency/outbox behavior.
+  Safely changes credit, quota, award, rebate, SKU/award stock, outbox, or chat
+  billing in Big Market Rust. Use when editing debit/credit, draw stock,
+  send_award/send_rebate, chat billing, or idempotency/outbox behavior.
 ---
 
 # Money-path change
 
-## Mandatory reads
+## Read first
 
-- `docs/data-and-outbox.md`
-- `docs/learning/archive/risky-changes-remediation.md`
+- `docs/DATA.md`
 - `.cursor/rules/money-path-safety.mdc`
 
-## Checklist before merge-quality work
+## Checklist
 
-1. **Idempotency key** identified and unique-constrained (or documented why not).
-2. **Side-effect order**: durable idempotent row / reservation **before** Redis DECR or remote debit when redelivery is possible.
-3. **Terminal states**: SUCCESS / REJECTED / UNKNOWN; timeouts are UNKNOWN → query by bizNo.
-4. **Completion vs dispatch**: do not mark award/credit completed before the effect lands (or use intermediate state).
-5. **Shard routing**: pending / chat_session / confirm tasks use user shard, not default db00.
-6. **Stock queue**: DB success then ACK; failure requeues.
-7. **Strategy takeover**: finite awards still reserve stock (BM-005).
-8. **Tests**: at least one duplicate-delivery or timeout case covering the changed path.
-9. **Config rollback**: prefer flags for embedded vs remote adapters; document matrix if behavior diverges (BM-009).
+1. Idempotency key identified (and unique where persisted).
+2. Side-effect order: durable record / outbox before non-idempotent remote or DECR when redelivery possible.
+3. Terminal vs in-flight states clear; timeouts are UNKNOWN → query by business key.
+4. Do not treat award `completed` as “paid.”
+5. MySQL shard key = user id for user-owned tables.
+6. Add/keep a duplicate-delivery test for the changed path.
+7. Prefer feature flags when changing embed vs Rabbit worker ownership.
 
-## High-risk files (examples)
+## Hot paths
 
-- `AbstractRaffleStrategy`, `RuleStockLogicTreeNode`, `*Stock*Job`
-- `AwardCreditGrantSupport`, `DispatchCreditAwardTaskJob`, `SendAwardConsumer`
-- `RebateMessageApplicationService`, `ActivitySkuStockActionChain`
-- `AccountRemoteCreditWriteAdapter`, `PendingRemoteWrite*`, `RemoteWriteReconcileJob`
-- `ChatbotApplicationService`, `ChatCredit*`, `ChatRefundReconcileJob`
+- `bm-domain` `raffle.rs` / `worker.rs` / `strategy.rs`
+- `bm-infra` `mysql_*.rs`, `memory.rs`
+- `bm-app` HTTP handlers that debit/credit
 
 ## Do not
 
-- Blindly “compensate” a payment debit after the user-facing API already rolled back stock.
-- Auto-replay DLQ without idempotency review.
-- Change outbox ownership while dispatch jobs are running without a stop/migrate note.
+- Compensate blindly after the API already rolled back.
+- Register MQ consumers inside `bm-app` while `bm-worker` also consumes the same queue.

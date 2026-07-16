@@ -1,0 +1,65 @@
+//! Wired domain stores from bootstrap (memory/file vs mysql hybrid).
+
+use crate::{BackendKind, Bootstrapped, MemoryBackend};
+use bm_domain::*;
+use std::sync::Arc;
+
+/// All ports needed by bm-app / bm-worker.
+#[derive(Clone)]
+pub struct ServiceStores {
+    pub credit: Arc<dyn CreditStore>,
+    pub award: Arc<dyn AwardStore>,
+    pub quota: Arc<dyn QuotaStore>,
+    pub catalog: Arc<dyn CatalogStore>,
+    pub chat: Arc<dyn ChatStore>,
+    pub rebate: Arc<dyn RebateStore>,
+    pub admin: Arc<dyn AdminStore>,
+    pub stock: Arc<dyn StockStore>,
+    pub stages: Arc<dyn StageStore>,
+    pub orders: Arc<dyn OrderQueryStore>,
+    pub strategy: Arc<dyn StrategyStore>,
+    pub participation: Arc<dyn ParticipationStore>,
+    pub outbox: Arc<dyn RebateOutbox>,
+}
+
+impl ServiceStores {
+    pub fn from_bootstrapped(boot: &Bootstrapped) -> Self {
+        match &boot.kind {
+            #[cfg(feature = "mysql")]
+            BackendKind::Mysql(mysql, _) => Self {
+                credit: mysql.clone(),
+                award: mysql.clone(),
+                quota: mysql.clone(),
+                chat: mysql.clone(),
+                catalog: mysql.clone(),
+                admin: mysql.clone(),
+                stages: mysql.clone(),
+                stock: mysql.clone(),
+                strategy: mysql.clone(),
+                participation: mysql.clone(),
+                rebate: mysql.clone(),
+                orders: mysql.clone(),
+                outbox: mysql.clone(),
+            },
+            _ => Self::all_memory(boot.memory.backend.clone()),
+        }
+    }
+
+    fn all_memory(mem: Arc<MemoryBackend>) -> Self {
+        Self {
+            credit: mem.clone(),
+            award: mem.clone(),
+            quota: mem.clone(),
+            catalog: mem.clone(),
+            chat: mem.clone(),
+            rebate: mem.clone(),
+            admin: mem.clone(),
+            stock: mem.clone(),
+            stages: mem.clone(),
+            orders: mem.clone(),
+            strategy: mem.clone(),
+            participation: mem.clone(),
+            outbox: mem.clone(),
+        }
+    }
+}

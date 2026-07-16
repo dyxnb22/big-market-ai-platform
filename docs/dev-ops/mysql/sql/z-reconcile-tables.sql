@@ -6,20 +6,6 @@ USE `big_market`;
 
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_decrement_ledger` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
-    `reservation_id`  VARCHAR(64)  NOT NULL,
-    `strategy_id`     BIGINT       NOT NULL,
-    `award_id`        INT          NOT NULL,
-    `lock_surplus`    BIGINT       DEFAULT NULL,
-    `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
-    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_reservation_id` (`reservation_id`),
-    KEY `idx_strategy_award` (`strategy_id`, `award_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
-    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `sku`             BIGINT       NOT NULL,
     `activity_id`     BIGINT       DEFAULT NULL,
     `lock_surplus`    BIGINT       NOT NULL,
@@ -30,6 +16,30 @@ CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
     UNIQUE KEY `uq_sku_lock_surplus` (`sku`, `lock_surplus`),
     KEY `idx_activity` (`activity_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `platform_config` (
+    `cfg_key`     VARCHAR(128) NOT NULL,
+    `cfg_value`   TEXT         NOT NULL,
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`cfg_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Rust admin/DCC KV (learning)';
+
+INSERT IGNORE INTO `platform_config` (`cfg_key`, `cfg_value`) VALUES
+    ('chatbot::enabled', 'true'),
+    ('activity.100401::title', '幸运轮盘活动'),
+    ('activity.100401::copy', '登录参与抽奖，AI 帮你解读活动权益。'),
+    ('activity.100401::state', 'online'),
+    ('stage.activity.c01.s01', '100401');
+
+-- Rust activity soft-stock flush target (Phase E); award surplus stays on strategy_award.
+CREATE TABLE IF NOT EXISTS `activity_soft_stock` (
+    `activity_id` BIGINT   NOT NULL,
+    `surplus`     BIGINT   NOT NULL DEFAULT 0,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`activity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Rust activity soft-stock write-back';
 
 USE `big_market_01`;
 
@@ -81,6 +91,23 @@ CREATE TABLE IF NOT EXISTS `chat_credit_session` (
     KEY `idx_deduct_state` (`deduct_state`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
+    `id`              BIGINT        NOT NULL AUTO_INCREMENT,
+    `user_id`         VARCHAR(128)  NOT NULL,
+    `activity_id`     BIGINT(12)    NOT NULL,
+    `out_business_no` VARCHAR(64)   NOT NULL,
+    `status`          VARCHAR(16)   NOT NULL DEFAULT 'applied',
+    `create_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_user_activity_biz` (`user_id`, `activity_id`, `out_business_no`),
+    KEY `idx_status_create` (`status`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `raffle_quota_decrement_ledger_000`;
+
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `user_id`         VARCHAR(32)  NOT NULL,
@@ -103,6 +130,10 @@ USE `big_market_02`;
 CREATE TABLE IF NOT EXISTS `mq_dead_letter` LIKE `big_market_01`.`mq_dead_letter`;
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` LIKE `big_market_01`.`pending_remote_write_task`;
 CREATE TABLE IF NOT EXISTS `chat_credit_session` LIKE `big_market_01`.`chat_credit_session`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` LIKE `big_market_01`.`raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `big_market_01`.`raffle_quota_decrement_ledger_001`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `big_market_01`.`raffle_quota_decrement_ledger_002`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `big_market_01`.`raffle_quota_decrement_ledger_003`;
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` LIKE `big_market_01`.`strategy_award_stock_confirm_task`;
 
 -- Older volumes: deduct_state is added by scripts/apply-reconcile-ddl.sh (idempotent).

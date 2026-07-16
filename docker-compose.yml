@@ -1,381 +1,83 @@
-# microservices docker-compose.
+# Default stack: Rust modular monolith (bm-gateway + bm-app [+ optional bm-worker]).
 #
-# PREREQUISITES: The shared infrastructure stack must already be running on
-# the dev-ops_my-network Docker network. Start it with:
+# Host binaries (recommended for learning):
+#   ./scripts/run-stack.sh
+#
+# Docker (infra must be up first when using mysql/redis/rabbit):
 #   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+#   docker compose up --build -d
 #
-# This compose file attaches all application services to that existing
-# network so they can reach mysql, redis, rabbitmq, nacos, elasticsearch, and
-# xxl-job-admin by container name without duplicating the infrastructure.
-#
-# BUILD FIRST: mvn clean package -DskipTests
-# THEN:        docker compose up --build -d
+# Secure overlay:
+#   docker compose -f docker-compose.yml -f docker-compose.secure.yml up -d
 
 services:
-
-  # ─────────────────── Lightweight services (no DB/Redis) ──────────────────
-
-  big-market-auth-service:
+  bm-app:
     build:
-      context: .
-      dockerfile: Dockerfile.service
+      context: ./big-market-rs
+      dockerfile: docker/Dockerfile
       args:
-        MODULE_NAME: big-market-auth-service
-    image: big-market-auth-service:latest
-    container_name: big-market-auth-service
-    restart: "no"
-    ports:
-      - "8081:8081"
-    environment:
-      - SERVER_PORT=8081
-      - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
-      - APP_AUTH_DEV_USERS=${APP_AUTH_DEV_USERS:-xiaofuge:demo,admin:admin}
-      - API_VERSION=v1
-      - CROSS_ORIGIN=*
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - TOKEN_REVOCATION_REDIS_ENABLED=true
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  big-market-admin-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.service
-      args:
-        MODULE_NAME: big-market-admin-service
-    image: big-market-admin-service:latest
-    container_name: big-market-admin-service
-    restart: "no"
-    ports:
-      - "8082:8082"
-    environment:
-      - SERVER_PORT=8082
-      - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
-      - ADMIN_TOKEN=${ADMIN_TOKEN:-admin-dev-token}
-      - ADMIN_USER_IDS=${ADMIN_USER_IDS:-admin}
-      - API_VERSION=v1
-      - CROSS_ORIGIN=*
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - TOKEN_REVOCATION_REDIS_ENABLED=true
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-    volumes:
-      - ./data/admin-config:/data/admin-config
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  big-market-chatbot-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.service
-      args:
-        MODULE_NAME: big-market-chatbot-service
-    image: big-market-chatbot-service:latest
-    container_name: big-market-chatbot-service
-    restart: "no"
-    ports:
-      - "8084:8084"
-    environment:
-      - SERVER_PORT=8084
-      - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
-      - APP_JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
-      - API_VERSION=v1
-      - CROSS_ORIGIN=*
-      - CHATBOT_PROVIDER=${CHATBOT_PROVIDER:-local}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
-      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=${MYSQL_USER:-root}
-      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
-      - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
-      - CHATBOT_GATEWAY_URL=http://big-market-gateway:8080
-    volumes:
-      - ./data/chatbot-config:/data/chatbot-config
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8084/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # ─────────────── Core market service (full infra deps) ───────────────────
-
-  big-market-market-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.service
-      args:
-        MODULE_NAME: big-market-market-service
-    image: big-market-market-service:latest
-    container_name: big-market-market-service
-    restart: "no"
+        BIN: bm-app
+    image: big-market-rs-app:latest
+    container_name: bm-app
     ports:
       - "8083:8083"
     environment:
-      - SERVER_PORT=8083
-      - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
-      - ADMIN_TOKEN=${ADMIN_TOKEN:-admin-dev-token}
-      - API_VERSION=v1
-      - CROSS_ORIGIN=*
-      # Connect to existing infra containers by name (same Docker network)
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=${MYSQL_USER:-root}
-      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - TOKEN_REVOCATION_REDIS_ENABLED=true
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
-      - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_SERVICE_REMOTE_READ_ENABLED=${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:-false}
-      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-true}
-      - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
-      - ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:-false}
-      - REBATE_EMBEDDED_RPC_PROVIDER_ENABLED=${REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:-true}
-      - REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED=${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:-false}
-      - REBATE_SERVICE_REMOTE_READ_ENABLED=${REBATE_SERVICE_REMOTE_READ_ENABLED:-false}
-      - STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED=${STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:-true}
-      - STRATEGY_SERVICE_REMOTE_READ_ENABLED=${STRATEGY_SERVICE_REMOTE_READ_ENABLED:-false}
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
-      - XXL_JOB_HOST=xxl-job-admin
-      - XXL_JOB_PORT=9090
-      - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
-      - GATEWAY_API_HOST=big-market-gateway
-      - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
-      interval: 20s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
+      - BM_PORT=8083
+      - BM_EMBED_WORKER=1
+      - BM_BACKEND=${BM_BACKEND:-file}
+      - BM_DATA_DIR=/data/bm-rs
+      - BM_JWT_SECRET=${JWT_SECRET:-change-me-in-dev-only}
+      - BM_INTERNAL_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-dev-internal-token}
+      - BM_INITIAL_CREDIT=100.00
+      - BM_MYSQL_URL=${BM_MYSQL_URL:-mysql://root:123456@mysql:3306/big_market}
+      - BM_REDIS_URL=${BM_REDIS_URL:-redis://redis:6379}
+      - BM_RABBIT_URL=${BM_RABBIT_URL:-}
+      - RUST_LOG=info
+    volumes:
+      - bm-rs-data:/data/bm-rs
 
-  # ──────────── Message-job service (MQ consumers + XXL-Job handlers) ─────────
-
-  big-market-message-job-service:
+  bm-gateway:
     build:
-      context: .
-      dockerfile: Dockerfile.service
+      context: ./big-market-rs
+      dockerfile: docker/Dockerfile
       args:
-        MODULE_NAME: big-market-message-job-service
-    image: big-market-message-job-service:latest
-    container_name: big-market-message-job-service
-    restart: "no"
+        BIN: bm-gateway
+    image: big-market-rs-gateway:latest
+    container_name: bm-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - BM_GW_PORT=8080
+      - BM_GW_APP_URL=http://bm-app:8083
+      - BM_GW_JWT_SECRET=${JWT_SECRET:-change-me-in-dev-only}
+      - BM_GW_RATE_LIMIT=${BM_GW_RATE_LIMIT:-2000}
+      - RUST_LOG=info
+    depends_on:
+      - bm-app
+
+  bm-worker:
+    build:
+      context: ./big-market-rs
+      dockerfile: docker/Dockerfile
+      args:
+        BIN: bm-worker
+    image: big-market-rs-worker:latest
+    container_name: bm-worker
     ports:
       - "8085:8085"
     environment:
-      - SERVER_PORT=8085
-      - SPRING_PROFILES_ACTIVE=docker
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=${MYSQL_USER:-root}
-      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
-      - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-true}
-      - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
-      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}
-      - JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-true}
-      - ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED=${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:-false}
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
-      - XXL_JOB_HOST=xxl-job-admin
-      - XXL_JOB_PORT=9090
-      - XXL_JOB_TOKEN=${XXL_JOB_TOKEN:-default_token}
-      - GATEWAY_API_HOST=big-market-gateway
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8085/actuator/health || exit 1"]
-      interval: 20s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
-
-  # ─── Account service ──
-
-  big-market-account-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.service
-      args:
-        MODULE_NAME: big-market-account-service
-    image: big-market-account-service:latest
-    container_name: big-market-account-service
-    restart: "no"
-    ports:
-      - "8086:8086"
-    environment:
-      - SERVER_PORT=8086
-      - SPRING_PROFILES_ACTIVE=docker
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=${MYSQL_USER:-root}
-      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
-      - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
-      - GATEWAY_API_HOST=big-market-gateway
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8086/actuator/health || exit 1"]
-      interval: 20s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
-
-  # ── Fulfillment service ──
-
-  big-market-fulfillment-service:
-    build:
-      context: .
-      dockerfile: Dockerfile.service
-      args:
-        MODULE_NAME: big-market-fulfillment-service
-    image: big-market-fulfillment-service:latest
-    container_name: big-market-fulfillment-service
-    restart: "no"
-    ports:
-      - "8087:8087"
-    environment:
-      - SERVER_PORT=8087
-      - SPRING_PROFILES_ACTIVE=docker
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=${MYSQL_USER:-root}
-      - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
-      - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
-      - GATEWAY_API_HOST=big-market-gateway
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8087/actuator/health || exit 1"]
-      interval: 20s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
-
-  # ─────────────────────────── API Gateway ─────────────────────────────────
-
-  big-market-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile.service
-      args:
-        MODULE_NAME: big-market-gateway
-    image: big-market-gateway:latest
-    container_name: big-market-gateway
-    restart: "no"
-    ports:
-      - "8080:8080"
-      # Compatibility for cached frontend bundles that called
-      # http://127.0.0.1:8098/api/v1 directly. Remove after all clients have
-      # picked up the versioned /api/v1 frontend.
-      - "8098:8080"
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_PROFILES_ACTIVE=docker
-      - AUTH_SERVICE_HOST=big-market-auth-service
-      - AUTH_SERVICE_PORT=8081
-      - ADMIN_SERVICE_HOST=big-market-admin-service
-      - ADMIN_SERVICE_PORT=8082
-      - MARKET_SERVICE_HOST=big-market-market-service
-      - MARKET_SERVICE_PORT=8083
-      - CHATBOT_SERVICE_HOST=big-market-chatbot-service
-      - CHATBOT_SERVICE_PORT=8084
+      - BM_WORKER_PORT=8085
+      - BM_BACKEND=${BM_BACKEND:-file}
+      - BM_DATA_DIR=/data/bm-rs
+      - BM_MYSQL_URL=${BM_MYSQL_URL:-mysql://root:123456@mysql:3306/big_market}
+      - BM_REDIS_URL=${BM_REDIS_URL:-redis://redis:6379}
+      - BM_RABBIT_URL=${BM_RABBIT_URL:-}
+      - RUST_LOG=info
+    volumes:
+      - bm-rs-data:/data/bm-rs
+    profiles: ["worker"]
     depends_on:
-      big-market-auth-service:
-        condition: service_healthy
-      big-market-admin-service:
-        condition: service_healthy
-      big-market-chatbot-service:
-        condition: service_healthy
-      big-market-market-service:
-        condition: service_healthy
-    networks:
-      - dev-ops_my-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - bm-app
 
-  # ─────────────────────────── Web Frontend ────────────────────────────────
-
-  big-market-web:
-    build:
-      context: .
-      dockerfile: big-market-web/Dockerfile
-      args:
-        APP_VERSION: ${WEB_APP_VERSION:-dev}
-    image: big-market-web:latest
-    container_name: big-market-web
-    restart: "no"
-    ports:
-      - "5173:80"
-    depends_on:
-      big-market-gateway:
-        condition: service_healthy
-    networks:
-      - dev-ops_my-network
-
-# ─────────────────────────── Networks ────────────────────────────────────────
-# Attach to the existing infrastructure network instead of creating a new one.
-# The infra stack (mysql, redis, rabbitmq, nacos, elasticsearch) must already
-# be running on this network.
-networks:
-  dev-ops_my-network:
-    external: true
+volumes:
+  bm-rs-data:
