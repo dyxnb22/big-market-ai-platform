@@ -1,14 +1,13 @@
 ---
-description: Big Market core topology, docs authority, and readiness posture
+description: Big Market topology and docs
 alwaysApply: true
 ---
 
 # Project core
 
-- **Only application stack:** Rust `big-market-rs/` — `bm-gateway` :8080, `bm-app` :8083, optional `bm-worker` :8085 (modular monolith).
-- **Java sources:** removed from the repository (`rust-refactor/JAVA-DELETION-LEDGER.md`). Do not reintroduce Spring/Maven modules unless the user explicitly requests a Java restore.
-- **Architecture (authoritative):** `docs/MICROSERVICES-RUST.md`. Agent entry: `AGENTS.md`.
-- Frontend: `big-market-web` static HTML/JS → `http://127.0.0.1:8080/api/v1`.
-- `bm-app` must **not** register MQ consumers / credit dispatch loops (worker only).
-- Doc vs code → trust **code/config/SQL**, then update docs.
-- Commit only when the user explicitly asks.
+- Stack: Rust `big-market-rs/` — `bm-gateway` :8080, `bm-app` :8083, optional `bm-worker` :8085.
+- Docs: `docs/ARCHITECTURE.md`, `docs/FLOWS.md`, `docs/DATA.md`, `docs/OPERATIONS.md`.
+- Frontend: `big-market-web` → `http://127.0.0.1:8080/api/v1`.
+- `bm-app` must not own MQ consumers / credit dispatch (worker / embed scheduler only).
+- Prefer code + SQL over stale docs; update docs when behavior changes.
+- Commit only when the user asks.

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: big-market-rs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test --workspace
+      - name: Acceptance
+        working-directory: ${{ github.workspace }}
+        run: ./scripts/acceptance.sh
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build
+        working-directory: big-market-rs
+        run: cargo build --release -p bm-app -p bm-gateway
+      - name: Playwright
+        run: ./scripts/acceptance-e2e.sh
+
+  mysql-smoke:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Start MySQL
+        run: |
+          docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql
+          for i in $(seq 1 60); do
+            if docker exec mysql mysqladmin ping -h localhost -uroot -p123456 --silent 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+      - name: Build
+        working-directory: big-market-rs
+        run: cargo build --release -p bm-app -p bm-gateway
+      - name: MySQL smoke
+        run: ./scripts/smoke-mysql.sh

@@ -50,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         .install_recorder()
         .context("prometheus")?;
 
-    // Phase D: when Rabbit is configured, refuse embed outbox consume unless forced.
+    // When Rabbit is configured, refuse embed outbox consume unless forced.
     // Standalone bm-worker owns MQ + local outbox to avoid double credit.
     let rabbit_url_set = std::env::var("BM_RABBIT_URL")
         .ok()

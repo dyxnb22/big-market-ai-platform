@@ -21,7 +21,7 @@ use crate::DbRouter;
 pub struct MysqlStores {
     pub pool: Pool<MySql>,
     pub router: DbRouter,
-    /// Chat idempotent response cache (aligns Java Redis `chat:request:{userId}:{requestId}`).
+    /// Chat idempotent response cache (chat request idempotency cache).
     pub chat_idem: Arc<Mutex<HashMap<String, Decimal>>>,
     /// Activity-level soft stock (not in DB); flushed/cleared by worker.
     pub activity_stocks: Arc<Mutex<HashMap<i64, i64>>>,

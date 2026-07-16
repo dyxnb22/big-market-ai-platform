@@ -1,9 +1,0 @@
----
-description: Historical note — MyBatis mapper copies retired with Java
-alwaysApply: false
----
-
-# Mapper and XXL (retired)
-
-Java MyBatis mapper XML copies and XXL-Job wiring were removed with the Spring stack.  
-Rust: sqlx in `bm-infra`; jobs via `bm-domain` `WorkerScheduler` / `JOB_CATALOG`.

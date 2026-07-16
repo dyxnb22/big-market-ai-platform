@@ -355,7 +355,7 @@ impl RebateService {
                 trade_amount: reward,
             })
             .await?;
-        // Align Java send_rebate async path (idempotent via same out_business_no semantics).
+        // Enqueue rebate outbox (idempotent via same out_business_no semantics).
         let _ = self
             .outbox
             .enqueue_rebate(RebateMessage {

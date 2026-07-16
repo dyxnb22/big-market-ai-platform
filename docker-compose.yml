@@ -1,7 +1,7 @@
 # Default stack: Rust modular monolith (bm-gateway + bm-app [+ optional bm-worker]).
 #
 # Host binaries (recommended for learning):
-#   ./scripts/run-rust-stack.sh
+#   ./scripts/run-stack.sh
 #
 # Docker (infra must be up first when using mysql/redis/rabbit):
 #   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d

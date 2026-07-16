@@ -91,7 +91,7 @@ pub fn money(s: &str) -> Money {
     s.parse().expect("valid decimal")
 }
 
-/// Java String.hashCode() compatible (for shard routing).
+/// Stable string hash for shard routing (String.hashCode-compatible).
 pub fn java_string_hash(s: &str) -> i32 {
     let mut h: i32 = 0;
     for b in s.bytes() {

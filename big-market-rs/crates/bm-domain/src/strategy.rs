@@ -51,7 +51,7 @@ pub fn lock_threshold(rule_model: &str) -> Option<i32> {
     rest.parse().ok()
 }
 
-/// Lock visibility for award list (Java `RaffleAwardListResponseDTO` fields).
+/// Lock visibility for award list (award-list lock fields).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AwardLockView {
     pub award_rule_lock_count: Option<i32>,
@@ -139,7 +139,7 @@ pub fn strategy_chain_enabled() -> bool {
     }
 }
 
-/// Parse Java-style `rule_blacklist` value: `101:user001,user002`.
+/// Parse `rule_blacklist` value: `101:user001,user002`.
 pub fn parse_blacklist_rule(value: &str) -> HashMap<String, i32> {
     let mut out = HashMap::new();
     let value = value.trim();
@@ -161,7 +161,7 @@ pub fn parse_blacklist_rule(value: &str) -> HashMap<String, i32> {
     out
 }
 
-/// Parse Java-style `rule_weight` value: `60:102,103 200:106,107`.
+/// Parse `rule_weight` value: `60:102,103 200:106,107`.
 /// Thresholds are minimum prior draws; highest matching bucket wins.
 pub fn parse_weight_buckets(value: &str) -> Vec<(i32, Vec<i32>)> {
     let mut buckets = Vec::new();
@@ -213,7 +213,7 @@ pub fn apply_weight_bucket(
     }
 }
 
-/// Build rule-weight list views (Java `RaffleStrategyRuleWeightResponseDTO` shape).
+/// Build rule-weight list views (rule-weight response shape).
 /// Returns `(threshold_count, [(award_id, title), ...])` per bucket.
 pub fn rule_weight_list_views(
     rule_value: &str,

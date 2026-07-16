@@ -1,9 +1,0 @@
----
-description: Historical note — Spring scan boundaries retired with Java
-alwaysApply: false
----
-
-# Service boot scan (retired)
-
-Spring `market-service` / `message-job-service` sources were removed.  
-Rust equivalent constraint: **`bm-app` must not** own MQ consumers / credit dispatch — use **`bm-worker`** (`docs/MICROSERVICES-RUST.md`).

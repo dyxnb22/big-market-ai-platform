@@ -3,7 +3,7 @@
 //! When `BM_RABBIT_URL` is unset, workers use the in-process outbox only.
 //! When set, `bm-worker` publishes local outbox messages to dedicated queues
 //! (`bm.send_award`, `bm.send_rebate`) and consumes them — separate from any
-//! Java learning-stack queues so dual-run does not steal messages.
+//! dedicated queues for this stack.
 
 use bm_domain::{RebateMessage, SendAwardMessage};
 use bm_types::BmError;

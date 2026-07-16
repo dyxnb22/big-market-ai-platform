@@ -189,11 +189,7 @@ test("login redirect param only allows same-origin destinations", async ({ page 
   await expectNoClientErrors(errors);
 });
 
-test("frontend assets are cache-safe and legacy 8098 API remains compatible", async ({ request, baseURL }) => {
-  test.skip(
-    process.env.E2E_STACK === "rust",
-    "Rust default stack does not expose Java legacy :8098 direct port"
-  );
+test("frontend assets are cache-safe", async ({ request }) => {
   const login = await request.get("/login.html");
   await expect(login).toBeOK();
   expect(login.headers()["cache-control"]).toContain("no-store");
@@ -209,12 +205,4 @@ test("frontend assets are cache-safe and legacy 8098 API remains compatible", as
   await expect(config).toBeOK();
   expect(config.headers()["cache-control"]).toContain("no-store");
   await expect(await config.text()).toContain('return "/api/v1"');
-
-  const legacyApiBase = new URL(baseURL);
-  legacyApiBase.port = "8098";
-  const legacyLogin = await request.post(legacyApiBase.origin + "/api/v1/auth/login", {
-    data: { userId: "xiaofuge", password: "demo" }
-  });
-  await expect(legacyLogin).toBeOK();
-  expect(await legacyLogin.json()).toMatchObject({ code: "0000" });
 });

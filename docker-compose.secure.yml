@@ -4,7 +4,7 @@
 #   export JWT_SECRET=... CHAT_INTERNAL_SERVICE_TOKEN=... APP_AUTH_DEV_USERS=...
 #   docker compose -f docker-compose.yml -f docker-compose.secure.yml up -d
 #
-# Host binaries: ./scripts/run-rust-secure.sh
+# Host binaries: ./scripts/run-secure.sh
 
 x-rust-secure-env: &rust-secure-env
   BM_SECURE: "1"

@@ -1,53 +1,29 @@
-# AGENTS.md — Big Market AI Platform
+# AGENTS.md — Big Market
 
-Guidance for Cursor / Codex agents working in this repository.
+## Project
 
-## What this repo is
+Rust raffle platform: `bm-gateway` + `bm-app` + optional `bm-worker`. Frontend is static HTML/JS in `big-market-web/`.
 
-**Rust** marketing raffle learning/portfolio project (`big-market-rs/`): modular monolith
-`bm-gateway` + `bm-app` + optional `bm-worker`; shared crates `bm-domain` / `bm-infra` / `bm-api` / `bm-types`;
-frontend `big-market-web` (static HTML/JS).
+## Docs to read first
 
-**Java Spring sources have been removed** from the tree (see `rust-refactor/JAVA-DELETION-LEDGER.md`).
+- `docs/ARCHITECTURE.md` — topology
+- `docs/FLOWS.md` — raffle / credit / chat flows
+- `docs/DATA.md` — idempotency keys & outbox
+- `docs/OPERATIONS.md` — verification commands
 
-## Authoritative docs
+## Rules
 
-| Doc | Use for |
-| --- | --- |
-| `docs/MICROSERVICES-RUST.md` | **Architecture (authoritative)** |
-| `docs/RUST-LEARNING-FREEZE.md` | Verified commands, limits |
-| `docs/data-and-outbox.md` | Outbox, idempotency keys |
-| `docs/learning/` | Conceptual guides (may cite historical Java names) |
-| `rust-refactor/STATUS.md` | Rust track status |
-| `rust-refactor/JAVA-DELETION-LEDGER.md` | What was deleted and why |
+1. Smallest change that fixes the bug.
+2. Money paths (credit, quota, stock, outbox): keep idempotency keys; see skill `money-path-change` and `docs/DATA.md`.
+3. `bm-app` must **not** run MQ consumers or credit-dispatch loops — that is `bm-worker` (or embed worker only for local outbox).
+4. Verify with `./scripts/acceptance.sh`, not `/health` alone.
+5. Commit only when asked.
 
-**Doc vs code:** prefer **code + config + Docker init SQL**.
-
-## Service map
-
-| Process | Port | Owns |
-| --- | ---: | --- |
-| bm-gateway | 8080 | Routing, rate limit |
-| bm-app | 8083 | JWT, raffle, SKU, chat, admin/DCC/ERP |
-| bm-worker | 8085 | Outbox consume, credit dispatch, reconcile, stock flush |
-
-Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://127.0.0.1:8080/api/v1`.
-
-## Default agent behavior
-
-1. Prefer the smallest change that fixes the stated bug.
-2. Money-like paths: preserve idempotency keys; see skill `money-path-change`.
-3. **`bm-app` must not** register MQ consumers or credit-dispatch loops — those belong in **`bm-worker`**.
-4. Verification: `./scripts/acceptance-rust.sh` (never claim closed loop from `/health` alone).
-5. Commit only when the user asks.
-
-## Useful commands
+## Commands
 
 ```bash
-cd big-market-rs && cargo test --workspace
-./scripts/run-rust-stack.sh
-./scripts/acceptance-rust.sh
-./scripts/acceptance-rust.sh --e2e
-./scripts/acceptance-rust.sh --mysql
+./scripts/run-stack.sh
+./scripts/acceptance.sh
+./scripts/acceptance.sh --mysql
 ./scripts/web-start.sh
 ```

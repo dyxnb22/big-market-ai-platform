@@ -100,7 +100,7 @@ fn seed_demo(inner: &mut Inner, initial_credit: Money) {
         activity_id: 100401,
         state: "active".into(),
     });
-    // Default display + chatbot config (Java AdminConfigController defaults).
+    // Default display + chatbot config (default display + chatbot config).
     inner.admin.insert("activity.100401::title".into(), "幸运轮盘活动".into());
     inner.admin.insert("activity.100401::copy".into(), "登录参与抽奖，AI 帮你解读活动权益。".into());
     inner.admin.insert("activity.100401::state".into(), "online".into());

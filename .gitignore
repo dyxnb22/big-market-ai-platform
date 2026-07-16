@@ -1,57 +1,31 @@
-target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Build
+/target/
+big-market-rs/target/
+build/
 
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
-*.iws
+# IDE
+.idea/
+.vscode/
 *.iml
+*.iws
 *.ipr
 
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
-
-### Mac OS ###
+# OS
 .DS_Store
-/data/
-/.idea/
-/docs/dev-ops/log/
-/docs/evidence/generated/
-/big-market-app/data/
-/push_all_branches.sh
-/logs/*.log
-/logs/*.pid
 
-### Node / Playwright ###
+# Runtime / local
+/data/
+logs/
+*.log
+big-market-rs/target/run/
+
+# Node / Playwright
 node_modules/
-.playwright-browsers/
 test-results/
 playwright-report/
+/test-results/
 
-### Service runtime logs ###
-**/data/log/
-
-.m2-workspace/
+# Env secrets
+.env
+.env.*
+!.env.example

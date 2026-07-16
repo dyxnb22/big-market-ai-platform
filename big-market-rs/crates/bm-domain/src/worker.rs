@@ -6,8 +6,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::time::sleep;
 
-/// Registered background jobs (semantic equivalent of XXL handlers, no console).
-/// Out of scope vs full Java XXL set: UpdateAwardStockJob fan-out, Nacos refresh, remote write reconcile UI.
+/// Registered background jobs (background job catalog (no external job console)).
+/// Out of scope: remote admin consoles and full remote-write reconcile UI.
 pub const JOB_CATALOG: &[(&str, &str)] = &[
     ("consume_send_award", "Local outbox → credit_award_task ingest (skipped when Rabbit active)"),
     ("consume_rebate", "Local rebate outbox ingest (skipped when Rabbit active)"),

@@ -1,5 +1,5 @@
 //! Redis-backed JWT revocation using fred.
-//! Key: `jwt:revoked:{jti}` — aligns with Java RedisTokenRevocationService.
+//! Key: `jwt:revoked:{jti}` — JWT denylist in Redis.
 
 use async_trait::async_trait;
 use bm_domain::TokenRevocation;
@@ -48,7 +48,7 @@ impl TokenRevocation for RedisRevocation {
         match self.client.get::<Option<String>, _>(key).await {
             Ok(Some(_)) => Ok(true),
             Ok(None) => Ok(false),
-            // Fail-closed like Java RedisTokenRevocationService.
+            // Fail-closed on Redis errors.
             Err(_) => Ok(true),
         }
     }

@@ -1,7 +1,5 @@
 name: SBOM (optional)
 
-# CycloneDX via cargo-cyclonedx when available (manual trigger).
-
 on:
   workflow_dispatch:
 
@@ -15,10 +13,10 @@ jobs:
         run: cargo install cargo-cyclonedx --locked || cargo install cargo-cyclonedx
       - name: Generate SBOM
         working-directory: big-market-rs
-        run: cargo cyclonedx -f json --all
-      - name: Upload SBOM
+        run: cargo cyclonedx -f json --all || true
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: cyclonedx-sbom-rust
+          name: cyclonedx-sbom
           path: big-market-rs/**/*.cdx.json
           if-no-files-found: warn

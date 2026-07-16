@@ -1,4 +1,4 @@
-//! HTTP DTOs aligned with Java big-market-api.
+//! HTTP DTOs HTTP DTOs for /api/v1.
 
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};

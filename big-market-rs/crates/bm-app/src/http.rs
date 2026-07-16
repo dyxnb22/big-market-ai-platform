@@ -86,7 +86,7 @@ pub fn routes(state: AppState) -> Router {
             "/api/v1/raffle/erp/query_user_raffle_order",
             get(erp_orders),
         )
-        // dcc (Java path)
+        // dcc
         .route(
             "/api/v1/raffle/dcc/update_config",
             get(dcc_update_get).post(dcc_update_post),
