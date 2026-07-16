@@ -32,13 +32,7 @@ wait_for_stack_healthy() {
   local host="${1:-localhost}"
   local timeout_sec="${2:-180}"
   wait_for_actuator_up "$host" 8080 "gateway" "$timeout_sec"
-  wait_for_actuator_up "$host" 8081 "auth" "$timeout_sec"
-  wait_for_actuator_up "$host" 8082 "admin" "$timeout_sec"
-  wait_for_actuator_up "$host" 8083 "market" "$timeout_sec"
-  wait_for_actuator_up "$host" 8084 "chatbot" "$timeout_sec"
-  wait_for_actuator_up "$host" 8085 "message-job" "$timeout_sec"
-  wait_for_actuator_up "$host" 8086 "account" "$timeout_sec"
-  wait_for_actuator_up "$host" 8087 "fulfillment" "$timeout_sec"
+  wait_for_actuator_up "$host" 8083 "bm-app" "$timeout_sec"
 }
 
 resolve_stage_activity_id() {
@@ -93,31 +87,3 @@ assert_http_and_code() {
   return 1
 }
 
-wait_for_xxl_admin() {
-  local host="${1:-localhost}"
-  local timeout_sec="${2:-120}"
-  wait_for_http_up "http://${host}:9090/xxl-job-admin" "$timeout_sec" "xxl-job-admin"
-}
-
-wait_for_xxl_executor() {
-  local app_name="${1:-big-market-message-job}"
-  local timeout_sec="${2:-120}"
-  local mysql_container="${MYSQL_CONTAINER:-mysql}"
-  local mysql_password="${MYSQL_ROOT_PASSWORD:-123456}"
-  local elapsed=0
-  local address=""
-  echo "  Waiting for XXL executor ${app_name} registration (timeout ${timeout_sec}s)..."
-  while [ "$elapsed" -lt "$timeout_sec" ]; do
-    address=$(docker exec "$mysql_container" mysql -uroot -p"$mysql_password" -N -e \
-      "SELECT COALESCE(address_list,'') FROM xxl_job.xxl_job_group WHERE app_name='${app_name}' LIMIT 1;" \
-      2>/dev/null || true)
-    if [ -n "$address" ]; then
-      echo "  UP  XXL executor ${app_name} (${elapsed}s, ${address})"
-      return 0
-    fi
-    sleep 2
-    elapsed=$((elapsed + 2))
-  done
-  echo "  TIMEOUT  XXL executor ${app_name} registration after ${timeout_sec}s" >&2
-  return 1
-}

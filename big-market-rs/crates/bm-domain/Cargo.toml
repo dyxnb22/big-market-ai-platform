@@ -1,0 +1,26 @@
+[package]
+name = "bm-domain"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+chrono = { workspace = true }
+jsonwebtoken = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+rust_decimal = { workspace = true }
+rand = { workspace = true }
+bm-types = { workspace = true }
+tracing = { workspace = true }
+metrics = { workspace = true }
+tokio = { workspace = true, features = ["rt", "time"] }
+
+[dev-dependencies]
+tokio = { workspace = true }
+uuid = { workspace = true }
+bm-infra = { path = "../bm-infra" }

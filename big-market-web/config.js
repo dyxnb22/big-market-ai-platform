@@ -21,6 +21,7 @@ var CONFIG = {
   CHANNEL: "c01",
   SOURCE: "s01",
   /** 动态活动 ID 解析失败时的兜底值；正常路径以 stage(c01/s01→100401) 为准 */
+  /** 锁奖演示：设 CHANNEL/SOURCE 为 c02/s02 → 100402，或跑 ./scripts/acceptance.sh --strategy */
   DEFAULT_ACTIVITY_ID: 100401,
   ACTIVITY_ID: 100401,
 };

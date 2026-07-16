@@ -400,10 +400,10 @@ async function refreshOps() {
   // (actuator, OPTIONS) check gateway-level reachability.
   var services = [
     {name: "gateway", url: gatewayBase + "/actuator/health"},
-    {name: "auth-service", path: "/auth/login", method: "OPTIONS"},
-    {name: "market-service", path: "/raffle/activity/query_user_credit_account_by_token", method: "POST", needsAuth: true},
-    {name: "admin-service", path: "/admin/config/list", needsAuth: true},
-    {name: "chatbot-service", path: "/chatbot/ask", method: "OPTIONS"},
+    {name: "auth", path: "/auth/login", method: "OPTIONS"},
+    {name: "bm-app", path: "/raffle/activity/query_user_credit_account_by_token", method: "POST", needsAuth: true},
+    {name: "admin", path: "/admin/config/list", needsAuth: true},
+    {name: "chatbot", path: "/chatbot/ask", method: "OPTIONS"},
   ];
   var rows = "";
   for (var i = 0; i < services.length; i++) {

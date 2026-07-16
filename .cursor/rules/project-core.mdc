@@ -1,15 +1,13 @@
 ---
-description: Big Market core topology, docs authority, and readiness posture
+description: Big Market topology and docs
 alwaysApply: true
 ---
 
 # Project core
 
-- Stack: Spring Boot microservices + Dubbo/Nacos + RabbitMQ + XXL-Job + MySQL + Redis; frontend `big-market-web` is static HTML/JS (not React).
-- Architecture entry: `docs/MICROSERVICES.md`. Fix backlog: `docs/audit-remediation-plan.md`. Agent entry: `AGENTS.md`.
-- Default ports: gateway `8080`, auth `8081`, admin `8082`, market `8083`, chatbot `8084`, message-job `8085`, account `8086`, fulfillment `8087`, rebate `8088`, strategy `8089`.
-- Rebate/strategy default to **embedded** providers inside market; dedicated containers are optional.
-- Doc vs code conflict → trust **code/config/SQL**, then update docs.
-- Until remediation Phase 1 is done: do **not** claim “demo closed loop” or “stable completed stack” in README/PR text.
-- Prefer ports/adapters over cross-domain DAO use; ownership doc is guidance, not a compiler guarantee.
-- Commit only when the user explicitly asks.
+- Stack: Rust `big-market-rs/` — `bm-gateway` :8080, `bm-app` :8083, optional `bm-worker` :8085.
+- Docs: `docs/ARCHITECTURE.md`, `docs/FLOWS.md`, `docs/DATA.md`, `docs/OPERATIONS.md`.
+- Frontend: `big-market-web` → `http://127.0.0.1:8080/api/v1`.
+- `bm-app` must not own MQ consumers / credit dispatch (worker / embed scheduler only).
+- Prefer code + SQL over stale docs; update docs when behavior changes.
+- Commit only when the user asks.

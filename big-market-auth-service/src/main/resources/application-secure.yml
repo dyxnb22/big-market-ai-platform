@@ -1,8 +1,0 @@
-app:
-  jwt:
-    secret: ${JWT_SECRET}
-  auth:
-    # Must not use well-known demo passwords under secure profile
-    dev-users: ${APP_AUTH_DEV_USERS}
-  cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://127.0.0.1:5173}

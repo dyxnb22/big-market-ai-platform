@@ -68,6 +68,7 @@ function initApp() {
     wheel:           qs("#wheel"),
     drawBtn:         qs("#drawBtn"),
     drawResult:      qs("#drawResult"),
+    awardLockList:   qs("#awardLockList"),
     refreshCampaign: qs("#refreshCampaignBtn"),
     signInBtn:       qs("#signInBtn"),
     signInStatus:    qs("#signInStatus"),
@@ -235,7 +236,7 @@ function initApp() {
     var disabled = !chatbotEnabled;
     if (d.msgInput) {
       d.msgInput.disabled = disabled;
-      d.msgInput.placeholder = disabled ? "AI 对话已在管理端关闭" : "给 AI 发送消息...";
+      d.msgInput.placeholder = disabled ? "对话已在管理端关闭" : "发送消息（本地 echo，真实扣费）...";
     }
     if (d.sendBtn) d.sendBtn.disabled = disabled;
     if (d.chatForm) d.chatForm.classList.toggle("disabled-hint", disabled);
@@ -246,7 +247,7 @@ function initApp() {
         hint.className = "composer-disabled-msg";
         d.chatForm.insertBefore(hint, d.chatForm.firstChild);
       }
-      if (hint) hint.textContent = "AI 对话入口已关闭，请联系管理员或稍后再试。";
+      if (hint) hint.textContent = "对话入口已关闭，请联系管理员或稍后再试。";
     } else if (hint) {
       hint.remove();
     }
@@ -387,14 +388,38 @@ function initApp() {
     var radius = mobile ? 72 : 112;
     awards.forEach(function(award, i) {
       var el = document.createElement("span");
-      el.className = "wheel-label";
+      el.className = "wheel-label" + (award.isAwardUnlock === false ? " locked" : "");
       el.style.fontSize = fontSize + "px";
       el.style.width = labelWidth + "px";
       el.style.marginLeft = "-" + (labelWidth/2) + "px";
       el.style.transform = "rotate(" + (i*seg+seg/2) + "deg) translateY(-" + radius + "px) rotate(90deg)";
-      el.textContent = award.awardTitle || ("奖品"+(i+1));
+      var title = award.awardTitle || ("奖品"+(i+1));
+      el.textContent = award.isAwardUnlock === false ? ("[锁] " + title) : title;
       d.wheel.appendChild(el);
     });
+    renderAwardLockList();
+  }
+
+  function renderAwardLockList() {
+    if (!d.awardLockList) return;
+    if (!awards.length) {
+      d.awardLockList.innerHTML = "";
+      return;
+    }
+    d.awardLockList.innerHTML = awards.map(function(a) {
+      var unlocked = a.isAwardUnlock !== false;
+      var wait = a.waitUnLockCount != null ? a.waitUnLockCount : 0;
+      var lockNeed = a.awardRuleLockCount != null ? a.awardRuleLockCount : null;
+      var status = unlocked
+        ? '<span class="lock-ok">已解锁</span>'
+        : ('<span class="lock-wait">未解锁' + (wait > 0 ? ' · 还需 ' + wait + ' 次' : '') + '</span>');
+      var sub = a.awardSubtitle
+        ? '<small>' + a.awardSubtitle + '</small>'
+        : (lockNeed != null && !unlocked ? '<small>需累计抽奖 ' + lockNeed + ' 次</small>' : '');
+      return '<div class="award-lock-item' + (unlocked ? '' : ' is-locked') + '">'
+        + '<strong>' + (a.awardTitle || ('奖品' + a.awardId)) + '</strong>'
+        + status + sub + '</div>';
+    }).join("");
   }
 
   /** Update connection status indicator */
@@ -452,7 +477,7 @@ function initApp() {
         } else {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +1 积分"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
         }
@@ -460,7 +485,7 @@ function initApp() {
         if (e.raw && e.raw.data === false) {
           signedToday = false;
           if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+          if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +1 积分"; d.ucSignInBtn.classList.remove("done"); }
           if (d.ucSigned) d.ucSigned.textContent = "否";
           if (d.signInStatus) d.signInStatus.textContent = "";
           return;
@@ -556,7 +581,7 @@ function initApp() {
       if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "今日已签到"; d.ucSignInBtn.classList.add("done"); }
       if (d.signInStatus) d.signInStatus.textContent = data.message || "签到成功！";
       if (d.ucSigned) d.ucSigned.textContent = "是";
-      toast(data.message || "签到成功，+10 积分");
+      toast(data.message || "签到成功，+1 积分");
       if (data.creditBalance !== undefined && data.creditBalance !== null) {
         var bal = parseFloat(data.creditBalance);
         var prev = currentCreditBalance();
@@ -575,7 +600,7 @@ function initApp() {
         loadCampaign().catch(function(){});
       } else {
         if (d.signInBtn) { d.signInBtn.textContent = "每日签到"; d.signInBtn.classList.remove("done"); }
-        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +10 积分"; d.ucSignInBtn.classList.remove("done"); }
+        if (d.ucSignInBtn) { d.ucSignInBtn.textContent = "每日签到 +1 积分"; d.ucSignInBtn.classList.remove("done"); }
         toast(e.message || "签到失败，请稍后重试");
       }
     }).finally(function() {
@@ -681,10 +706,10 @@ function initApp() {
     saveChats(); renderChats();
   }
 
-  /** 调用 chatbot 服务；失败退积分由后端处理，前端仅展示余额与错误提示。 */
+  /** 调用 chatbot：计费走真实扣积分；回复为本地 echo（非外部 LLM）。 */
   function ask(text) {
     text = text.trim(); if (!text) return;
-    if (!chatbotEnabled) { toast("AI 对话已在管理端关闭"); return; }
+    if (!chatbotEnabled) { toast("对话已在管理端关闭"); return; }
     addMsg("user", text);
     d.msgInput.value = ""; d.msgInput.style.height = "auto";
     pendingAssistant = true;
@@ -701,12 +726,12 @@ function initApp() {
       if (data.success === false || data.toolName === "disabled") {
         chatbotEnabled = false;
         applyChatbotGate();
-        addMsg("assistant", data.answer || "AI 对话当前不可用。");
+        addMsg("assistant", data.answer || "对话当前不可用。");
         return;
       }
       var answer = data.answer || r.info || "已处理。";
       if (data.creditDeducted && data.creditDeducted > 0) {
-        answer += "\n\n---\n*本次消耗 " + data.creditDeducted + " 积分*";
+        answer += "\n\n---\n*本次消耗 " + data.creditDeducted + " 积分（真实扣费 / requestId 幂等）*";
       }
       addMsg("assistant", answer, {creditDeducted: data.creditDeducted, creditBalance: data.creditBalance});
       // Update credit display
@@ -717,7 +742,7 @@ function initApp() {
         d.ucCredit.textContent = bal;
         if (creditMobile) creditMobile.textContent = "积分: " + bal;
         if (data.creditDeducted && data.creditDeducted > 0) {
-          pushCreditLedger(-Number(data.creditDeducted), bal, "AI 对话");
+          pushCreditLedger(-Number(data.creditDeducted), bal, "对话扣费");
         }
       }
     }).catch(function(e) {

@@ -174,12 +174,11 @@ test("login redirect param only allows same-origin destinations", async ({ page 
   await page.locator("#loginBtn").click();
   await expect(page).toHaveURL(/\/index\.html\?from=login/);
 
-  // Logout to reset state for next test
-  await page.evaluate(() => { localStorage.clear(); location.reload(); });
-  await page.waitForLoadState("networkidle");
-
-  await page.goto("/index.html");
-  await expect(page.locator("#landingView")).toBeVisible();
+  // Logout to reset state for next test (real logout — survives bfcache)
+  await page.locator("#userMenuBtn").click();
+  await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
+  await page.locator("#logoutBtn").click();
+  await expect(page.locator("#landingView")).toBeVisible({ timeout: 10000 });
 
   // External URL param is ignored — falls back to index.html
   await page.goto("/login.html?redirect=http://evil.com");
@@ -190,7 +189,7 @@ test("login redirect param only allows same-origin destinations", async ({ page 
   await expectNoClientErrors(errors);
 });
 
-test("frontend assets are cache-safe and legacy 8098 API remains compatible", async ({ request, baseURL }) => {
+test("frontend assets are cache-safe", async ({ request }) => {
   const login = await request.get("/login.html");
   await expect(login).toBeOK();
   expect(login.headers()["cache-control"]).toContain("no-store");
@@ -206,12 +205,4 @@ test("frontend assets are cache-safe and legacy 8098 API remains compatible", as
   await expect(config).toBeOK();
   expect(config.headers()["cache-control"]).toContain("no-store");
   await expect(await config.text()).toContain('return "/api/v1"');
-
-  const legacyApiBase = new URL(baseURL);
-  legacyApiBase.port = "8098";
-  const legacyLogin = await request.post(legacyApiBase.origin + "/api/v1/auth/login", {
-    data: { userId: "xiaofuge", password: "demo" }
-  });
-  await expect(legacyLogin).toBeOK();
-  expect(await legacyLogin.json()).toMatchObject({ code: "0000" });
 });

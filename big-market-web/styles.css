@@ -558,6 +558,32 @@ input { outline: none; }
   padding: 8px;
 }
 
+.wheel-label.locked { opacity: 0.72; }
+
+.award-lock-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.award-lock-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--sidebar-bg);
+  font-size: 13px;
+}
+.award-lock-item small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 11px;
+}
+.award-lock-item.is-locked { border-color: #fcd34d; }
+.lock-ok { color: var(--green); font-size: 12px; font-weight: 600; }
+.lock-wait { color: #b45309; font-size: 12px; font-weight: 600; }
+
 .metrics-panel {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

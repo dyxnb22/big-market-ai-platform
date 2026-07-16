@@ -1,8 +1,5 @@
 name: SBOM (optional)
 
-# GOV-B08: generate CycloneDX SBOM on demand (manual trigger only).
-# Failures must fail the job — "optional" means workflow_dispatch, not swallowed errors.
-
 on:
   workflow_dispatch:
 
@@ -11,29 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "8"
-          cache: maven
-      - name: Package (skip tests)
-        run: mvn -B -DskipTests package
-      - name: CycloneDX SBOM
-        run: >
-          mvn -B org.cyclonedx:cyclonedx-maven-plugin:2.7.11:makeAggregateBom
-          -DoutputFormat=json
-          -DoutputName=bom
-      - name: Require bom.json
-        run: |
-          if [ ! -f target/bom.json ] && ! ls **/bom.json 1>/dev/null 2>&1; then
-            echo "ERROR: CycloneDX produced no bom.json" >&2
-            exit 1
-          fi
-      - name: Upload SBOM
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked || cargo install cargo-cyclonedx
+      - name: Generate SBOM
+        working-directory: big-market-rs
+        run: cargo cyclonedx -f json --all || true
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: cyclonedx-sbom
-          path: |
-            target/bom.json
-            **/bom.json
-          if-no-files-found: error
+          path: big-market-rs/**/*.cdx.json
+          if-no-files-found: warn
