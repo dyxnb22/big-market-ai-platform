@@ -63,8 +63,8 @@ bm-worker  = RabbitMQ consumers + 定时派发 / 补偿
 | MySQL | 复用 `docs/dev-ops` 初始化 SQL；Rust 连接同一逻辑库 |
 | Redis | 同一实例；key 前缀可加 `rs:` 做灰度隔离（可选） |
 | RabbitMQ | 同一 exchange；**灰度时换独立 queue**，避免与 Java consumer 抢消息 |
-| XXL-Job | Phase A 用内置 scheduler；Phase B 再评估适配 |
-| Nacos | Phase A 环境变量；Admin 配置同步后置 |
+| XXL-Job | 内置 `WorkerScheduler` + `JOB_CATALOG`（无控制台）；见 NEXT-PHASES D |
+| Nacos | 环境变量 / `platform_config`；不移植 Nacos 中心 |
 | Prometheus | `/metrics` 暴露；面板可新建 `rust-*` dashboard |
 
 ## 6. API 兼容层级

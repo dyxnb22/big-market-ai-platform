@@ -133,7 +133,8 @@ HTTP ─► bm-app ─► bm-domain ◄── bm-infra ──► MySQL / Redis /
 ```
 
 状态与限制：[`rust-refactor/STATUS.md`](../rust-refactor/STATUS.md)。  
-切流说明：[`rust-refactor/CUTOVER.md`](../rust-refactor/CUTOVER.md)。
+切流说明：[`rust-refactor/CUTOVER.md`](../rust-refactor/CUTOVER.md)。  
+剩余深度阶段（C–F）：[`rust-refactor/NEXT-PHASES.md`](../rust-refactor/NEXT-PHASES.md)。
 
 ## 何时才拆更多进程
 

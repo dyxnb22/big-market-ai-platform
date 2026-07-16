@@ -58,6 +58,19 @@
 
 Java modules remain **legacy**对照. Default demo path is Rust.
 
+## Remaining depth phases (post M0–M7)
+
+M0–M7 / D1–D7 cover **default demo replacement**. Further depth work is tracked in **[NEXT-PHASES.md](./NEXT-PHASES.md)**:
+
+| Phase | Status | Focus |
+| --- | --- | --- |
+| Arch A | ✅ | Modular monolith authoritative |
+| Arch B | ✅ | `tree_lock_N` + unified `WorkerScheduler` |
+| **C** | ⬜ next | Strategy / rule-tree lite + award-list lock visibility |
+| **D** | ⬜ | Rabbit smoke, embed/worker mutex, job catalog |
+| **E** | ⬜ | MySQL empty-volume / stock flush write-back |
+| **F** | ⬜ | Rust learning-freeze doc + bench polish |
+
 ## Definition of Done (ROADMAP D1–D7)
 
 | # | Status | Notes |

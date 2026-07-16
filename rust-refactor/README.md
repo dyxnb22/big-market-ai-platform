@@ -9,6 +9,7 @@
 | 文档 | 内容 |
 | --- | --- |
 | **[STATUS.md](./STATUS.md)** | **当前完成状态与验收命令** |
+| **[NEXT-PHASES.md](./NEXT-PHASES.md)** | **M0–M7 之后剩余阶段（C–F）** |
 | **[ROADMAP.md](./ROADMAP.md)** | 主路线图 M0→M7 + 完成定义 |
 | **[CUTOVER.md](./CUTOVER.md)** | 默认切流与 Java legacy 回滚 |
 | **[docs/MICROSERVICES-RUST.md](../docs/MICROSERVICES-RUST.md)** | **Rust 权威架构（模块化单体，非 1:1 Java）** |
