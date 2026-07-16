@@ -598,6 +598,17 @@ impl StockStore for MemoryBackend {
         }
         Ok(())
     }
+
+    async fn flush_dirty(&self) -> Result<usize, BmError> {
+        let dirty = self.list_dirty().await?;
+        let n = dirty.len();
+        if n == 0 {
+            return Ok(0);
+        }
+        let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
+        self.clear_dirty(&keys).await?;
+        Ok(n)
+    }
 }
 
 /// Shared handle implementing every store trait via Arc.

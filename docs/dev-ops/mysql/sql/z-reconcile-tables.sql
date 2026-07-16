@@ -32,6 +32,15 @@ INSERT IGNORE INTO `platform_config` (`cfg_key`, `cfg_value`) VALUES
     ('activity.100401::state', 'online'),
     ('stage.activity.c01.s01', '100401');
 
+-- Rust activity soft-stock flush target (Phase E); award surplus stays on strategy_award.
+CREATE TABLE IF NOT EXISTS `activity_soft_stock` (
+    `activity_id` BIGINT   NOT NULL,
+    `surplus`     BIGINT   NOT NULL DEFAULT 0,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`activity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Rust activity soft-stock write-back';
+
 USE `big_market_01`;
 
 CREATE TABLE IF NOT EXISTS `mq_dead_letter` (

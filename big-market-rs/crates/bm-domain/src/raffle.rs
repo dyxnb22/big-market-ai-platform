@@ -95,8 +95,13 @@ impl RaffleService {
             .count_draws(user_id, activity_id)
             .await?;
         let weights = self.strategy.award_weights(activity_id).await?;
-        let picked = crate::strategy::pick_for_user(&weights, prior_draws)
-            .ok_or_else(|| BmError::Internal("no award weight".into()))?;
+        let picked = crate::strategy::pick_with_chain_lite(
+            &weights,
+            prior_draws,
+            user_id,
+            activity_id,
+        )
+        .ok_or_else(|| BmError::Internal("no award weight".into()))?;
 
         // Stock gate (soft): refuse if award stock exhausted.
         let ak = award_stock_key(picked.award_id);
@@ -224,6 +229,7 @@ impl AwardDispatchService {
                 }
                 Err(e) => {
                     tracing::warn!(error=%e, order=%t.award_order_id, "dispatch failed");
+                    metrics::counter!("bm_worker_dispatch_failed_total").increment(1);
                     self.award
                         .mark_credit_award(&t.user_id, &t.award_order_id, AwardTaskState::Failed)
                         .await?;

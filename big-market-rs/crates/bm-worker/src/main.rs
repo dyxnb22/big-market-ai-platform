@@ -142,6 +142,15 @@ async fn main() -> anyhow::Result<()> {
     }
     .spawn();
 
+    let recorder = metrics_exporter_prometheus::PrometheusBuilder::new()
+        .install_recorder()
+        .ok();
+    metrics::describe_counter!("bm_worker_tick_total", "Worker scheduler ticks");
+    metrics::describe_counter!(
+        "bm_worker_dispatch_failed_total",
+        "credit_award_task dispatch failures"
+    );
+
     let app = Router::new()
         .route(
             "/health",
@@ -161,6 +170,16 @@ async fn main() -> anyhow::Result<()> {
                     })
                     .collect();
                 Json(serde_json::json!({ "jobs": jobs }))
+            }),
+        )
+        .route(
+            "/metrics",
+            get(move || {
+                let body = recorder
+                    .as_ref()
+                    .map(|r| r.render())
+                    .unwrap_or_default();
+                async move { body }
             }),
         )
         .layer(TraceLayer::new_for_http());

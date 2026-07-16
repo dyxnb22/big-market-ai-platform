@@ -19,21 +19,21 @@
 ## 总览（剩余 4 个 Phase）
 
 ```text
-Phase C  策略深度（规则树 lite）     ← 下一优先
+Phase C  策略深度（规则树 lite）     ✅
    ↓
-Phase D  异步与任务稳健（Rabbit/DLQ/防双消费）
+Phase D  异步与任务稳健（Rabbit/DLQ/防双消费） ✅
    ↓
-Phase E  MySQL 硬化（空库、刷库、对账）
+Phase E  MySQL 硬化（空库、刷库、对账） ✅
    ↓
-Phase F  演示冻结收尾（可选 OpenAI、bench、Rust freeze 文档）
+Phase F  演示冻结收尾 ✅ → docs/RUST-LEARNING-FREEZE.md
 ```
 
-| Phase | 目标 | 侵入性 | 依赖 | 退出门禁 |
-| --- | --- | --- | --- | --- |
-| **C** | 策略/规则树学习路径对齐 | 中（domain + mysql_strategy） | B 已完成 | 单测 + smoke 奖品列表 lock 态；不要求完整 Java 规则树 |
-| **D** | MQ/worker 可验证、无双入账 | 中（worker + scripts） | C 可并行 | `smoke-rust-rabbit` + embed/standalone 互斥说明可测 |
-| **E** | mysql 空库可重复验收 | 中高（infra stock/quota） | C 建议先完 | `acceptance-rust --mysql` 空卷或脚本化重置 PASS |
-| **F** | 文档冻结 + 可选增强 | 低 | C–E | `docs/RUST-LEARNING-FREEZE.md` + bench 补齐 |
+| Phase | 目标 | 状态 | 退出门禁 |
+| --- | --- | --- | --- |
+| **C** | 策略/规则树学习路径对齐 | ✅ | `award_lock_view` + smoke `isAwardUnlock`; `BM_STRATEGY_CHAIN` lite |
+| **D** | MQ/worker 可验证、无双入账 | ✅ | `smoke-rust-rabbit.sh`; Rabbit URL disables embed |
+| **E** | mysql 空库可重复验收 | ✅ | `flush_dirty` → `activity_soft_stock`; mysql smoke note |
+| **F** | 文档冻结 + 可选增强 | ✅ | `docs/RUST-LEARNING-FREEZE.md`（OpenAI 仍 out of scope） |
 
 PR 切片建议：`phase-c-strategy-lite` → `phase-d-async-hardening` → `phase-e-mysql-hardening` → `phase-f-freeze`。
 

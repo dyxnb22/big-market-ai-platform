@@ -6,18 +6,21 @@ RUN_E2E=false
 RUN_SECURE=false
 RUN_MYSQL=false
 RUN_DUAL=false
+RUN_RABBIT=false
 for arg in "$@"; do
   case "$arg" in
     --e2e|--playwright) RUN_E2E=true ;;
     --secure) RUN_SECURE=true ;;
     --mysql) RUN_MYSQL=true ;;
     --dual) RUN_DUAL=true ;;
+    --rabbit) RUN_RABBIT=true ;;
     --help|-h)
-      echo "Usage: $0 [--e2e] [--secure] [--mysql] [--dual]"
+      echo "Usage: $0 [--e2e] [--secure] [--mysql] [--dual] [--rabbit]"
       echo "  --e2e     Also run Playwright against Rust stack"
       echo "  --secure  Run smoke-rust-security (use run-rust-secure.sh first)"
       echo "  --mysql   Run smoke-rust-mysql when MySQL :13306 is up"
       echo "  --dual    Run acceptance-dual-stack.sh (optional JAVA_API_BASE)"
+      echo "  --rabbit  Run smoke-rust-rabbit when RabbitMQ :5672 is up"
       exit 0
       ;;
   esac
@@ -37,6 +40,10 @@ fi
 if [[ "$RUN_MYSQL" == true ]]; then
   echo "=== Rust MySQL smoke ==="
   "$ROOT/scripts/smoke-rust-mysql.sh"
+fi
+if [[ "$RUN_RABBIT" == true ]]; then
+  echo "=== Rust Rabbit smoke ==="
+  "$ROOT/scripts/smoke-rust-rabbit.sh"
 fi
 if [[ "${RUN_DUAL:-false}" == true ]]; then
   echo "=== Dual-stack contract ==="

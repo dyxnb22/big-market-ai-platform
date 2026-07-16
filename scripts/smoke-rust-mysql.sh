@@ -60,6 +60,12 @@ INSERT IGNORE INTO `big_market`.`platform_config` (`cfg_key`, `cfg_value`) VALUE
     ('activity.100401::copy', '登录参与抽奖，AI 帮你解读活动权益。'),
     ('activity.100401::state', 'online'),
     ('stage.activity.c01.s01', '100401');
+CREATE TABLE IF NOT EXISTS `big_market`.`activity_soft_stock` (
+    `activity_id` BIGINT NOT NULL PRIMARY KEY,
+    `surplus` BIGINT NOT NULL DEFAULT 0,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SQL
 
 export BM_BACKEND=mysql
@@ -84,6 +90,11 @@ if [ -n "$QUOTA_BEFORE" ]; then
         WHERE user_id='xiaofuge' AND activity_id=100401 LIMIT 1")"
   echo "  INFO  xiaofuge@100401 quota surplus: ${QUOTA_BEFORE} -> ${QUOTA_AFTER} (MySQL-backed)"
 fi
+
+# Honest reconcile sample: completed award rows are not proof of credit dispatch.
+PENDING="$(mysql -N -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" \
+  -e "SELECT COUNT(*) FROM big_market_01.credit_award_task_000 WHERE state='pending'" 2>/dev/null || echo "0")"
+echo "  INFO  credit_award_task pending (shard 000 sample): ${PENDING} (completed award ≠ credited)"
 
 echo
 echo "Rust MySQL smoke passed."

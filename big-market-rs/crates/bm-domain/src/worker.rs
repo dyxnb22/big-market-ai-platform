@@ -7,12 +7,13 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 /// Registered background jobs (semantic equivalent of XXL handlers, no console).
+/// Out of scope vs full Java XXL set: UpdateAwardStockJob fan-out, Nacos refresh, remote write reconcile UI.
 pub const JOB_CATALOG: &[(&str, &str)] = &[
-    ("consume_send_award", "Local outbox → credit_award_task ingest"),
-    ("consume_rebate", "Local rebate outbox ingest"),
+    ("consume_send_award", "Local outbox → credit_award_task ingest (skipped when Rabbit active)"),
+    ("consume_rebate", "Local rebate outbox ingest (skipped when Rabbit active)"),
     ("dispatch_credit_award", "Pending credit_award_task → account credit"),
     ("chat_reconcile", "Pending chat refund sessions"),
-    ("stock_flush", "Mark activity soft-stock dirty keys clean"),
+    ("stock_flush", "Persist dirty activity soft-stock then clear"),
 ];
 
 /// Shared services for one scheduler poll cycle.
@@ -31,6 +32,7 @@ impl WorkerScheduler {
             loop {
                 if let Err(e) = self.tick().await {
                     tracing::warn!(error=%e, "worker tick error");
+                    metrics::counter!("bm_worker_tick_error_total").increment(1);
                 }
                 sleep(Duration::from_secs(self.poll_secs)).await;
             }
@@ -39,24 +41,34 @@ impl WorkerScheduler {
 
     /// One poll: local outbox ingest (when no Rabbit), dispatch, reconcile, stock flush.
     pub async fn tick(&self) -> Result<(), bm_types::BmError> {
+        metrics::counter!("bm_worker_tick_total").increment(1);
         if !self.rabbit_active.load(Ordering::SeqCst) {
-            let _ = self.dispatch.consume_send_award(50).await?;
-            let _ = self.rebate.consume_rebate(50).await?;
+            let n = self.dispatch.consume_send_award(50).await?;
+            if n > 0 {
+                metrics::counter!("bm_outbox_consume_total", "kind" => "send_award").increment(n as u64);
+            }
+            let n = self.rebate.consume_rebate(50).await?;
+            if n > 0 {
+                metrics::counter!("bm_outbox_consume_total", "kind" => "rebate").increment(n as u64);
+            }
         }
         let dispatched = self.dispatch.dispatch_pending(50).await?;
         if dispatched > 0 {
             tracing::debug!(dispatched, "credit_award dispatched");
+            metrics::counter!("bm_outbox_consume_total", "kind" => "credit_dispatch")
+                .increment(dispatched as u64);
         }
         let reconciled = self.chat.reconcile_pending(20).await?;
         if reconciled > 0 {
             tracing::debug!(reconciled, "chat refunds reconciled");
+            metrics::counter!("bm_outbox_consume_total", "kind" => "chat_reconcile")
+                .increment(reconciled as u64);
         }
-        if let Ok(dirty) = self.stock.list_dirty().await {
-            if !dirty.is_empty() {
-                let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
-                tracing::debug!(count = keys.len(), "stock flush mark clean");
-                self.stock.clear_dirty(&keys).await?;
-            }
+        let flushed = self.stock.flush_dirty().await?;
+        if flushed > 0 {
+            tracing::debug!(flushed, "stock flush persisted");
+            metrics::counter!("bm_outbox_consume_total", "kind" => "stock_flush")
+                .increment(flushed as u64);
         }
         Ok(())
     }

@@ -50,12 +50,35 @@ async fn main() -> anyhow::Result<()> {
         .install_recorder()
         .context("prometheus")?;
 
-    let embed_worker = std::env::var("BM_EMBED_WORKER").unwrap_or_else(|_| "1".into()) != "0";
+    // Phase D: when Rabbit is configured, refuse embed outbox consume unless forced.
+    // Standalone bm-worker owns MQ + local outbox to avoid double credit.
+    let rabbit_url_set = std::env::var("BM_RABBIT_URL")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .is_some();
+    let embed_requested = std::env::var("BM_EMBED_WORKER").unwrap_or_else(|_| "1".into()) != "0";
+    let force_embed = std::env::var("BM_EMBED_WORKER_FORCE")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    let embed_worker = if embed_requested && rabbit_url_set && !force_embed {
+        tracing::warn!(
+            "BM_RABBIT_URL set → disabling BM_EMBED_WORKER (set BM_EMBED_WORKER_FORCE=1 to override)"
+        );
+        false
+    } else {
+        embed_requested
+    };
     if embed_worker {
+        metrics::describe_counter!("bm_worker_tick_total", "Embedded/standalone worker ticks");
+        metrics::describe_counter!(
+            "bm_worker_dispatch_failed_total",
+            "credit_award_task dispatch failures"
+        );
         let poll_secs = std::env::var("BM_WORKER_POLL_SECS")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(1);
+        // Embed never owns Rabbit consumers; rabbit_active=false means local outbox consume.
         WorkerScheduler {
             dispatch: state.dispatch.clone(),
             rebate: state.rebate.clone(),

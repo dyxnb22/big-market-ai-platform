@@ -128,12 +128,11 @@ pub fn spawn_stock_flush_loop(stock: Arc<dyn StockStore>, every_secs: u64) {
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(every_secs)).await;
-            match stock.list_dirty().await {
-                Ok(dirty) if !dirty.is_empty() => {
-                    tracing::debug!(count = dirty.len(), "stock flush mark clean");
-                    let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
-                    let _ = stock.clear_dirty(&keys).await;
+            match stock.flush_dirty().await {
+                Ok(n) if n > 0 => {
+                    tracing::debug!(count = n, "stock flush persisted");
                 }
+                Err(e) => tracing::warn!(error=%e, "stock flush failed"),
                 _ => {}
             }
         }

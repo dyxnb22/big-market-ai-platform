@@ -105,7 +105,9 @@ AWARDS="$(curl -fsS -X POST "$API/raffle/strategy/query_raffle_award_list_by_tok
   -d '{"activityId":100401}')"
 [ "$(printf '%s' "$AWARDS" | json_field "d['code']")" = "0000" ] || fail "award list: $AWARDS"
 [ "$(printf '%s' "$AWARDS" | json_field "d['data'][0]['awardId']")" = "101" ] || fail "award list empty: $AWARDS"
-pass "strategy award list"
+UNLOCK="$(printf '%s' "$AWARDS" | json_field "d['data'][0].get('isAwardUnlock')")"
+[ "$UNLOCK" = "True" ] || [ "$UNLOCK" = "true" ] || fail "award list unlock: $AWARDS"
+pass "strategy award list (lock fields)"
 
 DISPLAY="$(curl -fsS "$API/admin/config/public/display?activityId=100401")"
 [ "$(printf '%s' "$DISPLAY" | json_field "d['data']['state']")" = "online" ] || fail "display: $DISPLAY"

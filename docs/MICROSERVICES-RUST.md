@@ -86,12 +86,16 @@ HTTP ─► bm-app ─► bm-domain ◄── bm-infra ──► MySQL / Redis /
 
 1. `bm-app` `draw_by_token` → `RaffleService::draw`
 2. `QuotaStore::consume_one`（幂等键 `draw_{user}_{activity}_{uuid}`）
-3. `ParticipationStore::count_draws` → `StrategyStore::award_weights` → `pick_for_user`（`tree_lock_N` 过滤 + 加权抽取；mysql：读 `strategy_award.rule_models`）
-4. `StockStore::decr_stock`（mysql：扣 `strategy_award.award_count_surplus`）
+3. `ParticipationStore::count_draws` → `StrategyStore::award_weights` → `pick_with_chain_lite`（可选 `BM_STRATEGY_CHAIN` 黑名单/权重桶；默认仅 `tree_lock_N` + 加权；demo `100401` 永不走 chain）
+4. `StockStore::decr_stock`（mysql：扣 `strategy_award.award_count_surplus`；活动软库存 dirty → `flush_dirty` 写 `activity_soft_stock`）
 5. `AwardStore::save_award_record` + `enqueue_send_award_message`
 6. **Worker tick：** `consume_send_award` → `credit_award_task` pending → `dispatch_pending` → `CreditStore::apply_trade`（幂等 `award_order_id`）
 
+奖品列表：`query_raffle_award_list_by_token` 返回 `awardRuleLockCount` / `isAwardUnlock` / `waitUnLockCount`（对齐 Java DTO）。
+
 代码：`bm-domain/src/raffle.rs`、`bm-domain/src/strategy.rs`、`bm-domain/src/worker.rs`（`JOB_CATALOG` + `WorkerScheduler`；`bm-worker` 暴露 `GET /actuator/jobs`）。
+
+**Embed 互斥：** 设置 `BM_RABBIT_URL` 时 `bm-app` 默认关闭内嵌 worker（除非 `BM_EMBED_WORKER_FORCE=1`），由 `bm-worker` 消费 MQ/本地 outbox。
 
 ### SKU 兑换
 
@@ -112,7 +116,7 @@ HTTP ─► bm-app ─► bm-domain ◄── bm-infra ──► MySQL / Redis /
 | HTTP `/api/v1/**` | ✅ `bm-app` | ✅ 多服务经 gateway |
 | 幂等 / outbox 语义 | ✅ 对齐 `data-and-outbox.md` | ✅ |
 | MySQL 分片表 | ✅ `BM_BACKEND=mysql` | ✅ |
-| Rule-tree 策略引擎 | 简化（权重表 + `tree_lock_N` 参与过滤；非完整 Java 规则树） | 完整 |
+| Rule-tree 策略引擎 | lite：权重 + `tree_lock_N` + 可选 chain（非完整 Java 规则树） | 完整 |
 | XXL-Job | `WorkerScheduler` 轮询 tick + `JOB_CATALOG`（无控制台） | 全量 handler |
 | OpenAI Chatbot | 本地 echo | 可选外部 API |
 | Nacos Admin | `platform_config` + ENV | Nacos sync |
@@ -129,12 +133,14 @@ HTTP ─► bm-app ─► bm-domain ◄── bm-infra ──► MySQL / Redis /
 ./scripts/acceptance-rust.sh
 ./scripts/acceptance-rust.sh --e2e      # Playwright 17×2
 ./scripts/acceptance-rust.sh --mysql    # 需 :13306 MySQL
+./scripts/acceptance-rust.sh --rabbit   # 需 :5672 Rabbit（无则 SKIP）
 ./scripts/acceptance-dual-stack.sh      # 可选 JAVA_API_BASE 契约对比
 ```
 
 状态与限制：[`rust-refactor/STATUS.md`](../rust-refactor/STATUS.md)。  
 切流说明：[`rust-refactor/CUTOVER.md`](../rust-refactor/CUTOVER.md)。  
-剩余深度阶段（C–F）：[`rust-refactor/NEXT-PHASES.md`](../rust-refactor/NEXT-PHASES.md)。
+剩余深度阶段（C–F，已完成）：[`rust-refactor/NEXT-PHASES.md`](../rust-refactor/NEXT-PHASES.md)。  
+Rust 冻结边界：[`RUST-LEARNING-FREEZE.md`](./RUST-LEARNING-FREEZE.md)。
 
 ## 何时才拆更多进程
 

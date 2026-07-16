@@ -1,4 +1,4 @@
-//! MySQL `StockStore` — `strategy_award` surplus + in-memory activity soft stock.
+//! MySQL `StockStore` — `strategy_award` surplus + activity soft stock (memory + DB flush).
 
 use async_trait::async_trait;
 use bm_domain::{activity_stock_key, StockStore};
@@ -33,6 +33,36 @@ impl MysqlStores {
             .map(|r| r.get::<i32, _>("award_count_surplus") as i64)
             .unwrap_or(0))
     }
+
+    async fn read_activity_soft_stock(&self, activity_id: i64) -> Result<Option<i64>, BmError> {
+        let schema = self.catalog_schema();
+        let sql = format!(
+            "SELECT surplus FROM `{schema}`.activity_soft_stock WHERE activity_id = ?"
+        );
+        match sqlx::query(&sql)
+            .bind(activity_id)
+            .fetch_optional(&self.pool)
+            .await
+        {
+            Ok(row) => Ok(row.map(|r| r.get::<i64, _>("surplus"))),
+            Err(_) => Ok(None), // table may be missing until reconcile SQL
+        }
+    }
+
+    async fn upsert_activity_soft_stock(&self, activity_id: i64, qty: i64) -> Result<(), BmError> {
+        let schema = self.catalog_schema();
+        let sql = format!(
+            "INSERT INTO `{schema}`.activity_soft_stock (activity_id, surplus) VALUES (?, ?) \
+             ON DUPLICATE KEY UPDATE surplus = VALUES(surplus), update_time = NOW()"
+        );
+        // Best-effort: table may be missing on older volumes until reconcile SQL runs.
+        let _ = sqlx::query(&sql)
+            .bind(activity_id)
+            .bind(qty)
+            .execute(&self.pool)
+            .await;
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -42,8 +72,17 @@ impl StockStore for MysqlStores {
             return Ok(0);
         };
         if is_activity {
-            let g = self.activity_stocks.lock().await;
-            return Ok(*g.get(&id).unwrap_or(&10_000));
+            {
+                let g = self.activity_stocks.lock().await;
+                if let Some(v) = g.get(&id) {
+                    return Ok(*v);
+                }
+            }
+            if let Some(v) = self.read_activity_soft_stock(id).await? {
+                self.activity_stocks.lock().await.insert(id, v);
+                return Ok(v);
+            }
+            return Ok(10_000);
         }
         self.read_award_stock(id).await
     }
@@ -77,6 +116,17 @@ impl StockStore for MysqlStores {
             return Ok(false);
         };
         if is_activity {
+            let need_seed = {
+                let g = self.activity_stocks.lock().await;
+                !g.contains_key(&id)
+            };
+            if need_seed {
+                let seeded = self
+                    .read_activity_soft_stock(id)
+                    .await?
+                    .unwrap_or(10_000);
+                self.activity_stocks.lock().await.entry(id).or_insert(seeded);
+            }
             let mut g = self.activity_stocks.lock().await;
             let cur = g.entry(id).or_insert(10_000);
             if *cur < delta {
@@ -122,5 +172,23 @@ impl StockStore for MysqlStores {
             }
         }
         Ok(())
+    }
+
+    async fn flush_dirty(&self) -> Result<usize, BmError> {
+        let dirty = self.list_dirty().await?;
+        let n = dirty.len();
+        if n == 0 {
+            return Ok(0);
+        }
+        for (key, qty) in &dirty {
+            if let Some(id) = key.strip_prefix("activity_stock:") {
+                if let Ok(activity_id) = id.parse::<i64>() {
+                    self.upsert_activity_soft_stock(activity_id, *qty).await?;
+                }
+            }
+        }
+        let keys: Vec<String> = dirty.into_iter().map(|(k, _)| k).collect();
+        self.clear_dirty(&keys).await?;
+        Ok(n)
     }
 }

@@ -370,21 +370,36 @@ async fn query_award_list(
     headers: HeaderMap,
     Json(req): Json<RaffleAwardListRequest>,
 ) -> impl IntoResponse {
-    if let Err(r) = require_user(&state, &headers).await {
-        return r;
-    }
+    let user_id = match require_user(&state, &headers).await {
+        Ok(u) => u,
+        Err(r) => return r,
+    };
+    let prior = match state
+        .participation
+        .count_draws(&user_id, req.activity_id)
+        .await
+    {
+        Ok(n) => n,
+        Err(e) => return err_response(e),
+    };
     match state.strategy.award_weights(req.activity_id).await {
         Ok(weights) => {
             let data: Vec<RaffleAwardListResponse> = weights
                 .into_iter()
-                .map(|w| RaffleAwardListResponse {
-                    award_id: w.award_id,
-                    award_title: w.award_title,
-                    award_subtitle: String::new(),
-                    sort: w.award_index,
-                    award_rule_lock_count: None,
-                    is_award_unlock: true,
-                    wait_unlock_count: None,
+                .map(|w| {
+                    let lock = bm_domain::strategy::award_lock_view(
+                        w.rule_model.as_deref(),
+                        prior,
+                    );
+                    RaffleAwardListResponse {
+                        award_id: w.award_id,
+                        award_title: w.award_title,
+                        award_subtitle: lock.subtitle,
+                        sort: w.award_index,
+                        award_rule_lock_count: lock.award_rule_lock_count,
+                        is_award_unlock: lock.is_award_unlock,
+                        wait_unlock_count: Some(lock.wait_unlock_count),
+                    }
                 })
                 .collect();
             Json(ApiResponse::ok(data)).into_response()

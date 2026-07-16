@@ -313,6 +313,8 @@ pub trait StockStore: Send + Sync {
     async fn decr_stock(&self, key: &str, delta: i64) -> Result<bool, BmError>;
     async fn list_dirty(&self) -> Result<Vec<(String, i64)>, BmError>;
     async fn clear_dirty(&self, keys: &[String]) -> Result<(), BmError>;
+    /// Persist dirty soft-stock then clear. Returns number of keys flushed.
+    async fn flush_dirty(&self) -> Result<usize, BmError>;
 }
 
 pub struct AppStores {

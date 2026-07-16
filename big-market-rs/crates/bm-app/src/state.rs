@@ -19,6 +19,7 @@ pub struct AppState {
     pub stages: Arc<dyn bm_domain::StageStore>,
     pub orders: Arc<dyn bm_domain::OrderQueryStore>,
     pub strategy: Arc<dyn bm_domain::StrategyStore>,
+    pub participation: Arc<dyn bm_domain::ParticipationStore>,
 }
 
 impl AppState {
@@ -74,6 +75,7 @@ impl AppState {
             stages: stores.stages.clone(),
             orders: stores.orders.clone(),
             strategy: stores.strategy.clone(),
+            participation: stores.participation.clone(),
         }
     }
 }
