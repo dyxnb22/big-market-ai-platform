@@ -1,104 +1,118 @@
-# 分阶段落地清单
+# 分阶段执行清单（对齐 ROADMAP M0–M7）
 
-> 本文件是执行清单。当前仓库仅交付方案文档；实现从 Phase 0 另开任务。
+> 与 [ROADMAP.md](./ROADMAP.md) 一一对应。技术栈以 [tech-stack.md](./tech-stack.md) 为准。  
+> 当前仅文档；代码从 M0 起在 `big-market-rs/` 落地。
 
-## Phase 0 — 工程骨架（无业务）
+---
 
-**交付**
+## M0 — 工程骨架
 
-- [ ] 创建 `big-market-rs/` Cargo workspace  
-- [ ] `bm-types` / `bm-domain` / `bm-infra` / `bm-api` / `bm-app` / `bm-worker` / `bm-gateway` 空 crate  
-- [ ] `docker-compose.rust.yml` overlay（复用 `docs/dev-ops` 中间件）  
-- [ ] CI：`cargo fmt`、`clippy -D warnings`、`cargo test`  
-- [ ] README：如何 `cargo run -p bm-app` 与健康检查  
+- [ ] 创建 `big-market-rs/` workspace（edition 2021，MSRV ≥1.78）
+- [ ] crates：`bm-types` / `bm-domain` / `bm-infra` / `bm-api` / `bm-gateway` / `bm-app` / `bm-worker`
+- [ ] 引入：tokio、axum、tower-http、tracing、figment、thiserror
+- [ ] `docker-compose.rust.yml`（复用 dev-ops 中间件）
+- [ ] CI：fmt、clippy `-D warnings`、test、cargo-deny
+- [ ] `/health`、`/metrics` 空实现；Release profile（thin LTO）
 
-**退出标准：** `GET /actuator/health` 或 `/health` 返回 200；RSS 有记录。
+**退出：** app + worker 可起并报健康。
 
-## Phase 1 — Auth
+---
 
-**交付**
+## M1 — 鉴权 + 网关
 
-- [ ] 登录签发 JWT、校验、logout 写 Redis 吊销  
-- [ ] 网关透传 / 拒绝吊销 token  
-- [ ] 与现有 demo 用户表兼容或提供 seed  
+- [ ] JWT 登录 / 校验 / logout + **fred** Redis denylist
+- [ ] `bm-gateway`：路由、`Authorization`、trace id、超时
+- [ ] 兼容 demo 用户；前端可登录
+- [ ] 安全负向：吊销后拒绝、伪造 token 拒绝
 
-**退出标准：** 对齐 `smoke-security` 中「注销后拒绝」语义；前端可对 Rust auth 登录。
+**退出：** 对齐 `smoke-security` 鉴权相关项。
 
-## Phase 2 — 只读策略 + 确定性抽奖
+---
 
-**交付**
+## M2 — 抽奖发奖入账闭环
 
-- [ ] 读取策略、奖品、权重  
-- [ ] 固定策略（如 10007 → 101）可抽通  
-- [ ] 尚可不接完整配额  
+- [ ] 策略读 + 抽奖（确定性 → 权重随机）
+- [ ] 活动参与、配额事务、`DbRouter` 分片
+- [ ] 写中奖记录 + outbox/task（**sqlx**）
+- [ ] worker：**lapin** 消费 `SendAward`（独立 queue）
+- [ ] `credit_award_task` + **tokio-cron-scheduler** 派发入账
 
-**退出标准：** 单测覆盖抽奖纯函数；HTTP 返回奖品 ID 稳定。
+**退出：** `smoke-raffle-award-e2e` 语义 PASS。
 
-## Phase 3 — 活动参与 + 配额 + 写中奖记录
+---
 
-**交付**
+## M3 — SKU / Chat / 返利 / 库存
 
-- [ ] 参与订单创建/复用  
-- [ ] 配额扣减事务 + 分片路由  
-- [ ] 写 `user_award_record` + outbox/task 行  
+- [ ] SKU 兑换幂等（`{userId}_{sku}_{requestId}`）
+- [ ] Chat 扣费、退款状态机、reconcile job
+- [ ] 行为返利 + `send_rebate` 消费
+- [ ] 库存 Redis + 刷库 job
+- [ ] DLQ / UNKNOWN 重试说明
 
-**退出标准：** DB 状态可人工核对；重复参与幂等。
+**退出：** Chat 退款与补偿 PASS；无双花。
 
-## Phase 4 — Worker 发奖闭环（P0 业务）
+---
 
-**交付**
+## M4 — Admin / DCC / Secure / 指标
 
-- [ ] `SendAward` 消费（独立 queue，避免与 Java 抢）  
-- [ ] `credit_award_task` 写入与状态迁移  
-- [ ] 定时/拉取派发到 account credit  
-- [ ] 账户流水可查  
+- [ ] Admin 配置 API（ENV/Toml；Nacos 仅可选 feature）
+- [ ] DCC 动态配置
+- [ ] Secure overlay 对齐
+- [ ] Prometheus 业务指标 + Grafana `rust-*` 面板
+- [ ] Gateway 限流可配置
 
-**退出标准：** 语义对齐 `smoke-raffle-award-e2e`（兑换扣分 → 抽奖 → outbox → 入账）。
+**退出：** 安全 smoke 全过；指标可刮取。
 
-## Phase 5 — Money path 加固
+---
 
-**交付**
+## M5 — 全量验收 + 性能
 
-- [ ] SKU 兑换 `requestId` 幂等  
-- [ ] Chat 扣费 / 退款 / reconcile job  
-- [ ] DLQ 与 UNKNOWN 重试策略文档化  
+- [ ] `scripts/acceptance-rust.sh`（契约、E2E、Playwright×2）
+- [ ] `rust-refactor/bench/RESULTS.md`（RSS / 启动 / P99）
+- [ ] 达标或书面豁免（附 profile）
 
-**退出标准：** 重复请求零双花；退款状态机单测完备。
+**退出：** acceptance-rust PASS + 性能门禁满足 ROADMAP D5。
 
-## Phase 6 — 性能对照与文档
+---
 
-**交付**
+## M6 — 切流：Rust 为默认
 
-- [ ] bench 表格：RSS、启动、P99  
-- [ ] 更新本目录结论区（实测数字替换预估值）  
-- [ ] （可选）网关按路径切流 runbook  
+- [ ] 默认 `docker-compose.yml` / profile 指向 Rust
+- [ ] `acceptance.sh` 默认 Rust；Java → `legacy` / `acceptance-java.sh`
+- [ ] README 声明默认栈 = Rust
+- [ ] 回滚：`legacy-java` 仍可一键启动
+- [ ] 连续两轮 acceptance PASS
 
-**退出标准：** 达到 [PLAN.md](./PLAN.md) §9 成功标准或书面说明未达标原因。
+**退出：** 新用户按文档启动即为 Rust（ROADMAP D1）。
 
-## Phase 7 — 可选拆分
+---
 
-**交付**
+## M7 — 归档 Java，替代完成
 
-- [ ] account / auth 独立进程 + gRPC  
-- [ ] 端口对齐 8081/8086 便于对照  
-- [ ] rebate/strategy 独立开关（默认仍 embedded）  
+- [ ] Java 标为 legacy；CI 默认只跑 Cargo
+- [ ] 文档权威入口切到 Rust
+- [ ] 写 `rust-refactor/STATUS.md`（日期、SHA、验收命令、bench）
+- [ ] 勾选 ROADMAP **D1–D7**
 
-**退出标准：** 拆分后闭环回归仍通过；内存仍优于 Java 多进程基线。
+**退出：** 路线图关闭；Rust 正式替代 Java 默认栈。
 
-## 明确不在初期范围
+---
 
-- 物理 DB-per-service  
-- 完整复刻 XXL-Job Admin 全量任务种子  
-- 前端 React 化  
-- 生产级 mTLS / 多活  
+## 全程禁区
 
-## 建议的 PR 切片（实现阶段）
+- M6 前不删除 Java 默认路径  
+- `bm-app` 不消费 MQ / 不跑 credit dispatch  
+- 不改 money path 幂等键语义  
+- 不把前端改成 React  
+- 不采用 [tech-stack.md](./tech-stack.md) §11 已拒绝的技术  
 
-1. `rust-workspace-skeleton`  
-2. `rust-auth-jwt`  
-3. `rust-raffle-deterministic`  
-4. `rust-award-outbox-worker`  
-5. `rust-money-path-chat-sku`  
-6. `rust-bench-and-docs`  
+## PR 切片
 
-与 Java 轨 PR 互不阻塞；合并前不得删除或削弱现有 `acceptance.sh` Java 路径。
+1. `rust-workspace-skeleton` → M0  
+2. `rust-auth-and-gateway` → M1  
+3. `rust-raffle-outbox-account` → M2  
+4. `rust-sku-chat-rebate-stock` → M3  
+5. `rust-admin-dcc-secure-metrics` → M4  
+6. `rust-acceptance-and-bench` → M5  
+7. `rust-default-compose-cutover` → M6  
+8. `rust-archive-java-baseline` → M7  

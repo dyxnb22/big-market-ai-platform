@@ -1,19 +1,23 @@
 # Java → Rust 服务与模块映射
 
+终局拓扑与切流见 [ROADMAP.md](./ROADMAP.md) M6–M7；技术栈见 [tech-stack.md](./tech-stack.md)。
+
 ## 1. 可部署单元
 
-| Java 服务 | 端口 | Rust 落点（Phase A） | Phase B（可选拆分） |
+| Java 服务 | 端口 | Rust 落点（默认，至替代完成） | 可选拆分（feature / 后期） |
 | --- | ---: | --- | --- |
 | `big-market-gateway` | 8080 | `bm-gateway` | 同左 |
-| `big-market-auth-service` | 8081 | `bm-app` 内 `auth` 模块 | `bm-auth` |
-| `big-market-admin-service` | 8082 | 暂缓；或 `bm-app` 内 `admin` | `bm-admin` |
-| `big-market-market-service` | 8083 | `bm-app` 内 `market` + embedded strategy/rebate | `bm-market` |
-| `big-market-chatbot-service` | 8084 | `bm-app` 内 `chat`（可后置） | `bm-chat` |
+| `big-market-auth-service` | 8081 | `bm-app` · `auth` | `bm-auth` + tonic |
+| `big-market-admin-service` | 8082 | `bm-app` · `admin` | `bm-admin` |
+| `big-market-market-service` | 8083 | `bm-app` · `market` + embedded strategy/rebate | `bm-market` |
+| `big-market-chatbot-service` | 8084 | `bm-app` · `chat` | `bm-chat` |
 | `big-market-message-job-service` | 8085 | `bm-worker` | 同左 |
-| `big-market-account-service` | 8086 | `bm-app` 内 `account` | `bm-account` |
+| `big-market-account-service` | 8086 | `bm-app` · `account` | `bm-account` + tonic |
 | `big-market-fulfillment-service` | 8087 | `bm-app` / `bm-worker` 本地履约 | `bm-fulfillment` |
-| `big-market-rebate-service` | 8088 | embedded in `bm-app`（默认） | `bm-rebate` |
-| `big-market-strategy-service` | 8089 | embedded in `bm-app`（默认） | `bm-strategy` |
+| `big-market-rebate-service` | 8088 | embedded in `bm-app` | `bm-rebate` |
+| `big-market-strategy-service` | 8089 | embedded in `bm-app` | `bm-strategy` |
+
+替代完成后默认仅保留 **3 个进程**：`bm-gateway` + `bm-app` + `bm-worker`。
 
 前端 `big-market-web`：**不重写**，继续打 `http://127.0.0.1:8080/api/v1`。
 

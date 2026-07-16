@@ -2,6 +2,9 @@
 
 最后修订：2026-07-16。基于当前 Java 微服务学习栈（gateway / auth / market / message-job / account 等）制定。
 
+**主路线图（至替代 Java）：** [ROADMAP.md](./ROADMAP.md)  
+**技术栈（已锁定）：** [tech-stack.md](./tech-stack.md)
+
 ## 1. 动机
 
 | 痛点（当前 Java 栈） | Rust 预期收益 |
@@ -11,7 +14,9 @@
 | 抽奖热路径对象分配多（DTO/领域实体装箱） | 零成本抽象、栈分配、复用缓冲，降低 GC 抖动 |
 | Dubbo + 多 launcher 扫描边界易踩坑 | 进程内模块 + 显式 gRPC/HTTP，边界用类型系统表达 |
 
-**非目标：** 本阶段不做生产 HA、不做物理库拆分、不重写前端框架（继续复用 `big-market-web`）。
+**终局目标：** 路线图 M7 完成后，Rust 成为默认可运行栈并替代 Java（见 ROADMAP 完成定义 D1–D7）。
+
+**非目标（全程）：** 不做生产 HA / 物理库拆分；不重写前端框架（继续复用 `big-market-web`）；M6 前不拆除 Java 默认可运行路径。
 
 ## 2. 设计原则
 
@@ -79,23 +84,25 @@ big-market-rs/
 - `domain::rebate` ← `...rebate`
 - `domain::chat` ← `...chat`
 
-## 5. 技术选型
+## 5. 技术选型（已锁定）
 
-| 能力 | 选型 | 说明 |
-| --- | --- | --- |
-| HTTP | Axum + Tower | 生态成熟、中间件组合好、内存友好 |
-| 异步运行时 | Tokio | 与 SQLx / lapin 一致 |
-| DB | SQLx (MySQL) | 编译期检查 SQL；显式连接池，避免 ORM 隐式 N+1 |
-| 缓存 | redis-rs / fred | JWT 吊销、库存计数、chat idempotency |
-| MQ | lapin (AMQP) | 对齐现有 RabbitMQ topic |
-| RPC（拆分后） | tonic (gRPC) | 替代 Dubbo；本地可用进程内 `trait` 直调 |
-| 鉴权 | jsonwebtoken + Redis denylist | 对齐 auth 吊销语义 |
-| 配置 | figment / config-rs + 环境变量 | 先不绑 Nacos；需要时再加 |
-| 可观测 | tracing + OpenTelemetry + Prometheus exporter | 对齐现有 Grafana 面板思路 |
-| 定时任务 | tokio-cron-scheduler 或内置 tick | 先覆盖 `DispatchCreditAwardTask` 等关键 job；不必一次性复刻 XXL Admin |
-| 前端 | 继续 `big-market-web` | 网关路径 `/api/v1` 保持兼容 |
+完整条款见 [tech-stack.md](./tech-stack.md)。摘要：
 
-**刻意不做的选择：** 全量引入重型 actor 框架、为学习项目上 K8s operator、用动态脚本替换策略规则引擎。
+| 能力 | 锁定 |
+| --- | --- |
+| HTTP / 中间件 | **axum** + **tower** / **tower-http** |
+| 运行时 | **tokio** |
+| DB | **sqlx**（MySQL，不用 SeaORM/Diesel） |
+| Redis | **fred** |
+| MQ | **lapin** |
+| 进程间 RPC（可选拆分） | **tonic** + **prost** |
+| JWT | **jsonwebtoken** + Redis denylist |
+| 配置 | **figment**（Env + Toml）；Nacos 非默认 |
+| 可观测 | **tracing** + **metrics** + Prometheus exporter |
+| 定时任务 | **tokio-cron-scheduler**（不复刻 XXL Admin UI） |
+| 前端 | **big-market-web** 不变 |
+
+拒绝清单（Actix 默认、Kafka 替换、Dubbo 兼容层等）见 tech-stack §11。
 
 ## 6. 核心链路迁移顺序
 
@@ -109,7 +116,7 @@ big-market-rs/
 6. **SKU 兑换 / Chat 扣费退款** — money path 加固  
 7. **Rebate / Admin / DCC** — 次优先  
 
-详细分期见 [phases.md](./phases.md)；服务映射见 [service-mapping.md](./service-mapping.md)。
+完整路线图见 [ROADMAP.md](./ROADMAP.md)；执行清单见 [phases.md](./phases.md)；服务映射见 [service-mapping.md](./service-mapping.md)。
 
 ## 7. 数据与幂等（硬约束）
 
@@ -126,14 +133,15 @@ big-market-rs/
 
 分库：保留 `big_market_01` / `big_market_02` 路由语义（`userId` hash），用显式 `DbRouter` 而不是隐式 AOP。
 
-## 8. 与 Java 共存策略
+## 8. 与 Java 共存 → 替代策略
 
-| 模式 | 做法 |
+| 阶段 | 做法 |
 | --- | --- |
-| 对照学习 | 同一 MySQL/Redis/RabbitMQ；Rust 用不同端口或 compose profile `rust` |
-| 契约兼容 | 网关路由可按 path 灰度：`/api/v1/auth/**` → Rust，其余仍 Java |
-| 验收 | 新增 `scripts/acceptance-rust.sh`；**不**替换现有 `acceptance.sh` 默认路径 |
-| 文档 | Java 权威文档不动；本目录为 Rust 轨唯一入口 |
+| M0–M5 共存 | 同一中间件；Rust 用 `compose` profile `rust`；独立 MQ queue |
+| 灰度 | 网关可按 path 切流（如先 `/api/v1/auth/**`） |
+| M5 验收 | `scripts/acceptance-rust.sh` 对齐 Java 证据集 |
+| M6 切流 | 默认 compose + `acceptance.sh` 指向 Rust；Java → `legacy` |
+| M7 归档 | Java 非默认 CI；文档权威入口改为 Rust |
 
 ## 9. 成功标准（方案级）
 
@@ -158,6 +166,6 @@ big-market-rs/
 
 ## 11. 下一步（实现尚未开始）
 
-1. 评审本方案，确认默认采用 **bm-app + bm-worker** 两进程模型。  
-2. 创建 `big-market-rs/` workspace 骨架与 CI `cargo test`。  
-3. 按 [phases.md](./phases.md) Phase 0→1 启动 Auth + 健康检查。
+1. 按 [ROADMAP.md](./ROADMAP.md) 启动 **M0**：创建 `big-market-rs/` 与 CI。  
+2. 技术栈严格遵循 [tech-stack.md](./tech-stack.md)。  
+3. 依次推进 M1→M7，直至 D1–D7 完成、Rust 替代 Java 默认栈。
