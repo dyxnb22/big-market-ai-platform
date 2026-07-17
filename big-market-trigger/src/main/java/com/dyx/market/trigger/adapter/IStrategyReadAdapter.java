@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <p>本地实现委托 IRaffleAward、IRaffleRule 与 IAccountReadAdapter；
  * 当前最终拓扑固定由 market-service 内的策略领域服务处理读请求，
- * 不再保留独立策略 Provider 或远程切换开关。</p>
+ * 当前固定由 market-local 策略领域服务提供。</p>
  */
 public interface IStrategyReadAdapter {
 

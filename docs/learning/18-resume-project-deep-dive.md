@@ -148,7 +148,8 @@ trigger（HTTP / MQ / Job）
 1. **Domain 只依赖接口：** 如 `IStrategyDecisionPort.performRaffle()`，活动域不直接依赖策略实现类。
 2. **聚合保证一致性边界：** 参与抽奖时，额度扣减与订单插入在同一聚合/事务内完成。
 3. **基础设施可替换：** Redis/MySQL/MQ 实现都在 infrastructure；换存储或拆微服务时，优先改适配器，而不是改领域规则。
-4. **本地/远程适配并存：** 例如 `LocalAwardFulfillmentPort` 直接委托本地 `IAwardService`，拆服务后也可由 RPC Provider 承接同一语义。
+4. **边界可替换：** 例如 `LocalAwardFulfillmentPort` 直接委托本地 `IAwardService`，
+   通过 Port 隔离领域规则与基础设施实现，当前最终拓扑固定走本地实现。
 
 ### 1.5 面试口述模板
 

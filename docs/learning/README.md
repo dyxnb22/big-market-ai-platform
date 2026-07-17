@@ -1,6 +1,6 @@
 # Big Market 学习文档索引
 
-本目录是 Big Market 微服务项目的学习材料，基于 2026-07-11 的**有条件冻结**工作树编写。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
+本目录是 Big Market 微服务项目的学习材料，基于 2026-07-17 的**有条件冻结**工作树编写。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
 
 ## 权威源（避免重复维护）
 
@@ -11,7 +11,7 @@
 | Outbox / 幂等 / 积分发奖 | [`../data-and-outbox.md`](../data-and-outbox.md) |
 | 代码跳转 | [09-code-map.md](09-code-map.md) |
 | 十步路径 + 完成标准 | [00-learning-guide.md](00-learning-guide.md) |
-| 历史 BM 整改 | [`../audit-remediation-plan.md`](../audit-remediation-plan.md)（**非**当前状态） |
+| 可靠性约束 | [`../data-and-outbox.md`](../data-and-outbox.md) 与 [`../operations-checklist.md`](../operations-checklist.md) |
 
 **本目录文档均已译为中文。** 与代码冲突时以代码 / compose / SQL 为准。归档英文维护文档见 `archive/`。
 
@@ -62,7 +62,7 @@
 | --- | --- |
 | 语言/框架 | Java 8 + Spring Boot 2.7.12 |
 | 前端 | `big-market-web`：原生 HTML/CSS/JS（非 React） |
-| 架构 | DDD 分层 + 微服务启动器；rebate/strategy 默认 embedded |
+| 架构 | DDD 分层 + 微服务启动器；rebate/strategy 固定 market-local |
 | 核心技术 | Dubbo、Nacos、RabbitMQ、Redis/Redisson、MySQL、XXL-Job、ES（可选） |
 | 关键设计 | 责任链+规则树抽奖、Outbox、分库分表、适配器切换 |
 

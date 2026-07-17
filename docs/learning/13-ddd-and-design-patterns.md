@@ -104,7 +104,8 @@ public interface IStrategyDecisionPort {
 public class LocalStrategyDecisionPort implements IStrategyDecisionPort { ... }
 ```
 
-当前树**没有** `RemoteStrategyDecisionPort`：抽奖决策默认进程内 `LocalStrategyDecisionPort`。跨服务切换的同类模式见 `AccountRemoteCreditWriteAdapter` / `LocalAccountCreditWriteAdapter`，以及 strategy **读**侧的 `IStrategyReadAdapter`（local / remote）。
+当前抽奖决策默认进程内 `LocalStrategyDecisionPort`。account 的积分写入仍保留
+明确的 local / remote adapter 边界，策略读请求固定由 market-local adapter 处理。
 
 ---
 
@@ -275,7 +276,7 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
 - `IRebateOrderAdapter`：返利订单创建
 - `IRebateReadAdapter`：返利签到查询
 
-**Dubbo Provider 瘦身（account / fulfillment / rebate / strategy）：** RPC 类仅做日志与 `com.dyx.market.trigger.api.support.ApiResponses` 包装；业务与校验下沉至各服务或 domain 的 `application` 包。HTTP 与嵌入式 RPC 共用 `RaffleActivityFacade`。
+**Dubbo Provider 瘦身：** RPC 类仅做日志与 `com.dyx.market.trigger.api.support.ApiResponses` 包装；业务与校验下沉至 domain 的 `application` 包。HTTP 与内部 RPC 共用 `RaffleActivityFacade`。
 
 ---
 
@@ -309,4 +310,3 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
 - `AwardRepository.saveUserAwardRecord()`：写 `user_award_record` + `task`，事务提交后调用 `eventPublisher` 发 MQ
 - `SendMessageTaskJob.java`：扫描 status=create 的 task，补偿重发（message-job）
 - `DispatchCreditAwardTaskJob.java`：积分奖二级 outbox 派发（message-job）
-

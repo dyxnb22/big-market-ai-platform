@@ -4,11 +4,11 @@ Portfolio talking tracks for the Big Market AI Platform. Prefer **code + accepta
 
 ## 5 minutes — elevator
 
-1. **What:** Learning/portfolio marketing raffle platform — Spring Boot microservices with a final 7-service runtime (gateway, auth, admin, market, chatbot, message-job, account); rebate and strategy stay inside market, while award credit dispatch stays in message-job.
+1. **What:** Learning/portfolio marketing raffle platform — Spring Boot microservices with a final 7-service runtime (gateway, auth, admin, market, chatbot, message-job, account); strategy and rebate stay inside market, while award credit dispatch stays in message-job.
 2. **Why interesting:** Shared domain/infrastructure kernels with independent launchers; money-like paths use idempotency keys, outbox/`task` rows, and reconcile jobs.
-3. **Honest readiness:** Default reused stack has a dated green acceptance, including real raffle/outbox/account closure and Playwright twice; fresh and secure remain unverified.
+3. **Honest readiness:** The current tree passes clean Maven and static gates; Docker dynamic acceptance, fresh and secure remain unverified.
 4. **Frontend:** Static `big-market-web` (HTML/JS) via gateway `:8080`, not React.
-5. **Pointer:** Current baseline `docs/LEARNING-FREEZE.md`; architecture `docs/MICROSERVICES.md`; independent evidence `docs/audit/2026-07-11-learning-freeze-audit.md`.
+5. **Pointer:** Current baseline `docs/LEARNING-FREEZE.md`; architecture `docs/MICROSERVICES.md`; current evidence `docs/audit/2026-07-17-learning-freeze-audit.md`.
 
 ## 15 minutes — architecture & flows
 

@@ -4,7 +4,7 @@ Guidance for Cursor / Codex agents working in this repository.
 
 ## What this repo is
 
-Java microservices **marketing raffle** learning/portfolio project: gateway, auth, admin, market, chatbot, message-job, account; shared `domain` / `infrastructure` / `api` / `types` / starters; frontend `big-market-web` (static HTML/JS, not React). Rebate and strategy stay as local bounded capabilities, and award credit dispatch stays in message-job; no standalone provider modules remain.
+Java microservices **marketing raffle** learning/portfolio project: gateway, auth, admin, market, chatbot, message-job, account; shared `domain` / `infrastructure` / `api` / `types` / starters; frontend `big-market-web` (static HTML/JS, not React). Rebate and strategy stay as local bounded capabilities, and award credit dispatch stays in message-job; the application topology is fixed.
 
 ## Authoritative docs (read before large changes)
 
@@ -12,8 +12,7 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 | --- | --- |
 | `docs/LEARNING-FREEZE.md` | **Current readiness, verified commands, limits, freeze constraints** |
 | `docs/MICROSERVICES.md` | Architecture entry, service ports, core flows |
-| `docs/audit/2026-07-11-learning-freeze-audit.md` | Current independent audit evidence and P0–P3 findings |
-| `docs/audit-remediation-plan.md` | Historical BM backlog; clue only, not current status |
+| `docs/audit/2026-07-17-learning-freeze-audit.md` | Current final-topology audit evidence and verification boundary |
 | `docs/data-and-outbox.md` | Outbox, idempotency keys, duplicate handling |
 | `docs/microservices-dao-ownership.md` | Table/DAO ownership (logical; not hard-enforced) |
 | `docs/operations-checklist.md` | Local ops checks |
@@ -22,10 +21,10 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 
 **Doc vs code:** prefer **code + config + Docker init SQL**. If docs claim “stable / completed closed loop” but code cannot boot, treat docs as stale and fix code first (or update docs).
 
-## Current readiness (learning freeze 2026-07-11)
+## Current readiness (2026-07-17)
 
-- Result: **conditional learning freeze**. Reused default stack passed Maven, static gates, real raffle → award outbox → account credit, Chat refund/reconcile, security smoke, and 18 Playwright tests twice.
-- Not verified in that audit: fresh empty volumes, full secure overlay, dedicated rebate/strategy, remote/external awards, production HA/capacity/security.
+- Result: **conditional learning freeze**. The final seven-service topology passes clean Maven verification, runtime-safety, Mapper/DDL, Compose configuration, and stale-path scans.
+- Fresh volumes, full secure overlay, and dynamic acceptance still require Docker runtime verification; production HA/capacity/security are out of scope.
 - Do not infer current readiness from BM numbers or historical PASS records. Re-run the target working tree and preserve the verified/unverified boundary.
 
 ## Service map (default ports)

@@ -6,10 +6,10 @@ alwaysApply: true
 # Project core
 
 - Stack: Spring Boot microservices + Dubbo/Nacos + RabbitMQ + XXL-Job + MySQL + Redis; frontend `big-market-web` is static HTML/JS (not React).
-- Architecture entry: `docs/MICROSERVICES.md`. Fix backlog: `docs/audit-remediation-plan.md`. Agent entry: `AGENTS.md`.
-- Default ports: gateway `8080`, auth `8081`, admin `8082`, market `8083`, chatbot `8084`, message-job `8085`, account `8086`, fulfillment `8087`, rebate `8088`, strategy `8089`.
-- Rebate/strategy default to **embedded** providers inside market; dedicated containers are optional.
+- Architecture entry: `docs/MICROSERVICES.md`. Current readiness boundary: `docs/LEARNING-FREEZE.md`. Agent entry: `AGENTS.md`.
+- Final application ports: gateway `8080`, auth `8081`, admin `8082`, market `8083`, chatbot `8084`, message-job `8085`, account `8086`. The frontend is `big-market-web` on `5173`.
+- Rebate and strategy are fixed local capabilities inside market. Award credit dispatch is fixed in message-job through the local outbox and account RPC. Do not recreate standalone Provider applications, Provider Compose files, or removed mode switches.
 - Doc vs code conflict → trust **code/config/SQL**, then update docs.
-- Until remediation Phase 1 is done: do **not** claim “demo closed loop” or “stable completed stack” in README/PR text.
+- A clean build proves compilation and Context wiring, not runtime business closure. Claim the final topology as runtime-verified only after `acceptance.sh` has run against this working tree.
 - Prefer ports/adapters over cross-domain DAO use; ownership doc is guidance, not a compiler guarantee.
 - Commit only when the user explicitly asks.

@@ -1,8 +1,10 @@
-# Claude local settings (stale)
+# Claude local settings
 
-`.claude/settings.local.json` is a **Claude Code permission allowlist** from older sessions.
-
-It still references legacy patterns (e.g. monolith `big-market-app.jar`, frontend port `3000`) and is **not** the source of truth for this repo.
+`.claude/settings.local.json` is a **Claude Code permission allowlist**, not
+architecture documentation. The current repository topology is seven
+application services on `8080`–`8086`, with the static frontend on `5173`.
+Market owns local rebate/strategy capabilities, message-job owns local award
+credit dispatch, and account is the remaining credit/quota RPC boundary.
 
 For agent guidance use:
 
@@ -10,6 +12,8 @@ For agent guidance use:
 - `.cursor/rules/`
 - `.cursor/skills/`
 - `docs/MICROSERVICES.md`
-- `docs/audit-remediation-plan.md`
+- `docs/LEARNING-FREEZE.md`
+- `docs/data-and-outbox.md`
 
-Do not treat `.claude/settings.local.json` as architecture documentation. Regenerate permissions in Claude Code against the microservice stack if you still use Claude Code here.
+Use the current final-topology audit and freeze documents as the source of
+truth. Standalone Provider applications are not part of the final topology.

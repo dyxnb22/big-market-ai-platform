@@ -11,7 +11,7 @@ import java.util.List;
  * 任务调度仅需待处理任务的读取与状态更新。
  * <p>
  * 本地路径（默认）：LocalCreditAwardTaskDispatchPort 直接委托 ICreditAwardTaskDao，保留现有 DB/TB 路由与开关。
- * 远程路径（可配置）：account-service 在运行时接管发件箱调度后可替换本地实现。
+ * 当前最终实现固定由 message-job 本地任务调度器读取并更新发件箱。
  */
 public interface ICreditAwardTaskDispatchPort {
 

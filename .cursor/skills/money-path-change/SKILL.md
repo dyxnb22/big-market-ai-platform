@@ -1,8 +1,8 @@
 ---
 name: money-path-change
 description: >-
-  Safely changes credit, quota, award fulfillment, rebate, SKU/award stock,
-  outbox, DLQ, or remote write/reconcile paths in Big Market. Use when editing
+  Safely changes credit, quota, local award dispatch, rebate, SKU/award stock,
+  outbox, DLQ, or account remote write/reconcile paths in Big Market. Use when editing
   debit/credit, draw stock, send_award/send_rebate, pending remote write, chat
   billing, or any idempotency/outbox behavior.
 ---
@@ -25,7 +25,7 @@ description: >-
 6. **Stock queue**: DB success then ACK; failure requeues.
 7. **Strategy takeover**: finite awards still reserve stock (BM-005).
 8. **Tests**: at least one duplicate-delivery or timeout case covering the changed path.
-9. **Config rollback**: prefer flags for embedded vs remote adapters; document matrix if behavior diverges (BM-009).
+9. **Topology constraint**: do not reintroduce retired standalone remote-mode flags; document any remaining account remote-write behavior.
 
 ## High-risk files (examples)
 
@@ -34,6 +34,12 @@ description: >-
 - `RebateMessageApplicationService`, `ActivitySkuStockActionChain`
 - `AccountRemoteCreditWriteAdapter`, `PendingRemoteWrite*`, `RemoteWriteReconcileJob`
 - `ChatbotApplicationService`, `ChatCredit*`, `ChatRefundReconcileJob`
+
+## Final-topology boundary
+
+- Strategy and rebate execute through market-local ports/adapters.
+- Award credit dispatch executes in message-job through the local outbox.
+- Account remains the remote credit/quota boundary; UNKNOWN results must use query/reconcile semantics.
 
 ## Do not
 

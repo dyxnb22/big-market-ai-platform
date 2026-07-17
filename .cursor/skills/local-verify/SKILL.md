@@ -13,6 +13,7 @@ description: >-
 | Check | Catches | Limitation |
 | --- | --- | --- |
 | `mvn -pl <module> -am test` | Unit/Mockito | Not Spring Context / wiring |
+| `mvn -B clean verify -DfailIfNoTests=false` | Clean 20-module reactor and Context tests | Does not prove Docker runtime or business state |
 | Service `@SpringBootTest` | Missing beans, bad scan | Needs test deps/config |
 | Mapper SqlSessionFactory test | Duplicate statement ids | Per-launcher XML only |
 | `./scripts/validate-microservices-stack.sh` | Health + smoke (no auto-start unless `--start-stack`) | Not full business path |
@@ -24,7 +25,7 @@ description: >-
 
 ## Recommended by change type
 
-- **Boot/scan/mapper/XXL:** Context tests + mapper parse + (if Docker) health on 8083/8085/8080.
+- **Boot/scan/mapper/XXL:** clean Context tests + mapper parse + (if Docker) health on 8083/8085/8080; do not add extra Provider applications to the test matrix.
 - **Money/stock/MQ:** unit/integration for idempotency + one end-to-end DB/Redis/MQ state check.
 - **Frontend stage/logout:** Playwright or manual assert activityId + revoked JWT.
 - **Docs-only:** no stack required.
@@ -50,4 +51,4 @@ docker compose up --build -d
 
 ## Reporting
 
-When summarizing verification, state **what ran** and **what it cannot prove**. Do not say “closed loop verified” after only runtime-safety or compile.
+When summarizing verification, state **what ran** and **what it cannot prove**. Do not say “closed loop verified” after only runtime-safety, compile, or a health endpoint; the current seven-service stack needs `acceptance.sh` for that claim.

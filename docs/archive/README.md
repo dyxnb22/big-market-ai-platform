@@ -5,7 +5,6 @@ Files under `docs/archive/` are **historical snapshots** retained for context on
 They are **not** evidence of current-HEAD readiness, closed-loop demo status, or production claims. Prefer:
 
 - `docs/MICROSERVICES.md`
-- `docs/audit-remediation-plan.md`
 - `docs/operations-checklist.md`
 - `docs/data-and-outbox.md`
 - `AGENTS.md` / `docs/learning/` (final-state guides)

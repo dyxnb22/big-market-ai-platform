@@ -30,9 +30,8 @@
 - `big-market-management`：平台配置辅助，供 `admin-service` 与 `chatbot-service` 使用（`PlatformConfigService`）。
 - Starter 模块：DB router、DCC、rate limiter、**web**（TraceId、**CorsAutoConfiguration**、Redis 连接封装）、**data**（共享线程池）。
 
-## 已移除的遗留模块
+## 当前边界
 
-- 历史单体启动器，以及曾用于拆分 Provider 的 fulfillment、rebate、strategy 独立启动器，均已物理移除。
 - 返利与策略保留为 market 内部边界；积分奖本地派发保留在 message-job。
 
 ## 边界规则

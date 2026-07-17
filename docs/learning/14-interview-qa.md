@@ -193,7 +193,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 | message-job-service | MQ/Job | 异步任务独立，不影响同步链路 |
 | admin-service | 管理配置 | 管理面与用户面隔离 |
 
-默认 `docker-compose.yml` 启动 gateway、auth、admin、market、chatbot、message-job、account（8080-8086）。返利和策略在 market 内部完成，积分奖由 message-job 本地 outbox 派发到 account；不再维护独立 Provider 切换。
+默认 `docker-compose.yml` 启动 gateway、auth、admin、market、chatbot、message-job、account（8080-8086）。返利和策略在 market 内部完成，积分奖由 message-job 本地 outbox 派发到 account；Provider 边界保持固定。
 
 ---
 

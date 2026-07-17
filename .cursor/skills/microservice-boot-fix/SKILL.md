@@ -24,7 +24,7 @@ description: >-
 
 - Add scan (or `@Import`) for `trigger.application`, `trigger.support`, `trigger.adapter`.
 - Keep **out** `trigger.job` / `trigger.listener`.
-- Respect existing `@ConditionalOn*` remote vs local adapters under `com.dyx.market.market.config`.
+- Keep the final local adapters under `com.dyx.market.market.config`; only account credit/quota remote-write paths remain intentionally remote.
 
 ### BM-002 message-job
 
@@ -43,8 +43,8 @@ description: >-
 - `@SpringBootTest` for market and message-job (context loads).
 - Mapper `SqlSessionFactory` build for message-job (and any edited launcher).
 - Do not claim fixed based only on `mvn compile` or `runtime-safety` script.
+- Do not re-add retired standalone launchers, RPC contracts, or Provider-mode flags to solve a boot issue.
 
 ## Related
 
 - Rule: `.cursor/rules/service-boot-scan.mdc`, `mapper-and-xxl.mdc`
-- Plan: `docs/audit-remediation-plan.md` Phase 1

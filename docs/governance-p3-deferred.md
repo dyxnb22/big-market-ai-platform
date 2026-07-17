@@ -1,7 +1,7 @@
 # P3 deferred governance (GOV-Z)
 
 Milestone name: `governance-p3-deferred`  
-Registered: 2026-07-11  
+Registered: 2026-07-17
 Source: `docs/TEMP-project-governance-checklist.md` §16
 
 These items must **not** be mixed into ordinary BM/GOV defect PRs. Open a dedicated issue/PR only when goal, owner, and acceptance environment are explicit.

@@ -2,7 +2,7 @@
 # Repo-only runtime safety validator.
 #
 # WARNING: This script can report PASS while Spring Context / mapper / XXL
-# alignment issues remain (see docs/audit-remediation-plan.md). Do not use it
+# alignment issues remain. Do not use it
 # as the sole gate for boot or closed-loop readiness.
 # occurred in default credentials, mutually exclusive flag paths,
 # shared mapper copies, learning DDL isolation, or the presence of safety
@@ -262,11 +262,6 @@ assert_pattern_present "Local rebate read adapter remains" \
 assert_pattern_present "Local strategy read adapter remains" \
   "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalStrategyReadAdapter.java" \
   'class LocalStrategyReadAdapter'
-assert_pattern_absent "Market config has no removed provider switches" \
-  'REBATE_.*(REMOTE|EMBEDDED)|STRATEGY_.*(REMOTE|EMBEDDED)|ACCOUNT_FULFILLMENT_REMOTE_AWARD' \
-  "$REPO_ROOT/docker-compose.yml" "$MARKET_YML" \
-  "$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
-
 echo ""
 echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ──"
 

@@ -6,7 +6,7 @@ Maps Spring profiles and compose overlays used by this learning stack. Prefer **
 | --- | --- | --- | --- | --- |
 | **local** | `SPRING_PROFILES_ACTIVE=local` (where `application-local.yml` exists) | IDE / single-service debug against local MySQL/Redis/Nacos | Learning defaults; do not treat as secure | Not every service ships `application-local.yml` |
 | **dev** | `application-dev.yml` | Legacy/dev-style local wiring | Permissive | Prefer `local` or `docker` for documented paths |
-| **test** | Surefire / `@SpringBootTest` / test resources | Unit & Context tests without full infra | Mocks / embedded / disabled remote clients | Must not write tracked `data/log` or `~/.dubbo` (governance P0) |
+| **test** | Surefire / `@SpringBootTest` / test resources | Unit & Context tests without full infra | Mocks / local adapters / disabled account remote clients | Must not write tracked `data/log` or `~/.dubbo` (governance P0) |
 | **docker** | Compose `SPRING_PROFILES_ACTIVE=docker` | Full microservices stack via `docker-compose.yml` + env compose | Demo defaults allowed | Default learning path; pair with `docs/dev-ops/docker-compose-environment.yml` |
 | **secure** | `docker-compose.secure.yml` overlay + `application-secure.yml` | Production-like demo | Non-default `JWT_SECRET`, RPC/admin/chat/XXL tokens; `DefaultCredentialGuard` refuses weak defaults | Run `./scripts/acceptance.sh --secure` / `smoke-security.sh` |
 

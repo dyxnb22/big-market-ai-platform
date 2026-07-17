@@ -22,11 +22,13 @@ retry behavior can be explained from SQL to repository/job code.
 
 ## Service Registration
 
-Dubbo/Nacos registration is configured in each service `application.yml` and
-`spring-config.xml`. Provider implementations live in:
+Dubbo/Nacos registration is configured in each remaining service `application.yml`
+and `spring-config.xml`. The active provider/adapter implementations live in:
 
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter`
+
+There are no standalone Provider applications in the final topology.
 
 Learning completion: services start in the local stack and expose health
 endpoints; RPC contracts compile against `big-market-api`.

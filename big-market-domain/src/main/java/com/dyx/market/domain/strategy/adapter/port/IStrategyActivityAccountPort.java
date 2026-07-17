@@ -7,7 +7,7 @@ package com.dyx.market.domain.strategy.adapter.port;
  * 两个方法均需按 userId 分片路由；调用方传入已解析的 activityId，使 StrategyRepository 与账户存储解耦。
  * <p>
  * 本地路径（默认）：LocalStrategyActivityAccountPort 经 IDBRouterStrategy 委托上述 DAO。
- * 远程路径（可配置）：AccountRemoteStrategyActivityAccountPort 在读接口就绪后调用 account-service API。
+ * 当前实现由 LocalStrategyActivityAccountPort 提供本地读投影。
  */
 public interface IStrategyActivityAccountPort {
 

@@ -102,7 +102,7 @@ docker compose up --build -d
 
 > **注意：** 默认且最终的应用栈是 8080-8086 七个服务。返利与策略固定在
 > `market-service` 内，积分奖固定由 `message-job-service` 的本地 outbox 派发；
-> 不再存在独立 Provider 或 Provider 启动辅助脚本。
+> 应用栈不包含额外 Provider 启动入口。
 >
 > **Token 注销：** Docker 栈为 `auth-service`、`admin-service`、`market-service` 设置了
 > `TOKEN_REVOCATION_REDIS_ENABLED=true`，logout 写入 Redis 黑名单后三服务均可校验。
@@ -212,8 +212,8 @@ docker logs mysql --tail 30
 Nacos 未就绪或 market-service 的本地策略/返利实现未加载。检查：
 
 ```bash
-# 确认 market 配置不再包含独立 rebate/strategy/award Provider 开关
-rg "rebate|strategy|remote-award" big-market-market-service/src/main/resources/application.yml || true
+# 确认 market 使用本地策略/返利能力，积分奖由 message-job outbox 派发
+rg "rebate|strategy" big-market-market-service/src/main/resources/application.yml || true
 ```
 
 ### 问题 3：抽奖返回 "活动未开启" 或策略数据为空

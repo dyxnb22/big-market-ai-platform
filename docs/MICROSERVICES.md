@@ -4,23 +4,23 @@
 
 本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot 服务、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。
 
-**就绪说明：** 历史默认复用栈已于 2026-07-11 通过完整 acceptance；本工作树的 7 服务默认拓扑尚未重新执行完整 acceptance，fresh 空卷和完整 secure overlay 也未验证，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`；历史 BM 计划不作为当前状态来源。
+**就绪说明：** 当前 7 服务默认拓扑已通过 clean Maven、静态安全、Mapper/DDL 和 Compose 配置校验；完整 acceptance、fresh 空卷和 secure overlay 尚未运行，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`。
 
-本文档是当前架构的 authoritative entry point（权威入口文档）。较早的实现说明仅作为历史归档材料保留在 `docs/archive/` 下。
+本文档是当前架构的 authoritative entry point（权威入口文档）。补充学习材料位于 `docs/learning/`。
 
 ## 服务列表
 
 | 服务 | 端口 | 部署定位 / 证据 | 职责 |
 | --- | ---: | --- | --- |
-| `big-market-gateway` | 8080 | 默认栈；历史 acceptance | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
-| `big-market-auth-service` | 8081 | 默认栈；历史 acceptance | 登录、JWT 签发、Token 校验、登出吊销 |
-| `big-market-admin-service` | 8082 | 默认栈；历史 acceptance | 管理端配置 API 与 Nacos 配置同步 |
-| `big-market-market-service` | 8083 | 默认栈；历史 acceptance | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
-| `big-market-chatbot-service` | 8084 | 默认栈；历史 acceptance | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
-| `big-market-message-job-service` | 8085 | 默认栈；历史 acceptance | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
-| `big-market-account-service` | 8086 | 默认栈；历史 acceptance | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
+| `big-market-gateway` | 8080 | 默认栈；当前配置验证 | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
+| `big-market-auth-service` | 8081 | 默认栈；当前配置验证 | 登录、JWT 签发、Token 校验、登出吊销 |
+| `big-market-admin-service` | 8082 | 默认栈；当前配置验证 | 管理端配置 API 与 Nacos 配置同步 |
+| `big-market-market-service` | 8083 | 默认栈；当前配置验证 | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
+| `big-market-chatbot-service` | 8084 | 默认栈；当前配置验证 | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
+| `big-market-message-job-service` | 8085 | 默认栈；当前配置验证 | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
+| `big-market-account-service` | 8086 | 默认栈；当前配置验证 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
 
-> **部署默认：** `docker-compose.yml` 是最终且唯一的应用部署入口，共 7 个服务（8080-8086）。返利与策略固定由 `big-market-market-service` 内部实现，积分奖固定由 `big-market-message-job-service` 的本地 outbox 派发到 account；三个独立 Provider 模块及其切换开关已物理移除。
+> **部署默认：** `docker-compose.yml` 是最终且唯一的应用部署入口，共 7 个服务（8080-8086）。返利与策略固定由 `big-market-market-service` 内部实现，积分奖固定由 `big-market-message-job-service` 的本地 outbox 派发到 account。
 
 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types` 以及各 starter 模块等共享模块，是各服务启动器所依赖的库。
 
@@ -135,5 +135,3 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 - `docs/data-and-outbox.md` — 数据、Outbox、幂等与重复处理
 - `docs/microservices-dao-ownership.md` — 表与 DAO 归属矩阵
 - `docs/old-path-cleanup-inventory.md` — 旧路径清理说明
-- `docs/archive/microservices-historical-readiness-notes.md` — 归档历史说明，非当前状态
-- `docs/archive/evidence-template-archive.md` — 归档证据模板，非当前状态
