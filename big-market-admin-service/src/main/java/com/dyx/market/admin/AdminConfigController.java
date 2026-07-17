@@ -1,5 +1,19 @@
 package com.dyx.market.admin;
 
+import java.io.IOException;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.dyx.market.management.config.PlatformConfigService;
 import com.dyx.market.trigger.api.dto.ActivityDisplayConfigResponseDTO;
 import com.dyx.market.trigger.api.dto.AdminConfigRequestDTO;
@@ -7,12 +21,6 @@ import com.dyx.market.trigger.api.dto.AdminConfigResponseDTO;
 import com.dyx.market.trigger.api.response.Response;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.bind.annotation.*;
-
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.List;
 
 /**
  * 管理端平台配置 HTTP 接口：列表、查询、保存、删除。

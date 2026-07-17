@@ -1,0 +1,122 @@
+\documentclass[10pt,a4paper]{article}
+
+% 编译方式：XeLaTeX
+% 中文字体优先使用常见的 CJK 字体，避免导出后中文缺字或黑块。
+\usepackage[UTF8,scheme=plain]{ctex}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fontspec}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{microtype}
+
+% --- 页面与字体 ---
+\geometry{left=1.2cm,right=1.2cm,top=0.95cm,bottom=0.95cm}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{muted}{HTML}{5B6573}
+\setlist[itemize]{label=\textcolor{accent}{\small\textbullet},leftmargin=1.45em,itemsep=0.3pt,topsep=1pt,parsep=0pt}
+\linespread{0.97}
+\setlength{\tabcolsep}{3pt}
+\IfFontExistsTF{Noto Sans CJK SC}{
+  \setCJKmainfont{Noto Sans CJK SC}
+}{
+  \IfFontExistsTF{Source Han Sans SC}{
+    \setCJKmainfont{Source Han Sans SC}
+  }{
+    \IfFontExistsTF{Heiti SC}{
+      \setCJKmainfont{Heiti SC}
+    }{
+      \setCJKmainfont{FandolSong}
+    }
+  }
+}
+
+% --- 标题与条目 ---
+\titleformat{\section}{\large\bfseries\color{accent}}{}{0em}{}[\vspace{1pt}\color{accent}\titlerule]
+\titlespacing{\section}{0pt}{6pt}{3pt}
+
+% 日期 - 名称 - 角色 - 地点/类型
+\newcommand{\entry}[4]{%
+  \noindent
+  \begin{tabularx}{\textwidth}{@{}>{\bfseries}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}l >{\bfseries\raggedleft\arraybackslash}l@{}}
+    #1 & \textbf{#2} & \textit{#3} & #4\\
+  \end{tabularx}\par
+}
+
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent}
+
+\begin{document}
+
+% --- 个人信息 ---
+\begin{center}
+  {\fontsize{24}{27}\selectfont\bfseries\color{accent}刁雨轩}\\[0.25em]
+  {\normalsize\bfseries 求职意向：Java 后端开发工程师}\\[0.25em]
+  {\small\color{muted}男 | 江苏省苏州市 | 电话：13301564428 | \href{mailto:diaoyuxuan@foxmail.com}{diaoyuxuan@foxmail.com}}
+\end{center}
+\vspace{-0.15em}
+{\color{accent}\rule{\textwidth}{0.8pt}}
+
+% --- 教育背景 ---
+\section{教育背景}
+\entry{2025.08 -- 2026.10（预计）}{香港城市大学}{计算机科学}{硕士}
+\begin{itemize}
+  \item 主修课程：数据工程、信息安全、计算机图形学、云计算、人工智能、自然语言处理（NLP）。
+\end{itemize}
+
+\entry{2019.08 -- 2023.06}{河海大学（211）}{计算机科学与技术}{本科}
+\begin{itemize}
+  \item GPA：4.26/5；相关课程：计算机网络、操作系统、数据结构、计算机组成原理、Java、C、软件工程、数据库原理。
+\end{itemize}
+
+% --- 工作经历 ---
+\section{工作经历}
+\entry{2024.02 -- 2025.05}{外企德科（华为 ICTBG）}{软件开发工程师}{苏州}
+\begin{itemize}
+  \item 参与华为 iMaster NCE-Campus 研发维护，负责产品框架迭代及 LAN 业务模块开发。
+  \item 主导信息树治理，参与产品漏洞修复、版本发布和安全合规问题闭环；定位现网局点紧急问题并交付临时补丁，支持客户问题快速响应。
+\end{itemize}
+
+% --- 项目经历 ---
+\section{项目经历}
+\entry{2024.02 -- 2025.05}{iMaster NCE-Campus 后端维护}{后端开发工程师}{项目}
+\begin{itemize}
+  \item \textbf{框架优化}：优化配置下发机制，支持增量、全量及失败重下发，提升复杂业务场景下的配置交付能力。
+  \item \textbf{特性开发}：负责 LAN 模块核心功能，覆盖 VLAN、子网、CLI 及交换机接口适配。
+  \item \textbf{兼容性完善}：推进一致性功能落地，针对不同款型设备进行精细化适配，增强跨设备兼容性。
+\end{itemize}
+
+\vspace{0.15em}
+
+\entry{2024.10 -- 至今}{Big-Market 大营销抽奖平台（个人作品集项目）}{Java 后端}{持续维护}
+\begin{itemize}
+  \item \textcolor{accent}{\textbf{架构设计}}：基于 DDD 将活动、策略、奖品、积分划分为核心领域，通过 Port/Repository 解耦领域规则与 MyBatis、Redis、MQ、RPC 等基础设施；搭建 Gateway、Auth、Market、Chatbot、Account、Message-Job 等 Spring Boot 服务，并以 Dubbo/Nacos 提供服务契约。
+  \item \textcolor{accent}{\textbf{抽奖与库存}}：在活动装配阶段将概率查找表预热至 Redis，采用随机下标 + Hash 查询实现 O(1) 选奖；概率范围较大时切换 O(log n) 算法，并结合 Redis DECR、延迟队列和 XXL-Job 异步回写库存，通过幂等账本避免重复扣减。
+  \item \textcolor{accent}{\textbf{规则引擎}}：采用责任链 + 决策树构建双层规则引擎，支持黑名单过滤、权重分段、次数锁和库存校验；通过可配置规则节点实现候选奖品筛选、兜底和库存扣减，降低新增规则对主流程的影响。
+  \item \textcolor{accent}{\textbf{服务治理与安全}}：通过 Gateway 统一路由并提供 Resilience4j 降级；基于 JWT 完成登录、校验和 Token 吊销，结合 Redis 维护吊销状态；对 Admin 接口和内部 RPC 增加鉴权与配置同步保护。
+  \item \textcolor{accent}{\textbf{消息与可靠性}}：采用 RabbitMQ + Outbox Task 保证业务数据与消息任务的最终一致性；抽奖落库后由 message-job 消费发奖事件，积分奖品经 \texttt{credit\_award\_task} 和 XXL-Job 派发至 Account 服务，并通过业务幂等键、CAS 补偿、任务重试和 DLQ 处理重复消费、超时及未知结果。
+  \item \textcolor{accent}{\textbf{技术栈}}：Java 8、Spring Boot 2.7、MyBatis、Redis/Redisson、RabbitMQ、XXL-Job、Dubbo/Nacos、Docker Compose、Prometheus/Grafana。
+  \item \textcolor{accent}{\textbf{工程验证}}：本地验收覆盖真实抽奖发奖入账、Chat 退款/对账和安全负向检查；18 条 Playwright 测试连续双跑通过，Maven verify 覆盖 23 个模块。
+\end{itemize}
+
+% --- 专业技能 ---
+\section{专业技能}
+\begin{itemize}
+  \item 熟练掌握 Java 语言基础、JVM 内存模型、垃圾回收机制及 MySQL 数据库开发。
+  \item 熟悉 SpringBoot、Mybatis、Redis 主流开发框架与中间件。
+  \item 掌握计算机网络、操作系统、数据结构等核心基础，具备扎实的后端工程功底。
+  \item 具有优秀的抗压能力与沟通能力，能够快速学习并应用新技术解决复杂工程难题。
+\end{itemize}
+
+% --- 证书信息 ---
+\section{证书信息}
+\begin{itemize}
+  \item 英语六级：553 分；雅思：6.5 分。
+\end{itemize}
+
+\end{document}

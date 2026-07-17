@@ -1,0 +1,98 @@
+\documentclass[10pt,a4paper]{article}
+
+% Compile with XeLaTeX or LuaLaTeX.
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{microtype}
+
+\geometry{left=1.2cm,right=1.2cm,top=0.95cm,bottom=0.95cm}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{muted}{HTML}{5B6573}
+\setlist[itemize]{label=\textcolor{accent}{\small\textbullet},leftmargin=1.45em,rightmargin=0.4em,itemsep=0.3pt,topsep=1pt,parsep=0pt}
+\linespread{0.97}
+\setlength{\tabcolsep}{3pt}
+\setlength{\emergencystretch}{3em}
+
+\IfFontExistsTF{Aptos}{\setmainfont{Aptos}}{\IfFontExistsTF{Arial}{\setmainfont{Arial}}{\setmainfont{Latin Modern Roman}}}
+
+\titleformat{\section}{\normalsize\bfseries\color{accent}}{}{0em}{\MakeUppercase}[\vspace{1pt}\color{accent}\titlerule]
+\titlespacing{\section}{0pt}{6pt}{3pt}
+
+\newcommand{\entry}[3]{%
+  \noindent
+  \begin{tabular*}{\textwidth}{@{}>{\bfseries}p{0.20\textwidth}@{\hfill}>{\raggedright\arraybackslash}p{0.42\textwidth}@{\hfill}>{\raggedleft\arraybackslash}p{0.32\textwidth}@{}}
+    #1 & \textbf{#2} & {\small\itshape #3}\\
+  \end{tabular*}\par
+}
+
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent}
+
+\begin{document}
+
+\begin{center}
+  {\fontsize{24}{27}\selectfont\bfseries\color{accent}Yuxuan Diao}\\[0.25em]
+  {\normalsize\bfseries Target Role: Java Backend Engineer}\\[0.25em]
+  {\small\color{muted}Suzhou, Jiangsu, China | +86 13301564428 | \href{mailto:diaoyuxuan@foxmail.com}{diaoyuxuan@foxmail.com}}
+\end{center}
+\vspace{-0.15em}
+{\color{accent}\rule{\textwidth}{0.8pt}}
+
+\section{Education}
+\entry{Aug 2025 -- Oct 2026}{City University of Hong Kong}{M.Sc. in Computer Science}
+\begin{itemize}
+  \item Coursework: Data Engineering, Information Security, Computer Graphics, Cloud Computing, Artificial Intelligence, and Natural Language Processing.
+\end{itemize}
+
+\entry{Aug 2019 -- Jun 2023}{Hohai University (211)}{B.Eng. in Computer Science \& Technology}
+\begin{itemize}
+  \item GPA: 4.26/5. Relevant coursework: Computer Networks, Operating Systems, Data Structures, Computer Organization, Java, C, Software Engineering, and Database Systems.
+\end{itemize}
+
+\section{Professional Experience}
+\entry{Feb 2024 -- May 2025}{FESCO Adecco (Huawei ICTBG)}{Software Development Engineer}
+\begin{itemize}
+  \item Contributed to the development and maintenance of Huawei iMaster NCE-Campus, focusing on framework iteration and LAN business modules.
+  \item Led information-tree governance and contributed to vulnerability remediation, release activities, security compliance closure, and emergency patch delivery for live-site issues.
+\end{itemize}
+
+\section{Projects}
+\entry{Feb 2024 -- May 2025}{iMaster NCE-Campus Backend Maintenance}{Backend Developer}
+\begin{itemize}
+  \item \textbf{Framework Optimization}: Improved the configuration delivery mechanism to support incremental deployment, full deployment, and retry after failed delivery.
+  \item \textbf{Feature Development}: Optimized core LAN capabilities covering VLAN management, subnets, CLI operations, and switch-interface adaptation.
+  \item \textbf{Compatibility}: Implemented consistency-related features and performed device-model-specific adaptation to improve cross-device compatibility.
+\end{itemize}
+
+\vspace{0.15em}
+
+\entry{Oct 2024 -- Present}{Big-Market Marketing Raffle Platform}{Java Backend}
+\begin{itemize}
+  \item \textbf{Architecture}: Applied Domain-Driven Design to model Activity, Strategy, Award, and Credit domains. Used Ports/\allowbreak Repositories to decouple domain rules from MyBatis, Redis, messaging, and RPC infrastructure; built Spring Boot services for Gateway, Auth, Market, Chatbot, Account, and Message/\allowbreak Job processing with Dubbo/Nacos service contracts.
+  \item \textbf{Raffle and Inventory}: Preloaded probability lookup tables into Redis during activity armory assembly to achieve O(1) award selection via random index plus hash lookup; switched to an O(log n) algorithm for larger probability ranges, with Redis DECR, delayed queues, XXL-JOB, and an idempotency ledger for inventory reservation and asynchronous MySQL persistence.
+  \item \textbf{Rule Engine}: Combined the Chain of Responsibility and Decision Tree patterns to support blacklist filtering, weight-based segmentation, draw-count locks, fallback awards, and inventory validation through configurable rule nodes.
+  \item \textbf{Messaging and Reliability}: Used RabbitMQ and the Outbox pattern to maintain consistency between business records and message tasks. Award events are consumed by the message/job service; credit awards are dispatched through \texttt{credit\_award\_task} and XXL-JOB to the Account service, with business idempotency keys, CAS compensation, retries, and DLQ handling for duplicates, timeouts, and unknown outcomes.
+  \item \textbf{Engineering Verification}: Local acceptance testing covers the end-to-end raffle-to-credit flow, Chat refunds/\allowbreak reconciliation, and security negative checks; 18 Playwright tests passed in two consecutive runs, and Maven \texttt{verify} passes across 23 modules.
+\end{itemize}
+
+\section{Professional Skills}
+\begin{itemize}
+  \item Proficient in Java fundamentals, the JVM memory model, garbage collection, and MySQL database development.
+  \item Familiar with Spring Boot, MyBatis, and Redis frameworks and middleware.
+  \item Solid foundation in computer networks, operating systems, and data structures, with strong backend engineering fundamentals.
+  \item Strong ability to work under pressure and communicate effectively; a fast learner who can apply new technologies to solve complex engineering problems.
+\end{itemize}
+
+\section{Certifications and English Proficiency}
+\begin{itemize}
+  \item College English Test Band 6 (CET-6): 553; IELTS: 6.5.
+\end{itemize}
+
+\end{document}
