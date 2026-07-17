@@ -13,7 +13,6 @@
         <module>big-market-infrastructure</module>
         <module>big-market-types</module>
         <module>big-market-starter-db-router</module>
-        <module>big-market-starter-dcc</module>
         <module>big-market-starter-ratelimiter</module>
         <module>big-market-starter-web</module>
         <module>big-market-starter-data</module>
@@ -157,11 +156,6 @@
                 <version>2.1.0</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
-                <version>3.1.4</version>
-            </dependency>
-            <dependency>
                 <groupId>com.netflix.hystrix</groupId>
                 <artifactId>hystrix-javanica</artifactId>
                 <version>1.5.18</version>
@@ -219,11 +213,6 @@
             <dependency>
                 <groupId>com.dyx.market</groupId>
                 <artifactId>big-market-starter-db-router</artifactId>
-                <version>1.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.dyx.market</groupId>
-                <artifactId>big-market-starter-dcc</artifactId>
                 <version>1.1</version>
             </dependency>
             <dependency>

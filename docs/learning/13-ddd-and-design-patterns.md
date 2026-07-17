@@ -248,9 +248,9 @@ public class RebateNoPayTradePolicy implements ITradePolicy { ... }
 
 **位置：** `big-market-market-service/src/main/java/.../market/config/`，`big-market-trigger/src/main/java/.../trigger/adapter/`
 
-**问题：** 同一个业务操作（如"扣减积分"），在本地开发时直接调用 domain 层，在服务化部署时通过 Dubbo RPC 调用 account-service。需要在不修改调用方代码的情况下切换实现。
+**问题：** 同一个业务操作（如"扣减积分"），本地学习需要进程内实现，Docker 部署需要调用 account-service。需要在不修改调用方代码的情况下切换实现，同时避免请求运行中静默切换数据源。
 
-**实现：** 定义统一接口，本地和远程各提供一个实现，通过 `@ConditionalOnProperty` 按配置激活。
+**实现：** 定义统一接口，本地和远程各提供一个实现，通过 Spring Profile 激活：`dev/local/test` 选择本地实现，`docker` 选择远程实现。
 
 ```java
 // 统一接口
@@ -259,12 +259,11 @@ public interface IAccountCreditWriteAdapter {
 }
 
 // 本地实现（直接调用 CreditService）
-@ConditionalOnProperty(name = "account.service.remote-credit-write.enabled",
-    havingValue = "false", matchIfMissing = true)
+@Profile({"dev", "local", "test"})
 public class LocalAccountCreditWriteAdapter implements IAccountCreditWriteAdapter { ... }
 
 // 远程实现（调用 account-service Dubbo RPC）
-@ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "true")
+@Profile("docker")
 public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapter { ... }
 ```
 
@@ -303,7 +302,7 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
              失败 → task 保留，等 Job 重扫
 ```
 
-**默认 Docker 二级 Outbox（积分奖）：** compose 将 `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true`（覆盖 yml 缺省 `false`）。`SendAwardConsumer` 写 `credit_award_task`，再由 `DispatchCreditAwardTaskJob` 调 account RPC。细节以 [`docs/data-and-outbox.md`](../data-and-outbox.md) 为准；`award_state=completed` ≠ 账户已入账。
+**固定二级 Outbox（积分奖）：** `SendAwardConsumer` 写 `credit_award_task`，再由 `DispatchCreditAwardTaskJob` 调 account RPC。细节以 [`docs/data-and-outbox.md`](../data-and-outbox.md) 为准；`award_state=completed` ≠ 账户已入账。
 
 **代码位置：**
 

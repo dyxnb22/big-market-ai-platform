@@ -28,7 +28,7 @@
 - `big-market-api`：Dubbo API 契约与 DTO（含共用 `ApiResponses`）。
 - `big-market-types`：通用响应码、异常、注解与常量。
 - `big-market-management`：平台配置辅助，供 `admin-service` 与 `chatbot-service` 使用（`PlatformConfigService`）。
-- Starter 模块：DB router、DCC、rate limiter、**web**（TraceId、**CorsAutoConfiguration**、Redis 连接封装）、**data**（共享线程池）。
+- Starter 模块：DB router、rate limiter、**web**（TraceId、**CorsAutoConfiguration**、Redis 连接封装）、**data**（共享线程池）。运行时开关由 Nacos 订阅能力提供。
 
 ## 当前边界
 

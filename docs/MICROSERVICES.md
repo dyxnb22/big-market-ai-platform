@@ -4,7 +4,7 @@
 
 本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot 服务、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。
 
-**就绪说明：** 当前 7 服务默认拓扑已通过 clean Maven、静态安全、Mapper/DDL 和 Compose 配置校验；完整 acceptance、fresh 空卷和 secure overlay 尚未运行，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`。
+**就绪说明：** 当前 7 服务默认拓扑已通过 clean Maven、静态安全、Mapper/DDL、Compose 配置校验和核心 Docker smoke（7 个应用健康、Web 200、Smoke 20/20）；完整 acceptance、fresh 空卷和 secure overlay 尚未运行，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`。
 
 本文档是当前架构的 authoritative entry point（权威入口文档）。补充学习材料位于 `docs/learning/`。
 
@@ -15,7 +15,7 @@
 | `big-market-gateway` | 8080 | 默认栈；当前配置验证 | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
 | `big-market-auth-service` | 8081 | 默认栈；当前配置验证 | 登录、JWT 签发、Token 校验、登出吊销 |
 | `big-market-admin-service` | 8082 | 默认栈；当前配置验证 | 管理端配置 API 与 Nacos 配置同步 |
-| `big-market-market-service` | 8083 | 默认栈；当前配置验证 | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
+| `big-market-market-service` | 8083 | 默认栈；当前配置验证 | 核心抽奖 HTTP API、活动操作、ERP 端点、Nacos runtime switches、本地领域编排 |
 | `big-market-chatbot-service` | 8084 | 默认栈；当前配置验证 | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
 | `big-market-message-job-service` | 8085 | 默认栈；当前配置验证 | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
 | `big-market-account-service` | 8086 | 默认栈；当前配置验证 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |

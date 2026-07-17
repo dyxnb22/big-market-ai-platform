@@ -34,7 +34,6 @@
 | `/api/v1/raffle/strategy/strategy_armory` | GET | `RaffleStrategyController.strategyArmory` | OperationalAuthInterceptor | 策略装配 |
 | `/api/v1/raffle/strategy/query_raffle_award_list_by_token` | POST | `RaffleStrategyController.queryRaffleAwardListByToken` | TokenAuthInterceptor | 查奖品和解锁状态 |
 | `/api/v1/raffle/erp/*` | GET/POST | `ErpOperateController` | OperationalAuthInterceptor + Controller 内 `AdminAccessService` | 运营查询/上架 |
-| `/api/v1/raffle/dcc/update_config` | POST（推荐）/ GET（兼容） | `DCCController.updateConfig` | OperationalAuthInterceptor + Controller 内 `AdminAccessService` | 动态配置 |
 | `/api/v1/admin/config/*` | GET/POST | `AdminConfigController` | AdminAuthInterceptor | 平台配置 |
 | `/api/v1/admin/config/public/display` | GET | `AdminConfigController.publicDisplay` | 无（`WebMvcConfig` 排除 AdminAuth） | 活动展示配置与 Chatbot 开关（`activityId` 查询参数） |
 | `/api/v1/chatbot/ask` | POST | `ChatbotController.ask` | 有扣费时需要 token | AI Chat |
@@ -252,20 +251,20 @@ sequenceDiagram
     W->>W: applyChatbotGate + 更新活动标题
 ```
 
-## ERP / DCC / Admin 配置流
+## ERP / Admin 配置流
 
-- ERP/DCC/armory：由 **market-service** 的 `OperationalAuthInterceptor` 拦截；支持 `X-Admin-Token` 或 `openId` 在 `app.admin.user-ids` 中的管理员 JWT。Controller 内通过 `AdminAccessService` 复用同一套校验（含 Dubbo 无 HTTP 拦截时的兜底）。
+- ERP/armory：由 **market-service** 的 `OperationalAuthInterceptor` 拦截；支持 `X-Admin-Token` 或 `openId` 在 `app.admin.user-ids` 中的管理员 JWT。Controller 内通过 `AdminAccessService` 复用同一套校验（含 Dubbo 无 HTTP 拦截时的兜底）。运行时开关由 Admin 发布到 Nacos，不经过 Market HTTP。
 - Admin Config：`AdminAuthInterceptor` 仅在 **admin-service** 拦截 `/api/*/admin/**`；`AdminConfigController` 读写 `PlatformConfigService`（`public/display` 除外）。
 
 ```mermaid
 flowchart TD
     A["管理员请求"] --> B{"目标路径"}
     B -->|/admin/**| C["admin-service\nAdminAuthInterceptor"]
-    B -->|/raffle/erp/**\n/raffle/dcc/**\narmory| D["market-service\nOperationalAuthInterceptor"]
+    B -->|/raffle/erp/**\narmory| D["market-service\nOperationalAuthInterceptor"]
     C --> E["AdminConfigController"]
     D --> F{"鉴权方式"}
     F -->|X-Admin-Token| G["AdminAccessService"]
     F -->|Authorization JWT| G
-    G --> H["ERP / DCC / armory 业务"]
+    G --> H["ERP / armory 业务"]
     E --> I["平台配置 / public/display"]
 ```

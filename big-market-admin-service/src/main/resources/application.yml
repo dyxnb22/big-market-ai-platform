@@ -33,6 +33,8 @@ nacos:
       enabled: true
       dataId: big-market-platform-config
       group: DEFAULT_GROUP
+      runtimeDataId: big-market-runtime-switches
+      runtimeGroup: DEFAULT_GROUP
       namespace: ""
       # When true, admin save succeeds even if Nacos publish fails (local-only demo).
       fail-open: false

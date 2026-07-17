@@ -46,10 +46,6 @@ nacos:
 chat:
   internal-service-token: test-chat-internal-token
 
-chatbot:
-  provider: local
-  cost-per-ask: 0
-
 gateway:
   config:
     enable: true

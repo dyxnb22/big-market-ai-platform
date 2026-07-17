@@ -3,7 +3,6 @@ package com.dyx.market.domain.activity.application;
 import com.dyx.market.domain.activity.adapter.port.IAwardFulfillmentPort;
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.adapter.port.IStrategyDecisionPort;
-import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.model.entity.UserRaffleOrderEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivityPartakeService;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
@@ -16,7 +15,6 @@ import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -38,16 +36,11 @@ public class RaffleApplicationService {
     @Resource
     private IAwardFulfillmentPort awardFulfillmentPort;
     @Resource
-    private IActivityRepository activityRepository;
-    @Resource
     private IActivityAccountPort activityAccountPort;
     @Resource
     private IStrategyRepository strategyRepository;
     @Resource
     private IStrategyStockConfirmCompensationPort strategyStockConfirmCompensationPort;
-    @Value("${account.service.remote-quota-decrement.enabled:false}")
-    private boolean remoteQuotaDecrementEnabled;
-
     /**
      * 执行一次活动抽奖：创建参与单 → 策略出奖 → 落中奖记录；异常时补偿回退额度。
      *
@@ -131,16 +124,8 @@ public class RaffleApplicationService {
             if (!awardSaved) {
                 log.error("活动抽奖执行异常，补偿回退额度 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), e);
                 try {
-                    if (remoteQuotaDecrementEnabled) {
-                        if (activityRepository.markRaffleOrderFailed(userId, orderEntity.getOrderId())) {
-                            activityAccountPort.rollbackQuota(userId, activityId, orderEntity.getOrderId());
-                        } else {
-                            log.warn("活动抽奖订单已非创建态，跳过远程额度回滚避免重复补偿 userId:{} activityId:{} orderId:{}",
-                                    userId, activityId, orderEntity.getOrderId());
-                        }
-                    } else {
-                        activityRepository.compensatePartakeQuota(userId, activityId, orderEntity.getOrderId(), orderEntity.getOrderTime());
-                    }
+                    activityAccountPort.compensatePartakeOrder(
+                            userId, activityId, orderEntity.getOrderId(), orderEntity.getOrderTime());
                     log.info("活动抽奖补偿回退额度完成 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId());
                 } catch (Exception ce) {
                     log.error("活动抽奖补偿回退额度失败 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), ce);

@@ -11,7 +11,6 @@ import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -33,21 +32,11 @@ public class ChatbotApplicationService {
     private static final String CONFIG_NS_CHATBOT = "chatbot";
     private static final String PROVIDER_DEEPSEEK = "deepseek";
     private static final String JSON_KEY_CONTENT = "content";
-
-    @Value("${chatbot.provider:local}")
-    private String provider;
-
-    @Value("${chatbot.deepseek.api-key:}")
-    private String deepseekApiKey;
-
-    @Value("${chatbot.deepseek.base-url:https://api.deepseek.com}")
-    private String deepseekBaseUrl;
-
-    @Value("${chatbot.deepseek.model:deepseek-chat}")
-    private String deepseekModel;
-
-    @Value("${chatbot.cost-per-ask:1}")
-    private int costPerAsk;
+    private static final String DEFAULT_PROVIDER = "local";
+    private static final String DEFAULT_API_KEY = "";
+    private static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
+    private static final String DEFAULT_MODEL = "deepseek-chat";
+    private static final int DEFAULT_COST_PER_ASK = 1;
 
     @Resource
     private PlatformConfigService platformConfigService;
@@ -75,7 +64,7 @@ public class ChatbotApplicationService {
         }
 
         int effectiveCost = parseCostConfig(
-                platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(costPerAsk)));
+                platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(DEFAULT_COST_PER_ASK)));
         if (effectiveCost > 0 && StringUtils.isBlank(token)) {
             throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());
         }
@@ -104,8 +93,8 @@ public class ChatbotApplicationService {
                 throw e;
             }
 
-            String effectiveProvider = platformConfigService.getValue(CONFIG_NS_CHATBOT, "provider", provider);
-            String effectiveApiKey = platformConfigService.getValue(CONFIG_NS_CHATBOT, "apiKey", deepseekApiKey);
+            String effectiveProvider = platformConfigService.getValue(CONFIG_NS_CHATBOT, "provider", DEFAULT_PROVIDER);
+            String effectiveApiKey = platformConfigService.getValue(CONFIG_NS_CHATBOT, "apiKey", DEFAULT_API_KEY);
             try {
                 String answer = PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) && StringUtils.isNotBlank(effectiveApiKey)
                         ? callDeepSeek(request.getMessage(), effectiveApiKey)
@@ -252,14 +241,14 @@ public class ChatbotApplicationService {
         try {
             return Math.max(0, Integer.parseInt(val));
         } catch (NumberFormatException e) {
-            return costPerAsk;
+            return DEFAULT_COST_PER_ASK;
         }
     }
 
     @SuppressWarnings("unchecked")
     private String callDeepSeek(String userMessage, String apiKey) {
-        String baseUrl = platformConfigService.getValue(CONFIG_NS_CHATBOT, "baseUrl", deepseekBaseUrl);
-        String model = platformConfigService.getValue(CONFIG_NS_CHATBOT, "model", deepseekModel);
+        String baseUrl = platformConfigService.getValue(CONFIG_NS_CHATBOT, "baseUrl", DEFAULT_BASE_URL);
+        String model = platformConfigService.getValue(CONFIG_NS_CHATBOT, "model", DEFAULT_MODEL);
         String url = baseUrl.replaceAll("/$", "") + "/v1/chat/completions";
 
         HttpHeaders headers = new HttpHeaders();

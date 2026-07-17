@@ -9,7 +9,6 @@ spring:
 canal.conf:
   mode: tcp #tcp kafka rocketMQ rabbitMQ
   flatMessage: true
-  zookeeperHosts:
   syncBatchSize: 1000
   retries: -1
   timeout:
@@ -17,7 +16,6 @@ canal.conf:
   secretKey:
   consumerProperties:
     canal.tcp.server.host: canal-server:11111
-    canal.tcp.zookeeper.hosts:
     canal.tcp.batch.size: 500
     canal.tcp.username:
     canal.tcp.password:

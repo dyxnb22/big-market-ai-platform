@@ -34,6 +34,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         "com.dyx.market.trigger.job",
         "com.dyx.market.trigger.listener",
         "com.dyx.market.trigger.application",
+        "com.dyx.market.trigger.account",
         "com.dyx.market.domain",
         "com.dyx.market.infrastructure"
 })

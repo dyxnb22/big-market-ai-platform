@@ -22,6 +22,7 @@ flowchart TD
     MessageJob --> MySQL
     Admin --> Nacos["Nacos"]
     Chatbot --> Nacos
+    Market --> Nacos
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
 
@@ -33,7 +34,7 @@ flowchart TD
 | --- | --- |
 | Gateway | 路由、trace、Resilience4j fallback |
 | Auth | JWT 签发 / 校验 / 吊销 |
-| Market | raffle / activity / strategy / ERP / DCC HTTP；不扫 `trigger.job`/`listener` |
+| Market | raffle / activity / strategy / ERP HTTP / Nacos runtime switches；不扫 `trigger.job`/`listener` |
 | Message-job | RabbitMQ 消费者 + XXL-Job（含积分 outbox 派发） |
 | Account | 积分 / 配额 Dubbo |
 | Admin | 平台配置；`GET .../public/display` 公开只读 |

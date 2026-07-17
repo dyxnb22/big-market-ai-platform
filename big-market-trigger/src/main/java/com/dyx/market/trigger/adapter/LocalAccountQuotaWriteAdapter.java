@@ -4,7 +4,7 @@ import com.dyx.market.domain.activity.model.entity.DeliveryOrderEntity;
 import com.dyx.market.domain.activity.model.entity.SkuRechargeEntity;
 import com.dyx.market.domain.activity.model.entity.UnpaidActivityOrderEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -16,7 +16,7 @@ import javax.annotation.Resource;
  * {@link IRaffleActivityAccountQuotaService}，不经 Dubbo、不依赖远程开关。
  */
 @Component
-@ConditionalOnProperty(name = "account.service.remote-quota-write.enabled", havingValue = "false", matchIfMissing = true)
+@Profile({"dev", "local", "test"})
 public class LocalAccountQuotaWriteAdapter implements IAccountQuotaWriteAdapter {
 
     @Resource

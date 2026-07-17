@@ -50,7 +50,7 @@ HTTP 侧薄封装：
 
 ```30:39:big-market-trigger/src/main/java/com/dyx/market/trigger/application/RaffleDrawApplicationService.java
     public ActivityDrawResponseDTO draw(ActivityDrawRequestDTO request) {
-        // DCC degradeSwitch 降级校验
+        // Nacos runtime switch degradeSwitch 降级校验
         ActivityDrawResponseEntity result = raffleApplicationService.executeDraw(
                 ActivityDrawRequestEntity.builder()
                         .userId(request.getUserId())
@@ -133,7 +133,7 @@ trigger（HTTP / MQ / Job）
   - `UserAwardRecordAggregate`（中奖记录 + task）
   - `IDistributeAward` 实现（如积分类奖品）
   - `AwardDispatchSupport`：中奖记录、task、抽奖单状态在本地事务内处理，事务后发送 MQ
-  - `AwardCreditGrantSupport`：积分奖品发放；可通过 `account.award-credit-outbox.enabled` 切换直接入账或 `credit_award_task` Outbox
+  - `AwardCreditGrantSupport`：积分奖品发放；中奖记录与 `credit_award_task` Outbox 同事务落库
 
 #### 积分域 `domain/credit`
 
@@ -403,7 +403,7 @@ RuleStockLogicTreeNode
 
 - 积分交易：`ICreditTradeTaskOutboxPort`
 - 行为返利：`IRebateTaskOutboxPort`
-- 积分奖品发放：`credit_award_task` + `DispatchCreditAwardTaskJob`（开关 `account.award-credit-outbox.enabled`）
+- 积分奖品发放：`credit_award_task` + `DispatchCreditAwardTaskJob`（固定 Outbox 链路）
 
 相关文档：[../data-and-outbox.md](../data-and-outbox.md)、[15-data-model.md](15-data-model.md)（task 表）
 
@@ -421,7 +421,7 @@ RuleStockLogicTreeNode
     }
 ```
 
-当 `account.award-credit-outbox.enabled=false`（application.yml 的代码缺省值）时，代码走 `saveWithDirectCredit()`；**默认 Docker 学习拓扑覆盖为 `true`**，写 `credit_award_task(state=pending)`，由 `big-market-message-job-service` 的 `DispatchCreditAwardTaskJob_DB1/DB2` 扫描派发到账户服务，成功后标记 `dispatched`，失败累计 `retry_count`，达到阈值转 `failed`。因此讲解“默认运行态”时必须同时看 compose，不能只看 application.yml。
+代码固定写 `credit_award_task(state=pending)`，由 `big-market-message-job-service` 的 `DispatchCreditAwardTaskJob_DB1/DB2` 扫描派发到账户服务，成功后标记 `dispatched`，失败累计 `retry_count`，达到阈值转 `failed`。本地与 Docker 只通过 Profile 选择账户写适配器，不改变 Outbox 语义。
 
 #### 面试口述
 

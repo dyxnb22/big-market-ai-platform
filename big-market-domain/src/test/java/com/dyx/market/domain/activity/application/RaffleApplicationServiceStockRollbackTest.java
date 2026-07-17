@@ -3,7 +3,6 @@ package com.dyx.market.domain.activity.application;
 import com.dyx.market.domain.activity.adapter.port.IAwardFulfillmentPort;
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.adapter.port.IStrategyDecisionPort;
-import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.model.entity.UserRaffleOrderEntity;
 import com.dyx.market.domain.activity.model.valobj.UserRaffleOrderStateVO;
 import com.dyx.market.domain.activity.service.IRaffleActivityPartakeService;
@@ -40,7 +39,7 @@ public class RaffleApplicationServiceStockRollbackTest {
     private IRaffleActivityPartakeService partakeService;
     private IStrategyDecisionPort strategyDecisionPort;
     private IAwardFulfillmentPort awardFulfillmentPort;
-    private IActivityRepository activityRepository;
+    private IActivityAccountPort activityAccountPort;
     private IStrategyRepository strategyRepository;
     private IStrategyStockConfirmCompensationPort strategyStockConfirmCompensationPort;
     private RaffleApplicationService raffleApplicationService;
@@ -50,7 +49,7 @@ public class RaffleApplicationServiceStockRollbackTest {
         partakeService = mock(IRaffleActivityPartakeService.class);
         strategyDecisionPort = mock(IStrategyDecisionPort.class);
         awardFulfillmentPort = mock(IAwardFulfillmentPort.class);
-        activityRepository = mock(IActivityRepository.class);
+        activityAccountPort = mock(IActivityAccountPort.class);
         strategyRepository = mock(IStrategyRepository.class);
         strategyStockConfirmCompensationPort = mock(IStrategyStockConfirmCompensationPort.class);
 
@@ -58,11 +57,9 @@ public class RaffleApplicationServiceStockRollbackTest {
         inject(raffleApplicationService, "raffleActivityPartakeService", partakeService);
         inject(raffleApplicationService, "strategyDecisionPort", strategyDecisionPort);
         inject(raffleApplicationService, "awardFulfillmentPort", awardFulfillmentPort);
-        inject(raffleApplicationService, "activityRepository", activityRepository);
-        inject(raffleApplicationService, "activityAccountPort", mock(IActivityAccountPort.class));
+        inject(raffleApplicationService, "activityAccountPort", activityAccountPort);
         inject(raffleApplicationService, "strategyRepository", strategyRepository);
         inject(raffleApplicationService, "strategyStockConfirmCompensationPort", strategyStockConfirmCompensationPort);
-        inject(raffleApplicationService, "remoteQuotaDecrementEnabled", false);
 
         when(partakeService.createOrder(USER_ID, ACTIVITY_ID)).thenReturn(UserRaffleOrderEntity.builder()
                 .userId(USER_ID)
@@ -110,7 +107,7 @@ public class RaffleApplicationServiceStockRollbackTest {
 
         verify(strategyRepository).releaseAwardStockReservation(reservation);
         verify(strategyRepository, never()).confirmAwardStockReservation(any());
-        verify(activityRepository).compensatePartakeQuota(eq(USER_ID), eq(ACTIVITY_ID), eq(ORDER_ID), any(Date.class));
+        verify(activityAccountPort).compensatePartakeOrder(eq(USER_ID), eq(ACTIVITY_ID), eq(ORDER_ID), any(Date.class));
         verify(awardFulfillmentPort).saveUserAwardRecord(any(UserAwardRecordEntity.class));
     }
 
@@ -139,7 +136,7 @@ public class RaffleApplicationServiceStockRollbackTest {
         assertEquals(Integer.valueOf(101), response.getAwardId());
         verify(strategyRepository).confirmAwardStockReservation(reservation);
         verify(strategyRepository, never()).releaseAwardStockReservation(any());
-        verify(activityRepository, never()).compensatePartakeQuota(any(), any(), any(), any());
+        verify(activityAccountPort, never()).compensatePartakeOrder(any(), any(), any(), any());
     }
 
     @Test
@@ -169,7 +166,7 @@ public class RaffleApplicationServiceStockRollbackTest {
         assertEquals(Integer.valueOf(101), response.getAwardId());
         verify(strategyStockConfirmCompensationPort).enqueuePendingConfirm(USER_ID, reservation);
         verify(strategyRepository, never()).releaseAwardStockReservation(any());
-        verify(activityRepository, never()).compensatePartakeQuota(any(), any(), any(), any());
+        verify(activityAccountPort, never()).compensatePartakeOrder(any(), any(), any(), any());
     }
 
     private static void inject(Object target, String fieldName, Object value) throws Exception {

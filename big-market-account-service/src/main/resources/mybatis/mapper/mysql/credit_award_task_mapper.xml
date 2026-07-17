@@ -4,7 +4,7 @@
   outbox default implementation — credit_award_task mapper.
   Tables credit_award_task_000..003 use local learning DDL.
   requires docs/sql/credit-award-task-outbox.sql and smoke validation before running
-  account.award-credit-outbox.enabled=true in any environment.
+  The credit award outbox is the single award-credit write path in every environment.
 -->
 <mapper namespace="com.dyx.market.infrastructure.dao.ICreditAwardTaskDao">
 

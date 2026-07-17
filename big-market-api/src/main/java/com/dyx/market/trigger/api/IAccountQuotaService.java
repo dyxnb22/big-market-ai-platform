@@ -19,8 +19,7 @@ public interface IAccountQuotaService {
     /**
      * 创建额度充值订单。
      *
-     * <p>默认实现已存在 Provider，但 account.service.remote-quota-write.enabled
-     * 默认为 false 时，调用方不会路由到远程。</p>
+     * <p>Docker Profile 的调用方经 Dubbo 使用该 Provider；本地 Profile 由本地适配器提供等价能力。</p>
      */
     Response<UnpaidActivityOrderResponseDTO> createOrder(AccountQuotaCreateOrderRequestDTO request);
 

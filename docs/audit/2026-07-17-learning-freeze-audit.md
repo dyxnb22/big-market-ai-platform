@@ -4,15 +4,15 @@
 
 ## 1. 审计结论
 
-结论：**最终 7 服务拓扑已完成代码与配置收敛，动态运行验收待 Docker 可用后补跑。**
+结论：**最终 7 服务拓扑已完成代码与配置收敛，核心 Docker smoke 已通过；完整运行验收仍待补跑。**
 
 当前仓库已经物理收敛为 gateway、auth、admin、market、chatbot、message-job、
 account 七个应用服务。market 内部提供策略与返利能力，message-job 通过本地
 outbox 派发积分奖，account 提供积分和额度 RPC。
 
 清理后的代码、配置、Compose、SQL、Agent 约束和学习文档已统一到该拓扑。
-当前静态门禁和 Maven 构建通过，但本机 Docker daemon 未运行，因此不能把本次
-结果描述为动态业务闭环或生产就绪。
+当前静态门禁、Maven 构建和核心 Docker smoke 通过；完整 acceptance、fresh 空卷、
+secure overlay 和生产能力仍未验证，因此不能把本次结果描述为生产就绪。
 
 ## 2. 范围与架构事实
 
@@ -43,13 +43,14 @@ types/starters、静态前端、Mapper XML、Docker/SQL、RabbitMQ/XXL、CI、�
 
 | 检查 | 结果 |
 | --- | --- |
-| mvn -B clean verify -DfailIfNoTests=false | PASS，20 个 reactor 模块 |
+| mvn -B clean verify -DfailIfNoTests=false | PASS，19 个 reactor 模块 |
 | scripts/validate-microservices-runtime-safety.sh | PASS，98/98 |
 | scripts/validate-mapper-ddl-gates.sh | PASS，18/18 |
 | 默认 Compose 配置 | PASS |
 | secure Compose 配置 | PASS（非默认占位凭据校验） |
 | 路径、契约和 Provider 入口扫描 | PASS，无残留 |
 | git diff --check、JSON、Shell 语法 | PASS |
+| 核心 Docker smoke | PASS，7 个应用健康、Web HTTP 200、20/20 |
 
 ## 4. 尚未验证
 
@@ -60,7 +61,7 @@ types/starters、静态前端、Mapper XML、Docker/SQL、RabbitMQ/XXL、CI、�
 
 本地动态验收需要先启动基础设施和应用栈：
 
-    docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+    docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
     docker compose up --build -d
     ./scripts/acceptance.sh --reuse
 

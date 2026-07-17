@@ -8,8 +8,8 @@ import java.util.Date;
 /**
  * 积分发奖 Outbox 行（默认实现）。
  * <p>
- * 在 {@code account.award-credit-outbox.enabled=true} 时，与 {@code updateAwardRecordCompletedState}
- * 同事务插入；轮询 Job 读取 pending 行并调用 {@code IAccountCreditWriteAdapter.createOrder()}，
+ * 与 {@code updateAwardRecordCompletedState} 同事务插入；轮询 Job 读取 pending 行并调用
+ * {@code IAccountCreditWriteAdapter.createOrder()}，
  * 以 {@code awardOrderId} 作为 {@code outBusinessNo} 保证幂等。
  * <p>
  * 表：{@code credit_award_task_000..003}（与用户中奖记录同分片）。

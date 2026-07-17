@@ -33,16 +33,15 @@ Award data is represented by `award`, `user_award_record`, and award dispatch
 task rows. Draw writes the award record and message task; consumers complete
 distribution.
 
-In the default Docker topology, `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true` and
-shared-task credit dispatch is disabled. `SendAwardConsumer` runs only in
-**message-job-service** (market must not scan `trigger.listener`). It writes a
-`credit_award_task`; XXL handlers `DispatchCreditAwardTaskJob_DB1/DB2` (jobs 5/6)
-must move it to `dispatched` and call account RPC. Their seeds are enabled by
-both fresh init SQL and `z-learning-freeze-demo.sql` for reused volumes.
+The credit award path always uses the local transactional Outbox. `SendAwardConsumer`
+runs only in **message-job-service** (market must not scan `trigger.listener`). It
+writes a `credit_award_task`; XXL handlers `DispatchCreditAwardTaskJob_DB1/DB2`
+(jobs 5/6) must move it to `dispatched` and call account RPC. Their seeds are
+enabled by both fresh init SQL and `z-learning-freeze-demo.sql` for reused volumes.
 
-Bare `application.yml` defaults `account.award-credit-outbox.enabled=false`
-(direct credit). Always cite **compose + yml** together when describing the
-learning stack; do not infer Docker behavior from yml alone.
+The account write implementation is selected by Spring Profile: local profiles use
+the in-process adapter, while Docker uses account-service RPC. This selection does
+not change the award Outbox transaction or its idempotency key.
 
 `user_award_record.award_state=completed` means that the award action has been
 durably accepted by the local award flow. For a credit award it does **not** by

@@ -11,10 +11,8 @@ import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.types.common.Constants;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
-import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -40,9 +38,6 @@ public class AwardCreditGrantSupport {
     @Resource
     private IRedisService redisService;
 
-    @Value("${account.award-credit-outbox.enabled:false}")
-    private boolean awardCreditOutboxEnabled;
-
     public void saveGiveOutPrizesAggregate(GiveOutPrizesAggregate giveOutPrizesAggregate) {
         String userId = giveOutPrizesAggregate.getUserId();
         UserCreditAwardEntity userCreditAwardEntity = giveOutPrizesAggregate.getUserCreditAwardEntity();
@@ -60,11 +55,7 @@ public class AwardCreditGrantSupport {
         lock.lock();
         try {
             dbRouter.doRouter(giveOutPrizesAggregate.getUserId());
-            if (awardCreditOutboxEnabled) {
-                saveWithCreditOutbox(userId, userCreditAwardEntity, userAwardRecordEntity, userAwardRecordReq);
-            } else {
-                saveWithDirectCredit(userId, userCreditAwardEntity, giveOutPrizesAggregate, userAwardRecordReq);
-            }
+            saveWithCreditOutbox(userId, userCreditAwardEntity, userAwardRecordEntity, userAwardRecordReq);
         } finally {
             dbRouter.clear();
             if (lock.isHeldByCurrentThread()) {
@@ -97,29 +88,4 @@ public class AwardCreditGrantSupport {
         });
     }
 
-    private void saveWithDirectCredit(String userId, UserCreditAwardEntity userCreditAwardEntity,
-                                      GiveOutPrizesAggregate giveOutPrizesAggregate,
-                                      UserAwardRecord userAwardRecordReq) {
-        transactionTemplate.execute(status -> {
-            try {
-                // Idempotency check FIRST: if the record is already completed, skip the
-                // credit write entirely. This prevents duplicate grants if the method is
-                // retried (e.g. after a lock contention or message re-delivery).
-                int updateAwardCount = userAwardRecordDao.updateAwardRecordCompletedState(userAwardRecordReq);
-                if (0 == updateAwardCount) {
-                    log.warn("更新中奖记录，重复更新拦截 userId:{} giveOutPrizesAggregate:{}", userId, JSON.toJSONString(giveOutPrizesAggregate));
-                    status.setRollbackOnly();
-                    return 1;
-                }
-                awardCreditWritePort.updateOrCreateCreditAccount(
-                        userCreditAwardEntity.getUserId(),
-                        userCreditAwardEntity.getCreditAmount());
-                return 1;
-            } catch (DuplicateKeyException e) {
-                status.setRollbackOnly();
-                log.error("更新中奖记录，唯一索引冲突 userId: {} ", userId, e);
-                throw new AppException(ResponseCode.INDEX_DUP.getCode(), e);
-            }
-        });
-    }
 }

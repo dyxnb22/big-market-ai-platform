@@ -147,7 +147,7 @@ AbstractRaffleActivityPartake.createOrder
 
 **Q5：远程额度开关是干什么的？**
 
-> `account.service.remote-quota-decrement.enabled`（默认 false）。false：额度与订单同本地事务；true：先 `IActivityAccountPort.decrementQuota`，再只插订单，失败则 `rollbackQuota`（Saga）。
+> `dev/local/test` Profile：额度与订单在本地同库事务内完成；`docker` Profile：先经 account-service 扣减，再只插订单，失败则按抽奖订单号执行 `rollbackQuota`（Saga）。业务编排不再读取远程开关。
 
 ### 1.4 表述陷阱
 

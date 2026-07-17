@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * 运营类接口鉴权：ERP、DCC、armory 等路径统一校验管理员身份。
+ * 运营类接口鉴权：ERP、armory 等路径统一校验管理员身份。
  */
 @Component
 public class OperationalAuthInterceptor implements HandlerInterceptor {

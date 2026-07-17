@@ -2,11 +2,12 @@ package com.dyx.market.infrastructure.adapter.port;
 
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
 import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
+import com.dyx.market.domain.activity.model.aggregate.CreatePartakeOrderAggregate;
 import com.dyx.market.infrastructure.dao.IUserCreditAccountDao;
 import com.dyx.market.infrastructure.dao.po.UserCreditAccount;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -18,18 +19,12 @@ import java.math.BigDecimal;
  * <p>委托给与 account-service 侧 {@code AccountQuotaServiceRPC} 相同的、
  * 带账本守卫的仓储方法，消除空操作行为，使本地路径在功能上与远程路径等价，便于测试。</p>
  *
- * <p>激活条件：当 {@code account.service.remote-quota-decrement.enabled=false}
- *（默认值）时生效。标志为 {@code true} 时，market-service 中的
- * {@code AccountRemoteActivityAccountPort} 将覆盖本 Bean。</p>
- *
- * <p>注意：当 {@code RaffleActivityPartakeService.remoteQuotaDecrementEnabled=false}
- * 时，本端口不会被调用——额度扣减仍由 {@code saveCreatePartakeOrderAggregate} 负责。
- * 本端口仅在 {@code remoteQuotaDecrementEnabled=true} 路径下被调用，
- * 以便在无 live account-service 的纯本地部署中保持一致的账本语义。</p>
+ * <p>仅在 {@code dev}、{@code local}、{@code test} Profile 生效；Docker 由
+ * market-service 提供远程 account-service Port。</p>
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "account.service.remote-quota-decrement.enabled", havingValue = "false", matchIfMissing = true)
+@Profile({"dev", "local", "test"})
 public class LocalActivityAccountPort implements IActivityAccountPort {
 
     @Resource
@@ -55,6 +50,16 @@ public class LocalActivityAccountPort implements IActivityAccountPort {
             log.warn("[LocalActivityAccountPort] rollbackQuotaWithLedger returned false userId:{} activityId:{} outBusinessNo:{}",
                     userId, activityId, outBusinessNo);
         }
+    }
+
+    @Override
+    public void savePartakeOrder(CreatePartakeOrderAggregate aggregate) {
+        activityRepository.saveCreatePartakeOrderAggregate(aggregate);
+    }
+
+    @Override
+    public void compensatePartakeOrder(String userId, Long activityId, String orderId, java.util.Date orderTime) {
+        activityRepository.compensatePartakeQuota(userId, activityId, orderId, orderTime);
     }
 
     @Override

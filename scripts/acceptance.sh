@@ -91,7 +91,7 @@ Stack is not healthy and --start-stack was not set (no auto-start).
 
 Start manually, then re-run acceptance:
 
-  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
   ./scripts/apply-stack-migrations.sh
   docker compose up --build -d
   # secure overlay:
@@ -261,7 +261,7 @@ fi
 
 if [ "$START_STACK" = true ]; then
   begin_gate "start stack"
-  if ! docker compose -f docs/dev-ops/docker-compose-environment.yml up -d; then
+  if ! docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch; then
     fail_gate "infra docker up"
   fi
   if ! ./scripts/apply-stack-migrations.sh; then

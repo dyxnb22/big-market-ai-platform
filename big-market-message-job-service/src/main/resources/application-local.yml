@@ -1,8 +1,3 @@
-# Embedded local mode (mvn spring-boot:run): keep outbox off until DDL is applied manually.
-account:
-  award-credit-outbox:
-    enabled: false
-
-job:
-  shared-task-dispatch:
-    credit-award-disabled: false
+# Embedded local mode (mvn spring-boot:run) uses the local account adapters selected by
+# the local/dev Spring Profile. The credit award Outbox is always enabled; apply its DDL
+# before starting message-job.

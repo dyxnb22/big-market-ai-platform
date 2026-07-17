@@ -1,9 +1,11 @@
 package com.dyx.market.market;
 
+import com.dyx.market.management.config.NacosConfigSyncService;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportResource;
 
 /**
@@ -31,10 +33,12 @@ import org.springframework.context.annotation.ImportResource;
         "com.dyx.market.trigger.application",
         "com.dyx.market.trigger.support",
         "com.dyx.market.trigger.adapter",
+        "com.dyx.market.trigger.account",
         "com.dyx.market.domain",
         "com.dyx.market.infrastructure"
 })
 @EnableDubbo
+@Import(NacosConfigSyncService.class)
 @ImportResource(locations = {"classpath:spring-config.xml"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class MarketServiceApplication {

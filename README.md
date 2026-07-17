@@ -13,7 +13,7 @@ XXL-Job tasks, MySQL, Redis, Nacos, Prometheus, and Grafana.
 | `big-market-gateway` | 8080 | Gateway routing, trace id propagation, circuit-breaker response |
 | `big-market-auth-service` | 8081 | Login, JWT issuing, token verification, logout revocation |
 | `big-market-admin-service` | 8082 | Admin configuration APIs |
-| `big-market-market-service` | 8083 | Core raffle, activity, ERP, DCC, and strategy HTTP APIs |
+| `big-market-market-service` | 8083 | Core raffle, activity, ERP, runtime switches, and strategy HTTP APIs |
 | `big-market-chatbot-service` | 8084 | Chatbot API and credit charge/refund integration |
 | `big-market-message-job-service` | 8085 | MQ consumers, XXL-Job handlers, retry dispatch |
 | `big-market-account-service` | 8086 | Credit and quota RPC provider |
@@ -37,7 +37,7 @@ mvn clean package -DskipTests
 ## Start
 
 ```bash
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 docker compose up --build -d
 ```
 
@@ -51,7 +51,7 @@ Gateway address: `http://127.0.0.1:8080`.
 ./scripts/validate-prometheus-config.sh
 mvn -B verify -DfailIfNoTests=false
 # Start stack yourself first (acceptance does NOT auto-start Docker):
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 docker compose up --build -d
 npm install
 npx playwright install chromium
@@ -65,7 +65,7 @@ Focused unit/context tests:
 ```bash
 mvn -pl big-market-market-service,big-market-message-job-service,big-market-domain,big-market-infrastructure -am test \
   -DfailIfNoTests=false -Dsurefire.failIfNoSpecifiedTests=false
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 docker compose up --build -d
 ./scripts/validate-microservices-stack.sh   # no auto-start; add --start-stack to compose up
 ./scripts/smoke-api.sh
@@ -83,8 +83,8 @@ npx playwright test --workers=1
 | Evidence date | 2026-07-17 |
 | Git | current working tree |
 | Command | `mvn -B clean verify -DfailIfNoTests=false` plus static and Compose gates |
-| Result | **PASS** — 20 reactor modules, runtime safety 98/98, Mapper/DDL 18/18, Compose configuration valid. |
-| Scope | Final seven-service topology; Docker dynamic acceptance is still pending because the local Docker daemon is unavailable. |
+| Result | **PASS** — 19 reactor modules, runtime safety 98/98, Mapper/DDL 18/18, Compose configuration valid. |
+| Scope | Final seven-service topology; core Docker smoke passed 20/20 with all seven applications healthy and Web HTTP 200. Full acceptance, fresh-volume and secure-overlay verification remain pending. |
 
 This table records current static/configuration evidence only. Dynamic acceptance,
 fresh-volume and full secure-overlay verification require Docker; see

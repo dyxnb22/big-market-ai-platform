@@ -61,7 +61,7 @@ Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://1
 
 ```bash
 mvn clean package -DskipTests
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 docker compose up --build -d
 ./scripts/validate-microservices-stack.sh
 ./scripts/smoke-test-microservices.sh

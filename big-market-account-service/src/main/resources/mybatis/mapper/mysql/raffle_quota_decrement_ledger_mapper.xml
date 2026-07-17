@@ -4,7 +4,8 @@
   quota-decrement idempotency ledger mapper.
   Tables raffle_quota_decrement_ledger_000..003 use local learning DDL.
   requires docs/sql/quota-decrement-ledger.sql and smoke validation before running
-  account.service.remote-quota-decrement.enabled=true in any environment.
+  Used by both the local and remote quota implementations; the Docker profile routes
+  the call through account-service.
 -->
 <mapper namespace="com.dyx.market.infrastructure.dao.IRaffleQuotaDecrementLedgerDao">
 

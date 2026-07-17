@@ -12,7 +12,14 @@ redis:
 nacos:
   config:
     sync:
+      enabled: ${NACOS_CONFIG_SYNC_ENABLED:true}
       serverAddr: ${NACOS_HOST:nacos}:${NACOS_PORT:8848}
+      dataId: ${NACOS_CONFIG_DATA_ID:big-market-platform-config}
+      group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
+      runtimeDataId: ${NACOS_RUNTIME_DATA_ID:big-market-runtime-switches}
+      runtimeGroup: ${NACOS_RUNTIME_GROUP:DEFAULT_GROUP}
+      namespace: ${NACOS_CONFIG_NAMESPACE:}
+      fail-open: ${NACOS_CONFIG_SYNC_FAIL_OPEN:false}
 
 gateway:
   config:

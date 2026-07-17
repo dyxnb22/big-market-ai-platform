@@ -27,8 +27,9 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * 平台运行时配置的轻量存储（学习/产品化版本）。
  * <p>
- * 原项目使用 Zookeeper DCC 做运行时开关；本服务为 admin、chatbot 等模块提供
- * 本地可见的配置源，后续可替换为 MySQL 或正式配置中心。
+ * Admin 使用本地快照提供管理查询，Nacos 负责跨服务配置同步。
+ * 普通平台配置与运行时开关分别发布到不同的 Nacos DataId，避免敏感的
+ * chatbot 配置被不需要它的服务订阅。
  */
 @Service
 public class PlatformConfigService implements InitializingBean {
@@ -41,9 +42,6 @@ public class PlatformConfigService implements InitializingBean {
 
     @Autowired(required = false)
     private NacosConfigSyncService nacosConfigSyncService;
-
-    @Autowired(required = false)
-    private DynamicConfigSyncPort dynamicConfigSyncPort;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -67,6 +65,11 @@ public class PlatformConfigService implements InitializingBean {
             if (nacosContent != null && !nacosContent.isEmpty()) {
                 refreshFromContent(nacosContent);
                 log.info("Platform config restored from Nacos on startup ({} entries)", configStore.size());
+            }
+            String runtimeContent = nacosConfigSyncService.fetchRuntimeSwitches(3000);
+            if (runtimeContent != null && !runtimeContent.isEmpty()) {
+                refreshFromContent(runtimeContent);
+                log.info("Runtime switches restored from Nacos on startup");
             }
         }
     }
@@ -107,11 +110,11 @@ public class PlatformConfigService implements InitializingBean {
         configStore.put(key, config);
         try {
             saveToDisk();
-            String content = serializePropertiesContent();
+            boolean runtimeConfig = isRuntimeConfig(config);
+            String content = serializePropertiesContent(runtimeConfig);
             String contentHash = contentHash(content);
-            boolean nacosPublished = publishToNacos(content);
+            boolean nacosPublished = publishToNacos(content, runtimeConfig);
             String source = nacosConfigSyncService == null ? "local" : (nacosPublished ? "nacos" : "local");
-            syncDynamicConfigIfNeeded(config);
             return config.toBuilder()
                     .contentHash(contentHash)
                     .nacosPublished(nacosPublished)
@@ -133,7 +136,7 @@ public class PlatformConfigService implements InitializingBean {
             configStore.remove(key);
         }
         saveToDisk();
-        publishToNacosBestEffort();
+        publishToNacosBestEffort(namespaceFromStoreKey(key));
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {
@@ -149,8 +152,9 @@ public class PlatformConfigService implements InitializingBean {
         configStore.put(key, tombstone);
         try {
             saveToDisk();
-            String content = serializePropertiesContent();
-            publishToNacos(content);
+            boolean runtimeConfig = "system".equals(namespace);
+            String content = serializePropertiesContent(runtimeConfig);
+            publishToNacos(content, runtimeConfig);
         } catch (IOException e) {
             rollbackConfig(key, previous);
             throw e;
@@ -243,41 +247,33 @@ public class PlatformConfigService implements InitializingBean {
         }
     }
 
-    private void syncDynamicConfigIfNeeded(AdminConfigResponseDTO config) {
-        if (dynamicConfigSyncPort == null) {
-            return;
-        }
-        if ("system".equals(config.getNamespace()) && "degradeSwitch".equals(config.getConfigKey())) {
-            dynamicConfigSyncPort.syncDegradeSwitch(config.getConfigValue());
-        }
-        if ("system".equals(config.getNamespace()) && "rateLimiterSwitch".equals(config.getConfigKey())) {
-            dynamicConfigSyncPort.syncRateLimiterSwitch(config.getConfigValue());
-        }
-    }
-
-    private void publishToNacosBestEffort() {
+    private void publishToNacosBestEffort(String namespace) {
         if (nacosConfigSyncService == null) {
             return;
         }
         try {
-            publishToNacos(serializePropertiesContent());
+            boolean runtimeConfig = "system".equals(namespace);
+            publishToNacos(serializePropertiesContent(runtimeConfig), runtimeConfig);
         } catch (Exception e) {
             log.warn("Best-effort Nacos publish after rollback failed: {}", e.getMessage());
         }
     }
 
-    private String serializePropertiesContent() throws IOException {
+    private String serializePropertiesContent(boolean runtimeOnly) throws IOException {
         StringWriter writer = new StringWriter();
-        buildProperties().store(writer, "Big Market platform runtime configuration");
+        buildProperties(runtimeOnly).store(writer,
+                runtimeOnly ? "Big Market runtime switches" : "Big Market platform configuration");
         return writer.toString();
     }
 
-    private boolean publishToNacos(String content) throws IOException {
+    private boolean publishToNacos(String content, boolean runtimeConfig) throws IOException {
         if (nacosConfigSyncService == null) {
             return false;
         }
         try {
-            return nacosConfigSyncService.publish(content);
+            return runtimeConfig
+                    ? nacosConfigSyncService.publishRuntimeSwitches(content)
+                    : nacosConfigSyncService.publish(content);
         } catch (IllegalStateException e) {
             throw new IOException(e.getMessage(), e);
         } catch (Exception e) {
@@ -299,6 +295,19 @@ public class PlatformConfigService implements InitializingBean {
         }
     }
 
+    private Properties buildProperties(boolean runtimeOnly) {
+        Properties properties = new Properties();
+        for (AdminConfigResponseDTO config : configStore.values()) {
+            if (runtimeOnly != isRuntimeConfig(config)) {
+                continue;
+            }
+            String prefix = config.getNamespace() + "." + config.getConfigKey();
+            properties.setProperty(prefix + ".value", StringUtils.defaultString(config.getConfigValue()));
+            properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
+        }
+        return properties;
+    }
+
     private Properties buildProperties() {
         Properties properties = new Properties();
         for (AdminConfigResponseDTO config : configStore.values()) {
@@ -307,6 +316,15 @@ public class PlatformConfigService implements InitializingBean {
             properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
         }
         return properties;
+    }
+
+    private boolean isRuntimeConfig(AdminConfigResponseDTO config) {
+        return config != null && "system".equals(config.getNamespace());
+    }
+
+    private String namespaceFromStoreKey(String key) {
+        int separator = key.indexOf(':');
+        return separator < 0 ? key : key.substring(0, separator);
     }
 
     private File storeFile() {

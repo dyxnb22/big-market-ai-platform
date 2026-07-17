@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 /**
  * 只读账户查询适配器契约。
  * <p>
- * 实现类根据 {@code account.service.remote-read.enabled} 将查询路由到本地领域服务，
- * 或经 Dubbo 访问 account-service。
+ * 实现类由 Spring Profile 选择：本地 Profile 委托进程内领域服务，Docker Profile
+ * 经 Dubbo 访问 account-service。远程调用失败不会静默切换到本地数据。
  * 仅读操作经此契约路由；写路径（createOrder、配额扣减、返利、发奖）仍走本地领域服务。
  */
 public interface IAccountReadAdapter {

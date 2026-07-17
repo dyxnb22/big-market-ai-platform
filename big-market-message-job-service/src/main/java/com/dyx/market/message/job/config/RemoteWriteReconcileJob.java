@@ -17,7 +17,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "job.remote-write-reconcile.enabled", havingValue = "true", matchIfMissing = true)
+@Profile("docker")
 public class RemoteWriteReconcileJob {
 
     private static final String STATE_CONTINUATION_PENDING = "continuation_pending";

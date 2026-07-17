@@ -14,7 +14,8 @@ import com.dyx.market.domain.credit.model.entity.TradeEntity;
  * <ul>
  *   <li>UserCreditRandomAward（发奖积分路径）— 需先完成调用链审计</li>
  * </ul>
- * 默认走本地领域服务（flag=false）；仅当 {@code account.service.remote-credit-write.enabled=true} 时启用远程 Dubbo 调用。
+ * 实现由 Spring Profile 选择：本地 Profile 委托本地领域服务，Docker Profile 经 Dubbo
+ * 调用 account-service；远程失败只进入既有对账/补偿路径，不回退本地写入。
  */
 public interface IAccountCreditWriteAdapter {
 

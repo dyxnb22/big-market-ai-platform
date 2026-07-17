@@ -12,7 +12,6 @@ import io.micrometer.core.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -22,10 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 发奖积分派发 Outbox 消费者。
  * <p>
- * 仅在 {@code account.award-credit-outbox.enabled=true} 时激活；为 false（默认）时
- * 本 Bean 不会实例化，{@code @XxlJob} 处理器也不会注册——不会访问数据库。
- * <p>
- * 启用后，轮询各分片库中的 credit_award_task 待处理行，经
+ * 轮询各分片库中的 credit_award_task 待处理行，经
  * {@link IAccountCreditWriteAdapter#createOrder} 派发；以 award_order_id 作为
  * outBusinessNo，account-service 据此幂等去重。
  * <p>
@@ -34,7 +30,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "account.award-credit-outbox.enabled", havingValue = "true")
 public class DispatchCreditAwardTaskJob {
 
     @Resource

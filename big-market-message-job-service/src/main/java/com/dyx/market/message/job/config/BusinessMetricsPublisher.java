@@ -4,6 +4,7 @@ import com.dyx.market.infrastructure.dao.IChatCreditSessionDao;
 import com.dyx.market.infrastructure.dao.IMqDeadLetterDao;
 import com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao;
 import com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class BusinessMetricsPublisher {
     private final IMqDeadLetterDao mqDeadLetterDao;
     private final IChatCreditSessionDao chatCreditSessionDao;
     private final IStrategyAwardStockConfirmTaskDao strategyAwardStockConfirmTaskDao;
+    private final IDBRouterStrategy dbRouter;
     private final MeterRegistry meterRegistry;
 
     private final AtomicInteger pendingRemoteWrites = new AtomicInteger(0);
@@ -36,11 +38,13 @@ public class BusinessMetricsPublisher {
                                     IMqDeadLetterDao mqDeadLetterDao,
                                     IChatCreditSessionDao chatCreditSessionDao,
                                     IStrategyAwardStockConfirmTaskDao strategyAwardStockConfirmTaskDao,
+                                    IDBRouterStrategy dbRouter,
                                     MeterRegistry meterRegistry) {
         this.pendingRemoteWriteTaskDao = pendingRemoteWriteTaskDao;
         this.mqDeadLetterDao = mqDeadLetterDao;
         this.chatCreditSessionDao = chatCreditSessionDao;
         this.strategyAwardStockConfirmTaskDao = strategyAwardStockConfirmTaskDao;
+        this.dbRouter = dbRouter;
         this.meterRegistry = meterRegistry;
     }
 
@@ -69,13 +73,28 @@ public class BusinessMetricsPublisher {
     @Scheduled(fixedDelayString = "${big-market.metrics.refresh-ms:30000}")
     public void refresh() {
         try {
-            pendingRemoteWrites.set(pendingRemoteWriteTaskDao.countByState("pending"));
-            continuationRemoteWrites.set(pendingRemoteWriteTaskDao.countByState("continuation_pending"));
-            pendingDlq.set(mqDeadLetterDao.countByState("pending"));
-            pendingChatRefunds.set(chatCreditSessionDao.countPendingRefunds());
-            pendingStockConfirm.set(strategyAwardStockConfirmTaskDao.countPending());
+            int pendingRemoteWriteCount = 0;
+            int continuationRemoteWriteCount = 0;
+            int pendingDlqCount = 0;
+            int pendingChatRefundCount = 0;
+            int pendingStockConfirmCount = 0;
+            for (int dbIdx = 1; dbIdx <= 2; dbIdx++) {
+                dbRouter.setDBKey(dbIdx);
+                pendingRemoteWriteCount += pendingRemoteWriteTaskDao.countByState("pending");
+                continuationRemoteWriteCount += pendingRemoteWriteTaskDao.countByState("continuation_pending");
+                pendingDlqCount += mqDeadLetterDao.countByState("pending");
+                pendingChatRefundCount += chatCreditSessionDao.countPendingRefunds();
+                pendingStockConfirmCount += strategyAwardStockConfirmTaskDao.countPending();
+            }
+            pendingRemoteWrites.set(pendingRemoteWriteCount);
+            continuationRemoteWrites.set(continuationRemoteWriteCount);
+            pendingDlq.set(pendingDlqCount);
+            pendingChatRefunds.set(pendingChatRefundCount);
+            pendingStockConfirm.set(pendingStockConfirmCount);
         } catch (Exception e) {
             log.warn("Business metrics refresh failed: {}", e.getMessage());
+        } finally {
+            dbRouter.clear();
         }
     }
 }

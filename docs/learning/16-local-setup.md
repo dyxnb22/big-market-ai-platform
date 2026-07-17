@@ -20,7 +20,7 @@
 从**项目根目录**执行（与根 `README.md` 一致）：
 
 ```bash
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 ```
 
 这个命令启动以下容器：
@@ -32,7 +32,6 @@ docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 | redis | 16379 | 缓存 + 分布式锁 | 无密码 |
 | redis-admin | 18081 | Redis Web 管理 | admin / admin |
 | rabbitmq | 5672 / 15672 | 消息队列 | admin / admin |
-| zookeeper | 2181 | DCC 动态配置 | 无密码 |
 | nacos | 8848 | 注册中心 + 配置中心 | nacos / nacos |
 | canal-server | 11111 | MySQL binlog 监听 | — |
 | canal-adapter | 18082 | binlog → ES 同步 | — |

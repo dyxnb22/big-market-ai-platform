@@ -11,7 +11,7 @@
 #   --skip-build    Skip mvn verify (useful when JARs are already built)
 #
 # By default this script does NOT auto-start Docker. Start the stack yourself:
-#   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+#   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 #   ./scripts/apply-stack-migrations.sh
 #   docker compose up --build -d
 # Then run this script (health poll + smoke only).
@@ -80,8 +80,8 @@ fi
 if [ "$START_STACK" = true ]; then
   echo "Step 2/4: Starting infrastructure stack"
   echo "-----------------------------------------------------------------"
-  echo "  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d"
-  if ! docker compose -f docs/dev-ops/docker-compose-environment.yml up -d; then
+  echo "  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch"
+  if ! docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch; then
     echo ""
     echo "Infrastructure stack failed to start."
     echo ""
@@ -161,7 +161,7 @@ else
     echo "Stack is not healthy and --start-stack was not set (no auto-start)."
     echo ""
     echo "Start manually:"
-    echo "  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d"
+    echo "  docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch"
     echo "  ./scripts/apply-stack-migrations.sh"
     echo "  docker compose up --build -d"
     echo ""

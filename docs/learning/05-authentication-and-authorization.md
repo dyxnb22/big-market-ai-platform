@@ -62,16 +62,16 @@ Redis 模式安全规则：
 
 ### 2. 运营接口（market-service）
 
-ERP、DCC、活动/策略预热等经网关走 **market-service**（`/api/**` 兜底路由），由 `OperationalAuthInterceptor` 拦截：
+ERP、活动/策略预热等经网关走 **market-service**（`/api/**` 兜底路由），由 `OperationalAuthInterceptor` 拦截：
 
 - `big-market-market-service/.../OperationalAuthInterceptor.java`
-- 注册路径：`/api/*/raffle/erp/**`、`/api/*/raffle/dcc/**`、`/api/*/raffle/activity/armory`、`/api/*/raffle/strategy/strategy_armory`
+- 注册路径：`/api/*/raffle/erp/**`、`/api/*/raffle/activity/armory`、`/api/*/raffle/strategy/strategy_armory`
 
 统一校验逻辑在 domain 层：
 
 - `big-market-domain/.../AdminAccessService.java` — 支持 `X-Admin-Token` 静态比对，或管理员 JWT + 白名单
 - HTTP：`OperationalAuthInterceptor` 校验通过后写入 `operationalAuthPassed` 请求属性（`OperationalAuthConstants`）
-- **Controller 不再重复** `hasAdminAccess()`；`ErpOperateController`、`DCCController` 直接执行业务，异常由 `GlobalExceptionHandler` 统一返回
+- **Controller 不再重复** `hasAdminAccess()`；`ErpOperateController` 直接执行业务，异常由 `GlobalExceptionHandler` 统一返回
 - Dubbo：`ErpOperateServiceRPC` 无 token 重载直接拒绝；带 token 重载经 `DubboRpcAuthSupport.requireAdmin()` 校验后再委托 Controller
 - 活动 Dubbo：`RaffleActivityServiceRPC` 对敏感无 token 重载拒绝；token 重载经 `AuthenticatedUserSupport` + application service
 - 策略 Dubbo：`RaffleStrategyServiceRPC` 同样拒绝 `strategyArmory` / `randomRaffle` 等无 token 重载
@@ -101,7 +101,7 @@ flowchart TD
     Token --> OpsApi["market-service\nOperationalAuthInterceptor"]
     Token --> AdminApi["admin-service\nAdminAuthInterceptor"]
     UserApi --> MarketUser["draw / sign-in / exchange ..."]
-    OpsApi --> MarketOps["ERP / DCC / armory"]
+    OpsApi --> MarketOps["ERP / armory"]
     AdminApi --> AdminCfg["AdminConfigController"]
     WebPublic["GET public/display"] --> AdminPublic["无 AdminAuth"]
     Logout["/api/v1/auth/logout"] --> Revocation["ITokenRevocationService"]

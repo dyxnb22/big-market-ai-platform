@@ -7,6 +7,8 @@
 # This compose file attaches all application services to that existing
 # network so they can reach mysql, redis, rabbitmq, nacos, elasticsearch, and
 # xxl-job-admin by container name without duplicating the infrastructure.
+# All services intentionally use restart: "no": Docker Desktop/daemon startup
+# must not automatically start this project or its infrastructure stack.
 #
 # BUILD FIRST: mvn clean package -DskipTests
 # THEN:        docker compose up --build -d
@@ -69,6 +71,14 @@ services:
       - TOKEN_REVOCATION_REDIS_ENABLED=true
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
+      - NACOS_CONFIG_SYNC_ENABLED=${NACOS_CONFIG_SYNC_ENABLED:-true}
+      - NACOS_CONFIG_DATA_ID=${NACOS_CONFIG_DATA_ID:-big-market-platform-config}
+      - NACOS_CONFIG_GROUP=${NACOS_CONFIG_GROUP:-DEFAULT_GROUP}
+      - NACOS_RUNTIME_DATA_ID=${NACOS_RUNTIME_DATA_ID:-big-market-runtime-switches}
+      - NACOS_RUNTIME_GROUP=${NACOS_RUNTIME_GROUP:-DEFAULT_GROUP}
+      - NACOS_CONFIG_NAMESPACE=${NACOS_CONFIG_NAMESPACE:-}
+      - NACOS_CONFIG_SYNC_FAIL_OPEN=${NACOS_CONFIG_SYNC_FAIL_OPEN:-false}
+      - JAVA_OPTS=-Dbig.market.config.store=/data/admin-config/platform-config.properties
     volumes:
       - ./data/admin-config:/data/admin-config
     networks:
@@ -98,10 +108,6 @@ services:
       - APP_JWT_SECRET=${JWT_SECRET:-change-me-in-docker-dev-only}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
-      - CHATBOT_PROVIDER=${CHATBOT_PROVIDER:-local}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
-      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-flash}
       - NACOS_HOST=nacos
       - NACOS_PORT=8848
       - REDIS_HOST=redis
@@ -111,6 +117,14 @@ services:
       - MYSQL_USER=${MYSQL_USER:-root}
       - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
       - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
+      - JAVA_OPTS=-Dbig.market.config.store=/data/chatbot-config/platform-config.properties
+      - NACOS_CONFIG_SYNC_ENABLED=${NACOS_CONFIG_SYNC_ENABLED:-true}
+      - NACOS_CONFIG_DATA_ID=${NACOS_CONFIG_DATA_ID:-big-market-platform-config}
+      - NACOS_CONFIG_GROUP=${NACOS_CONFIG_GROUP:-DEFAULT_GROUP}
+      - NACOS_RUNTIME_DATA_ID=${NACOS_RUNTIME_DATA_ID:-big-market-runtime-switches}
+      - NACOS_RUNTIME_GROUP=${NACOS_RUNTIME_GROUP:-DEFAULT_GROUP}
+      - NACOS_CONFIG_NAMESPACE=${NACOS_CONFIG_NAMESPACE:-}
+      - NACOS_CONFIG_SYNC_FAIL_OPEN=${NACOS_CONFIG_SYNC_FAIL_OPEN:-false}
       - CHATBOT_GATEWAY_URL=http://big-market-gateway:8080
     volumes:
       - ./data/chatbot-config:/data/chatbot-config
@@ -156,10 +170,15 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_SERVICE_REMOTE_READ_ENABLED=${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:-false}
-      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-true}
-      - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
-      - ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:-false}
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+      - NACOS_CONFIG_SYNC_ENABLED=${NACOS_CONFIG_SYNC_ENABLED:-true}
+      - NACOS_CONFIG_DATA_ID=${NACOS_CONFIG_DATA_ID:-big-market-platform-config}
+      - NACOS_CONFIG_GROUP=${NACOS_CONFIG_GROUP:-DEFAULT_GROUP}
+      - NACOS_RUNTIME_DATA_ID=${NACOS_RUNTIME_DATA_ID:-big-market-runtime-switches}
+      - NACOS_RUNTIME_GROUP=${NACOS_RUNTIME_GROUP:-DEFAULT_GROUP}
+      - NACOS_CONFIG_NAMESPACE=${NACOS_CONFIG_NAMESPACE:-}
+      - NACOS_CONFIG_SYNC_FAIL_OPEN=${NACOS_CONFIG_SYNC_FAIL_OPEN:-false}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
       - XXL_JOB_HOST=xxl-job-admin
@@ -175,6 +194,9 @@ services:
       timeout: 10s
       retries: 10
       start_period: 90s
+    depends_on:
+      big-market-account-service:
+        condition: service_healthy
 
   # ──────────── Message-job service (MQ consumers + XXL-Job handlers) ─────────
 
@@ -203,10 +225,6 @@ services:
       - RABBITMQ_USER=${RABBITMQ_USER:-admin}
       - RABBITMQ_PASS=${RABBITMQ_PASS:-admin}
       - DUBBO_REGISTRY_ADDRESS=nacos://nacos:8848
-      - ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:-true}
-      - ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED=${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:-false}
-      - ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}
-      - JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-true}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
       - XXL_JOB_HOST=xxl-job-admin
@@ -221,6 +239,9 @@ services:
       timeout: 10s
       retries: 10
       start_period: 90s
+    depends_on:
+      big-market-account-service:
+        condition: service_healthy
 
   # ─── Account service ──
 
@@ -274,10 +295,6 @@ services:
     restart: "no"
     ports:
       - "8080:8080"
-      # Compatibility for cached frontend bundles that called
-      # http://127.0.0.1:8098/api/v1 directly. Remove after all clients have
-      # picked up the versioned /api/v1 frontend.
-      - "8098:8080"
     environment:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=docker

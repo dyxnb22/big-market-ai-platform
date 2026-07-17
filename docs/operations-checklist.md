@@ -55,7 +55,7 @@ Check consumer/job logs primarily from `big-market-message-job-service`; use `bi
 - Stock-zero events are consumed by `ActivitySkuStockZeroConsumer`.
 - DLQ topology (`RabbitMQDlqConfig`): DLX `dlx` → `activity_sku_stock_zero.dlq`, `credit_adjust_success.dlq`, `send_rebate.dlq`, `send_award.dlq`.
 - DLQ persistence + `DlqReplayJob` in `RabbitMQDlqConfig` / `mq_dead_letter` table (`business_message_id` reactivation on re-DLQ; replay only `reviewed`).
-- Draw rate limit: Admin `system.rateLimiterSwitch` syncs to DCC; `RaffleDrawApplicationService.draw` uses `@RateLimiterAccessInterceptor`.
+- Draw rate limit: Admin `system.rateLimiterSwitch` publishes to Nacos runtime switches; `RaffleDrawApplicationService.draw` uses `@RateLimiterAccessInterceptor`.
 
 ## Log Checks
 
@@ -107,7 +107,7 @@ Gates (Maven + health + DDL/XXL + real raffle-award/account closure + Chat compe
 
 ```bash
 # Manual start (recommended locally — avoids surprise containers)
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 ./scripts/apply-stack-migrations.sh
 docker compose up --build -d
 

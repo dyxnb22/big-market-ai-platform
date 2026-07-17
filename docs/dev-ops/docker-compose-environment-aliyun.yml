@@ -127,19 +127,6 @@ services:
     volumes:
       - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
 
-  zookeeper:
-    image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/zookeeper:3.9.0
-    container_name: zookeeper
-    restart: "no"
-    hostname: zoo1
-    ports:
-      - 2181:2181
-    environment:
-      ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=zookeeper:2888:3888;2181
-    networks:
-      - my-network
-
   # canal-server 伪装成mysql的从库
   # docker cp canal-server:/home/admin/canal-server/conf/example/instance.properties /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal
   canal-server:

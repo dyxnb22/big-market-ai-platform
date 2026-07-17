@@ -252,7 +252,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 1. **用户 JWT 鉴权：** `TokenAuthInterceptor` 拦截所有 `*_by_token` 接口，从 `Authorization` 头解析 JWT，验签并提取 `userId` 写入 request attribute。控制器从 attribute 取 `userId`，不信任请求体中的 userId，防止身份伪造。
 
-2. **管理员鉴权：** ERP、DCC、armory 由 market-service 的 `OperationalAuthInterceptor` 拦截；平台配置由 admin-service 的 `AdminAuthInterceptor` 拦截。统一校验逻辑在 `AdminAccessService`：支持 `X-Admin-Token` 静态比对，或 JWT 的 `openId` 在 `app.admin.user-ids` 白名单内。
+2. **管理员鉴权：** ERP、armory 由 market-service 的 `OperationalAuthInterceptor` 拦截；平台配置由 admin-service 的 `AdminAuthInterceptor` 拦截。运行时开关由 Admin 发布到 Nacos，不暴露独立动态配置 HTTP 接口。统一校验逻辑在 `AdminAccessService`：支持 `X-Admin-Token` 静态比对，或 JWT 的 `openId` 在 `app.admin.user-ids` 白名单内。
 
 3. **JWT 注销：** `logout` 提取 JWT 的 `jti`，写入共享的 `ITokenRevocationService`：
    - **本地 `mvn spring-boot:run`（默认）：** 各进程使用 `InMemoryTokenRevocationService`，注销**不跨服务**同步。
@@ -277,13 +277,13 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 ---
 
-### Q18：DCC 动态配置是怎么实现的？
+### Q18：运行时动态配置是怎么实现的？
 
 **参考回答：**
 
-DCC（Dynamic Configuration Center）使用 ZooKeeper 实现。推荐 `POST /api/v1/raffle/dcc/update_config?key=&value=`（`GET` 仍兼容但已 `@Deprecated`）。`DCCController.updateConfig()` 向 ZooKeeper 的 `/big-market-dcc/config/{key}` 节点写入新值。应用启动时，`@DCCValue("degradeSwitch:close")` 注解的字段会监听对应 ZK 节点，节点值变更时自动更新字段值（反射注入），无需重启服务。
+运行时开关统一使用 Nacos 配置中心。Admin 保存 `system.degradeSwitch` 或 `system.rateLimiterSwitch` 时，发布到 `big-market-runtime-switches` DataId。Market 启动时拉取该配置并注册 listener；收到变更后整体替换内存中的 runtime snapshot，无需重启服务。
 
-`degradeSwitch` 是典型应用：紧急情况下通过 DCC 将其设为 `open`，`RaffleActivityController.draw()` 会立即返回熔断响应，关闭所有抽奖请求。
+`degradeSwitch` 是典型应用：紧急情况下在 Admin 配置中设为 `open`，Market 收到 Nacos 变更后，抽奖请求立即返回熔断响应。
 
 ---
 

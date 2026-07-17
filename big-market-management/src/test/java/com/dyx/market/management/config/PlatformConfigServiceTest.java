@@ -45,20 +45,13 @@ class PlatformConfigServiceTest {
     }
 
     @Test
-    void save_should_rollback_config_on_dcc_sync_failure() throws Exception {
+    void save_should_publish_runtime_switches_to_nacos() throws Exception {
         System.setProperty("big.market.config.store", TEST_STORE.getPath());
         PlatformConfigService service = new PlatformConfigService();
-        ReflectionTestUtils.setField(service, "dynamicConfigSyncPort", new DynamicConfigSyncPort() {
-            @Override
-            public void syncDegradeSwitch(String value) {
-                throw new RuntimeException("dcc sync failed");
-            }
-
-            @Override
-            public void syncRateLimiterSwitch(String value) {
-                throw new RuntimeException("dcc sync failed");
-            }
-        });
+        NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
+        org.mockito.Mockito.when(nacos.publishRuntimeSwitches(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(true);
+        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
         service.afterPropertiesSet();
 
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
@@ -67,13 +60,11 @@ class PlatformConfigServiceTest {
         request.setConfigValue("open");
         request.setDescription("rate limiter");
 
-        RuntimeException ex = Assertions.assertThrows(RuntimeException.class, () -> service.save(request));
-        Assertions.assertEquals("dcc sync failed", ex.getMessage());
-        Assertions.assertEquals("close", service.get("system", "rateLimiterSwitch").getConfigValue());
-
-        PlatformConfigService reloadService = new PlatformConfigService();
-        reloadService.afterPropertiesSet();
-        Assertions.assertEquals("close", reloadService.get("system", "rateLimiterSwitch").getConfigValue());
+        AdminConfigResponseDTO saved = service.save(request);
+        Assertions.assertTrue(saved.getNacosPublished());
+        org.mockito.Mockito.verify(nacos).publishRuntimeSwitches(
+                org.mockito.ArgumentMatchers.argThat(content -> content.contains("system.rateLimiterSwitch.value=open")
+                        && !content.contains("chatbot.apiKey")));
     }
 
     @Test

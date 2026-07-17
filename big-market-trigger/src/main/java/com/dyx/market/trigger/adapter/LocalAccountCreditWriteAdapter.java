@@ -2,7 +2,7 @@ package com.dyx.market.trigger.adapter;
 
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -14,7 +14,7 @@ import javax.annotation.Resource;
  * 不经 Dubbo、不依赖远程开关。
  */
 @Component
-@ConditionalOnProperty(name = "account.service.remote-credit-write.enabled", havingValue = "false", matchIfMissing = true)
+@Profile({"dev", "local", "test"})
 public class LocalAccountCreditWriteAdapter implements IAccountCreditWriteAdapter {
 
     @Resource

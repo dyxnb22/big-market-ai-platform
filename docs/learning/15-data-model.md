@@ -305,7 +305,7 @@ task
 
 ### 2.6.1 credit_award_task（积分发奖二级 Outbox）
 
-默认 Docker 学习栈开启 `ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=true` 时使用。权威说明见 [`docs/data-and-outbox.md`](../data-and-outbox.md)。
+所有环境都使用该积分发奖 Outbox；权威说明见 [`docs/data-and-outbox.md`](../data-and-outbox.md)。
 
 ```
 credit_award_task

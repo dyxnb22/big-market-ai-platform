@@ -31,10 +31,11 @@ dubbo:
     id: nacos-registry
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
 
-zookeeper:
-  sdk:
-    config:
-      connect-string: ${ZOOKEEPER_HOST:127.0.0.1}:2181
+nacos:
+  config:
+    sync:
+      enabled: ${NACOS_CONFIG_SYNC_ENABLED:true}
+      serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
 
 xxl:
   job:

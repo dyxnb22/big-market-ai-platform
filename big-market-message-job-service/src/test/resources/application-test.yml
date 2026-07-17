@@ -8,8 +8,6 @@ spring:
     client:
       hostname: localhost
       ip-address: 127.0.0.1
-    zookeeper:
-      enabled: false
   rabbitmq:
     addresses: ${RABBITMQ_HOST:127.0.0.1}
     port: ${RABBITMQ_PORT:5672}
@@ -56,18 +54,8 @@ nacos:
 default-credential-guard:
   enabled: false
 
-flag-mutual-exclusion-guard:
-  enabled: false
-
 outbox-schema-guard:
   enabled: false
-
-job-mutual-exclusion-guard:
-  enabled: false
-
-job:
-  remote-write-reconcile:
-    enabled: false
 
 xxl:
   job:

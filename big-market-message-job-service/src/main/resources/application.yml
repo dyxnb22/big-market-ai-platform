@@ -22,9 +22,6 @@ spring:
       credit_adjust_success: credit_adjust_success
   elasticsearch.datasource:
     driverClassName: org.elasticsearch.xpack.sql.jdbc.EsDriver
-  cloud:
-    zookeeper:
-      enabled: false
 
 server:
   port: ${SERVER_PORT:8085}
@@ -133,18 +130,7 @@ gateway:
     big-market-appId: ${GATEWAY_APP_ID:big-market}
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
 
-account:
-  service:
-    remote-credit-write:
-      enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
-    remote-quota-write:
-      enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
-  award-credit-outbox:
-    enabled: ${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:false}
-
 job:
-  shared-task-dispatch:
-    credit-award-disabled: ${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:false}
   credit-pay-delivery:
     max-retries: ${JOB_CREDIT_PAY_DELIVERY_MAX_RETRIES:5}
     scan-limit: ${JOB_CREDIT_PAY_DELIVERY_SCAN_LIMIT:20}
@@ -157,7 +143,6 @@ job:
     max-consume-failures: ${JOB_DLQ_REPLAY_MAX_CONSUME_FAILURES:5}
     scan-limit: ${JOB_DLQ_REPLAY_SCAN_LIMIT:50}
   remote-write-reconcile:
-    enabled: ${JOB_REMOTE_WRITE_RECONCILE_ENABLED:true}
     max-retries: ${JOB_REMOTE_WRITE_RECONCILE_MAX_RETRIES:5}
     scan-limit: ${JOB_REMOTE_WRITE_RECONCILE_SCAN_LIMIT:50}
   chat-refund-reconcile:

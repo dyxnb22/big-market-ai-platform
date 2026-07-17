@@ -22,7 +22,7 @@ Maps Spring profiles and compose overlays used by this learning stack. Prefer **
 
 ```bash
 # Infra + apps (learning / docker profile)
-docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 docker compose up --build -d
 
 # Secure overlay

@@ -90,10 +90,6 @@
         </dependency>
         <dependency>
             <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-starter-dcc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.dyx.market</groupId>
             <artifactId>big-market-starter-ratelimiter</artifactId>
         </dependency>
         <dependency>

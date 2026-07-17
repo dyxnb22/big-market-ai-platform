@@ -17,7 +17,8 @@ import com.dyx.market.domain.activity.model.entity.UnpaidActivityOrderEntity;
  * <ul>
  *   <li>RaffleActivityPartakeService 配额扣减 — 暂缓（风险较高，需独立 RPC）</li>
  * </ul>
- * 默认走本地领域服务（flag=false）；仅当 {@code account.service.remote-quota-write.enabled=true} 时启用远程 Dubbo 调用。
+ * 实现由 Spring Profile 选择：本地 Profile 委托本地领域服务，Docker Profile 经 Dubbo
+ * 调用 account-service；远程失败只进入既有对账/补偿路径，不回退本地写入。
  */
 public interface IAccountQuotaWriteAdapter {
 

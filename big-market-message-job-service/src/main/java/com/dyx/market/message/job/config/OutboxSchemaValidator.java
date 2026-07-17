@@ -17,8 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Outbox 表结构校验：当 {@code account.award-credit-outbox.enabled=true} 时，
- * 启动前检测各分片库中 {@code credit_award_task_000..003} 是否存在，缺失则 fail-fast。
+ * Outbox 表结构校验：启动前检测各分片库中 {@code credit_award_task_000..003} 是否存在，
+ * 缺失则 fail-fast。积分奖固定使用该 Outbox，不再由业务开关切换。
  * <p>
  * 回滚：设 {@code OUTBOX_SCHEMA_GUARD_ENABLED=false} 可禁用。
  */
@@ -38,9 +38,6 @@ public class OutboxSchemaValidator implements CommandLineRunner {
     @Value("${outbox-schema-guard.enabled:true}")
     private boolean guardEnabled;
 
-    @Value("${account.award-credit-outbox.enabled:false}")
-    private boolean awardCreditOutboxEnabled;
-
     @Resource
     @Qualifier("mysqlDataSource")
     private DataSource dataSource;
@@ -54,10 +51,6 @@ public class OutboxSchemaValidator implements CommandLineRunner {
             log.warn("[OutboxSchemaValidator] DISABLED — missing outbox tables will not be caught at startup");
             return;
         }
-        if (!awardCreditOutboxEnabled) {
-            return;
-        }
-
         List<String> missing = new ArrayList<>();
         for (int dbIdx = 1; dbIdx <= 2; dbIdx++) {
             dbRouter.setDBKey(dbIdx);

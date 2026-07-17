@@ -1,5 +1,2 @@
-# Embedded local mode (mvn spring-boot:run): local credit writes, no remote account RPC.
-account:
-  service:
-    remote-credit-write:
-      enabled: false
+# Embedded local mode (mvn spring-boot:run) uses the local account adapters selected by
+# the local/dev Spring Profile.

@@ -1,7 +1,7 @@
 package com.dyx.market.starter.ratelimiter;
 
-import com.dyx.market.types.annotations.DCCValue;
 import com.dyx.market.types.annotations.RateLimiterAccessInterceptor;
+import com.dyx.market.types.config.RuntimeConfigHolder;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.RateLimiter;
@@ -30,9 +30,7 @@ import java.util.concurrent.TimeUnit;
 @Aspect
 public class RateLimiterAspect {
 
-    /** DCC 开关：close 时跳过限流逻辑。 */
-    @DCCValue("rateLimiterSwitch:close")
-    private String rateLimiterSwitch;
+    private final RuntimeConfigHolder runtimeConfigHolder;
 
     /** 各限流 key 对应的令牌桶，1 分钟无访问后过期。 */
     private final Cache<String, RateLimiter> accessRecord = CacheBuilder.newBuilder()
@@ -44,6 +42,10 @@ public class RateLimiterAspect {
             .expireAfterWrite(24, TimeUnit.HOURS)
             .build();
 
+    public RateLimiterAspect(RuntimeConfigHolder runtimeConfigHolder) {
+        this.runtimeConfigHolder = runtimeConfigHolder;
+    }
+
     @Pointcut("@annotation(com.dyx.market.types.annotations.RateLimiterAccessInterceptor)")
     public void rateLimiterPoint() {
     }
@@ -53,7 +55,7 @@ public class RateLimiterAspect {
      */
     @Around("rateLimiterPoint() && @annotation(rateLimiterAccessInterceptor)")
     public Object intercept(ProceedingJoinPoint jp, RateLimiterAccessInterceptor rateLimiterAccessInterceptor) throws Throwable {
-        if (StringUtils.isBlank(rateLimiterSwitch) || "close".equals(rateLimiterSwitch)) {
+        if (!runtimeConfigHolder.isRateLimiterEnabled()) {
             return jp.proceed();
         }
 

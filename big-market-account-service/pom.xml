@@ -69,10 +69,6 @@
             <artifactId>nacos-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.elasticsearch.plugin</groupId>
             <artifactId>x-pack-sql-jdbc</artifactId>
         </dependency>
@@ -109,10 +105,6 @@
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-starter-db-router</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.dyx.market</groupId>
-            <artifactId>big-market-starter-dcc</artifactId>
         </dependency>
         <dependency>
             <groupId>com.dyx.market</groupId>

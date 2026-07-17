@@ -5,14 +5,14 @@
 ## 结论
 
 **有条件冻结。** 当前最终拓扑已完成 clean Maven 构建、静态安全门禁、
-Mapper/DDL 门禁和 Compose 配置校验。Docker 未运行，动态 acceptance、
+Mapper/DDL 门禁、Compose 配置校验和核心 Docker smoke。完整 acceptance、
 fresh 空卷和完整 secure overlay 尚未验证，因此不能写成“全环境已验证”
 或“生产就绪”。
 
 本仓库冻结的是一套可复现、可讲解的本地微服务学习样本，不是生产发布基线。
 详细证据与限制见 docs/audit/2026-07-17-learning-freeze-audit.md。
 
-## 当前最终拓扑（动态验收待补跑）
+## 当前最终拓扑（核心 Docker smoke 已通过）
 
     big-market-web :5173
            |
@@ -39,19 +39,20 @@ user_award_record.award_state=completed 表示发奖已被持久化接管，不�
 
 | 项目 | 2026-07-17 结果 |
 | --- | --- |
-| Maven | 20 个 reactor 模块通过 |
+| Maven | 19 个 reactor 模块通过 |
 | Mapper/DDL 门禁 | 18/18 通过 |
 | 运行时安全门禁 | 98/98 通过 |
 | Compose 配置 | 默认与 secure 配置均通过 |
 | 旧路径扫描 | 无残留 |
 | JSON、Shell 语法和 git diff 检查 | 通过 |
-| 动态 acceptance | 待 Docker daemon 可用后执行 |
+| 核心 Docker smoke | 20/20 通过；7 个应用健康、Web 200 |
+| 完整 acceptance | 尚未运行 |
 
 静态门禁不能替代 fresh、secure 和业务状态验收。
 
 ## 最短启动与验收
 
-    docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
+    docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
     docker compose up --build -d
     npm install
     npx playwright install chromium
@@ -90,7 +91,7 @@ secure overlay 需要非默认 JWT、内部 RPC、管理和 XXL 凭据：
 
 ## 已知边界
 
-- 最终 7 服务拓扑尚未执行 fresh 空卷、完整 secure overlay 和全量 acceptance。
+- 最终 7 服务拓扑已执行核心 Docker smoke，尚未执行 fresh 空卷、完整 secure overlay 和全量 acceptance。
 - 默认拓扑仍共享物理 MySQL，DAO 归属主要靠文档和部分 ArchUnit 规则；
   Mapper XML 有多份启动器副本。
 - account 的失败注入与完整 Spring Context 覆盖仍需加强。

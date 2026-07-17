@@ -11,7 +11,7 @@ Older volumes may need `docs/dev-ops/mysql/sql/z-xxl-job-extra-handlers.sql` for
 | `SendMessageTaskJob_DB1` | 2 | 1 | Outbox MQ republish for shard db01; not a money debit itself. |
 | `SendMessageTaskJob_DB2` | 3 | 1 | Same for shard db02. |
 | `UpdateActivitySkuStockJob` | 4 | 1 | Flushes activity SKU stock queue; idempotent by `(sku, lockSurplus)` ledger. |
-| `DispatchCreditAwardTaskJob_DB1` | 5 | 1 | Award-credit outbox → account credit. **Money path**; Docker enables `account.award-credit-outbox`, account-side `out_business_no=award_order_id` provides idempotency. A bare non-Docker launcher still defaults the bean off. |
+| `DispatchCreditAwardTaskJob_DB1` | 5 | 1 | Award-credit outbox → account credit. **Money path**; the handler is always registered and account-side `out_business_no=award_order_id` provides idempotency. |
 | `DispatchCreditAwardTaskJob_DB2` | 6 | 1 | Same for db02. |
 | `StrategyAwardStockConfirmJob_DB1` | 7 | 1 | Confirms pending stock reservations after award save; compensation, not a new debit. |
 | `StrategyAwardStockConfirmJob_DB2` | 8 | 1 | Same for db02. |

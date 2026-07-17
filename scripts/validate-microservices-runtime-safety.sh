@@ -4,7 +4,7 @@
 # WARNING: This script can report PASS while Spring Context / mapper / XXL
 # alignment issues remain. Do not use it
 # as the sole gate for boot or closed-loop readiness.
-# occurred in default credentials, mutually exclusive flag paths,
+# occurred in default credentials, profile-selected account paths,
 # shared mapper copies, learning DDL isolation, or the presence of safety
 # hardening classes.
 #
@@ -20,6 +20,7 @@ set -u
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
 FAIL=0
+MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
 
 pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
@@ -246,7 +247,7 @@ assert_pattern_present "DefaultCredentialGuard detects dev profiles" "$GUARD_JAV
 assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_JAVA" '89iu7o8732ijd9114'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 2: Flag mutual-exclusion guardrails (config-file defaults)
+# Section 2: Profile-selected account paths and fixed award Outbox
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 2.1 Final topology: local strategy/rebate providers ──"
@@ -263,55 +264,38 @@ assert_pattern_present "Local strategy read adapter remains" \
   "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalStrategyReadAdapter.java" \
   'class LocalStrategyReadAdapter'
 echo ""
-echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ──"
+echo "── 2.2 Profile-selected account routing ──"
 
-# Shared task dispatch (SendMessageTaskJob) must NOT be active while
-# per-domain outbox dispatchers (DispatchCreditAwardTaskJob) are enabled.
-MESSAGE_JOB_YML="$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
-COMPOSE_OUTBOX_ENABLED=0
-COMPOSE_SHARED_TASK_DISABLED=0
-grep -q 'ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED=${ACCOUNT_AWARD_CREDIT_OUTBOX_ENABLED:-true}' "$COMPOSE_MAIN" 2>/dev/null \
-  && COMPOSE_OUTBOX_ENABLED=1
-grep -q 'JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED=${JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD_DISABLED:-true}' "$COMPOSE_MAIN" 2>/dev/null \
-  && COMPOSE_SHARED_TASK_DISABLED=1
-if [[ -f "$MESSAGE_JOB_YML" ]]; then
-  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "account.award-credit-outbox.enabled" 2>/dev/null)" == "true" ]]; then
-    OUTBOX_ENABLED=1
-  else
-    OUTBOX_ENABLED=0
-  fi
-  if [[ "$(yaml_default_value "$MESSAGE_JOB_YML" "job.shared-task-dispatch.credit-award-disabled" 2>/dev/null)" == "true" ]]; then
-    SHARED_TASK_DISABLED=1
-  else
-    SHARED_TASK_DISABLED=0
-  fi
-  if [[ "$OUTBOX_ENABLED" -gt 0 && "$SHARED_TASK_DISABLED" -eq 0 ]]; then
-    fail "message-job outbox enabled but shared-task-dispatch.credit-award-disabled is not true — dual-dispatch risk"
-  else
-    pass "message-job outbox+shared-task config: outbox_enabled_default=$OUTBOX_ENABLED shared_task_disabled=$SHARED_TASK_DISABLED (safe)"
-  fi
-  if [[ "$COMPOSE_OUTBOX_ENABLED" -eq 1 && "$COMPOSE_SHARED_TASK_DISABLED" -eq 1 ]]; then
-    pass "Docker default selects award-credit outbox and disables the shared credit-award path"
-  else
-    fail "Docker default must enable award-credit outbox and disable shared credit-award dispatch"
-  fi
-else
-  pass "message-job config absent (skip)"
-fi
+assert_pattern_present "Remote account reads are shared" \
+  "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/RemoteAccountReadAdapter.java" \
+  'class RemoteAccountReadAdapter'
+assert_pattern_present "Remote account reads fail closed" \
+  "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/RemoteAccountReadAdapter.java" \
+  'RemoteAccountReadAdapter.*account-service|account-service 账户读取失败'
+assert_pattern_present "Remote activity account port is Docker-profiled" \
+  "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/account/RemoteActivityAccountPort.java" \
+  '@Profile\("docker"\)'
+assert_pattern_present "Local activity account port is local-profiled" \
+  "$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/port/LocalActivityAccountPort.java" \
+  '@Profile\(\{"dev", "local", "test"\}\)'
+assert_pattern_absent \
+  "No runtime account routing flags remain" \
+  'ACCOUNT_SERVICE_REMOTE_(READ|CREDIT_WRITE|QUOTA_WRITE|QUOTA_DECREMENT)|account\.service\.remote-(read|credit-write|quota-write|quota-decrement)\.enabled' \
+  "$REPO_ROOT/big-market-market-service" "$REPO_ROOT/big-market-message-job-service" \
+  "$REPO_ROOT/big-market-trigger" "$REPO_ROOT/big-market-infrastructure" \
+  "$REPO_ROOT/big-market-domain" "$REPO_ROOT/docker-compose.yml" "$REPO_ROOT/docs"
 
 echo ""
-echo "── 2.3 Account quota routing validator present ──"
+echo "── 2.3 Fixed credit award Outbox ──"
 
-FLAG_VALIDATOR="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/market/market/config/FlagMutualExclusionValidator.java"
-JOB_VALIDATOR="$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/JobMutualExclusionValidator.java"
-
-assert_file "FlagMutualExclusionValidator.java exists" "$FLAG_VALIDATOR"
-assert_pattern_present "FlagMutualExclusionValidator checks account quota routing" "$FLAG_VALIDATOR" 'remoteQuotaDecrement.*remoteQuotaWrite|remote-quota-decrement.*remote-quota-write'
-assert_pattern_present "FlagMutualExclusionValidator has disable flag" "$FLAG_VALIDATOR" 'flag-mutual-exclusion-guard\.enabled'
-
-assert_file "JobMutualExclusionValidator.java exists" "$JOB_VALIDATOR"
-assert_pattern_present "JobMutualExclusionValidator checks outbox vs shared-task" "$JOB_VALIDATOR" 'awardCreditOutboxEnabled.*sharedTaskCreditAwardDisabled|credit-award.*both'
-assert_pattern_present "JobMutualExclusionValidator has disable flag" "$JOB_VALIDATOR" 'JOB_MUTUAL_EXCLUSION_GUARD_ENABLED'
+AWARD_SUPPORT="$REPO_ROOT/big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardCreditGrantSupport.java"
+AWARD_JOB="$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/DispatchCreditAwardTaskJob.java"
+PROJECT_DIRS=("$REPO_ROOT"/big-market-* "$REPO_ROOT/docs")
+assert_pattern_present "AwardRepository always writes credit outbox" "$AWARD_SUPPORT" 'saveWithCreditOutbox'
+assert_pattern_absent "Direct award credit write path removed" 'saveWithDirectCredit|awardCreditOutboxEnabled|account\.award-credit-outbox\.enabled' "$AWARD_SUPPORT"
+assert_pattern_absent "Credit award dispatcher has no feature switch" 'ConditionalOnProperty|account\.award-credit-outbox\.enabled' "$AWARD_JOB"
+assert_pattern_present "Outbox schema guard remains" "$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/OutboxSchemaValidator.java" 'credit_award_task_000'
+assert_pattern_absent "Obsolete shared-task credit flags removed" 'ACCOUNT_AWARD_CREDIT_OUTBOX|JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD|shared-task-dispatch|job-mutual-exclusion-guard|flag-mutual-exclusion-guard' "$REPO_ROOT/docker-compose.yml" "${PROJECT_DIRS[@]}"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 3: Token revocation service presence

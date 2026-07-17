@@ -6,6 +6,7 @@ import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
  */
 @Component
 @Primary
+@Profile({"dev", "local", "test"})
 public class MessageJobLocalAccountReadAdapter implements IAccountReadAdapter {
 
     @Resource

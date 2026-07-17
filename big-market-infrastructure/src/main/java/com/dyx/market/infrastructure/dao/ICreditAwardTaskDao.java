@@ -10,11 +10,11 @@ import java.util.List;
 /**
  * 积分发奖 Outbox 表 {@code credit_award_task} 的 DAO（默认实现）。
  * <p>
- * {@code insert}：在 {@code saveGiveOutPrizesAggregate} 事务内、outbox 开关开启时调用。
+ * {@code insert}：在 {@code saveGiveOutPrizesAggregate} 事务内调用。
  * {@code queryPendingTasks}：由 {@code DispatchCreditAwardTaskJob} 轮询；调用方先设置分库分表键。
  * {@code updateDispatched} / {@code updateRetryFailed}：通过 {@code @DBRouter} 按 userId 路由。
  * <p>
- * 分表 {@code credit_award_task_000..003} 需执行 {@code docs/sql/credit-award-task-outbox.sql} 并开启对应特性开关。
+ * 分表 {@code credit_award_task_000..003} 需执行 {@code docs/sql/credit-award-task-outbox.sql}。
  */
 @Mapper
 @DBRouterStrategy(splitTable = true)

@@ -1,5 +1,13 @@
 server:
   port: ${SERVER_PORT:8083}
+
+nacos:
+  config:
+    sync:
+      enabled: ${NACOS_CONFIG_SYNC_ENABLED:false}
+      serverAddr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
+      runtimeDataId: ${NACOS_RUNTIME_DATA_ID:big-market-runtime-switches}
+      runtimeGroup: ${NACOS_RUNTIME_GROUP:DEFAULT_GROUP}
   tomcat:
     mbeanregistry:
       enabled: true
@@ -25,9 +33,6 @@ app:
 spring:
   profiles:
     active: dev
-  cloud:
-    zookeeper:
-      enabled: false
   rabbitmq:
     username: ${RABBITMQ_USER:admin}
     password: ${RABBITMQ_PASS:admin}
@@ -130,31 +135,11 @@ dubbo:
   scan:
     base-packages: com.dyx.market.trigger
 
-zookeeper:
-  sdk:
-    config:
-      enable: false
-      base-sleep-time-ms: 1000
-      max-retries: 3
-      session-timeout-ms: 18000
-      connection-timeout-ms: 30000
-
 gateway:
   config:
     enable: true
     big-market-appId: ${GATEWAY_APP_ID:big-market}
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
-
-account:
-  service:
-    remote-read:
-      enabled: ${ACCOUNT_SERVICE_REMOTE_READ_ENABLED:false}
-    remote-credit-write:
-      enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}
-    remote-quota-write:
-      enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_WRITE_ENABLED:false}
-    remote-quota-decrement:
-      enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
 activity:
   embedded-rpc-provider:

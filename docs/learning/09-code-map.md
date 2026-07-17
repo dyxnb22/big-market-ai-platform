@@ -110,7 +110,6 @@
 ## Admin And Chatbot
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/ErpOperateController.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/http/DCCController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/ErpOperateServiceRPC.java`
 - `big-market-admin-service/src/main/java/com/dyx/market/admin/AdminConfigController.java`（含 `public/display`）
 - `big-market-management/src/main/java/com/dyx/market/management/config/PlatformConfigService.java`
@@ -132,4 +131,4 @@
 - `big-market-starter-web` — `TraceIdFilter`、`CorsAutoConfiguration`、`RedissonSingleServerSupport`、线程池优雅关闭
 - `big-market-starter-data` — `ThreadPoolAutoConfiguration` + `thread.pool.executor.config`（market/account/rebate/message-job 共用）
 - `big-market-starter-dubbo` — 服务间 Dubbo 内部令牌 Filter（`app.internal-rpc`，默认 `enforce=false`）
-- `big-market-starter-db-router` / `big-market-starter-dcc` / `big-market-starter-ratelimiter`
+- `big-market-starter-db-router` / `big-market-starter-ratelimiter`

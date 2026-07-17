@@ -8,9 +8,6 @@ spring:
     active: dev
   application:
     name: big-market-account-service
-  cloud:
-    zookeeper:
-      enabled: false
   rabbitmq:
     username: ${RABBITMQ_USER:admin}
     password: ${RABBITMQ_PASS:admin}

@@ -9,6 +9,12 @@ ENV TZ=Asia/Shanghai
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# Compose healthchecks use curl. Keep the runtime image minimal while making
+# the healthcheck dependency explicit and reproducible.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 ADD ${MODULE_NAME}/target/${MODULE_NAME}.jar /app.jar
 
 ENTRYPOINT ["sh", "-c", "java -jar $JAVA_OPTS /app.jar $PARAMS"]
