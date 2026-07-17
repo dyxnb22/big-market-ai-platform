@@ -3,6 +3,7 @@
 #   export JWT_SECRET=... APP_INTERNAL_RPC_TOKEN=... ADMIN_TOKEN=... \
 #          CHAT_INTERNAL_SERVICE_TOKEN=... XXL_JOB_TOKEN=... APP_AUTH_DEV_USERS=...
 #   docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
+#   ./scripts/start-provider-mode.sh --secure fulfillment
 #
 # Requires non-default secrets; DefaultCredentialGuard refuses known defaults when
 # SPRING_PROFILES_ACTIVE includes "secure".
@@ -40,6 +41,12 @@ services:
     environment:
       <<: *secure-env
   big-market-fulfillment-service:
+    environment:
+      <<: *secure-env
+  big-market-rebate-service:
+    environment:
+      <<: *secure-env
+  big-market-strategy-service:
     environment:
       <<: *secure-env
   big-market-gateway:

@@ -81,7 +81,7 @@ mvn clean package -DskipTests 2>&1 | grep -E "BUILD|ERROR" | head -20
 
 ## 第四步：启动应用服务
 
-### 方式一：用 Docker Compose 启动全部服务（推荐学习用）
+### 方式一：用 Docker Compose 启动默认服务（推荐学习用）
 
 ```bash
 # 从项目根目录（需先完成第三步 mvn package）
@@ -99,11 +99,32 @@ docker compose up --build -d
 | big-market-chatbot-service | 8084 | AI Chat |
 | big-market-message-job-service | 8085 | MQ 消费 + XXL-Job |
 | big-market-account-service | 8086 | 积分/额度 RPC |
-| big-market-fulfillment-service | 8087 | 发奖 RPC |
-| big-market-rebate-service | 8088 | 返利 RPC（默认 embedded，可不启动） |
-| big-market-strategy-service | 8089 | 策略 RPC（默认 embedded，可不启动） |
+| big-market-fulfillment-service | 8087 | 发奖 RPC（可选独立 Provider，默认不启动） |
+| big-market-rebate-service | 8088 | 返利 RPC（可选独立 Provider，默认 embedded） |
+| big-market-strategy-service | 8089 | 策略 RPC（可选独立 Provider，默认 embedded） |
 
-> **注意：** `rebate-service` 和 `strategy-service` 默认以 embedded 模式内嵌在 `market-service` 中运行，不需要单独启动对应容器。
+> **注意：** 默认 `docker compose up --build -d` 只启动 8080-8086。若需要独立 Provider，请使用辅助脚本：
+>
+> ```bash
+> ./scripts/start-provider-mode.sh fulfillment
+> ./scripts/start-provider-mode.sh rebate-strategy
+> ```
+>
+> 辅助脚本会设置互斥开关，并用 `--force-recreate` 重建 `market-service` 或
+> `message-job-service`。不要在默认栈已启动后只单独拉起 Provider，否则消费者仍会使用旧配置。
+>
+> ```bash
+> # 同时启用 remote fulfillment、rebate、strategy：
+> ./scripts/start-provider-mode.sh all
+> ```
+>
+> secure 模式先导出 [docker-compose.secure.yml](../../docker-compose.secure.yml) 要求的变量，再追加 `--secure`：
+>
+> ```bash
+> ./scripts/start-provider-mode.sh --secure rebate-strategy
+> ```
+>
+> `rebate-service` 和 `strategy-service` 默认以 embedded 模式内嵌在 `market-service` 中运行，不需要单独启动对应容器。
 >
 > **Token 注销：** Docker 栈为 `auth-service`、`admin-service`、`market-service` 设置了
 > `TOKEN_REVOCATION_REDIS_ENABLED=true`，logout 写入 Redis 黑名单后三服务均可校验。
@@ -115,14 +136,13 @@ docker compose up --build -d
 最小化启动顺序（先后顺序很重要）：
 
 ```bash
-# 1. 先启动下游：auth/admin/chatbot/market/account/fulfillment/message-job
+# 1. 先启动下游：auth/admin/chatbot/market/account/message-job
 # 每个命令应从项目根目录在独立终端执行，例如：
 mvn -pl big-market-auth-service spring-boot:run
 mvn -pl big-market-admin-service spring-boot:run
 mvn -pl big-market-chatbot-service spring-boot:run
 mvn -pl big-market-market-service spring-boot:run
 mvn -pl big-market-account-service spring-boot:run
-mvn -pl big-market-fulfillment-service spring-boot:run
 mvn -pl big-market-message-job-service spring-boot:run
 
 # 2. 下游健康后再启动 gateway
@@ -130,6 +150,14 @@ mvn -pl big-market-gateway spring-boot:run
 ```
 
 手工模式容易漏掉 Docker compose 提供的环境变量和跨服务 Redis token 吊销，因此只适合单服务调试；完整学习验收使用方式一。
+
+可选：远程发奖或独立 provider 调试时，再单独启动：
+
+```bash
+mvn -pl big-market-fulfillment-service spring-boot:run
+mvn -pl big-market-rebate-service spring-boot:run
+mvn -pl big-market-strategy-service spring-boot:run
+```
 
 ---
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Validate Prometheus config and alert rules (promtool). Static target check for 8080-8087.
+# Validate Prometheus config and alert rules (promtool). Static target check for 8080-8086.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -50,7 +50,7 @@ else
 fi
 
 missing=0
-for port in 8080 8081 8082 8083 8084 8085 8086 8087; do
+for port in 8080 8081 8082 8083 8084 8085 8086; do
   if ! grep -q ":${port}'" "$PROM_YML"; then
     echo "  FAIL  prometheus.yml missing scrape target port $port" >&2
     missing=1
@@ -59,6 +59,6 @@ done
 if [ "$missing" -ne 0 ]; then
   exit 1
 fi
-echo "  OK  scrape targets 8080-8087 present"
+echo "  OK  scrape targets 8080-8086 present"
 
 echo "=== Prometheus validation OK ==="

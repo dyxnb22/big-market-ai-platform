@@ -74,11 +74,11 @@ int tbIdx = (hash / dbCount) % tbCount;               // 表号：0~3
 
 **理由：**
 
-1. **学习环境简化：** 不需要启动 10 个进程，减少本地资源消耗。
+1. **学习环境简化：** 默认不需要启动 10 个进程，只需启动 7 个应用服务，减少本地资源消耗。
 2. **渐进式演进：** 业务验证阶段先在单进程内调通，稳定后再剥离为独立服务，降低风险。
 3. **Dubbo 的透明性：** 无论是 embedded 还是独立服务，调用方（market-service 的 Consumer）代码完全一致，切换只改配置。
 
-**切换方法：** 设置 `strategy.embedded-rpc-provider.enabled=false` + `strategy.service.remote-read.enabled=true`，再启动独立的 `big-market-strategy-service`，market-service 就会通过 Nacos 发现并 RPC 调用它。
+**切换方法：** 使用 `scripts/start-provider-mode.sh rebate-strategy`。脚本会关闭 market 内的 embedded Provider、开启 remote read/create，并重建 market-service 后再启动独立 Provider，避免重复注册。
 
 ---
 

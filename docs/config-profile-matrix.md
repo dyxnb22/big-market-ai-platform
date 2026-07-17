@@ -15,8 +15,9 @@ Maps Spring profiles and compose overlays used by this learning stack. Prefer **
 | File | Role |
 | --- | --- |
 | `docs/dev-ops/docker-compose-environment.yml` | Shared infra (Nacos, MySQL, Redis, RabbitMQ, XXL, Prometheus, …) |
-| `docker-compose.yml` | Application services on `dev-ops_my-network` |
-| `docker-compose.secure.yml` | Secure overlay (profiles + env requirements) |
+| `docker-compose.yml` | Default application services (8080-8086) on `dev-ops_my-network` |
+| `docker-compose.providers.yml` | Optional dedicated providers (fulfillment/rebate/strategy: 8087-8089) |
+| `docker-compose.secure.yml` | Secure overlay for default and optional provider services (profiles + env requirements) |
 
 ## Quick commands
 
@@ -27,6 +28,11 @@ docker compose up --build -d
 
 # Secure overlay
 docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
+
+# Optional provider mode; helper recreates market/message-job consumers as needed
+./scripts/start-provider-mode.sh fulfillment
+./scripts/start-provider-mode.sh rebate-strategy
+# Add --secure after exporting the required secure variables for secure mode.
 ```
 
 See also: `docs/operations-checklist.md`, `docs/MICROSERVICES.md`.

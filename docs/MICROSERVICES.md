@@ -1,29 +1,29 @@
 # 微服务架构
 
-最后修订：2026-07-11。
+最后修订：2026-07-17。
 
 本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot 服务、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。
 
-**就绪说明：** 默认复用栈已于 2026-07-11 通过完整 acceptance，但 fresh 空卷和完整 secure overlay 未验证，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`；历史 BM 计划不作为当前状态来源。
+**就绪说明：** 历史默认复用栈已于 2026-07-11 通过完整 acceptance；本工作树的 7 服务默认拓扑尚未重新执行完整 acceptance，fresh 空卷和完整 secure overlay 也未验证，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`；历史 BM 计划不作为当前状态来源。
 
 本文档是当前架构的 authoritative entry point（权威入口文档）。较早的实现说明仅作为历史归档材料保留在 `docs/archive/` 下。
 
 ## 服务列表
 
-| 服务 | 端口 | 默认部署 | 职责 |
+| 服务 | 端口 | 部署定位 / 证据 | 职责 |
 | --- | ---: | --- | --- |
-| `big-market-gateway` | 8080 | 已验证 | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
-| `big-market-auth-service` | 8081 | 已验证 | 登录、JWT 签发、Token 校验、登出吊销 |
-| `big-market-admin-service` | 8082 | 已验证 | 管理端配置 API 与 Nacos 配置同步 |
-| `big-market-market-service` | 8083 | 已验证 | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
-| `big-market-chatbot-service` | 8084 | 已验证 | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
-| `big-market-message-job-service` | 8085 | 已验证 | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
-| `big-market-account-service` | 8086 | 已验证 | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
-| `big-market-fulfillment-service` | 8087 | 健康已验证；默认积分奖不必经远程 RPC | 奖品履约 RPC provider |
-| `big-market-rebate-service` | 8088 | 可选独立部署 | 行为返利创建/查询 RPC 契约与返利任务归属 |
-| `big-market-strategy-service` | 8089 | 可选独立部署 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
+| `big-market-gateway` | 8080 | 默认栈；历史 acceptance | API 网关、路由断言、Trace ID 透传、Resilience4j 降级响应 |
+| `big-market-auth-service` | 8081 | 默认栈；历史 acceptance | 登录、JWT 签发、Token 校验、登出吊销 |
+| `big-market-admin-service` | 8082 | 默认栈；历史 acceptance | 管理端配置 API 与 Nacos 配置同步 |
+| `big-market-market-service` | 8083 | 默认栈；历史 acceptance | 核心抽奖 HTTP API、活动操作、ERP/DCC 端点、本地领域编排 |
+| `big-market-chatbot-service` | 8084 | 默认栈；历史 acceptance | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
+| `big-market-message-job-service` | 8085 | 默认栈；历史 acceptance | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
+| `big-market-account-service` | 8086 | 默认栈；历史 acceptance | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
+| `big-market-fulfillment-service` | 8087 | 可选独立部署；未动态验收 | 奖品履约 RPC provider |
+| `big-market-rebate-service` | 8088 | 可选独立部署；未动态验收 | 行为返利创建/查询 RPC 契约与返利任务归属 |
+| `big-market-strategy-service` | 8089 | 可选独立部署；未动态验收 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
 
-> **部署默认：** `big-market-rebate-service` / `big-market-strategy-service` **不是**默认 compose 必启服务。本地学习栈由 `big-market-market-service` 通过 embedded Dubbo provider（`rebate.embedded-rpc-provider.enabled=true`、`strategy.embedded-rpc-provider.enabled=true`）托管契约。需要独立进程时，将对应 `embedded-rpc-provider.enabled=false` 并启动 8088/8089。
+> **部署默认：** `docker-compose.yml` 默认只启动 7 个应用服务（8080-8086）。`big-market-fulfillment-service` / `big-market-rebate-service` / `big-market-strategy-service` 是可选独立 Provider，不在默认 compose。`rebate` 与 `strategy` 默认由 `big-market-market-service` 的 embedded Dubbo provider（`rebate.embedded-rpc-provider.enabled=true`、`strategy.embedded-rpc-provider.enabled=true`）托管；默认积分奖不走 remote fulfillment。需要独立进程时，使用 `scripts/start-provider-mode.sh` 切换互斥开关并显式拉起 8087/8088/8089。
 
 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types` 以及各 starter 模块等共享模块，是各服务启动器所依赖的库。
 

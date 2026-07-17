@@ -28,7 +28,7 @@ flowchart TD
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
 
-> **说明：** 默认 compose 不启 8088/8089；rebate/strategy 由 market **embedded** provider 托管。默认积分奖不走 remote fulfillment：`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。独立 provider / remote award / fresh / secure 未纳入冻结审计动态验收。
+> **说明：** 默认 compose 仅启 8080-8086；8087/8088/8089 为可选独立 provider。rebate/strategy 由 market **embedded** provider 托管。默认积分奖不走 remote fulfillment：`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。独立 provider / remote award / fresh / secure 未纳入冻结审计动态验收。
 
 ## 主要职责（摘要）
 

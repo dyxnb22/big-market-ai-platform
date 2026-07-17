@@ -125,14 +125,14 @@ save_failure_artifacts() {
   local svc
   for svc in big-market-gateway big-market-auth-service big-market-admin-service \
     big-market-market-service big-market-message-job-service big-market-chatbot-service \
-    big-market-account-service big-market-fulfillment-service; do
+    big-market-account-service; do
     docker compose logs --tail=200 "$svc" >"${dir}/${svc}.log" 2>&1 || true
   done
 
   {
     echo "=== actuator health snapshot ==="
     local port
-    for port in 8080 8081 8082 8083 8084 8085 8086 8087; do
+    for port in 8080 8081 8082 8083 8084 8085 8086; do
       echo "--- :${port} ---"
       curl -sf --max-time 2 "http://${HOST}:${port}/actuator/health" || echo "(unreachable)"
       echo ""

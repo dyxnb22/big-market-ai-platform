@@ -4,8 +4,8 @@
 # Usage: ./scripts/smoke-test-microservices.sh [gateway-host]
 # Default host: localhost
 #
-# Expected result: 21/21 PASS
-#   - 8 health checks  (gateway + 7 backend services)
+# Expected result: 20/20 PASS
+#   - 7 health checks  (gateway + 6 backend services)
 #   - 11 functional API checks (incl. HTTP+code for unauth paths)
 #   - 2 gateway fallback checks (HTTP 503 + body code 0007)
 
@@ -43,7 +43,7 @@ echo "=== Microservices Smoke Test ==="
 echo ""
 
 echo "--- Health checks ---"
-for svc_port in "auth-service:$HOST:8081" "admin-service:$HOST:8082" "market-service:$HOST:8083" "chatbot-service:$HOST:8084" "gateway:$HOST:8080" "message-job-service:$HOST:8085" "account-service:$HOST:8086" "fulfillment-service:$HOST:8087"; do
+for svc_port in "auth-service:$HOST:8081" "admin-service:$HOST:8082" "market-service:$HOST:8083" "chatbot-service:$HOST:8084" "gateway:$HOST:8080" "message-job-service:$HOST:8085" "account-service:$HOST:8086"; do
   name="${svc_port%%:*}"; addr="${svc_port#*:}"
   result=$(curl -sf "http://$addr/actuator/health" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null || echo "UNREACHABLE")
   if [ "$result" = "UP" ]; then
@@ -156,6 +156,6 @@ check "gateway fallback endpoint returns 0007" "0007" "$GW_FALLBACK"
 
 echo ""
 echo "=========================================="
-echo "Results: $PASS passed, $FAIL failed  (expected 21/21)"
+echo "Results: $PASS passed, $FAIL failed  (expected 20/20)"
 echo "=========================================="
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

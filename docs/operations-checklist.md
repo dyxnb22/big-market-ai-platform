@@ -7,7 +7,8 @@ Use this checklist for the local learning stack.
 - `docker compose -f docs/dev-ops/docker-compose-environment.yml ps`
 - `docker compose ps`
 - `curl -s http://127.0.0.1:8080/actuator/health`
-- Check default service health on ports `8081` through `8087`; `8088`/`8089` are optional dedicated deployments and are not default health requirements.
+- Check default service health on ports `8081` through `8086`; `8087`/`8088`/`8089` are optional dedicated provider deployments and are not default health requirements.
+- To switch to a dedicated provider mode, use `scripts/start-provider-mode.sh` so the relevant market/message-job consumer is recreated with matching remote flags.
 
 ## Interface Checks
 

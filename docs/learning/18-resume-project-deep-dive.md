@@ -69,6 +69,8 @@ HTTP 侧薄封装：
 
 **当前服务模块对照：**
 
+默认 Docker 学习栈运行 gateway、auth、admin、market、chatbot、message-job、account 七个服务；fulfillment、rebate、strategy 保留为可选独立 Provider，分别通过 `scripts/start-provider-mode.sh` 切换。
+
 | 服务模块 | 主要职责 |
 |----------|----------|
 | `big-market-market-service` | 主市场/抽奖服务启动模块，承载活动抽奖、策略、发奖本地路径 |

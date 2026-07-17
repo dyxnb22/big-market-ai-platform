@@ -181,7 +181,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 **参考回答：**
 
-按业务领域和数据所有权拆分，共 10 个服务：
+按业务领域和数据所有权保留 10 个可启动服务模块；默认学习拓扑运行其中 7 个，另外 3 个作为可选独立 Provider：
 
 | 服务 | 职责 | 拆分原因 |
 | ------ | ------ | --------- |
@@ -195,6 +195,10 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 | chatbot-service | AI Chat | 外部 API 依赖独立隔离 |
 | message-job-service | MQ/Job | 异步任务独立，不影响同步链路 |
 | admin-service | 管理配置 | 管理面与用户面隔离 |
+
+默认 `docker-compose.yml` 启动 gateway、auth、admin、market、chatbot、message-job、account（8080-8086）。
+fulfillment、rebate、strategy（8087-8089）保留独立 RPC 能力，但不在默认栈中；需要切换时使用
+`scripts/start-provider-mode.sh`，脚本会同步重建对应消费者。
 
 ---
 

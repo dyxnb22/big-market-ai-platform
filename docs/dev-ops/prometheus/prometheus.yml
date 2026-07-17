@@ -16,6 +16,5 @@ scrape_configs:
           - 'big-market-chatbot-service:8084'
           - 'big-market-message-job-service:8085'
           - 'big-market-account-service:8086'
-          - 'big-market-fulfillment-service:8087'
         labels:
           app: 'big-market'

@@ -21,10 +21,14 @@ gateway :8080
 
 message-job :8085 -- RabbitMQ consumers + XXL executor
 account :8086     -- credit/quota RPC
-fulfillment :8087 -- optional remote award RPC in the default topology
+
+optional dedicated providers:
+fulfillment :8087 -- optional remote award RPC
+rebate      :8088 -- optional dedicated rebate provider
+strategy    :8089 -- optional dedicated strategy provider
 ```
 
-MySQL、Redis、RabbitMQ、Nacos、XXL-Job Admin、Prometheus/Grafana 等由 `docs/dev-ops/docker-compose-environment.yml` 提供。`rebate-service:8088` 与 `strategy-service:8089` 是可选独立部署，默认 compose 不启动；默认由 market 内嵌对应 Dubbo provider。
+MySQL、Redis、RabbitMQ、Nacos、XXL-Job Admin、Prometheus/Grafana 等由 `docs/dev-ops/docker-compose-environment.yml` 提供。`docker-compose.yml` 默认仅包含 8080-8086。`fulfillment-service:8087`、`rebate-service:8088`、`strategy-service:8089` 为可选独立部署；默认积分奖不走 remote fulfillment，rebate/strategy 默认由 market 内嵌对应 Dubbo provider。
 
 默认 compose 中积分奖走本地 outbox：`SendAwardConsumer`（message-job）写 `credit_award_task`，XXL `DispatchCreditAwardTaskJob` handlers（任务 5/6）派发到账户服务。`user_award_record.award_state=completed` 表示发奖已被持久化接管，不单独证明账户已入账；最终结果应同时检查 outbox 与账户流水。
 
@@ -72,13 +76,19 @@ secure overlay 需要先提供非默认 `JWT_SECRET`、内部 RPC/管理/XXL 令
 | `mvn -B verify -DfailIfNoTests=false` | 23 个 reactor 模块通过 |
 | Mapper/DDL、运行时安全、Prometheus 配置 | 通过；运行时安全门禁 100/100 |
 | `acceptance.sh --reuse --skip-build` | 通过，80 秒 |
-| 后端契约与 smoke | HTTP 契约全过；microservices 21/21；API smoke 全过 |
+| 后端契约与 smoke | HTTP 契约全过；microservices smoke 全过；API smoke 全过 |
 | 抽奖发奖 | 兑换扣 5 积分 → 策略 10007 固定奖品 101 → outbox 派发 → 账户入账 5，通过 |
 | Chatbot 补偿 | 立即退款与 `ChatRefundReconcileJob` 补偿均通过 |
 | Playwright | 18 条测试连续两轮通过 |
 | 默认安全负向 smoke | 注销吊销 JWT、伪造内部 token、未授权 admin 均被拒绝 |
 
 失败取证默认写入 `target/acceptance-artifacts/`。复用验收只能证明当前旧卷可迁移并可运行，不能替代 fresh 验收。
+
+## 拓扑调整说明（2026-07-17）
+
+- 本工作树已将默认应用拓扑收敛为 7 服务（8080-8086）。
+- `fulfillment/rebate/strategy` 仍保留源码、RPC 契约与独立启动能力，但不纳入默认 compose 与默认验收健康前提。
+- 2026-07-11 审计文档中的历史证据保持不变；若需宣称本工作树“默认拓扑已验证”，应按当前配置重新执行验收并留存新证据。
 
 ## 学习顺序
 
@@ -101,10 +111,9 @@ secure overlay 需要先提供非默认 `JWT_SECRET`、内部 RPC/管理/XXL 令
 
 ## 已知边界
 
-- fresh 空卷、完整 secure overlay、8088/8089 独立部署未在本次审计动态验证。
+- fresh 空卷、完整 secure overlay、8087/8088/8089 独立部署未在本次审计动态验证。
 - 默认拓扑仍共享物理 MySQL，DAO 归属主要靠文档和部分 ArchUnit 规则；Mapper XML 有多份启动器副本。
 - account/fulfillment/rebate/strategy 的完整 Spring Context 与失败注入覆盖弱于 market/message-job。
 - Java 8 / Spring Boot 2.7 属于学习基线；未完成本轮全量 CVE/SBOM 审计。
 - 前端 JWT 存在 `localStorage`，默认凭据、宽松 RPC 和关闭限流仅适用于本地隔离环境。
 - 没有生产灰度、容量、HA、灾备或真实外部 OpenAI 奖品履约证明。
-

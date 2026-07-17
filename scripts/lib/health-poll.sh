@@ -38,7 +38,6 @@ wait_for_stack_healthy() {
   wait_for_actuator_up "$host" 8084 "chatbot" "$timeout_sec"
   wait_for_actuator_up "$host" 8085 "message-job" "$timeout_sec"
   wait_for_actuator_up "$host" 8086 "account" "$timeout_sec"
-  wait_for_actuator_up "$host" 8087 "fulfillment" "$timeout_sec"
 }
 
 resolve_stage_activity_id() {
