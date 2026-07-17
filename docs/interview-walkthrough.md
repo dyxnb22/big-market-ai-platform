@@ -4,7 +4,7 @@ Portfolio talking tracks for the Big Market AI Platform. Prefer **code + accepta
 
 ## 5 minutes — elevator
 
-1. **What:** Learning/portfolio marketing raffle platform — Spring Boot microservices with default 7-service runtime (gateway, auth, admin, market, chatbot, message-job, account); fulfillment/rebate/strategy are optional dedicated providers.
+1. **What:** Learning/portfolio marketing raffle platform — Spring Boot microservices with a final 7-service runtime (gateway, auth, admin, market, chatbot, message-job, account); rebate and strategy stay inside market, while award credit dispatch stays in message-job.
 2. **Why interesting:** Shared domain/infrastructure kernels with independent launchers; money-like paths use idempotency keys, outbox/`task` rows, and reconcile jobs.
 3. **Honest readiness:** Default reused stack has a dated green acceptance, including real raffle/outbox/account closure and Playwright twice; fresh and secure remain unverified.
 4. **Frontend:** Static `big-market-web` (HTML/JS) via gateway `:8080`, not React.
@@ -12,8 +12,8 @@ Portfolio talking tracks for the Big Market AI Platform. Prefer **code + accepta
 
 ## 15 minutes — architecture & flows
 
-1. Draw default service map (8080–8086), then mark optional providers (8087–8089); note embedded vs dedicated rebate/strategy.
-2. Happy path: login (JWT) → stage activity → draw → award message → default local award/outbox → account credit; remote fulfillment is optional.
+1. Draw the final service map (8080–8086), then point out the local market boundaries for strategy/rebate and the message-job award outbox.
+2. Happy path: login (JWT) → stage activity → draw → award message → local award/outbox → account credit.
 3. Async: RabbitMQ consumers + XXL-Job in **message-job** only (market must not scan `trigger.job` / `trigger.listener`).
 4. Consistency: outbox, pending remote write, stock confirm, chat refund reconcile; DLQ review before replay.
 5. Boundaries: DAO ownership doc + ArchUnit (`DomainArchitectureTest`, `MarketServiceArchitectureTest`, `MessageJobArchitectureTest`); mapper copy drift gates.

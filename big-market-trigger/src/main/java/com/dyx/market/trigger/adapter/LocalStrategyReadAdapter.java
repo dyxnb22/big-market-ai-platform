@@ -9,8 +9,6 @@ import com.dyx.market.trigger.api.dto.RaffleAwardListResponseDTO;
 import com.dyx.market.trigger.api.dto.RaffleStrategyRuleWeightRequestDTO;
 import com.dyx.market.trigger.api.dto.RaffleStrategyRuleWeightResponseDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -21,15 +19,12 @@ import java.util.Map;
 /**
  * 抽奖策略读查询的本地进程内实现。
  * <p>
- * 无其他 {@link IStrategyReadAdapter} Bean 时注册（例如未提供 market-service 中
- * StrategyRemoteReadAdapter 的服务实例）。
+ * 直接在 market-service 进程内执行策略只读查询。
  * 保持 RaffleStrategyController 重构前的读语义：奖品锁定状态来自 IRaffleAward + IRaffleRule，
  * 日/总参与次数来自 IAccountReadAdapter。不经 DubboReference、不依赖功能开关。
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "strategy.service.remote-read.enabled", havingValue = "false", matchIfMissing = true)
-@ConditionalOnMissingBean(IStrategyReadAdapter.class)
 public class LocalStrategyReadAdapter implements IStrategyReadAdapter {
 
     @Resource

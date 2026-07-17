@@ -35,7 +35,7 @@
 - [ ] 在当前目标提交执行 `./scripts/acceptance.sh --reuse`。（2026-07-11：gateway `:8080` 未起；agent 无法 `docker compose up`；`--reuse --skip-build` 于 1s 内 fail-closed，产物见 `target/acceptance-artifacts/`。需本机 `docker compose up -d big-market-gateway` 后重跑。）
 - [ ] 在可销毁的独立环境执行 `./scripts/acceptance.sh --fresh --confirm-destroy-volumes`。
 - [ ] 使用非默认凭据执行 `./scripts/acceptance.sh --secure`。
-- [x] 查明本地应用栈健康等待失败原因，区分容器未启动、健康检查超时、依赖未就绪和历史卷污染。（证据：8081–8087=200，8080 down；gateway 容器未运行。）
+- [x] 查明物理收敛前本地应用栈健康等待失败原因，区分容器未启动、健康检查超时、依赖未就绪和历史卷污染。（历史证据：8081–8087=200，8080 down；gateway 容器未运行。）
 - [x] 为 acceptance 输出生成简洁摘要：提交、profile、测试数、失败阶段、耗时、服务健康状态。（`scripts/acceptance.sh` → `latest-summary.txt`）
 - [x] 验收失败时自动保存 `docker compose ps`、关键服务日志和依赖健康状态。（`target/acceptance-artifacts/<stamp>-*/`）
 - [x] 明确 `--reuse` 只证明旧卷兼容，`--fresh` 才证明初始化完整。（README / operations-checklist / MICROSERVICES；默认不自启 Docker，需 `--start-stack`。）
@@ -99,11 +99,11 @@
 ### 4.1 项目定位与拓扑声明
 
 - [ ] 统一项目定位措辞：当前是“共享领域内核与基础设施的微服务学习架构”，避免暗示完全自治。
-- [ ] 明确默认部署与可选独立部署的差异。
-- [ ] 明确 rebate/strategy embedded provider 与独立服务的互斥配置。
+- [x] 明确最终部署为 7 个应用服务（8080-8086），不再保留可选独立 Provider。
+- [x] rebate/strategy 固定由 market 内部实现，独立 Provider 与互斥切换配置已物理移除。
 - [ ] 为每个服务建立输入、输出、数据所有权、消息所有权和失败策略卡片。
 - [ ] 更新架构图，区分 HTTP、Dubbo、MQ、定时任务和共享数据库访问。
-- [ ] 标注哪些服务是真正独立，哪些只是独立启动器。
+- [x] 标注 account、message-job 等独立服务边界，以及 market 内部的策略/返利能力。
 - [ ] 给出未来两条路线的决策：保持模块化共享内核，或继续服务自治；禁止长期模糊表述。
 
 ### 4.2 编译期边界
@@ -130,13 +130,13 @@
 - [ ] 为 schema 增加版本表与迁移审计记录。
 - [ ] 检查所有分片表结构、索引和默认值完全一致。
 
-### 4.4 远程模式与嵌入模式等价性
+### 4.4 已删除远程 Provider 模式后的边界
 
 - [ ] 为 account quota embedded/remote 建立配置矩阵测试。
-- [ ] 为 rebate embedded/remote 建立契约测试。
-- [ ] 为 strategy embedded/remote 建立契约测试。
-- [ ] 验证两种模式的错误码、幂等结果、超时语义和数据终态一致。
-- [ ] 防止 embedded provider 与独立 provider 同时注册。
+- [x] 删除 rebate/strategy 的 embedded/remote 双模式与独立契约。
+- [x] 删除 fulfillment 远程发奖路径，固定 message-job 本地奖品派发与 account outbox。
+- [ ] 为 account quota 的本地/远程路径建立契约测试。
+- [x] 通过 clean build 和 Context 测试确认已删除 Provider 不再被扫描注册。
 - [ ] 防止共享 task 与独立 outbox dispatcher 同时处理同一业务。
 - [ ] 为每个模式提供最小启动拓扑和验收命令。
 

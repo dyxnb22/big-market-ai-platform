@@ -5,7 +5,6 @@ before removing files. It is not a timed production cleanup plan.
 
 ## Embedded RPC Providers
 
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RebateServiceRPC.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RaffleStrategyServiceRPC.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleActivityController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/ErpOperateController.java`
@@ -44,9 +43,6 @@ Key directories:
 - `big-market-market-service/src/main/resources/mybatis/mapper/mysql`
 - `big-market-message-job-service/src/main/resources/mybatis/mapper/mysql`
 - `big-market-account-service/src/main/resources/mybatis/mapper/mysql`
-- `big-market-rebate-service/src/main/resources/mybatis/mapper/mysql`
-- `big-market-strategy-service/src/main/resources/mybatis/mapper/mysql`
-- `big-market-fulfillment-service/src/main/resources/mybatis/mapper/mysql`
 
 ## Cleanup Rule
 

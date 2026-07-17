@@ -156,13 +156,6 @@ account:
     remote-quota-decrement:
       enabled: ${ACCOUNT_SERVICE_REMOTE_QUOTA_DECREMENT_ENABLED:false}
 
-strategy:
-  embedded-rpc-provider:
-    enabled: ${STRATEGY_EMBEDDED_RPC_PROVIDER_ENABLED:true}
-  service:
-    remote-read:
-      enabled: ${STRATEGY_SERVICE_REMOTE_READ_ENABLED:false}
-
 activity:
   embedded-rpc-provider:
     enabled: ${ACTIVITY_EMBEDDED_RPC_PROVIDER_ENABLED:true}
@@ -170,17 +163,6 @@ activity:
 erp:
   embedded-rpc-provider:
     enabled: ${ERP_EMBEDDED_RPC_PROVIDER_ENABLED:true}
-
-rebate:
-  embedded-rpc-provider:
-    enabled: ${REBATE_EMBEDDED_RPC_PROVIDER_ENABLED:true}
-  service:
-    remote-create-order:
-      enabled: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_ENABLED:false}
-      app-id: ${REBATE_SERVICE_REMOTE_CREATE_ORDER_APP_ID:chatgpt-data}
-    remote-read:
-      enabled: ${REBATE_SERVICE_REMOTE_READ_ENABLED:false}
-      app-id: ${REBATE_SERVICE_REMOTE_READ_APP_ID:chatgpt-data}
 
 management:
   endpoints:

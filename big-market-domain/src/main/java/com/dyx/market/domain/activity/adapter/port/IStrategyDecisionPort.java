@@ -6,11 +6,10 @@ import com.dyx.market.domain.strategy.model.entity.RaffleFactorEntity;
 /**
  * 领域端口：抽奖流程中的策略决策步骤。
  * <p>
- * RaffleApplicationService 原先直接注入 IRaffleStrategy；本端口是可配置的路由接缝，
- * 可在进程内调用与远程 Dubbo 调用之间切换，而不改动编排器。
+ * RaffleApplicationService 原先直接注入 IRaffleStrategy；本端口隔离编排器与本地策略实现，
+ * 让策略决策保持单一的进程内调用边界。
  * <p>
  * 本地路径（默认）：LocalStrategyDecisionPort 委托现有 IRaffleStrategy Bean，行为与直接调用一致。
- * 远程路径：可配置 StrategyRemoteDecisionPort 对接远程策略决策服务。
  */
 public interface IStrategyDecisionPort {
 

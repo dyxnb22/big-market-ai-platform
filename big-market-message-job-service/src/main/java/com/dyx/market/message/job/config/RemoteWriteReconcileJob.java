@@ -1,13 +1,11 @@
 package com.dyx.market.message.job.config;
 
 import com.alibaba.fastjson.JSON;
-import com.dyx.market.domain.rebate.support.RebateAppTokenValidator;
 import com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao;
 import com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.trigger.api.IAccountCreditService;
 import com.dyx.market.trigger.api.IAccountQuotaService;
-import com.dyx.market.trigger.api.IRebateService;
 import com.dyx.market.trigger.api.dto.*;
 import com.dyx.market.trigger.api.response.Response;
 import com.dyx.market.types.common.RemoteWriteOperations;
@@ -43,13 +41,8 @@ public class RemoteWriteReconcileJob {
     @Value("${job.remote-write-reconcile.scan-limit:50}")
     private int scanLimit;
 
-    @Value("${rebate.service.remote-create-order.app-id:chatgpt-data}")
-    private String rebateAppId;
-
     @Resource
     private IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao;
-    @Resource
-    private RebateAppTokenValidator rebateAppTokenValidator;
     @Resource
     private IDBRouterStrategy dbRouter;
     @Resource
@@ -61,9 +54,6 @@ public class RemoteWriteReconcileJob {
     private IAccountCreditService accountCreditService;
     @DubboReference(version = "1.0", check = false)
     private IAccountQuotaService accountQuotaService;
-    @DubboReference(version = "1.0", check = false)
-    private IRebateService rebateService;
-
     @Timed(value = "RemoteWriteReconcileJob", description = "Pending remote write reconcile")
     @XxlJob("RemoteWriteReconcileJob")
     public void exec() {
@@ -126,15 +116,6 @@ public class RemoteWriteReconcileJob {
                 Response<Boolean> resp = accountCreditService.existsCreditOrder(dto.getUserId(), dto.getOutBusinessNo());
                 return resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode()) && Boolean.TRUE.equals(resp.getData());
             }
-            case RemoteWriteOperations.REBATE_CREATE: {
-                RebateRequestDTO dto = JSON.parseObject(task.getPayload(), RebateRequestDTO.class);
-                Response<Boolean> resp = rebateService.isCalendarSignRebate(rebateAppTokenValidator.buildRequest(rebateAppId,
-                        RebateOrderQueryRequestDTO.builder()
-                                .userId(dto.getUserId())
-                                .outBusinessNo(dto.getOutBusinessNo())
-                                .build()));
-                return resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode()) && Boolean.TRUE.equals(resp.getData());
-            }
             case RemoteWriteOperations.QUOTA_CREATE: {
                 AccountQuotaCreateOrderRequestDTO dto = JSON.parseObject(task.getPayload(), AccountQuotaCreateOrderRequestDTO.class);
                 Response<Boolean> resp = accountQuotaService.existsActivityOrder(dto.getUserId(), dto.getOutBusinessNo());
@@ -161,14 +142,6 @@ public class RemoteWriteReconcileJob {
                 }
                 if (resp == null || !ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
                     throw new IllegalStateException("credit retry failed");
-                }
-                return;
-            }
-            case RemoteWriteOperations.REBATE_CREATE: {
-                RebateRequestDTO dto = JSON.parseObject(task.getPayload(), RebateRequestDTO.class);
-                Response<Boolean> resp = rebateService.rebate(rebateAppTokenValidator.buildRequest(rebateAppId, dto));
-                if (resp == null || !ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
-                    throw new IllegalStateException("rebate retry failed");
                 }
                 return;
             }

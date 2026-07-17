@@ -9,11 +9,10 @@ import java.util.List;
 
 /**
  * 抽奖策略读查询适配器契约。
- * <p>
- * 对应 IStrategyReadService 的两个读方法。本地实现委托 IRaffleAward、IRaffleRule 与 IAccountReadAdapter；
- * 远程实现（market-service 中的 StrategyRemoteReadAdapter）在
- * {@code strategy.service.remote-read.enabled=true} 时经 Dubbo 代理 big-market-strategy-service。
- * 引入此契约后，RaffleStrategyController 不再直接调用策略领域服务处理两个纯读接口。
+ *
+ * <p>本地实现委托 IRaffleAward、IRaffleRule 与 IAccountReadAdapter；
+ * 当前最终拓扑固定由 market-service 内的策略领域服务处理读请求，
+ * 不再保留独立策略 Provider 或远程切换开关。</p>
  */
 public interface IStrategyReadAdapter {
 

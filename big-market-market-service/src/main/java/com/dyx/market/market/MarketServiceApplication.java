@@ -7,7 +7,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * 核心市场服务：对外提供 HTTP API，并作为返利等能力的 Dubbo RPC 提供方。
+ * 核心市场服务：对外提供 HTTP API，并承载策略、返利等本地能力的 Dubbo RPC 接口。
  * <p>
  * MQ 消费者与 XXL-Job 任务已迁移至 {@code big-market-message-job-service}。
  * <p>
@@ -15,10 +15,10 @@ import org.springframework.context.annotation.ImportResource;
  * <ul>
  *   <li>{@code com.dyx.market.market} — 本服务配置</li>
  *   <li>{@code trigger.http} — REST 控制器</li>
- *   <li>{@code trigger.rpc} — Dubbo RPC 提供方（如 RebateServiceRPC）</li>
+ *   <li>{@code trigger.rpc} — market 内部使用的 Dubbo RPC 接口</li>
  *   <li>{@code trigger.application} — 应用编排服务（Facade / ApplicationService）</li>
  *   <li>{@code trigger.support} — HTTP 鉴权等支撑组件</li>
- *   <li>{@code trigger.adapter} — 本地写适配器（remote 关闭时生效）</li>
+ *   <li>{@code trigger.adapter} — 本地业务适配器</li>
  *   <li>{@code domain} — 领域服务</li>
  *   <li>{@code infrastructure} — DAO、仓储、Redis、事件发布</li>
  * </ul>

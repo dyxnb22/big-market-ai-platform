@@ -4,7 +4,7 @@ Maps Spring profiles and compose overlays used by this learning stack. Prefer **
 
 | Profile / overlay | How activated | Intended use | Credentials / guards | Notes |
 | --- | --- | --- | --- | --- |
-| **local** | `SPRING_PROFILES_ACTIVE=local` (where `application-local.yml` exists: market, message-job, fulfillment, …) | IDE / single-service debug against local MySQL/Redis/Nacos | Learning defaults; do not treat as secure | Not every service ships `application-local.yml` |
+| **local** | `SPRING_PROFILES_ACTIVE=local` (where `application-local.yml` exists) | IDE / single-service debug against local MySQL/Redis/Nacos | Learning defaults; do not treat as secure | Not every service ships `application-local.yml` |
 | **dev** | `application-dev.yml` | Legacy/dev-style local wiring | Permissive | Prefer `local` or `docker` for documented paths |
 | **test** | Surefire / `@SpringBootTest` / test resources | Unit & Context tests without full infra | Mocks / embedded / disabled remote clients | Must not write tracked `data/log` or `~/.dubbo` (governance P0) |
 | **docker** | Compose `SPRING_PROFILES_ACTIVE=docker` | Full microservices stack via `docker-compose.yml` + env compose | Demo defaults allowed | Default learning path; pair with `docs/dev-ops/docker-compose-environment.yml` |
@@ -16,8 +16,7 @@ Maps Spring profiles and compose overlays used by this learning stack. Prefer **
 | --- | --- |
 | `docs/dev-ops/docker-compose-environment.yml` | Shared infra (Nacos, MySQL, Redis, RabbitMQ, XXL, Prometheus, …) |
 | `docker-compose.yml` | Default application services (8080-8086) on `dev-ops_my-network` |
-| `docker-compose.providers.yml` | Optional dedicated providers (fulfillment/rebate/strategy: 8087-8089) |
-| `docker-compose.secure.yml` | Secure overlay for default and optional provider services (profiles + env requirements) |
+| `docker-compose.secure.yml` | Secure overlay for the seven application services (profiles + env requirements) |
 
 ## Quick commands
 
@@ -29,10 +28,6 @@ docker compose up --build -d
 # Secure overlay
 docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
 
-# Optional provider mode; helper recreates market/message-job consumers as needed
-./scripts/start-provider-mode.sh fulfillment
-./scripts/start-provider-mode.sh rebate-strategy
-# Add --secure after exporting the required secure variables for secure mode.
 ```
 
 See also: `docs/operations-checklist.md`, `docs/MICROSERVICES.md`.

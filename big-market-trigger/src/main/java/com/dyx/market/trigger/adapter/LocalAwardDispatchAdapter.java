@@ -2,7 +2,6 @@ package com.dyx.market.trigger.adapter;
 
 import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
 import com.dyx.market.domain.award.service.IAwardService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -14,7 +13,6 @@ import javax.annotation.Resource;
  * 不经 Dubbo、不依赖远程开关。
  */
 @Service
-@ConditionalOnProperty(name = "account.fulfillment.remote-award.enabled", havingValue = "false", matchIfMissing = true)
 public class LocalAwardDispatchAdapter implements IAwardDispatchAdapter {
 
     @Resource

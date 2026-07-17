@@ -19,11 +19,8 @@
 | `big-market-chatbot-service` | 8084 | 默认栈；历史 acceptance | 聊天机器人 API、平台配置消费、积分扣费/退款集成 |
 | `big-market-message-job-service` | 8085 | 默认栈；历史 acceptance | RabbitMQ 消费者、XXL-Job 处理器、任务重试、Outbox 派发 |
 | `big-market-account-service` | 8086 | 默认栈；历史 acceptance | 积分账户、积分交易、活动配额、配额账本 RPC 契约 |
-| `big-market-fulfillment-service` | 8087 | 可选独立部署；未动态验收 | 奖品履约 RPC provider |
-| `big-market-rebate-service` | 8088 | 可选独立部署；未动态验收 | 行为返利创建/查询 RPC 契约与返利任务归属 |
-| `big-market-strategy-service` | 8089 | 可选独立部署；未动态验收 | 策略读取 RPC、奖品列表读取、规则权重读取、账户参与记录读取 |
 
-> **部署默认：** `docker-compose.yml` 默认只启动 7 个应用服务（8080-8086）。`big-market-fulfillment-service` / `big-market-rebate-service` / `big-market-strategy-service` 是可选独立 Provider，不在默认 compose。`rebate` 与 `strategy` 默认由 `big-market-market-service` 的 embedded Dubbo provider（`rebate.embedded-rpc-provider.enabled=true`、`strategy.embedded-rpc-provider.enabled=true`）托管；默认积分奖不走 remote fulfillment。需要独立进程时，使用 `scripts/start-provider-mode.sh` 切换互斥开关并显式拉起 8087/8088/8089。
+> **部署默认：** `docker-compose.yml` 是最终且唯一的应用部署入口，共 7 个服务（8080-8086）。返利与策略固定由 `big-market-market-service` 内部实现，积分奖固定由 `big-market-message-job-service` 的本地 outbox 派发到 account；三个独立 Provider 模块及其切换开关已物理移除。
 
 `big-market-domain`、`big-market-infrastructure`、`big-market-api`、`big-market-types` 以及各 starter 模块等共享模块，是各服务启动器所依赖的库。
 
@@ -65,7 +62,7 @@
 
 ### 奖品履约（Award Fulfillment）
 
-抽奖路径写入中奖记录并发布 `send_award` 事件。默认 compose 关闭 remote fulfillment，message-job 的 `SendAwardConsumer` 消费事件后调用本地奖品领域；积分奖写入 `credit_award_task`，由 `DispatchCreditAwardTaskJob`（handlers `_DB1`/`_DB2`）派发到 account RPC。可选部署才切换到 fulfillment RPC。
+抽奖路径写入中奖记录并发布 `send_award` 事件。message-job 的 `SendAwardConsumer` 消费事件后调用本地奖品领域；积分奖写入 `credit_award_task`，由 `DispatchCreditAwardTaskJob`（handlers `_DB1`/`_DB2`）派发到 account RPC。
 
 `user_award_record.award_state=completed` 表示发奖动作已被持久化接管；对积分奖，最终闭环必须继续核对 `credit_award_task=dispatched` 和账户积分流水，不能只看中奖记录。
 
@@ -73,27 +70,29 @@
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/award/service/AwardService.java`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java`
+- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/WriteAdapterLocalConfig.java`
 
 ### 返利（Rebate）
 
-签到会创建行为返利订单与任务，发布 `send_rebate` 事件，消费者据此发放积分或活动配额。返利归属由 `big-market-rebate-service` 的 RPC 契约及本地任务/Outbox Port 表示。
+签到会创建行为返利订单与任务，发布 `send_rebate` 事件，消费者据此发放积分或活动配额。返利创建与读取固定在 market 内部完成，消息消费仍由 message-job 负责。
 
 代码路径：
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/rebate/service/BehaviorRebateService.java`
-- `big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider/RebateServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateOrderAdapter.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateReadAdapter.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
 
 ### 策略读取（Strategy Reads）
 
-策略读取对外提供奖品列表、规则权重与账户参与信号。Market HTTP 控制器通过 `IStrategyReadAdapter` 调用；策略服务提供对应的 RPC 实现。
+策略读取对外提供奖品列表、规则权重与账户参与信号。Market HTTP 控制器通过 `IStrategyReadAdapter` 调用，最终由 market 内部策略实现响应。
 
 代码路径：
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleStrategyController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/IStrategyReadAdapter.java`
-- `big-market-strategy-service/src/main/java/com/dyx/market/strategy/provider/StrategyReadServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalStrategyReadAdapter.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RaffleStrategyServiceRPC.java`
 
 ### 消息与任务（Messages And Jobs）
 

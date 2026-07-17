@@ -69,16 +69,13 @@ HTTP 侧薄封装：
 
 **当前服务模块对照：**
 
-默认 Docker 学习栈运行 gateway、auth、admin、market、chatbot、message-job、account 七个服务；fulfillment、rebate、strategy 保留为可选独立 Provider，分别通过 `scripts/start-provider-mode.sh` 切换。
+最终 Docker 学习栈运行 gateway、auth、admin、market、chatbot、message-job、account 七个服务；策略与返利在 market 内部实现，积分奖在 message-job 内通过本地 outbox 派发。
 
 | 服务模块 | 主要职责 |
 |----------|----------|
 | `big-market-market-service` | 主市场/抽奖服务启动模块，承载活动抽奖、策略、发奖本地路径 |
 | `big-market-trigger` | HTTP、MQ Consumer、XXL-Job、应用层适配器 |
 | `big-market-account-service` | 账户额度、积分交易 RPC Provider |
-| `big-market-fulfillment-service` | 发奖 RPC Provider |
-| `big-market-rebate-service` | 行为返利 RPC Provider |
-| `big-market-strategy-service` | 策略读 RPC Provider；代码注释说明抽奖执行/军械库仍留在 market-service |
 | `big-market-message-job-service` | 拆分后的消息/Outbox Job，如积分发奖任务派发 |
 
 ---

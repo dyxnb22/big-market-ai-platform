@@ -26,9 +26,7 @@ Dubbo/Nacos registration is configured in each service `application.yml` and
 `spring-config.xml`. Provider implementations live in:
 
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider`
-- `big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider`
-- `big-market-strategy-service/src/main/java/com/dyx/market/strategy/provider`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter`
 
 Learning completion: services start in the local stack and expose health
 endpoints; RPC contracts compile against `big-market-api`.

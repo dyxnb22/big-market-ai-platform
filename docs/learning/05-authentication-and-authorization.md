@@ -75,7 +75,7 @@ ERP、DCC、活动/策略预热等经网关走 **market-service**（`/api/**` �
 - Dubbo：`ErpOperateServiceRPC` 无 token 重载直接拒绝；带 token 重载经 `DubboRpcAuthSupport.requireAdmin()` 校验后再委托 Controller
 - 活动 Dubbo：`RaffleActivityServiceRPC` 对敏感无 token 重载拒绝；token 重载经 `AuthenticatedUserSupport` + application service
 - 策略 Dubbo：`RaffleStrategyServiceRPC` 同样拒绝 `strategyArmory` / `randomRaffle` 等无 token 重载
-- 账户/履约/策略独立服务：Dubbo Provider 经 `big-market-starter-dubbo` 校验 `app.internal-rpc.token`（`enforce=true` 时生效）
+- account-service：Dubbo Provider 经 `big-market-starter-dubbo` 校验 `app.internal-rpc.token`（`enforce=true` 时生效）；策略与返利接口由 market 内部承载
 
 凭证方式（学习环境）：
 

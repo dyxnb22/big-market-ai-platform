@@ -12,10 +12,7 @@ flowchart TD
     Gateway --> Market["market-service:8083"]
     Gateway --> Chatbot["chatbot-service:8084"]
     Market --> Account["account-service:8086"]
-    Market -.->|"可选 remote award"| Fulfillment["fulfillment-service:8087"]
-    Market -->|"默认进程内 provider"| Embedded["embedded rebate + strategy"]
-    Market -.->|"可选独立部署"| Rebate["rebate-service:8088"]
-    Market -.->|"可选独立部署"| Strategy["strategy-service:8089"]
+    Market -->|"本地策略 + 返利"| Embedded["market 内部领域能力"]
     Market --> MQ["RabbitMQ"]
     MQ --> MessageJob["message-job-service:8085"]
     MessageJob -->|"credit_award_task"| Account
@@ -28,7 +25,7 @@ flowchart TD
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
 
-> **说明：** 默认 compose 仅启 8080-8086；8087/8088/8089 为可选独立 provider。rebate/strategy 由 market **embedded** provider 托管。默认积分奖不走 remote fulfillment：`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。独立 provider / remote award / fresh / secure 未纳入冻结审计动态验收。
+> **说明：** 默认 compose 也是最终拓扑，仅启 8080-8086。策略与返利固定在 market 内部执行；`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。当前工作树的 fresh / secure / 完整 acceptance 仍需重新执行后再更新验证结论。
 
 ## 主要职责（摘要）
 

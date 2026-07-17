@@ -26,9 +26,4 @@ public class WriteAdapterRemoteConfig {
         return new AccountRemoteQuotaWriteAdapter();
     }
 
-    @Bean
-    @ConditionalOnProperty(name = "rebate.service.remote-create-order.enabled", havingValue = "true")
-    public RebateRemoteCreateOrderAdapter rebateRemoteCreateOrderAdapter() {
-        return new RebateRemoteCreateOrderAdapter();
-    }
 }

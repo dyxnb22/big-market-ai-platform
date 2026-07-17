@@ -4,7 +4,7 @@ Guidance for Cursor / Codex agents working in this repository.
 
 ## What this repo is
 
-Java microservices **marketing raffle** learning/portfolio project: gateway, auth, admin, market, chatbot, message-job, account, fulfillment, rebate, strategy; shared `domain` / `infrastructure` / `api` / `types` / starters; frontend `big-market-web` (static HTML/JS, not React).
+Java microservices **marketing raffle** learning/portfolio project: gateway, auth, admin, market, chatbot, message-job, account; shared `domain` / `infrastructure` / `api` / `types` / starters; frontend `big-market-web` (static HTML/JS, not React). Rebate and strategy stay as local bounded capabilities, and award credit dispatch stays in message-job; no standalone provider modules remain.
 
 ## Authoritative docs (read before large changes)
 
@@ -35,13 +35,10 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 | gateway | 8080 | Routing, CB fallback |
 | auth | 8081 | JWT login/verify/logout |
 | admin | 8082 | Platform config / Nacos |
-| market | 8083 | Raffle/activity HTTP + embedded rebate/strategy providers by default |
+| market | 8083 | Raffle/activity HTTP + local rebate/strategy capabilities |
 | chatbot | 8084 | Chat + credit charge |
 | message-job | 8085 | MQ consumers + XXL-Job |
 | account | 8086 | Credit/quota RPC |
-| fulfillment | 8087 | Award fulfillment RPC (optional remote; default credit path uses message-job outbox) |
-| rebate | 8088 | Dedicated rebate (optional; often embedded in market) |
-| strategy | 8089 | Dedicated strategy (optional; often embedded in market) |
 
 Frontend: `http://127.0.0.1:5173` via `./scripts/web-start.sh` → API `http://127.0.0.1:8080/api/v1`.
 

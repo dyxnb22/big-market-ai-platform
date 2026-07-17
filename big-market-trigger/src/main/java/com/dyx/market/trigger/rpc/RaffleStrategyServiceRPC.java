@@ -8,7 +8,6 @@ import com.dyx.market.trigger.http.TriggerApiResponses;
 import com.dyx.market.trigger.support.AuthenticatedUserSupport;
 import com.dyx.market.trigger.support.DubboRpcAuthSupport;
 import org.apache.dubbo.config.annotation.DubboService;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.List;
  * <p>委托 {@link RaffleStrategyQueryApplicationService} 编排应用服务，响应统一封装为 {@link Response}。</p>
  */
 @DubboService(version = "1.0")
-@ConditionalOnProperty(name = "strategy.embedded-rpc-provider.enabled", havingValue = "true", matchIfMissing = true)
 public class RaffleStrategyServiceRPC implements IRaffleStrategyService {
 
     @Resource

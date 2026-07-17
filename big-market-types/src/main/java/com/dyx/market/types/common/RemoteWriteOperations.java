@@ -6,7 +6,6 @@ package com.dyx.market.types.common;
 public final class RemoteWriteOperations {
 
     public static final String CREDIT_CREATE = "credit_create";
-    public static final String REBATE_CREATE = "rebate_create";
     public static final String QUOTA_CREATE = "quota_create";
     public static final String QUOTA_UPDATE = "quota_update";
 

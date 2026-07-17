@@ -6,7 +6,7 @@
 
 ## 决策 1：为什么用 Dubbo 而不是 HTTP 做服务间调用？
 
-**选择：** account-service、fulfillment-service、rebate-service、strategy-service 均通过 Dubbo RPC 暴露接口。
+**选择：** account-service 通过 Dubbo RPC 暴露账户与配额接口；返利、策略和积分奖派发固定在本地业务链路内完成。
 
 **理由：**
 
@@ -68,17 +68,15 @@ int tbIdx = (hash / dbCount) % tbCount;               // 表号：0~3
 
 ---
 
-## 决策 5：为什么 rebate-service 和 strategy-service 默认 embedded 在 market-service 内？
+## 决策 5：为什么返利和策略收敛在 market-service 内？
 
-**选择：** `RaffleStrategyServiceRPC`、`RebateServiceRPC`、`RaffleActivityServiceRPC`、`ErpOperateServiceRPC` 在 `big-market-trigger` 中，`@ConditionalOnProperty(matchIfMissing = true)` 表示默认激活，嵌入 market-service 进程内运行。HTTP Controller **不再**直接标注 `@DubboService`，RPC 与 HTTP 分离注册。
+**选择：** `RaffleStrategyServiceRPC`、`RaffleActivityServiceRPC`、`ErpOperateServiceRPC` 以及本地返利适配器在 `big-market-trigger` 中，由 market-service 进程统一承载。HTTP Controller 与内部 RPC/适配器职责分离，但不再通过远程 Provider 开关切换。
 
 **理由：**
 
-1. **学习环境简化：** 默认不需要启动 10 个进程，只需启动 7 个应用服务，减少本地资源消耗。
-2. **渐进式演进：** 业务验证阶段先在单进程内调通，稳定后再剥离为独立服务，降低风险。
-3. **Dubbo 的透明性：** 无论是 embedded 还是独立服务，调用方（market-service 的 Consumer）代码完全一致，切换只改配置。
-
-**切换方法：** 使用 `scripts/start-provider-mode.sh rebate-strategy`。脚本会关闭 market 内的 embedded Provider、开启 remote read/create，并重建 market-service 后再启动独立 Provider，避免重复注册。
+1. **学习环境简化：** 最终只需启动 7 个应用服务，减少本地资源消耗。
+2. **边界清晰：** market 保持抽奖、策略读取和返利编排的完整同步边界；message-job 保持消息、Job 与奖品积分 outbox 的异步边界。
+3. **配置收敛：** 删除独立 Provider、远程适配器与互斥开关，避免同一接口出现重复注册或半切换状态。
 
 ---
 

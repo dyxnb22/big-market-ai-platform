@@ -10,7 +10,7 @@
 
 **参考回答：**
 
-Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层架构，拆分为 10 个微服务。核心功能包括：用户登录鉴权、活动抽奖、积分体系（签到/兑换/消费）、奖品异步发放、AI Chat 集成。
+Big Market 是一个营销抽奖平台，采用 Spring Boot 2.7.12 + DDD 四层架构，最终收敛为 7 个微服务。核心功能包括：用户登录鉴权、活动抽奖、积分体系（签到/兑换/消费）、奖品异步发放、AI Chat 集成。
 
 技术亮点：
 
@@ -181,7 +181,7 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 
 **参考回答：**
 
-按业务领域和数据所有权保留 10 个可启动服务模块；默认学习拓扑运行其中 7 个，另外 3 个作为可选独立 Provider：
+按业务领域、数据所有权和异步边界收敛为 7 个可启动服务模块：
 
 | 服务 | 职责 | 拆分原因 |
 | ------ | ------ | --------- |
@@ -189,16 +189,11 @@ Mapper 上标注 `@DBRouter(key = "userId")` 或 `@DBRouterStrategy(splitTable =
 | auth-service | JWT 鉴权 | 安全职责独立 |
 | market-service | 抽奖核心 | 最核心业务域 |
 | account-service | 积分/额度 | 数据所有权独立，避免多服务写同一账户表 |
-| fulfillment-service | 可选远程发奖 | 提供独立履约 RPC；默认 Docker 积分奖由 message-job 本地 award flow + account outbox 完成，不必经该服务 |
-| rebate-service | 返利 | 独立的返利业务域 |
-| strategy-service | 策略读 | 读密集型，可独立扩容 |
 | chatbot-service | AI Chat | 外部 API 依赖独立隔离 |
 | message-job-service | MQ/Job | 异步任务独立，不影响同步链路 |
 | admin-service | 管理配置 | 管理面与用户面隔离 |
 
-默认 `docker-compose.yml` 启动 gateway、auth、admin、market、chatbot、message-job、account（8080-8086）。
-fulfillment、rebate、strategy（8087-8089）保留独立 RPC 能力，但不在默认栈中；需要切换时使用
-`scripts/start-provider-mode.sh`，脚本会同步重建对应消费者。
+默认 `docker-compose.yml` 启动 gateway、auth、admin、market、chatbot、message-job、account（8080-8086）。返利和策略在 market 内部完成，积分奖由 message-job 本地 outbox 派发到 account；不再维护独立 Provider 切换。
 
 ---
 

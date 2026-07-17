@@ -11,9 +11,6 @@
 | `big-market-chatbot-service` | Chatbot API 与积分扣退集成 |
 | `big-market-message-job-service` | MQ 消费者、XXL-Job 处理器、重试派发 |
 | `big-market-account-service` | 积分与额度 RPC provider |
-| `big-market-fulfillment-service` | 奖品履约 RPC provider |
-| `big-market-rebate-service` | 返利创建/读取 RPC provider |
-| `big-market-strategy-service` | 策略读取 RPC provider |
 
 ## 前端模块
 
@@ -35,7 +32,8 @@
 
 ## 已移除的遗留模块
 
-- 历史单体启动器：项目切换为上述 10 个微服务启动器后已移除。
+- 历史单体启动器，以及曾用于拆分 Provider 的 fulfillment、rebate、strategy 独立启动器，均已物理移除。
+- 返利与策略保留为 market 内部边界；积分奖本地派发保留在 message-job。
 
 ## 边界规则
 

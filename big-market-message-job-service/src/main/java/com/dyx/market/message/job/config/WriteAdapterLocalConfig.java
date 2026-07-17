@@ -52,12 +52,6 @@ public class WriteAdapterLocalConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "account.fulfillment.remote-award.enabled", havingValue = "true")
-    public RemoteAwardDispatchAdapter remoteAwardDispatchAdapter() {
-        return new RemoteAwardDispatchAdapter();
-    }
-
-    @Bean
     @ConditionalOnMissingBean(IAwardDispatchAdapter.class)
     public LocalAwardDispatchAdapter localAwardDispatchAdapter() {
         return new LocalAwardDispatchAdapter();

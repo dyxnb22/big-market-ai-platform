@@ -134,9 +134,6 @@ gateway:
     big-market-appToken: ${GATEWAY_APP_TOKEN:6ec604541f8b1ce4a}
 
 account:
-  fulfillment:
-    remote-award:
-      enabled: ${ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED:false}
   service:
     remote-credit-write:
       enabled: ${ACCOUNT_SERVICE_REMOTE_CREDIT_WRITE_ENABLED:false}

@@ -249,42 +249,23 @@ assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_J
 # Section 2: Flag mutual-exclusion guardrails (config-file defaults)
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "── 2.1 Mutual-exclusion: embedded provider vs service provider ──"
+echo "── 2.1 Final topology: local strategy/rebate providers ──"
 
 MARKET_YML="$REPO_ROOT/big-market-market-service/src/main/resources/application.yml"
 
-if [[ "$(yaml_default_value "$MARKET_YML" "rebate.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" \
-   && "$(yaml_default_value "$MARKET_YML" "strategy.service.remote-read.enabled" 2>/dev/null)" == "false" ]]; then
-  pass "Nested YAML/default-placeholder parser resolves known market defaults"
-else
-  fail "Nested YAML/default-placeholder parser could not resolve known market defaults"
-fi
-
-# Rebate: embedded provider must NOT be default-true WHILE service create is default-true
-REBATE_EMBEDDED_DEFAULT_TRUE=0
-REBATE_REMOTE_DEFAULT_TRUE=0
-[[ "$(yaml_default_value "$MARKET_YML" "rebate.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" ]] \
-  && REBATE_EMBEDDED_DEFAULT_TRUE=1
-[[ "$(yaml_default_value "$MARKET_YML" "rebate.service.remote-create-order.enabled" 2>/dev/null)" == "true" ]] \
-  && REBATE_REMOTE_DEFAULT_TRUE=1
-if [[ "$REBATE_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$REBATE_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Rebate embedded provider AND remote create-order both default to true — dual-provider risk"
-else
-  pass "Rebate dual-provider config: embedded=$REBATE_EMBEDDED_DEFAULT_TRUE remote=$REBATE_REMOTE_DEFAULT_TRUE (not both true)"
-fi
-
-# Strategy: embedded provider must NOT be default-true WHILE remote read is default-true
-STRATEGY_EMBEDDED_DEFAULT_TRUE=0
-STRATEGY_REMOTE_DEFAULT_TRUE=0
-[[ "$(yaml_default_value "$MARKET_YML" "strategy.embedded-rpc-provider.enabled" 2>/dev/null)" == "true" ]] \
-  && STRATEGY_EMBEDDED_DEFAULT_TRUE=1
-[[ "$(yaml_default_value "$MARKET_YML" "strategy.service.remote-read.enabled" 2>/dev/null)" == "true" ]] \
-  && STRATEGY_REMOTE_DEFAULT_TRUE=1
-if [[ "$STRATEGY_EMBEDDED_DEFAULT_TRUE" -eq 1 && "$STRATEGY_REMOTE_DEFAULT_TRUE" -eq 1 ]]; then
-  fail "Strategy embedded provider AND remote read both default to true — dual-provider risk"
-else
-  pass "Strategy dual-provider config: embedded=$STRATEGY_EMBEDDED_DEFAULT_TRUE remote=$STRATEGY_REMOTE_DEFAULT_TRUE (not both true)"
-fi
+assert_pattern_present "Local rebate order adapter remains" \
+  "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateOrderAdapter.java" \
+  'class LocalRebateOrderAdapter'
+assert_pattern_present "Local rebate read adapter remains" \
+  "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateReadAdapter.java" \
+  'class LocalRebateReadAdapter'
+assert_pattern_present "Local strategy read adapter remains" \
+  "$REPO_ROOT/big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalStrategyReadAdapter.java" \
+  'class LocalStrategyReadAdapter'
+assert_pattern_absent "Market config has no removed provider switches" \
+  'REBATE_.*(REMOTE|EMBEDDED)|STRATEGY_.*(REMOTE|EMBEDDED)|ACCOUNT_FULFILLMENT_REMOTE_AWARD' \
+  "$REPO_ROOT/docker-compose.yml" "$MARKET_YML" \
+  "$REPO_ROOT/big-market-message-job-service/src/main/resources/application.yml"
 
 echo ""
 echo "── 2.2 Mutual-exclusion: shared task dispatch vs per-domain outbox ──"
@@ -324,15 +305,14 @@ else
 fi
 
 echo ""
-echo "── 2.3 Mutual-exclusion validator classes present ──"
+echo "── 2.3 Account quota routing validator present ──"
 
 FLAG_VALIDATOR="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/market/market/config/FlagMutualExclusionValidator.java"
 JOB_VALIDATOR="$REPO_ROOT/big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/JobMutualExclusionValidator.java"
 
 assert_file "FlagMutualExclusionValidator.java exists" "$FLAG_VALIDATOR"
-assert_pattern_present "FlagMutualExclusionValidator checks rebate dual-path" "$FLAG_VALIDATOR" 'rebateRemoteCreateOrder.*rebateEmbeddedProvider|rebate.*duplicate'
-assert_pattern_present "FlagMutualExclusionValidator checks strategy dual-path" "$FLAG_VALIDATOR" 'strategyRemoteRead.*strategyEmbeddedProvider|strategy.*duplicate'
-assert_pattern_present "FlagMutualExclusionValidator has disable flag" "$FLAG_VALIDATOR" 'FLAG_MUTUAL_EXCLUSION_GUARD_ENABLED'
+assert_pattern_present "FlagMutualExclusionValidator checks account quota routing" "$FLAG_VALIDATOR" 'remoteQuotaDecrement.*remoteQuotaWrite|remote-quota-decrement.*remote-quota-write'
+assert_pattern_present "FlagMutualExclusionValidator has disable flag" "$FLAG_VALIDATOR" 'flag-mutual-exclusion-guard\.enabled'
 
 assert_file "JobMutualExclusionValidator.java exists" "$JOB_VALIDATOR"
 assert_pattern_present "JobMutualExclusionValidator checks outbox vs shared-task" "$JOB_VALIDATOR" 'awardCreditOutboxEnabled.*sharedTaskCreditAwardDisabled|credit-award.*both'
@@ -429,7 +409,6 @@ check_mapper_copy "big-market-market-service task_mapper.xml" "big-market-market
 check_mapper_copy "big-market-message-job-service task_mapper.xml" "big-market-message-job-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 check_mapper_copy "big-market-account-service raffle_activity_account_mapper.xml" "big-market-account-service/src/main/resources/mybatis/mapper/mysql/raffle_activity_account_mapper.xml"
 check_mapper_copy "big-market-account-service task_mapper.xml" "big-market-account-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
-check_mapper_copy "big-market-rebate-service task_mapper.xml" "big-market-rebate-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 6: Learning DDL location

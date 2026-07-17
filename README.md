@@ -3,7 +3,7 @@
 Big Market is a Java microservices learning and portfolio project for a
 marketing raffle platform. It includes gateway routing, authentication,
 admin/config APIs, raffle/activity APIs, chatbot credit charging, account and
-quota services, award fulfillment, rebate, strategy reads, RabbitMQ messages,
+quota services, local award/rebate/strategy capabilities, RabbitMQ messages,
 XXL-Job tasks, MySQL, Redis, Nacos, Prometheus, and Grafana.
 
 ## Services
@@ -17,9 +17,6 @@ XXL-Job tasks, MySQL, Redis, Nacos, Prometheus, and Grafana.
 | `big-market-chatbot-service` | 8084 | Chatbot API and credit charge/refund integration |
 | `big-market-message-job-service` | 8085 | MQ consumers, XXL-Job handlers, retry dispatch |
 | `big-market-account-service` | 8086 | Credit and quota RPC provider |
-| `big-market-fulfillment-service` | 8087 | Award fulfillment RPC (optional dedicated provider; default credit awards use message-job outbox) |
-| `big-market-rebate-service` | 8088 | Rebate RPC (optional dedicated; default embedded in market) |
-| `big-market-strategy-service` | 8089 | Strategy read RPC (optional dedicated; default embedded in market) |
 
 Shared modules such as `big-market-domain`, `big-market-infrastructure`,
 `big-market-api`, `big-market-types`, and starter modules are reused as JAR
@@ -28,15 +25,11 @@ dependencies.
 > **Legacy note:** the pre-split monolith launcher has been removed. Use the
 > microservice stack above for local development and tests.
 
-> **Deployment note:** `big-market-fulfillment-service`, `big-market-rebate-service`, and
-> `big-market-strategy-service` are not included in the default `docker-compose.yml` stack.
-> By default, `big-market-market-service`
-> hosts `rebate/strategy` providers internally via embedded beans
-> (`rebate.embedded-rpc-provider.enabled=true`, `strategy.embedded-rpc-provider.enabled=true`),
-> while fulfillment keeps the local award path (`ACCOUNT_FULFILLMENT_REMOTE_AWARD_ENABLED=false`).
-> The dedicated provider containers are available via `docker-compose.providers.yml`.
-> Before enabling dedicated provider mode, use `scripts/start-provider-mode.sh`; it sets mutually
-> exclusive flags and recreates the affected consumers to avoid a half-switched stack.
+> **Deployment note:** the final learning topology is the seven-service
+> `docker-compose.yml` stack (8080-8086). Rebate and strategy execute inside
+> `market-service`; award credit dispatch is handled by `message-job-service`
+> through the local outbox and account RPC. There are no standalone provider
+> modules or provider-mode switches to maintain.
 
 ## Build
 
@@ -49,9 +42,6 @@ mvn clean package -DskipTests
 ```bash
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 docker compose up --build -d
-# Optional dedicated providers:
-# ./scripts/start-provider-mode.sh fulfillment
-# ./scripts/start-provider-mode.sh rebate-strategy
 ```
 
 Gateway address: `http://127.0.0.1:8080`.
@@ -97,9 +87,9 @@ npx playwright test --workers=1
 | Git | working tree on top of `8d51601` (learning-freeze changes uncommitted) |
 | Command | `./scripts/acceptance.sh --reuse --skip-build` |
 | Result | **PASS** — HTTP contracts, microservice smoke, API smoke, XXL executor registration, real raffle → award outbox → account credit, Chat refund/reconcile, and 18 Playwright tests twice; 80 seconds. |
-| Scope | Historical 8080-8087 application topology; this is not a rerun of the current 8080-8086 default topology. |
+| Scope | Historical pre-convergence application topology; this evidence is not a rerun of the final seven-service topology. |
 
-Topology update note (2026-07-17): default compose now runs 7 services (8080-8086). Optional dedicated providers (8087-8089) are started only when explicitly added.
+Topology update note (2026-07-17): the three standalone provider modules were physically removed. The final topology is seven application services (8080-8086); the historical acceptance evidence above must be rerun against this working tree before claiming current runtime verification.
 
 This proves the reused local volumes only. Fresh-volume and full secure-overlay acceptance were not run in this audit; see [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md). Failure artifacts are written to `target/acceptance-artifacts/`.
 

@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `out_business_no` VARCHAR(128) NOT NULL,
-    `operation`       VARCHAR(32)  NOT NULL COMMENT 'credit_create | rebate_create | quota_create | quota_update',
+    `operation`       VARCHAR(32)  NOT NULL COMMENT 'credit_create | quota_create | quota_update',
     `payload`         TEXT         NOT NULL,
     `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending' COMMENT 'pending | done | failed',
     `retry_count`     TINYINT      NOT NULL DEFAULT 0,

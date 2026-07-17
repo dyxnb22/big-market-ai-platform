@@ -8,7 +8,7 @@
 
 本仓库冻结的是一套可复现、可讲解的本地微服务学习样本，不是生产发布基线。详细证据与遗留项见 [`audit/2026-07-11-learning-freeze-audit.md`](audit/2026-07-11-learning-freeze-audit.md)。
 
-## 已验证拓扑
+## 当前最终拓扑（运行验收待重跑）
 
 ```text
 big-market-web :5173
@@ -16,19 +16,15 @@ big-market-web :5173
 gateway :8080
        |-- auth :8081
        |-- admin :8082
-       |-- market :8083 -- embedded rebate/strategy providers
+       |-- market :8083 -- local rebate/strategy capabilities
        `-- chatbot :8084
 
 message-job :8085 -- RabbitMQ consumers + XXL executor
 account :8086     -- credit/quota RPC
 
-optional dedicated providers:
-fulfillment :8087 -- optional remote award RPC
-rebate      :8088 -- optional dedicated rebate provider
-strategy    :8089 -- optional dedicated strategy provider
 ```
 
-MySQL、Redis、RabbitMQ、Nacos、XXL-Job Admin、Prometheus/Grafana 等由 `docs/dev-ops/docker-compose-environment.yml` 提供。`docker-compose.yml` 默认仅包含 8080-8086。`fulfillment-service:8087`、`rebate-service:8088`、`strategy-service:8089` 为可选独立部署；默认积分奖不走 remote fulfillment，rebate/strategy 默认由 market 内嵌对应 Dubbo provider。
+MySQL、Redis、RabbitMQ、Nacos、XXL-Job Admin、Prometheus/Grafana 等由 `docs/dev-ops/docker-compose-environment.yml` 提供。`docker-compose.yml` 是最终应用入口，仅包含 8080-8086。返利与策略固定在 market 内部，积分奖固定由 message-job 本地 outbox 派发到 account。
 
 默认 compose 中积分奖走本地 outbox：`SendAwardConsumer`（message-job）写 `credit_award_task`，XXL `DispatchCreditAwardTaskJob` handlers（任务 5/6）派发到账户服务。`user_award_record.award_state=completed` 表示发奖已被持久化接管，不单独证明账户已入账；最终结果应同时检查 outbox 与账户流水。
 
@@ -87,7 +83,7 @@ secure overlay 需要先提供非默认 `JWT_SECRET`、内部 RPC/管理/XXL 令
 ## 拓扑调整说明（2026-07-17）
 
 - 本工作树已将默认应用拓扑收敛为 7 服务（8080-8086）。
-- `fulfillment/rebate/strategy` 仍保留源码、RPC 契约与独立启动能力，但不纳入默认 compose 与默认验收健康前提。
+- `fulfillment/rebate/strategy` 三个独立 Provider 模块、专用契约和部署入口已物理移除；返利/策略作为 market 内部能力保留，积分奖作为 message-job 本地 outbox 能力保留。
 - 2026-07-11 审计文档中的历史证据保持不变；若需宣称本工作树“默认拓扑已验证”，应按当前配置重新执行验收并留存新证据。
 
 ## 学习顺序
@@ -111,7 +107,7 @@ secure overlay 需要先提供非默认 `JWT_SECRET`、内部 RPC/管理/XXL 令
 
 ## 已知边界
 
-- fresh 空卷、完整 secure overlay、8087/8088/8089 独立部署未在本次审计动态验证。
+- 物理收敛后的最终 7 服务拓扑尚未重新执行 fresh 空卷、完整 secure overlay 和全量 acceptance。
 - 默认拓扑仍共享物理 MySQL，DAO 归属主要靠文档和部分 ArchUnit 规则；Mapper XML 有多份启动器副本。
 - account/fulfillment/rebate/strategy 的完整 Spring Context 与失败注入覆盖弱于 market/message-job。
 - Java 8 / Spring Boot 2.7 属于学习基线；未完成本轮全量 CVE/SBOM 审计。

@@ -56,7 +56,7 @@ Code paths:
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/AwardRepository.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/SendAwardConsumer.java` (runtime: message-job)
 - `big-market-message-job-service/.../config/DispatchCreditAwardTaskJob.java`
-- `big-market-fulfillment-service/.../FulfillmentAwardServiceRPC.java` (optional remote path)
+- `big-market-message-job-service/.../WriteAdapterLocalConfig.java` (local award dispatch)
 
 ## Rebate
 
@@ -68,7 +68,7 @@ Code paths:
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/rebate`
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/BehaviorRebateRepository.java`
-- `big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider/RebateServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateOrderAdapter.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
 
 ## Task Outbox

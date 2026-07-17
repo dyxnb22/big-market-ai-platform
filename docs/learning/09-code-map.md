@@ -67,32 +67,29 @@
 - `big-market-account-service/src/main/java/com/dyx/market/account/application/AccountCreditApplicationService.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountCreditServiceRPC.java`
 - `big-market-account-service/src/main/java/com/dyx/market/account/provider/AccountQuotaServiceRPC.java`
-- `big-market-api/src/main/java/com/dyx/market/trigger/api/support/ApiResponses.java`（account/fulfillment RPC 共用）
+- `big-market-api/src/main/java/com/dyx/market/trigger/api/support/ApiResponses.java`（account RPC 共用）
 - `big-market-infrastructure/src/main/java/com/dyx/market/infrastructure/adapter/repository/CreditRepository.java`
 
 ## Rebate
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/rebate/service/BehaviorRebateService.java`
-- `big-market-rebate-service/src/main/java/com/dyx/market/rebate/provider/RebateServiceRPC.java`
-- `big-market-domain/src/main/java/com/dyx/market/domain/rebate/application/RebateApplicationService.java`
-- `big-market-domain/src/main/java/com/dyx/market/domain/rebate/support/RebateAppTokenValidator.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateOrderAdapter.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalRebateReadAdapter.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/listener/RebateMessageConsumer.java`
 
 ## Strategy
 
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/RaffleStrategyController.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/rpc/RaffleStrategyServiceRPC.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/LocalStrategyReadAdapter.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/armory/StrategyArmoryDispatch.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/rule/chain/factory/DefaultChainFactory.java`
 - `big-market-domain/src/main/java/com/dyx/market/domain/strategy/service/rule/tree/factory/DefaultTreeFactory.java`
-- `big-market-strategy-service/src/main/java/com/dyx/market/strategy/application/StrategyReadApplicationService.java`
-- `big-market-strategy-service/src/main/java/com/dyx/market/strategy/provider/StrategyReadServiceRPC.java`
 
 ## Award Fulfillment
 
 - `big-market-domain/src/main/java/com/dyx/market/domain/award/service/AwardService.java`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/application/FulfillmentAwardApplicationService.java`
-- `big-market-fulfillment-service/src/main/java/com/dyx/market/fulfillment/provider/FulfillmentAwardServiceRPC.java`（默认 Docker 积分奖不经 remote RPC）
+- `big-market-message-job-service/src/main/java/com/dyx/market/message/job/config/WriteAdapterLocalConfig.java`
 
 ## Tasks, Outbox, And Operations（仅 message-job 运行时）
 
