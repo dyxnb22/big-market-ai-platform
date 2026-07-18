@@ -45,8 +45,6 @@ public class ChatbotApplicationServiceIdempotencyTest {
 
     @Test
     public void ask_doesNotReturnOtherUsersCachedResponse() {
-        when(platformConfigService.getValue(eq("chatbot"), eq("enabled"), anyString())).thenReturn("true");
-        when(platformConfigService.getValue(eq("chatbot"), eq("costPerAsk"), anyString())).thenReturn("1");
         when(chatTokenUserSupport.resolveUserId("token-b")).thenReturn("user-b");
         when(chatRequestIdempotencySupport.findCompleted("user-b", "shared-req")).thenReturn(null);
         when(chatRequestIdempotencySupport.tryMarkProcessing("user-b", "shared-req")).thenReturn(false);
@@ -68,8 +66,6 @@ public class ChatbotApplicationServiceIdempotencyTest {
 
     @Test
     public void invalidToken_doesNotReadCache() {
-        when(platformConfigService.getValue(eq("chatbot"), eq("enabled"), anyString())).thenReturn("true");
-        when(platformConfigService.getValue(eq("chatbot"), eq("costPerAsk"), anyString())).thenReturn("1");
         when(chatTokenUserSupport.resolveUserId("bad-token")).thenReturn(null);
 
         ChatbotAskRequestDTO request = new ChatbotAskRequestDTO();
@@ -89,8 +85,6 @@ public class ChatbotApplicationServiceIdempotencyTest {
 
     @Test
     public void replayFailedRequestThrowsSameErrorCode() {
-        when(platformConfigService.getValue(eq("chatbot"), eq("enabled"), anyString())).thenReturn("true");
-        when(platformConfigService.getValue(eq("chatbot"), eq("costPerAsk"), anyString())).thenReturn("0");
         when(chatTokenUserSupport.resolveUserId("token-a")).thenReturn("user-a");
         when(chatRequestIdempotencySupport.findCompleted(eq("user-a"), eq("req-fail")))
                 .thenReturn(ChatRequestIdempotencySupport.CachedChatResponse.builder()

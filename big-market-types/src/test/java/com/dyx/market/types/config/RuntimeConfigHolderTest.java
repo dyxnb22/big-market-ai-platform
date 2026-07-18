@@ -19,15 +19,15 @@ class RuntimeConfigHolderTest {
     }
 
     @Test
-    void blankValuesKeepPreviousSnapshot() {
+    void missingValuesResetTheAffectedSnapshotToSafeDefaults() {
         RuntimeConfigHolder holder = new RuntimeConfigHolder();
         holder.refreshFromContent("system.degradeSwitch.value=open\n"
                 + "system.rateLimiterSwitch.value=open\n");
 
         holder.refreshFromContent("system.degradeSwitch.description=unchanged\n");
 
-        Assertions.assertTrue(holder.isDegradeOpen());
-        Assertions.assertTrue(holder.isRateLimiterEnabled());
+        Assertions.assertFalse(holder.isDegradeOpen());
+        Assertions.assertFalse(holder.isRateLimiterEnabled());
     }
 
     @Test

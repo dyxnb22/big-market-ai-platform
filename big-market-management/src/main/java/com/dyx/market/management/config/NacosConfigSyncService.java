@@ -23,7 +23,8 @@ import java.util.Properties;
  * admin-service 调用 {@link #publish} 或 {@link #publishRuntimeSwitches} 推送，
  * chatbot-service / market-service 通过对应 listener 订阅变更。
  * <p>
- * 默认 fail-closed：publish 失败抛异常。本地无 Nacos 时可设 {@code nacos.config.sync.fail-open=true}。
+ * Publish and listener registration are fail-closed: Nacos is the only runtime
+ * source of platform configuration, so a local shadow write is never accepted.
  */
 @Service
 @ConditionalOnProperty(value = "nacos.config.sync.enabled", havingValue = "true")
@@ -49,9 +50,6 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
     @Value("${nacos.config.sync.runtimeGroup:DEFAULT_GROUP}")
     private String runtimeGroup;
 
-    @Value("${nacos.config.sync.fail-open:false}")
-    private boolean failOpen;
-
     private ConfigService configService;
 
     @Override
@@ -63,14 +61,10 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
                 nacosProps.put(PropertyKeyConst.NAMESPACE, namespace);
             }
             configService = NacosFactory.createConfigService(nacosProps);
-            log.info("NacosConfigSyncService initialized, serverAddr={}, dataId={}, runtimeDataId={}, failOpen={}",
-                    serverAddr, dataId, runtimeDataId, failOpen);
+            log.info("NacosConfigSyncService initialized, serverAddr={}, dataId={}, runtimeDataId={}",
+                    serverAddr, dataId, runtimeDataId);
         } catch (NacosException e) {
-            if (failOpen) {
-                log.warn("NacosConfigSyncService init failed (fail-open): {}", e.getMessage());
-            } else {
-                log.error("NacosConfigSyncService init failed (fail-closed): {}", e.getMessage());
-            }
+            throw new IllegalStateException("Nacos config service initialization failed", e);
         }
     }
 
@@ -78,7 +72,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
      * Publish platform config to Nacos.
      *
      * @return true when publish succeeded
-     * @throws IllegalStateException when publish fails and fail-open is false
+     * @throws IllegalStateException when publish fails
      */
     public boolean publish(String content) {
         return publish(dataId, group, content);
@@ -91,10 +85,6 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
 
     private boolean publish(String targetDataId, String targetGroup, String content) {
         if (configService == null) {
-            if (failOpen) {
-                log.warn("Nacos config service unavailable; skip publish (fail-open)");
-                return false;
-            }
             throw new IllegalStateException("Nacos config service unavailable; publish rejected (fail-closed)");
         }
         try {
@@ -103,16 +93,8 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
                 log.info("Published config to Nacos dataId={}, group={}", targetDataId, targetGroup);
                 return true;
             }
-            if (failOpen) {
-                log.warn("Nacos publishConfig returned false, dataId={} (fail-open)", targetDataId);
-                return false;
-            }
             throw new IllegalStateException("Nacos publishConfig returned false for dataId=" + targetDataId);
         } catch (NacosException e) {
-            if (failOpen) {
-                log.warn("Failed to publish platform config to Nacos (fail-open): {}", e.getMessage());
-                return false;
-            }
             throw new IllegalStateException("Failed to publish platform config to Nacos: " + e.getMessage(), e);
         }
     }
@@ -127,13 +109,12 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
 
     private String fetchCurrent(String targetDataId, String targetGroup, long timeoutMs) {
         if (configService == null) {
-            return null;
+            throw new IllegalStateException("Nacos config service unavailable; startup config fetch rejected");
         }
         try {
             return configService.getConfig(targetDataId, targetGroup, timeoutMs);
         } catch (NacosException e) {
-            log.warn("Failed to fetch config from Nacos dataId={}: {}", targetDataId, e.getMessage());
-            return null;
+            throw new IllegalStateException("Failed to fetch required Nacos config dataId=" + targetDataId, e);
         }
     }
 
@@ -147,13 +128,13 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
 
     private void addListener(String targetDataId, String targetGroup, Listener listener) {
         if (configService == null) {
-            return;
+            throw new IllegalStateException("Nacos config service unavailable; listener registration rejected");
         }
         try {
             configService.addListener(targetDataId, targetGroup, listener);
             log.info("Registered Nacos config listener, dataId={}, group={}", targetDataId, targetGroup);
         } catch (NacosException e) {
-            log.warn("Failed to register Nacos listener, dataId={}: {}", targetDataId, e.getMessage());
+            throw new IllegalStateException("Failed to register Nacos listener, dataId=" + targetDataId, e);
         }
     }
 

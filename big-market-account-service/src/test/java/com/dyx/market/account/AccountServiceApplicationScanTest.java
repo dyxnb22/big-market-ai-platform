@@ -2,7 +2,9 @@ package com.dyx.market.account;
 
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.junit.Test;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -17,15 +19,20 @@ import static org.junit.Assert.assertTrue;
 public class AccountServiceApplicationScanTest {
 
     @Test
-    public void applicationScansAccountDomainInfrastructureAndEnablesDubbo() throws Exception {
-        SpringBootApplication boot = AccountServiceApplication.class.getAnnotation(SpringBootApplication.class);
-        assertNotNull(boot);
-        Set<String> packages = new HashSet<>(Arrays.asList(boot.scanBasePackages()));
-        assertTrue(packages.contains("com.dyx.market.account"));
-        assertTrue(packages.contains("com.dyx.market.domain"));
-        assertTrue(packages.contains("com.dyx.market.infrastructure"));
+    public void applicationScansAccountAndExplicitlyExcludesMarketOnlyDrawComposition() throws Exception {
+        assertNotNull(AccountServiceApplication.class.getAnnotation(SpringBootConfiguration.class));
+        assertNotNull(AccountServiceApplication.class.getAnnotation(EnableAutoConfiguration.class));
+        ComponentScan scan = AccountServiceApplication.class.getAnnotation(ComponentScan.class);
+        assertNotNull(scan);
+        Set<String> sharedPackages = new HashSet<>(Arrays.asList(scan.basePackages()));
+        assertTrue(sharedPackages.contains("com.dyx.market.account"));
+        assertTrue(sharedPackages.contains("com.dyx.market.domain"));
+        assertTrue(sharedPackages.contains("com.dyx.market.infrastructure"));
+        assertTrue(sharedPackages.contains("com.dyx.market.trigger.account"));
+        assertTrue(scan.excludeFilters().length > 0);
         assertNotNull(AccountServiceApplication.class.getAnnotation(EnableDubbo.class));
         assertNotNull(Class.forName("com.dyx.market.account.provider.AccountCreditServiceRPC"));
         assertNotNull(Class.forName("com.dyx.market.account.provider.AccountQuotaServiceRPC"));
+        assertNotNull(Class.forName("com.dyx.market.trigger.account.RemoteActivityAccountPort"));
     }
 }

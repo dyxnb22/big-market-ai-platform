@@ -22,14 +22,16 @@ public final class RuntimeConfigHolder {
             new RuntimeConfigSnapshot("close", "close"));
 
     public void refreshFromContent(String content) {
-        if (StringUtils.isBlank(content)) {
-            return;
-        }
         try {
             Properties properties = new Properties();
-            properties.load(new StringReader(content));
-            String degradeSwitch = valueOf(properties, DEGRADE_SWITCH, snapshot.get().getDegradeSwitch());
-            String rateLimiterSwitch = valueOf(properties, RATE_LIMITER_SWITCH, snapshot.get().getRateLimiterSwitch());
+            if (StringUtils.isNotBlank(content)) {
+                properties.load(new StringReader(content));
+            }
+            // Each Nacos notification is a full DataId snapshot. Missing, deleted,
+            // blank, and invalid values must reset safely rather than retain a stale
+            // previous switch.
+            String degradeSwitch = valueOf(properties, DEGRADE_SWITCH);
+            String rateLimiterSwitch = valueOf(properties, RATE_LIMITER_SWITCH);
             snapshot.set(new RuntimeConfigSnapshot(degradeSwitch, rateLimiterSwitch));
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to parse runtime config content", e);
@@ -57,12 +59,12 @@ public final class RuntimeConfigHolder {
         return snapshot.get();
     }
 
-    private String valueOf(Properties properties, String key, String fallback) {
+    private String valueOf(Properties properties, String key) {
         if ("__DELETED__".equals(properties.getProperty(key + ".description"))) {
             return "close";
         }
         String value = properties.getProperty(key + ".value");
-        return StringUtils.isBlank(value) ? fallback : value;
+        return "open".equalsIgnoreCase(value) ? "open" : "close";
     }
 
     public static final class RuntimeConfigSnapshot {

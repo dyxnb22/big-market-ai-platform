@@ -53,6 +53,21 @@ else
   fail "sku stock decrement ledger missing or without unique key"
 fi
 
+if grep -q 'raffle_quota_decrement_ledger_000' "$REPO_ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql" \
+  && grep -q 'raffle_quota_decrement_ledger_003' "$REPO_ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql" \
+  && grep -q 'uq_user_activity_biz' "$REPO_ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql"; then
+  pass "quota decrement ledger shards and idempotency key declared in Docker DDL"
+else
+  fail "quota decrement ledger Docker DDL is incomplete"
+fi
+
+QUOTA_LEDGER_MAPPER="$REPO_ROOT/big-market-account-service/src/main/resources/mybatis/mapper/mysql/raffle_quota_decrement_ledger_mapper.xml"
+if [[ -f "$QUOTA_LEDGER_MAPPER" ]] && grep -q 'raffle_quota_decrement_ledger' "$QUOTA_LEDGER_MAPPER"; then
+  pass "account mapper uses quota decrement ledger covered by Docker DDL"
+else
+  fail "account quota decrement ledger mapper missing or uncovered"
+fi
+
 for svc in market-service message-job-service; do
   for mapper in strategy_award_stock_decrement_ledger_mapper.xml activity_sku_stock_decrement_ledger_mapper.xml; do
     file="$REPO_ROOT/big-market-$svc/src/main/resources/mybatis/mapper/mysql/$mapper"

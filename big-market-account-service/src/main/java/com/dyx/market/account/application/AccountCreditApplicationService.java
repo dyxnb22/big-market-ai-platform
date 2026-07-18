@@ -7,6 +7,7 @@ import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
 import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import com.dyx.market.infrastructure.dao.IUserCreditOrderDao;
 import com.dyx.market.infrastructure.dao.po.UserCreditOrder;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.trigger.api.dto.CreditTradeRequestDTO;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
@@ -28,6 +29,8 @@ public class AccountCreditApplicationService {
     private ICreditAdjustService creditAdjustService;
     @Resource
     private IUserCreditOrderDao userCreditOrderDao;
+    @Resource
+    private IDBRouterStrategy dbRouter;
 
     /** 创建积分交易订单（赚取或消费积分）。 */
     public String createOrder(CreditTradeRequestDTO request) {
@@ -61,10 +64,15 @@ public class AccountCreditApplicationService {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
-        UserCreditOrder query = new UserCreditOrder();
-        query.setUserId(userId);
-        query.setOutBusinessNo(outBusinessNo);
-        return userCreditOrderDao.queryByOutBusinessNo(query) != null;
+        try {
+            dbRouter.doRouter(userId);
+            UserCreditOrder query = new UserCreditOrder();
+            query.setUserId(userId);
+            query.setOutBusinessNo(outBusinessNo);
+            return userCreditOrderDao.queryByOutBusinessNo(query) != null;
+        } finally {
+            dbRouter.clear();
+        }
     }
 
     private TradeNameVO resolveTradeNameVO(String name) {

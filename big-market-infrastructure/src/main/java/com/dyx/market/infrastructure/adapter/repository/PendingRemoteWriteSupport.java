@@ -1,6 +1,7 @@
 package com.dyx.market.infrastructure.adapter.repository;
 
 import com.alibaba.fastjson.JSON;
+import com.dyx.market.domain.activity.adapter.port.IPendingRemoteWritePort;
 import com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao;
 import com.dyx.market.infrastructure.dao.po.PendingRemoteWriteTask;
 import com.dyx.market.middleware.db.router.DBRouterTemplate;
@@ -17,7 +18,7 @@ import javax.annotation.Resource;
  */
 @Slf4j
 @Component
-public class PendingRemoteWriteSupport {
+public class PendingRemoteWriteSupport implements IPendingRemoteWritePort {
 
     @Resource
     private IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao;
@@ -29,6 +30,7 @@ public class PendingRemoteWriteSupport {
      * @return true if task is persisted or already exists; false only when arguments invalid
      * @throws RuntimeException when DB insert fails (caller must not claim task was recorded)
      */
+    @Override
     public boolean enqueue(String outBusinessNo, String operation, Object payload, String userId) {
         if (StringUtils.isBlank(userId)) {
             return enqueue(outBusinessNo, operation, payload);
@@ -41,6 +43,7 @@ public class PendingRemoteWriteSupport {
      * @return true if task is persisted or already exists; false only when arguments invalid
      * @throws RuntimeException when DB insert fails (caller must not claim task was recorded)
      */
+    @Override
     public boolean enqueue(String outBusinessNo, String operation, Object payload) {
         if (StringUtils.isBlank(outBusinessNo) || StringUtils.isBlank(operation) || payload == null) {
             return false;

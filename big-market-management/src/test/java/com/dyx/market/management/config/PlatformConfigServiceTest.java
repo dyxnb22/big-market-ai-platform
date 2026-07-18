@@ -2,30 +2,20 @@ package com.dyx.market.management.config;
 
 import com.dyx.market.trigger.api.dto.AdminConfigRequestDTO;
 import com.dyx.market.trigger.api.dto.AdminConfigResponseDTO;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.io.File;
 import java.io.IOException;
 
 class PlatformConfigServiceTest {
 
-    private static final File TEST_STORE = new File("target/platform-config-test.properties");
-
-    @AfterEach
-    void clean() {
-        System.clearProperty("big.market.config.store");
-        if (TEST_STORE.exists()) {
-            TEST_STORE.delete();
-        }
-    }
-
     @Test
-    void saveAndReloadConfig() throws Exception {
-        System.setProperty("big.market.config.store", TEST_STORE.getPath());
+    void savePublishesToNacosWithoutLocalPersistence() throws Exception {
         PlatformConfigService service = new PlatformConfigService();
+        NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
+        org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
         service.afterPropertiesSet();
 
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
@@ -33,20 +23,18 @@ class PlatformConfigServiceTest {
         request.setConfigKey("enabled");
         request.setConfigValue("false");
         request.setDescription("test switch");
-        service.save(request);
-
-        PlatformConfigService reloadService = new PlatformConfigService();
-        reloadService.afterPropertiesSet();
-        AdminConfigResponseDTO config = reloadService.get("chatbot", "enabled");
+        AdminConfigResponseDTO config = service.save(request);
 
         Assertions.assertNotNull(config);
         Assertions.assertEquals("false", config.getConfigValue());
         Assertions.assertEquals("test switch", config.getDescription());
+        Assertions.assertEquals("nacos", config.getSource());
+        org.mockito.Mockito.verify(nacos).publish(org.mockito.ArgumentMatchers.argThat(content ->
+                content.contains("chatbot.enabled.value=false")));
     }
 
     @Test
     void save_should_publish_runtime_switches_to_nacos() throws Exception {
-        System.setProperty("big.market.config.store", TEST_STORE.getPath());
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         org.mockito.Mockito.when(nacos.publishRuntimeSwitches(org.mockito.ArgumentMatchers.anyString()))
@@ -69,7 +57,6 @@ class PlatformConfigServiceTest {
 
     @Test
     void save_should_fail_when_nacos_publish_fails_closed() throws Exception {
-        System.setProperty("big.market.config.store", TEST_STORE.getPath());
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         org.mockito.Mockito.doThrow(new IllegalStateException("Nacos publishConfig returned false"))
@@ -90,7 +77,6 @@ class PlatformConfigServiceTest {
 
     @Test
     void save_should_attach_content_hash_and_nacos_metadata() throws Exception {
-        System.setProperty("big.market.config.store", TEST_STORE.getPath());
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
@@ -108,5 +94,18 @@ class PlatformConfigServiceTest {
         Assertions.assertEquals(16, saved.getContentHash().length());
         Assertions.assertTrue(saved.getNacosPublished());
         Assertions.assertEquals("nacos", saved.getSource());
+    }
+
+    @Test
+    void refreshReplacesTheEntireScopeSoDeletedValuesCannotRemainActive() throws Exception {
+        PlatformConfigService service = new PlatformConfigService();
+        service.afterPropertiesSet();
+
+        service.refreshPlatformFromContent("chatbot.enabled.value=false\n");
+        Assertions.assertEquals("false", service.get("chatbot", "enabled").getConfigValue());
+
+        service.refreshPlatformFromContent("chatbot.provider.value=local\n");
+        Assertions.assertEquals("true", service.get("chatbot", "enabled").getConfigValue());
+        Assertions.assertEquals("local", service.get("chatbot", "provider").getConfigValue());
     }
 }

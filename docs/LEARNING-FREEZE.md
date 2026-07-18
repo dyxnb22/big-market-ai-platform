@@ -64,7 +64,7 @@ acceptance.sh 默认不会替你启动容器；需要脚本启动时加 --start-
 
     ./scripts/acceptance.sh --fresh --confirm-destroy-volumes --start-stack
 
-secure overlay 需要非默认 JWT、内部 RPC、管理和 XXL 凭据：
+secure overlay 需要非默认 JWT、内部 RPC、管理、XXL、MySQL 和 RabbitMQ 凭据：
 
     ./scripts/acceptance.sh --secure --start-stack
 

@@ -4,7 +4,6 @@ import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.dyx.market.management.config.NacosConfigSyncService;
 import com.dyx.market.types.config.RuntimeConfigHolder;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,12 +32,7 @@ public class NacosRuntimeConfigSubscriberConfig {
             }
         });
 
-        String current = nacosConfigSyncService.fetchRuntimeSwitches(3000);
-        if (StringUtils.isNotBlank(current)) {
-            refresh(current, "startup");
-        } else {
-            log.info("No runtime switches in Nacos yet; using local defaults");
-        }
+        refresh(nacosConfigSyncService.fetchRuntimeSwitches(3000), "startup");
     }
 
     private void refresh(String content, String source) {
@@ -47,7 +41,8 @@ public class NacosRuntimeConfigSubscriberConfig {
             log.info("Runtime switches refreshed from Nacos ({}) degradeSwitch={}, rateLimiterSwitch={}",
                     source, runtimeConfigHolder.getDegradeSwitch(), runtimeConfigHolder.getRateLimiterSwitch());
         } catch (RuntimeException e) {
-            log.warn("Ignore invalid runtime switches from Nacos ({}): {}", source, e.getMessage());
+            runtimeConfigHolder.refreshFromContent(null);
+            log.warn("Invalid runtime switches from Nacos ({}); reset to safe defaults: {}", source, e.getMessage());
         }
     }
 }

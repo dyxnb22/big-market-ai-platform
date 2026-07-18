@@ -14,6 +14,28 @@ echo "=== Stack migrations ==="
 ./scripts/apply-reconcile-ddl.sh
 ./scripts/apply-xxl-job-seeds.sh
 
+NACOS_PLATFORM_SQL="$ROOT/docs/dev-ops/mysql/sql/z-nacos-platform-config.sql"
+if [ ! -f "$NACOS_PLATFORM_SQL" ]; then
+  echo "FAIL: Nacos platform seed SQL missing: $NACOS_PLATFORM_SQL" >&2
+  exit 1
+fi
+docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$NACOS_PLATFORM_SQL"
+echo "Nacos platform DataIds ensured without overwriting existing configuration."
+
+# The upstream XXL init SQL has a learning-only admin/123456 row. When the
+# operator supplies both environment values, rotate it idempotently before any
+# acceptance smoke logs in. Values are quoted for a MySQL string literal and
+# are never printed.
+if [ -n "${XXL_JOB_ADMIN_USER:-}" ] || [ -n "${XXL_JOB_ADMIN_PASSWORD:-}" ]; then
+  : "${XXL_JOB_ADMIN_USER:?XXL_JOB_ADMIN_USER is required when rotating XXL credentials}"
+  : "${XXL_JOB_ADMIN_PASSWORD:?XXL_JOB_ADMIN_PASSWORD is required when rotating XXL credentials}"
+  xxl_user_sql=$(printf '%s' "$XXL_JOB_ADMIN_USER" | sed "s/'/''/g")
+  xxl_password_sql=$(printf '%s' "$XXL_JOB_ADMIN_PASSWORD" | sed "s/'/''/g")
+  docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e \
+    "UPDATE xxl_job.xxl_job_user SET username='${xxl_user_sql}', password=MD5('${xxl_password_sql}') WHERE id=1;"
+  echo "XXL administrator credentials rotated from environment."
+fi
+
 FREEZE_SQL="$ROOT/docs/dev-ops/mysql/sql/z-learning-freeze-demo.sql"
 if [ ! -f "$FREEZE_SQL" ]; then
   echo "FAIL: learning-freeze demo SQL missing: $FREEZE_SQL" >&2
@@ -50,6 +72,16 @@ for schema in big_market_01 big_market_02; do
     exit 1
   fi
   echo "  OK  ${schema}.chat_credit_session.deduct_state"
+
+  quota_ledger_count=$(mysql_query "SELECT COUNT(*) FROM information_schema.tables
+    WHERE table_schema='${schema}'
+      AND table_name IN ('raffle_quota_decrement_ledger_000', 'raffle_quota_decrement_ledger_001',
+                         'raffle_quota_decrement_ledger_002', 'raffle_quota_decrement_ledger_003');")
+  if [ "${quota_ledger_count:-0}" != "4" ]; then
+    echo "FAIL: ${schema} quota decrement ledger shards are incomplete" >&2
+    exit 1
+  fi
+  echo "  OK  ${schema}.raffle_quota_decrement_ledger_000..003"
 done
 
 for table in strategy_award_stock_decrement_ledger activity_sku_stock_decrement_ledger; do
@@ -69,6 +101,25 @@ if [ "${xxl_cnt:-0}" -lt 1 ]; then
   exit 1
 fi
 echo "  OK  xxl_job ChatRefundReconcileJob"
+
+if [ -n "${XXL_JOB_ADMIN_USER:-}" ]; then
+  xxl_user_count=$(mysql_query "SELECT COUNT(*) FROM xxl_job.xxl_job_user
+    WHERE username='${xxl_user_sql}' AND password=MD5('${xxl_password_sql}');")
+  if [ "${xxl_user_count:-0}" != "1" ]; then
+    echo "FAIL: XXL administrator credential rotation did not persist" >&2
+    exit 1
+  fi
+  echo "  OK  XXL administrator credentials from environment"
+fi
+
+nacos_config_count=$(mysql_query "SELECT COUNT(*) FROM nacos_config.config_info
+  WHERE (data_id='big-market-platform-config' AND group_id='DEFAULT_GROUP')
+     OR (data_id='big-market-runtime-switches' AND group_id='DEFAULT_GROUP');")
+if [ "${nacos_config_count:-0}" != "2" ]; then
+  echo "FAIL: required Nacos platform DataIds are missing" >&2
+  exit 1
+fi
+echo "  OK  Nacos platform and runtime DataIds"
 
 demo_rate=$(mysql_query "SELECT CONCAT(
     SUM(CASE WHEN award_id=101 AND award_rate=1.0000 THEN 1 ELSE 0 END), ':',

@@ -60,6 +60,12 @@ if [ "$RUN_SECURE" = true ]; then
   : "${ADMIN_TOKEN:?ADMIN_TOKEN is required for secure acceptance}"
   : "${GRAFANA_ADMIN_USER:?GRAFANA_ADMIN_USER is required for secure acceptance}"
   : "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required for secure acceptance}"
+  : "${MYSQL_USER:?MYSQL_USER is required for secure acceptance}"
+  : "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required for secure acceptance}"
+  : "${RABBITMQ_USER:?RABBITMQ_USER is required for secure acceptance}"
+  : "${RABBITMQ_PASS:?RABBITMQ_PASS is required for secure acceptance}"
+  : "${XXL_JOB_ADMIN_USER:?XXL_JOB_ADMIN_USER is required for secure acceptance}"
+  : "${XXL_JOB_ADMIN_PASSWORD:?XXL_JOB_ADMIN_PASSWORD is required for secure acceptance}"
   export APP_AUTH_DEV_USERS="${APP_AUTH_DEV_USERS:-${DEMO_USER_ID}:${DEMO_USER_PASSWORD},${DEMO_ADMIN_USER_ID}:${DEMO_ADMIN_PASSWORD}}"
   export ADMIN_DEV_TOKEN="${ADMIN_DEV_TOKEN:-$ADMIN_TOKEN}"
 fi
@@ -274,7 +280,7 @@ if [ "$START_STACK" = true ]; then
 else
   echo "Gate: start stack (skipped — no --start-stack; will only health-check)"
   # Still apply migrations if MySQL is already up (idempotent; fail soft if down).
-  if docker exec mysql mysqladmin ping -uroot -p123456 --silent 2>/dev/null; then
+  if docker exec mysql mysqladmin ping -uroot -p"${MYSQL_ROOT_PASSWORD:-123456}" --silent 2>/dev/null; then
     begin_gate "apply-stack-migrations"
     if ! ./scripts/apply-stack-migrations.sh; then
       fail_gate "apply-stack-migrations"
@@ -339,6 +345,12 @@ if ! ./scripts/smoke-api.sh; then
   fail_gate "smoke-api"
 fi
 pass_gate "smoke-api"
+
+begin_gate "smoke-nacos-runtime-config"
+if ! ./scripts/smoke-nacos-runtime-config.sh; then
+  fail_gate "smoke-nacos-runtime-config"
+fi
+pass_gate "smoke-nacos-runtime-config"
 
 # ── Chat refund E2E ───────────────────────────────────────────────────────────
 

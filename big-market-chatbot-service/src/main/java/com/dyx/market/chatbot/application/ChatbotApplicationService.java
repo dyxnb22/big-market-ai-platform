@@ -59,12 +59,13 @@ public class ChatbotApplicationService {
         if (null == request || StringUtils.isBlank(request.getMessage())) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
-        if (!"true".equalsIgnoreCase(platformConfigService.getValue(CONFIG_NS_CHATBOT, "enabled", "true"))) {
+        ChatbotRuntimeConfig runtimeConfig = ChatbotRuntimeConfig.from(
+                platformConfigService.snapshotValues(CONFIG_NS_CHATBOT));
+        if (!runtimeConfig.enabled) {
             return disabledResponse(token);
         }
 
-        int effectiveCost = parseCostConfig(
-                platformConfigService.getValue(CONFIG_NS_CHATBOT, "costPerAsk", String.valueOf(DEFAULT_COST_PER_ASK)));
+        int effectiveCost = parseCostConfig(runtimeConfig.costPerAsk);
         if (effectiveCost > 0 && StringUtils.isBlank(token)) {
             throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());
         }
@@ -93,15 +94,15 @@ public class ChatbotApplicationService {
                 throw e;
             }
 
-            String effectiveProvider = platformConfigService.getValue(CONFIG_NS_CHATBOT, "provider", DEFAULT_PROVIDER);
-            String effectiveApiKey = platformConfigService.getValue(CONFIG_NS_CHATBOT, "apiKey", DEFAULT_API_KEY);
             try {
-                String answer = PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) && StringUtils.isNotBlank(effectiveApiKey)
-                        ? callDeepSeek(request.getMessage(), effectiveApiKey)
+                String answer = PROVIDER_DEEPSEEK.equalsIgnoreCase(runtimeConfig.provider)
+                        && StringUtils.isNotBlank(runtimeConfig.apiKey)
+                        ? callDeepSeek(request.getMessage(), runtimeConfig.apiKey,
+                                runtimeConfig.baseUrl, runtimeConfig.model)
                         : localFallback(request.getMessage());
                 ChatbotAskResponseDTO responseDto = ChatbotAskResponseDTO.builder()
                         .intent("chat")
-                        .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) ? PROVIDER_DEEPSEEK : "local")
+                        .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(runtimeConfig.provider) ? PROVIDER_DEEPSEEK : "local")
                         .success(true)
                         .answer(answer)
                         .creditDeducted(creditResult.deducted)
@@ -121,7 +122,7 @@ public class ChatbotApplicationService {
                 String errorCode = ResponseCode.UN_ERROR.getCode();
                 chatRequestIdempotencySupport.complete(userId, requestId, ChatRequestIdempotencySupport.CachedChatResponse.builder()
                         .answer(failureAnswer)
-                        .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(effectiveProvider) ? PROVIDER_DEEPSEEK : "local")
+                        .toolName(PROVIDER_DEEPSEEK.equalsIgnoreCase(runtimeConfig.provider) ? PROVIDER_DEEPSEEK : "local")
                         .success(false)
                         .creditDeducted(creditResult.deducted)
                         .creditBalance(creditResult.balance)
@@ -246,9 +247,7 @@ public class ChatbotApplicationService {
     }
 
     @SuppressWarnings("unchecked")
-    private String callDeepSeek(String userMessage, String apiKey) {
-        String baseUrl = platformConfigService.getValue(CONFIG_NS_CHATBOT, "baseUrl", DEFAULT_BASE_URL);
-        String model = platformConfigService.getValue(CONFIG_NS_CHATBOT, "model", DEFAULT_MODEL);
+    private String callDeepSeek(String userMessage, String apiKey, String baseUrl, String model) {
         String url = baseUrl.replaceAll("/$", "") + "/v1/chat/completions";
 
         HttpHeaders headers = new HttpHeaders();
@@ -302,6 +301,39 @@ public class ChatbotApplicationService {
             this.requestId = requestId;
             this.deducted = deducted;
             this.balance = balance;
+        }
+    }
+
+    /** Immutable per-request view; a Nacos refresh cannot mix provider fields mid-call. */
+    private static final class ChatbotRuntimeConfig {
+        private final boolean enabled;
+        private final String provider;
+        private final String apiKey;
+        private final String baseUrl;
+        private final String model;
+        private final String costPerAsk;
+
+        private ChatbotRuntimeConfig(boolean enabled, String provider, String apiKey,
+                                     String baseUrl, String model, String costPerAsk) {
+            this.enabled = enabled;
+            this.provider = provider;
+            this.apiKey = apiKey;
+            this.baseUrl = baseUrl;
+            this.model = model;
+            this.costPerAsk = costPerAsk;
+        }
+
+        private static ChatbotRuntimeConfig from(Map<String, String> values) {
+            if (values == null) {
+                values = Collections.emptyMap();
+            }
+            return new ChatbotRuntimeConfig(
+                    "true".equalsIgnoreCase(values.getOrDefault("enabled", "true")),
+                    values.getOrDefault("provider", DEFAULT_PROVIDER),
+                    values.getOrDefault("apiKey", DEFAULT_API_KEY),
+                    values.getOrDefault("baseUrl", DEFAULT_BASE_URL),
+                    values.getOrDefault("model", DEFAULT_MODEL),
+                    values.getOrDefault("costPerAsk", String.valueOf(DEFAULT_COST_PER_ASK)));
         }
     }
 }

@@ -77,10 +77,6 @@ services:
       - NACOS_RUNTIME_DATA_ID=${NACOS_RUNTIME_DATA_ID:-big-market-runtime-switches}
       - NACOS_RUNTIME_GROUP=${NACOS_RUNTIME_GROUP:-DEFAULT_GROUP}
       - NACOS_CONFIG_NAMESPACE=${NACOS_CONFIG_NAMESPACE:-}
-      - NACOS_CONFIG_SYNC_FAIL_OPEN=${NACOS_CONFIG_SYNC_FAIL_OPEN:-false}
-      - JAVA_OPTS=-Dbig.market.config.store=/data/admin-config/platform-config.properties
-    volumes:
-      - ./data/admin-config:/data/admin-config
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -117,17 +113,13 @@ services:
       - MYSQL_USER=${MYSQL_USER:-root}
       - MYSQL_PASS=${MYSQL_ROOT_PASSWORD:-123456}
       - CHAT_INTERNAL_SERVICE_TOKEN=${CHAT_INTERNAL_SERVICE_TOKEN:-change-me-chat-internal-docker}
-      - JAVA_OPTS=-Dbig.market.config.store=/data/chatbot-config/platform-config.properties
       - NACOS_CONFIG_SYNC_ENABLED=${NACOS_CONFIG_SYNC_ENABLED:-true}
       - NACOS_CONFIG_DATA_ID=${NACOS_CONFIG_DATA_ID:-big-market-platform-config}
       - NACOS_CONFIG_GROUP=${NACOS_CONFIG_GROUP:-DEFAULT_GROUP}
       - NACOS_RUNTIME_DATA_ID=${NACOS_RUNTIME_DATA_ID:-big-market-runtime-switches}
       - NACOS_RUNTIME_GROUP=${NACOS_RUNTIME_GROUP:-DEFAULT_GROUP}
       - NACOS_CONFIG_NAMESPACE=${NACOS_CONFIG_NAMESPACE:-}
-      - NACOS_CONFIG_SYNC_FAIL_OPEN=${NACOS_CONFIG_SYNC_FAIL_OPEN:-false}
       - CHATBOT_GATEWAY_URL=http://big-market-gateway:8080
-    volumes:
-      - ./data/chatbot-config:/data/chatbot-config
     networks:
       - dev-ops_my-network
     healthcheck:
@@ -178,7 +170,6 @@ services:
       - NACOS_RUNTIME_DATA_ID=${NACOS_RUNTIME_DATA_ID:-big-market-runtime-switches}
       - NACOS_RUNTIME_GROUP=${NACOS_RUNTIME_GROUP:-DEFAULT_GROUP}
       - NACOS_CONFIG_NAMESPACE=${NACOS_CONFIG_NAMESPACE:-}
-      - NACOS_CONFIG_SYNC_FAIL_OPEN=${NACOS_CONFIG_SYNC_FAIL_OPEN:-false}
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
       - XXL_JOB_HOST=xxl-job-admin

@@ -17,12 +17,12 @@ services:
       - MYSQL_SERVICE_HOST=mysql
       - MYSQL_SERVICE_DB_NAME=nacos_config
       - MYSQL_SERVICE_PORT=3306
-      - MYSQL_SERVICE_USER=root
-      - MYSQL_SERVICE_PASSWORD=123456
+      - MYSQL_SERVICE_USER=${MYSQL_USER:-root}
+      - MYSQL_SERVICE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
-      - NACOS_AUTH_IDENTITY_KEY=2222
-      - NACOS_AUTH_IDENTITY_VALUE=2xxx
-      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+      - NACOS_AUTH_IDENTITY_KEY=${NACOS_AUTH_IDENTITY_KEY:-2222}
+      - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE:-2xxx}
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN:-SecretKey012345678901234567890123456789012345678901234567890123456789}
     networks:
       - my-network
     depends_on:
@@ -36,7 +36,7 @@ services:
     restart: "no"
     environment:
       TZ: Asia/Shanghai
-      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
     ports:
       - "13306:3306"
     volumes:
@@ -61,7 +61,7 @@ services:
     environment:
       - PMA_HOST=mysql
       - PMA_PORT=3306
-      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
     depends_on:
       mysql:
         condition: service_healthy
@@ -99,8 +99,8 @@ services:
       - 8081:8081
     environment:
       - REDIS_HOSTS=local:redis:6379
-      - HTTP_USER=admin
-      - HTTP_PASSWORD=admin
+      - HTTP_USER=${REDIS_COMMANDER_USER:-admin}
+      - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:-admin}
       - LANG=C.UTF-8
       - LANGUAGE=C.UTF-8
       - LC_ALL=C.UTF-8
@@ -121,8 +121,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-admin}
     command: rabbitmq-server
     volumes:
       - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
@@ -208,9 +208,10 @@ services:
       - mysql
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/xxl_job?serverTimezone=UTC&characterEncoding=utf8&autoReconnect=true&serverTimezone=Asia/Shanghai
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-root}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SERVER_PORT=9090
+      - XXL_JOB_ACCESS_TOKEN=${XXL_JOB_TOKEN:-default_token}
     networks:
       - my-network
 

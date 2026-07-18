@@ -8,6 +8,8 @@ BASE_URL="${API%/api/v1}"
 XXL_ADMIN="${XXL_ADMIN:-http://127.0.0.1:9090/xxl-job-admin}"
 MYSQL_CONTAINER="${MYSQL_CONTAINER:-mysql}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-123456}"
+XXL_JOB_ADMIN_USER="${XXL_JOB_ADMIN_USER:-admin}"
+XXL_JOB_ADMIN_PASSWORD="${XXL_JOB_ADMIN_PASSWORD:-123456}"
 USER_ID="${USER_ID:-${DEMO_USER_ID:-xiaofuge}}"
 DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
 DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
@@ -112,7 +114,8 @@ done
 COOKIE_JAR="$(mktemp)"
 trap 'rm -f "$COOKIE_JAR"' EXIT
 curl -fsS -c "$COOKIE_JAR" -X POST "$XXL_ADMIN/login" \
-  -d 'userName=admin&password=123456' >/dev/null
+  --data-urlencode "userName=$XXL_JOB_ADMIN_USER" \
+  --data-urlencode "password=$XXL_JOB_ADMIN_PASSWORD" >/dev/null
 TRIGGER="$(curl -fsS -b "$COOKIE_JAR" -X POST "$XXL_ADMIN/jobinfo/trigger" \
   -d "id=$DISPATCH_JOB_ID&executorParam=&addressList=")"
 [ "$(printf '%s' "$TRIGGER" | json_field "d.get('code','')")" = "200" ] \

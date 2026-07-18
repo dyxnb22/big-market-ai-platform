@@ -39,10 +39,11 @@ done
 
 docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e \
   "SELECT table_schema, table_name FROM information_schema.tables
-   WHERE (table_schema IN ('big_market_01','big_market_02') AND table_name = 'chat_credit_session')
+   WHERE (table_schema IN ('big_market_01','big_market_02') AND
+          (table_name = 'chat_credit_session' OR table_name LIKE 'raffle_quota_decrement_ledger_%'))
       OR (table_schema = 'big_market' AND table_name IN (
             'strategy_award_stock_decrement_ledger',
             'activity_sku_stock_decrement_ledger'))
    ORDER BY table_schema, table_name;"
 
-echo "Reconcile DDL applied (chat_credit_session, stock decrement ledgers, and related tables)."
+echo "Reconcile DDL applied (chat-credit session, stock and quota decrement ledgers, and related tables)."

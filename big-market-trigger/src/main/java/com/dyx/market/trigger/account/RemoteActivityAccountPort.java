@@ -1,6 +1,7 @@
 package com.dyx.market.trigger.account;
 
 import com.dyx.market.domain.activity.adapter.port.IActivityAccountPort;
+import com.dyx.market.domain.activity.adapter.port.IPendingRemoteWritePort;
 import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.model.aggregate.CreatePartakeOrderAggregate;
 import com.dyx.market.trigger.api.IAccountCreditService;
@@ -10,6 +11,7 @@ import com.dyx.market.trigger.api.dto.AccountQuotaRollbackRequestDTO;
 import com.dyx.market.trigger.api.response.Response;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
+import com.dyx.market.types.common.RemoteWriteOperations;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.context.annotation.Profile;
@@ -29,11 +31,13 @@ public class RemoteActivityAccountPort implements IActivityAccountPort {
 
     @Resource
     private IActivityRepository activityRepository;
+    @Resource
+    private IPendingRemoteWritePort pendingRemoteWritePort;
 
-    @DubboReference(version = "1.0", check = false)
+    @DubboReference(version = "1.0", check = false, injvm = false)
     private IAccountQuotaService accountQuotaService;
 
-    @DubboReference(version = "1.0", check = false)
+    @DubboReference(version = "1.0", check = false, injvm = false)
     private IAccountCreditService accountCreditService;
 
     @Override
@@ -50,14 +54,25 @@ public class RemoteActivityAccountPort implements IActivityAccountPort {
             if (response != null && ResponseCode.SUCCESS.getCode().equals(response.getCode())) {
                 return Boolean.TRUE.equals(response.getData());
             }
+            if (response != null && isDefiniteQuotaRejection(response.getCode())) {
+                log.warn("[RemoteActivityAccountPort] decrementQuota rejected code:{} userId:{} outBusinessNo:{}",
+                        response.getCode(), userId, outBusinessNo);
+                return false;
+            }
             log.warn("[RemoteActivityAccountPort] decrementQuota non-success code:{} userId:{} outBusinessNo:{}",
                     response == null ? "null" : response.getCode(), userId, outBusinessNo);
-            return false;
+            persistUnknownQuotaRollback(userId, activityId, outBusinessNo);
+            throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                    "远程配额扣减结果未知，已记录待对账回滚任务: " + outBusinessNo);
         } catch (Exception e) {
+            if (e instanceof AppException) {
+                throw (AppException) e;
+            }
             log.error("[RemoteActivityAccountPort] decrementQuota remote failed userId:{} outBusinessNo:{}",
                     userId, outBusinessNo, e);
+            persistUnknownQuotaRollback(userId, activityId, outBusinessNo);
             throw new AppException(ResponseCode.UN_ERROR.getCode(),
-                    "远程配额扣减结果未知，请按业务号对账后重试: " + outBusinessNo);
+                    "远程配额扣减结果未知，已记录待对账回滚任务: " + outBusinessNo);
         }
     }
 
@@ -99,6 +114,26 @@ public class RemoteActivityAccountPort implements IActivityAccountPort {
             log.error("[RemoteActivityAccountPort] rollbackQuota remote failed userId:{} outBusinessNo:{}",
                     userId, outBusinessNo, e);
         }
+        persistUnknownQuotaRollback(userId, activityId, outBusinessNo);
+        throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程配额回滚结果未知，已记录待对账任务");
+    }
+
+    private void persistUnknownQuotaRollback(String userId, Long activityId, String outBusinessNo) {
+        AccountQuotaRollbackRequestDTO request = AccountQuotaRollbackRequestDTO.builder()
+                .userId(userId)
+                .activityId(activityId)
+                .outBusinessNo(outBusinessNo)
+                .build();
+        if (!pendingRemoteWritePort.enqueue(outBusinessNo, RemoteWriteOperations.QUOTA_ROLLBACK, request, userId)) {
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程配额回滚失败，补偿任务参数无效");
+        }
+    }
+
+    private boolean isDefiniteQuotaRejection(String code) {
+        return ResponseCode.ACCOUNT_QUOTA_ERROR.getCode().equals(code)
+                || ResponseCode.ACCOUNT_MONTH_QUOTA_ERROR.getCode().equals(code)
+                || ResponseCode.ACCOUNT_DAY_QUOTA_ERROR.getCode().equals(code)
+                || ResponseCode.ILLEGAL_PARAMETER.getCode().equals(code);
     }
 
     @Override
@@ -114,7 +149,11 @@ public class RemoteActivityAccountPort implements IActivityAccountPort {
         } catch (Exception e) {
             log.error("[RemoteActivityAccountPort] savePartakeOrderOnly failed, compensating userId:{} activityId:{} outBusinessNo:{}",
                     userId, activityId, outBusinessNo, e);
-            rollbackQuota(userId, activityId, outBusinessNo);
+            try {
+                rollbackQuota(userId, activityId, outBusinessNo);
+            } catch (Exception compensationEx) {
+                e.addSuppressed(compensationEx);
+            }
             throw e;
         }
     }

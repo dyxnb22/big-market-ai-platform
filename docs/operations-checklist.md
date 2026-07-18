@@ -35,7 +35,7 @@ MQ 消费者与 XXL handlers 运行在 **`big-market-message-job-service`**；ma
 - `DlqReplayJob` is disabled by default. After idempotency/terminal-state review,
   an operator moves selected `mq_dead_letter` rows to `reviewed`, enables
   `JOB_DLQ_REPLAY_ENABLED=true`, and manually enables/triggers the stopped XXL seed.
-- `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes.
+- `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes. It caps retries at five and marks exhausted rows `failed`; after fixing the root cause, first inspect with `./scripts/replay-pending-remote-write.sh --dry-run <out-business-no> <operation>`, then replay the exact reviewed key without changing its payload. Valid operations are `credit_create`, `quota_create`, `quota_update`, and `quota_rollback`.
 - `ChatRefundReconcileJob` retries chat `refund_state=pending` sessions.
 
 Check consumer/job logs primarily from `big-market-message-job-service`; use `big-market-market-service` for draw/HTTP path only.
@@ -81,14 +81,14 @@ Gauges are published by `BusinessMetricsPublisher` on **message-job** (`big_mark
 | --- | --- | --- | --- |
 | `ChatRefundPending` | `big_market_chat_refund_pending` | Confirm `ChatRefundReconcileJob` enabled/firing; inspect `chat_credit_session` rows with `refund_state=pending` | Fix account RPC / token; let reconcile retry; do not manually clear without matching credit ledger |
 | `StrategyStockConfirmPending` | `big_market_strategy_stock_confirm_pending` | Confirm `StrategyAwardStockConfirmJob`; inspect `strategy_award_stock_confirm_task` pending rows vs award save failures | Restore DB/Redis connectivity; replay job after root cause; avoid double-confirming stock |
-| `PendingRemoteWriteBacklog` / `MqDeadLetterPending` | existing rules | Remote-write reconcile / DLQ review flow above | Same as Task Checks: review before `DlqReplayJob` |
+| `PendingRemoteWriteBacklog` / `MqDeadLetterPending` | existing rules | Remote-write reconcile / DLQ review flow above | Review the exact business key; replay failed remote writes with `replay-pending-remote-write.sh` only after root-cause repair, and use `DlqReplayJob` only for reviewed MQ dead letters |
 
 ## Secure profile
 
 - Learning/default compose: `SPRING_PROFILES_ACTIVE=docker` (or local equivalents) — permissive RPC/gateway defaults.
 - Production-like demo:
   - `docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d`
-  - Requires non-default `JWT_SECRET`, `APP_INTERNAL_RPC_TOKEN`, `ADMIN_TOKEN`, `CHAT_INTERNAL_SERVICE_TOKEN`, `XXL_JOB_TOKEN`, `APP_AUTH_DEV_USERS`; secure acceptance also requires `DEMO_USER_ID` / `DEMO_USER_PASSWORD` and `DEMO_ADMIN_USER_ID` / `DEMO_ADMIN_PASSWORD` entries matching `APP_AUTH_DEV_USERS`.
+  - Requires explicit non-dev `JWT_SECRET`, `APP_INTERNAL_RPC_TOKEN`, `ADMIN_TOKEN`, `CHAT_INTERNAL_SERVICE_TOKEN`, `XXL_JOB_TOKEN`, `MYSQL_USER`, `MYSQL_ROOT_PASSWORD`, `RABBITMQ_USER`, `RABBITMQ_PASS`, `XXL_JOB_ADMIN_USER`, `XXL_JOB_ADMIN_PASSWORD`, and `APP_AUTH_DEV_USERS`; `apply-stack-migrations.sh` rotates the XXL admin row from the supplied values. Secure acceptance also requires `DEMO_USER_ID` / `DEMO_USER_PASSWORD` and `DEMO_ADMIN_USER_ID` / `DEMO_ADMIN_PASSWORD` entries matching `APP_AUTH_DEV_USERS`.
   - `secure` overrides `docker` in `DefaultCredentialGuard` (defaults refuse to start).
   - All Dubbo services ship `application-secure.yml` with `app.internal-rpc.enforce=true`.
 - Negative checks: `./scripts/smoke-security.sh`

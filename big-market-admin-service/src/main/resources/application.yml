@@ -36,8 +36,6 @@ nacos:
       runtimeDataId: big-market-runtime-switches
       runtimeGroup: DEFAULT_GROUP
       namespace: ""
-      # When true, admin save succeeds even if Nacos publish fails (local-only demo).
-      fail-open: false
 
 management:
   endpoints:

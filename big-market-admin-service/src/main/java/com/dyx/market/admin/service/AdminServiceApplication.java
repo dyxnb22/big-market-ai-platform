@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * 管理后台服务启动入口：平台配置 CRUD，基于 JWT 的管理员鉴权。
  * <p>
- * {@code PlatformConfigService} 为文件持久化的内存配置，无需数据库。
+ * {@code PlatformConfigService} 以 Nacos 为唯一配置来源，并在进程内保留只读快照。
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.admin.service",   // 本模块配置（拦截器、WebMvcConfig）

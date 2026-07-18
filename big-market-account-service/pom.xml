@@ -90,6 +90,11 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-api</artifactId>
         </dependency>
+        <!-- Docker/secure profile account port; launcher scans only trigger.account. -->
+        <dependency>
+            <groupId>com.dyx.market</groupId>
+            <artifactId>big-market-trigger</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-domain</artifactId>

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Import;
 /**
  * 聊天机器人服务启动入口：基于规则 / DeepSeek 的智能助手。
  * <p>
- * 使用 {@code PlatformConfigService}（文件持久化内存配置）与 Redis（requestId 幂等）。
+ * 使用 Nacos 驱动的 {@code PlatformConfigService} 快照与 Redis（requestId 幂等）。
  */
 @SpringBootApplication(scanBasePackages = {
         "com.dyx.market.chatbot.service",

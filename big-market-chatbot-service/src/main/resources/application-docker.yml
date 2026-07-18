@@ -32,7 +32,6 @@ nacos:
       runtimeDataId: ${NACOS_RUNTIME_DATA_ID:big-market-runtime-switches}
       runtimeGroup: ${NACOS_RUNTIME_GROUP:DEFAULT_GROUP}
       namespace: ${NACOS_CONFIG_NAMESPACE:}
-      fail-open: ${NACOS_CONFIG_SYNC_FAIL_OPEN:false}
 
 management:
   health:

@@ -126,6 +126,10 @@ public class RemoteWriteReconcileJob {
                 Response<Boolean> resp = accountQuotaService.isActivityOrderCompleted(dto.getUserId(), dto.getOutBusinessNo());
                 return resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode()) && Boolean.TRUE.equals(resp.getData());
             }
+            case RemoteWriteOperations.QUOTA_ROLLBACK:
+                // rollbackQuota is ledger-idempotent. A retry is therefore both the
+                // reconciliation probe and the repair action for an UNKNOWN result.
+                return false;
             default:
                 log.warn("[RemoteWriteReconcileJob] unknown operation:{} outBusinessNo:{}", task.getOperation(), task.getOutBusinessNo());
                 return false;
@@ -158,6 +162,15 @@ public class RemoteWriteReconcileJob {
                 Response<Boolean> resp = accountQuotaService.updateOrder(dto);
                 if (resp == null || !ResponseCode.SUCCESS.getCode().equals(resp.getCode())) {
                     throw new IllegalStateException("quota update retry failed");
+                }
+                return;
+            }
+            case RemoteWriteOperations.QUOTA_ROLLBACK: {
+                AccountQuotaRollbackRequestDTO dto = JSON.parseObject(task.getPayload(), AccountQuotaRollbackRequestDTO.class);
+                Response<Boolean> resp = accountQuotaService.rollbackQuota(dto);
+                if (resp == null || !ResponseCode.SUCCESS.getCode().equals(resp.getCode())
+                        || !Boolean.TRUE.equals(resp.getData())) {
+                    throw new IllegalStateException("quota rollback retry failed");
                 }
                 return;
             }

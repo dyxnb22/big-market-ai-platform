@@ -6,6 +6,8 @@ API="${API:-http://127.0.0.1:8080/api/v1}"
 XXL_ADMIN="${XXL_ADMIN:-http://127.0.0.1:9090/xxl-job-admin}"
 MYSQL_CONTAINER="${MYSQL_CONTAINER:-mysql}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-123456}"
+XXL_JOB_ADMIN_USER="${XXL_JOB_ADMIN_USER:-admin}"
+XXL_JOB_ADMIN_PASSWORD="${XXL_JOB_ADMIN_PASSWORD:-123456}"
 USER_ID="${USER_ID:-${DEMO_USER_ID:-xiaofuge}}"
 DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo}"
 DEMO_ADMIN_USER_ID="${DEMO_ADMIN_USER_ID:-admin}"
@@ -46,9 +48,9 @@ balance_before="$(curl -fsS "$API/raffle/activity/query_user_credit_account_by_t
 
 echo "--- Part 1: AI failure with immediate refund (market up) ---"
 ORIG_API_KEY="$(curl -fsS "$API/admin/config/get?namespace=chatbot&configKey=apiKey" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" | json_field "d.get('data') or {}.get('configValue','')")"
+  -H "Authorization: Bearer $ADMIN_TOKEN" | json_field "d.get('data',{}).get('configValue','')")"
 ORIG_PROVIDER="$(curl -fsS "$API/admin/config/get?namespace=chatbot&configKey=provider" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" | json_field "d.get('data') or {}.get('configValue','deepseek')")"
+  -H "Authorization: Bearer $ADMIN_TOKEN" | json_field "d.get('data',{}).get('configValue','deepseek')")"
 
 restore_config() {
   python3 - "$API" "$ADMIN_TOKEN" "$ORIG_API_KEY" "$ORIG_PROVIDER" <<'PY'
@@ -110,7 +112,8 @@ STATE_BEFORE="$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSW
 
 COOKIE_JAR="$(mktemp)"
 curl -fsS -c "$COOKIE_JAR" -X POST "$XXL_ADMIN/login" \
-  -d 'userName=admin&password=123456' >/dev/null
+  --data-urlencode "userName=$XXL_JOB_ADMIN_USER" \
+  --data-urlencode "password=$XXL_JOB_ADMIN_PASSWORD" >/dev/null
 curl -fsS -b "$COOKIE_JAR" -X POST "$XXL_ADMIN/jobinfo/trigger" \
   -d "id=$CHAT_REFUND_JOB_ID&executorParam=&addressList=" >/dev/null
 rm -f "$COOKIE_JAR"

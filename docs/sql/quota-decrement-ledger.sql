@@ -1,5 +1,7 @@
--- Learning/reference DDL for the completed local microservices architecture.
--- Apply locally to enable the full feature set in development.
+-- Canonical DDL for the completed microservices architecture.
+-- Run the first block in big_market_01 and the second block in big_market_02.
+
+USE `big_market_01`;
 
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
     `id`              BIGINT        NOT NULL AUTO_INCREMENT                      COMMENT 'Auto-increment row id',
@@ -21,3 +23,10 @@ CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `raffle_quota_decrement_ledger_000`;
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `raffle_quota_decrement_ledger_000`;
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `raffle_quota_decrement_ledger_000`;
+
+USE `big_market_02`;
+
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` LIKE `big_market_01`.`raffle_quota_decrement_ledger_000`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `big_market_01`.`raffle_quota_decrement_ledger_001`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `big_market_01`.`raffle_quota_decrement_ledger_002`;
+CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `big_market_01`.`raffle_quota_decrement_ledger_003`;

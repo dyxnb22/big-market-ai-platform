@@ -9,84 +9,65 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 平台运行时配置的轻量存储（学习/产品化版本）。
- * <p>
- * Admin 使用本地快照提供管理查询，Nacos 负责跨服务配置同步。
- * 普通平台配置与运行时开关分别发布到不同的 Nacos DataId，避免敏感的
- * chatbot 配置被不需要它的服务订阅。
+ * Platform configuration cache backed exclusively by Nacos.
+ *
+ * <p>The in-process map is only an immutable read snapshot of the two Nacos
+ * DataIds. It is never persisted to a local file and a failed publish never
+ * reports a successful admin save. Safe compiled defaults are used only when a
+ * key is deleted or an empty/invalid Nacos payload must be interpreted.</p>
  */
 @Service
 public class PlatformConfigService implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(PlatformConfigService.class);
 
-    private static final String DEFAULT_STORE_PATH = "data/platform-config.properties";
-
-    private final ConcurrentMap<String, AdminConfigResponseDTO> configStore = new ConcurrentHashMap<>();
+    private final AtomicReference<Map<String, AdminConfigResponseDTO>> configSnapshot =
+            new AtomicReference<>(Collections.<String, AdminConfigResponseDTO>emptyMap());
 
     @Autowired(required = false)
     private NacosConfigSyncService nacosConfigSyncService;
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        putDefault("chatbot", "enabled",  "true",                        "Chatbot entrance switch");
-        putDefault("chatbot", "provider", "local",                       "Provider: local, deepseek, openai");
-        putDefault("chatbot", "apiKey",   "",                            "LLM provider API key");
-        putDefault("chatbot", "baseUrl",  "https://api.deepseek.com",    "LLM provider base URL");
-        putDefault("chatbot", "model",    "deepseek-chat",               "LLM model name");
-        putDefault("system",  "degradeSwitch",    "close", "Global raffle degrade switch");
-        putDefault("system",  "rateLimiterSwitch","close", "Global rate limiter switch");
-        putDefault("activity.100301", "state", "online", "Demo activity display state");
-        putDefault("activity.100301", "title", "幸运轮盘活动", "Demo activity title");
-        putDefault("activity.100301", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Demo activity copy");
-        putDefault("activity.100401", "state", "online", "Staged demo activity display state");
-        putDefault("activity.100401", "title", "OpenAi抽奖活动", "Staged demo activity title");
-        putDefault("activity.100401", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Staged demo activity copy");
-        loadFromDisk();
-        // 启动时以 Nacos 为权威源：用远端最新配置覆盖本地磁盘快照
-        if (nacosConfigSyncService != null) {
-            String nacosContent = nacosConfigSyncService.fetchCurrent(3000);
-            if (nacosContent != null && !nacosContent.isEmpty()) {
-                refreshFromContent(nacosContent);
-                log.info("Platform config restored from Nacos on startup ({} entries)", configStore.size());
-            }
-            String runtimeContent = nacosConfigSyncService.fetchRuntimeSwitches(3000);
-            if (runtimeContent != null && !runtimeContent.isEmpty()) {
-                refreshFromContent(runtimeContent);
-                log.info("Runtime switches restored from Nacos on startup");
-            }
+    public void afterPropertiesSet() {
+        configSnapshot.set(immutable(defaultConfigs()));
+        if (nacosConfigSyncService == null) {
+            // Test contexts can omit Nacos. Runtime services enable the Nacos bridge
+            // and reject writes when it is unavailable.
+            return;
         }
+        refreshPlatformFromContent(nacosConfigSyncService.fetchCurrent(3000));
+        refreshRuntimeFromContent(nacosConfigSyncService.fetchRuntimeSwitches(3000));
     }
 
     public List<AdminConfigResponseDTO> list(String namespace) {
         List<AdminConfigResponseDTO> values = new ArrayList<>();
-        for (AdminConfigResponseDTO config : configStore.values()) {
+        for (AdminConfigResponseDTO config : configSnapshot.get().values()) {
             if (StringUtils.isBlank(namespace) || namespace.equals(config.getNamespace())) {
                 values.add(config);
             }
         }
-        values.sort(Comparator.comparing(AdminConfigResponseDTO::getNamespace).thenComparing(AdminConfigResponseDTO::getConfigKey));
+        values.sort(Comparator.comparing(AdminConfigResponseDTO::getNamespace)
+                .thenComparing(AdminConfigResponseDTO::getConfigKey));
         return values;
     }
 
     public AdminConfigResponseDTO get(String namespace, String configKey) {
-        return configStore.get(storeKey(namespace, configKey));
+        return configSnapshot.get().get(storeKey(namespace, configKey));
     }
 
     public String getValue(String namespace, String configKey, String defaultValue) {
@@ -94,12 +75,22 @@ public class PlatformConfigService implements InitializingBean {
         if (config != null && "__DELETED__".equals(config.getDescription())) {
             return defaultValue;
         }
-        return config == null || StringUtils.isBlank(config.getConfigValue()) ? defaultValue : config.getConfigValue();
+        return config == null || StringUtils.isBlank(config.getConfigValue())
+                ? defaultValue : config.getConfigValue();
+    }
+
+    /** Returns one immutable configuration generation for request-scoped reads. */
+    public Map<String, String> snapshotValues(String namespace) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (AdminConfigResponseDTO config : configSnapshot.get().values()) {
+            if (namespace.equals(config.getNamespace()) && !"__DELETED__".equals(config.getDescription())) {
+                values.put(config.getConfigKey(), config.getConfigValue());
+            }
+        }
+        return Collections.unmodifiableMap(values);
     }
 
     public synchronized AdminConfigResponseDTO save(AdminConfigRequestDTO request) throws IOException {
-        String key = storeKey(request.getNamespace(), request.getConfigKey());
-        AdminConfigResponseDTO previous = configStore.get(key);
         AdminConfigResponseDTO config = AdminConfigResponseDTO.builder()
                 .namespace(request.getNamespace())
                 .configKey(request.getConfigKey())
@@ -107,41 +98,21 @@ public class PlatformConfigService implements InitializingBean {
                 .description(request.getDescription())
                 .updateTime(System.currentTimeMillis())
                 .build();
-        configStore.put(key, config);
-        try {
-            saveToDisk();
-            boolean runtimeConfig = isRuntimeConfig(config);
-            String content = serializePropertiesContent(runtimeConfig);
-            String contentHash = contentHash(content);
-            boolean nacosPublished = publishToNacos(content, runtimeConfig);
-            String source = nacosConfigSyncService == null ? "local" : (nacosPublished ? "nacos" : "local");
-            return config.toBuilder()
-                    .contentHash(contentHash)
-                    .nacosPublished(nacosPublished)
-                    .source(source)
-                    .build();
-        } catch (RuntimeException e) {
-            rollbackConfig(key, previous);
-            throw e;
-        } catch (IOException e) {
-            rollbackConfig(key, previous);
-            throw e;
-        }
-    }
+        Map<String, AdminConfigResponseDTO> candidate = new LinkedHashMap<>(configSnapshot.get());
+        candidate.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
 
-    private void rollbackConfig(String key, AdminConfigResponseDTO previous) throws IOException {
-        if (previous != null) {
-            configStore.put(key, previous);
-        } else {
-            configStore.remove(key);
-        }
-        saveToDisk();
-        publishToNacosBestEffort(namespaceFromStoreKey(key));
+        boolean runtimeConfig = isRuntimeConfig(config);
+        String content = serializePropertiesContent(candidate, runtimeConfig);
+        publishToNacos(content, runtimeConfig);
+        configSnapshot.set(immutable(candidate));
+        return config.toBuilder()
+                .contentHash(contentHash(content))
+                .nacosPublished(true)
+                .source("nacos")
+                .build();
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {
-        String key = storeKey(namespace, configKey);
-        AdminConfigResponseDTO previous = configStore.get(key);
         AdminConfigResponseDTO tombstone = AdminConfigResponseDTO.builder()
                 .namespace(namespace)
                 .configKey(configKey)
@@ -149,71 +120,42 @@ public class PlatformConfigService implements InitializingBean {
                 .description("__DELETED__")
                 .updateTime(System.currentTimeMillis())
                 .build();
-        configStore.put(key, tombstone);
-        try {
-            saveToDisk();
-            boolean runtimeConfig = "system".equals(namespace);
-            String content = serializePropertiesContent(runtimeConfig);
-            publishToNacos(content, runtimeConfig);
-        } catch (IOException e) {
-            rollbackConfig(key, previous);
-            throw e;
+        Map<String, AdminConfigResponseDTO> candidate = new LinkedHashMap<>(configSnapshot.get());
+        candidate.put(storeKey(namespace, configKey), tombstone);
+        boolean runtimeConfig = isRuntimeConfig(tombstone);
+        publishToNacos(serializePropertiesContent(candidate, runtimeConfig), runtimeConfig);
+        configSnapshot.set(immutable(candidate));
+    }
+
+    /** Replaces the complete non-runtime snapshot from one Nacos payload. */
+    public void refreshPlatformFromContent(String content) {
+        replaceScope(content, false);
+    }
+
+    /** Replaces the complete runtime-switch snapshot from one Nacos payload. */
+    public void refreshRuntimeFromContent(String content) {
+        replaceScope(content, true);
+    }
+
+    /** Compatibility entry point for callers that receive one DataId at a time. */
+    public void refreshFromContent(String content) {
+        Properties properties = parseProperties(content);
+        boolean hasRuntime = containsRuntimeConfig(properties);
+        boolean hasPlatform = containsPlatformConfig(properties);
+        if (hasRuntime) {
+            replaceScope(properties, true);
+        }
+        if (hasPlatform || (!hasRuntime && !hasPlatform)) {
+            replaceScope(properties, false);
         }
     }
 
-    public synchronized void refreshFromContent(String content) {
-        if (StringUtils.isBlank(content)) {
-            return;
-        }
-        try {
-            Properties properties = new Properties();
-            properties.load(new StringReader(content));
-            for (String propertyName : properties.stringPropertyNames()) {
-                if (!propertyName.endsWith(".value")) {
-                    continue;
-                }
-                String withoutValue = propertyName.substring(0, propertyName.length() - ".value".length());
-                int lastDot = withoutValue.lastIndexOf('.');
-                if (lastDot < 0) {
-                    continue;
-                }
-                String namespace = withoutValue.substring(0, lastDot);
-                String configKey = withoutValue.substring(lastDot + 1);
-                String description = properties.getProperty(namespace + "." + configKey + ".description", "");
-                configStore.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
-                        .namespace(namespace)
-                        .configKey(configKey)
-                        .configValue(properties.getProperty(propertyName))
-                        .description(description)
-                        .updateTime(System.currentTimeMillis())
-                        .build());
-            }
-            log.info("Platform config refreshed from Nacos content ({} entries)", configStore.size());
-        } catch (Exception e) {
-            log.warn("Failed to parse config content from Nacos: {}", e.getMessage());
-        }
+    private void replaceScope(String content, boolean runtimeOnly) {
+        replaceScope(parseProperties(content), runtimeOnly);
     }
 
-    private void putDefault(String namespace, String key, String value, String description) {
-        configStore.put(storeKey(namespace, key), AdminConfigResponseDTO.builder()
-                .namespace(namespace)
-                .configKey(key)
-                .configValue(value)
-                .description(description)
-                .updateTime(System.currentTimeMillis())
-                .build());
-    }
-
-    private void loadFromDisk() throws IOException {
-        File file = storeFile();
-        if (!file.exists()) {
-            saveToDisk();
-            return;
-        }
-        Properties properties = new Properties();
-        try (FileInputStream inputStream = new FileInputStream(file)) {
-            properties.load(inputStream);
-        }
+    private void replaceScope(Properties properties, boolean runtimeOnly) {
+        Map<String, AdminConfigResponseDTO> nextScope = defaultsForScope(runtimeOnly);
         for (String propertyName : properties.stringPropertyNames()) {
             if (!propertyName.endsWith(".value")) {
                 continue;
@@ -225,8 +167,16 @@ public class PlatformConfigService implements InitializingBean {
             }
             String namespace = withoutValue.substring(0, lastDot);
             String configKey = withoutValue.substring(lastDot + 1);
+            if (runtimeOnly != "system".equals(namespace)) {
+                continue;
+            }
             String description = properties.getProperty(namespace + "." + configKey + ".description", "");
-            configStore.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
+            if ("__DELETED__".equals(description)) {
+                // A deletion restores the scope's safe default and must not leave
+                // an old in-memory value active.
+                continue;
+            }
+            nextScope.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
                     .namespace(namespace)
                     .configKey(configKey)
                     .configValue(properties.getProperty(propertyName))
@@ -234,51 +184,128 @@ public class PlatformConfigService implements InitializingBean {
                     .updateTime(System.currentTimeMillis())
                     .build());
         }
+
+        Map<String, AdminConfigResponseDTO> next = new LinkedHashMap<>();
+        for (AdminConfigResponseDTO config : configSnapshot.get().values()) {
+            if (runtimeOnly != isRuntimeConfig(config)) {
+                next.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
+            }
+        }
+        next.putAll(nextScope);
+        configSnapshot.set(immutable(next));
+        log.info("Platform config {} snapshot refreshed from Nacos ({} entries)",
+                runtimeOnly ? "runtime" : "platform", nextScope.size());
     }
 
-    private void saveToDisk() throws IOException {
-        File file = storeFile();
-        File parentFile = file.getParentFile();
-        if (parentFile != null && !parentFile.exists()) {
-            parentFile.mkdirs();
-        }
-        try (FileOutputStream outputStream = new FileOutputStream(file)) {
-            buildProperties().store(outputStream, "Big Market platform runtime configuration");
-        }
-    }
-
-    private void publishToNacosBestEffort(String namespace) {
-        if (nacosConfigSyncService == null) {
-            return;
+    private Properties parseProperties(String content) {
+        Properties properties = new Properties();
+        if (StringUtils.isBlank(content)) {
+            return properties;
         }
         try {
-            boolean runtimeConfig = "system".equals(namespace);
-            publishToNacos(serializePropertiesContent(runtimeConfig), runtimeConfig);
+            properties.load(new StringReader(content));
         } catch (Exception e) {
-            log.warn("Best-effort Nacos publish after rollback failed: {}", e.getMessage());
+            log.warn("Invalid Nacos platform config payload; resetting affected scope to safe defaults: {}", e.getMessage());
+            return new Properties();
+        }
+        return properties;
+    }
+
+    private boolean containsRuntimeConfig(Properties properties) {
+        for (String propertyName : properties.stringPropertyNames()) {
+            if (propertyName.startsWith("system.") && propertyName.endsWith(".value")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsPlatformConfig(Properties properties) {
+        for (String propertyName : properties.stringPropertyNames()) {
+            if (!propertyName.startsWith("system.") && propertyName.endsWith(".value")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void publishToNacos(String content, boolean runtimeConfig) throws IOException {
+        if (nacosConfigSyncService == null) {
+            throw new IOException("Nacos config service is required for platform configuration writes");
+        }
+        try {
+            boolean published = runtimeConfig
+                    ? nacosConfigSyncService.publishRuntimeSwitches(content)
+                    : nacosConfigSyncService.publish(content);
+            if (!published) {
+                throw new IOException("Nacos rejected platform configuration publish");
+            }
+        } catch (IllegalStateException e) {
+            throw new IOException("Failed to publish config to Nacos: " + e.getMessage(), e);
         }
     }
 
-    private String serializePropertiesContent(boolean runtimeOnly) throws IOException {
+    private String serializePropertiesContent(Map<String, AdminConfigResponseDTO> values, boolean runtimeOnly)
+            throws IOException {
+        Properties properties = new Properties();
+        for (AdminConfigResponseDTO config : values.values()) {
+            if (runtimeOnly != isRuntimeConfig(config)) {
+                continue;
+            }
+            String prefix = config.getNamespace() + "." + config.getConfigKey();
+            properties.setProperty(prefix + ".value", StringUtils.defaultString(config.getConfigValue()));
+            properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
+        }
         StringWriter writer = new StringWriter();
-        buildProperties(runtimeOnly).store(writer,
-                runtimeOnly ? "Big Market runtime switches" : "Big Market platform configuration");
+        properties.store(writer, runtimeOnly ? "Big Market runtime switches" : "Big Market platform configuration");
         return writer.toString();
     }
 
-    private boolean publishToNacos(String content, boolean runtimeConfig) throws IOException {
-        if (nacosConfigSyncService == null) {
-            return false;
+    private Map<String, AdminConfigResponseDTO> defaultConfigs() {
+        Map<String, AdminConfigResponseDTO> defaults = new LinkedHashMap<>();
+        putDefault(defaults, "chatbot", "enabled", "true", "Chatbot entrance switch");
+        putDefault(defaults, "chatbot", "provider", "local", "Provider: local, deepseek, openai");
+        putDefault(defaults, "chatbot", "apiKey", "", "LLM provider API key");
+        putDefault(defaults, "chatbot", "baseUrl", "https://api.deepseek.com", "LLM provider base URL");
+        putDefault(defaults, "chatbot", "model", "deepseek-chat", "LLM model name");
+        putDefault(defaults, "system", "degradeSwitch", "close", "Global raffle degrade switch");
+        putDefault(defaults, "system", "rateLimiterSwitch", "close", "Global rate limiter switch");
+        putDefault(defaults, "activity.100301", "state", "online", "Demo activity display state");
+        putDefault(defaults, "activity.100301", "title", "幸运轮盘活动", "Demo activity title");
+        putDefault(defaults, "activity.100301", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Demo activity copy");
+        putDefault(defaults, "activity.100401", "state", "online", "Staged demo activity display state");
+        putDefault(defaults, "activity.100401", "title", "OpenAi抽奖活动", "Staged demo activity title");
+        putDefault(defaults, "activity.100401", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Staged demo activity copy");
+        return defaults;
+    }
+
+    private Map<String, AdminConfigResponseDTO> defaultsForScope(boolean runtimeOnly) {
+        Map<String, AdminConfigResponseDTO> defaults = new LinkedHashMap<>();
+        for (AdminConfigResponseDTO config : defaultConfigs().values()) {
+            if (runtimeOnly == isRuntimeConfig(config)) {
+                defaults.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
+            }
         }
-        try {
-            return runtimeConfig
-                    ? nacosConfigSyncService.publishRuntimeSwitches(content)
-                    : nacosConfigSyncService.publish(content);
-        } catch (IllegalStateException e) {
-            throw new IOException(e.getMessage(), e);
-        } catch (Exception e) {
-            throw new IOException("Failed to publish config to Nacos: " + e.getMessage(), e);
-        }
+        return defaults;
+    }
+
+    private void putDefault(Map<String, AdminConfigResponseDTO> defaults, String namespace, String key,
+                            String value, String description) {
+        defaults.put(storeKey(namespace, key), AdminConfigResponseDTO.builder()
+                .namespace(namespace)
+                .configKey(key)
+                .configValue(value)
+                .description(description)
+                .updateTime(System.currentTimeMillis())
+                .build());
+    }
+
+    private boolean isRuntimeConfig(AdminConfigResponseDTO config) {
+        return config != null && "system".equals(config.getNamespace());
+    }
+
+    private Map<String, AdminConfigResponseDTO> immutable(Map<String, AdminConfigResponseDTO> values) {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(values));
     }
 
     private String contentHash(String content) {
@@ -293,42 +320,6 @@ public class PlatformConfigService implements InitializingBean {
         } catch (Exception e) {
             return "";
         }
-    }
-
-    private Properties buildProperties(boolean runtimeOnly) {
-        Properties properties = new Properties();
-        for (AdminConfigResponseDTO config : configStore.values()) {
-            if (runtimeOnly != isRuntimeConfig(config)) {
-                continue;
-            }
-            String prefix = config.getNamespace() + "." + config.getConfigKey();
-            properties.setProperty(prefix + ".value", StringUtils.defaultString(config.getConfigValue()));
-            properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
-        }
-        return properties;
-    }
-
-    private Properties buildProperties() {
-        Properties properties = new Properties();
-        for (AdminConfigResponseDTO config : configStore.values()) {
-            String prefix = config.getNamespace() + "." + config.getConfigKey();
-            properties.setProperty(prefix + ".value", StringUtils.defaultString(config.getConfigValue()));
-            properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
-        }
-        return properties;
-    }
-
-    private boolean isRuntimeConfig(AdminConfigResponseDTO config) {
-        return config != null && "system".equals(config.getNamespace());
-    }
-
-    private String namespaceFromStoreKey(String key) {
-        int separator = key.indexOf(':');
-        return separator < 0 ? key : key.substring(0, separator);
-    }
-
-    private File storeFile() {
-        return new File(System.getProperty("big.market.config.store", DEFAULT_STORE_PATH));
     }
 
     private String storeKey(String namespace, String configKey) {

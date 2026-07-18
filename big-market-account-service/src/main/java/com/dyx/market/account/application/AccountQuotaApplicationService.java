@@ -8,6 +8,7 @@ import com.dyx.market.domain.activity.model.valobj.OrderTradeTypeVO;
 import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService;
 import com.dyx.market.infrastructure.dao.IRaffleActivityOrderDao;
 import com.dyx.market.infrastructure.dao.po.RaffleActivityOrder;
+import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import com.dyx.market.trigger.api.dto.*;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
@@ -28,6 +29,8 @@ public class AccountQuotaApplicationService {
     private IRaffleActivityAccountQuotaService raffleActivityAccountQuotaService;
     @Resource
     private IRaffleActivityOrderDao raffleActivityOrderDao;
+    @Resource
+    private IDBRouterStrategy dbRouter;
 
     /** 创建活动额度充值/兑换订单。 */
     public UnpaidActivityOrderResponseDTO createOrder(AccountQuotaCreateOrderRequestDTO request) {
@@ -112,21 +115,31 @@ public class AccountQuotaApplicationService {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
-        RaffleActivityOrder query = new RaffleActivityOrder();
-        query.setUserId(userId);
-        query.setOutBusinessNo(outBusinessNo);
-        return raffleActivityOrderDao.queryRaffleActivityOrder(query) != null;
+        try {
+            dbRouter.doRouter(userId);
+            RaffleActivityOrder query = new RaffleActivityOrder();
+            query.setUserId(userId);
+            query.setOutBusinessNo(outBusinessNo);
+            return raffleActivityOrderDao.queryRaffleActivityOrder(query) != null;
+        } finally {
+            dbRouter.clear();
+        }
     }
 
     public boolean isActivityOrderCompleted(String userId, String outBusinessNo) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
-        RaffleActivityOrder query = new RaffleActivityOrder();
-        query.setUserId(userId);
-        query.setOutBusinessNo(outBusinessNo);
-        RaffleActivityOrder order = raffleActivityOrderDao.queryRaffleActivityOrder(query);
-        return order != null && "completed".equalsIgnoreCase(order.getState());
+        try {
+            dbRouter.doRouter(userId);
+            RaffleActivityOrder query = new RaffleActivityOrder();
+            query.setUserId(userId);
+            query.setOutBusinessNo(outBusinessNo);
+            RaffleActivityOrder order = raffleActivityOrderDao.queryRaffleActivityOrder(query);
+            return order != null && "completed".equalsIgnoreCase(order.getState());
+        } finally {
+            dbRouter.clear();
+        }
     }
 
     private static void validateActivityUser(Long activityId, String userId) {
