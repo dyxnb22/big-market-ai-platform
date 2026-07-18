@@ -13,7 +13,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 用户行为返利消息 RabbitMQ 消费者，反序列化事件后委托 {@link RebateMessageApplicationService} 入账。

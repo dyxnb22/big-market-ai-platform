@@ -26,6 +26,9 @@ dubbo:
   registry:
     id: nacos-registry
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://nacos:8848}
+  metadata-report:
+    report-metadata: false
+    report-definition: false
 
 gateway:
   config:

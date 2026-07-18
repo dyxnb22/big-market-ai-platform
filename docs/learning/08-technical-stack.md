@@ -2,8 +2,8 @@
 
 | 技术 | 证据 | 用途 |
 | --- | --- | --- |
-| Java 8 | `pom.xml` | 主语言 |
-| Spring Boot 2.7.12 | `pom.xml` | 服务运行时 |
+| Java 17 | `pom.xml` (`java.version`) | 主语言（当前基线；历史为 Java 8） |
+| Spring Boot 3.5.16 | `pom.xml` | 服务运行时（当前基线；历史为 2.7.12） |
 | Spring Web MVC | service controllers | HTTP API |
 | Spring Cloud Gateway | `big-market-gateway/pom.xml` | API 网关 |
 | Resilience4j | gateway config | 熔断响应 |

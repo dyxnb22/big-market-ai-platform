@@ -9,7 +9,7 @@ import com.dyx.market.infrastructure.redis.IRedisService;
 import com.dyx.market.types.common.Constants;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

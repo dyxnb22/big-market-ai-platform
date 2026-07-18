@@ -5,7 +5,7 @@ import com.dyx.market.infrastructure.dao.IRaffleActivityDao;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * {@link IStrategyActivityMappingPort} 的本地（进程内）实现。

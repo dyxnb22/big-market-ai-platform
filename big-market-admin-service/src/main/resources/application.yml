@@ -35,7 +35,7 @@ nacos:
       group: DEFAULT_GROUP
       runtimeDataId: big-market-runtime-switches
       runtimeGroup: DEFAULT_GROUP
-      namespace: ""
+      namespace: public
 
 management:
   endpoints:
@@ -45,12 +45,10 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-  metrics:
-    export:
-      prometheus:
-        enabled: true
   prometheus:
-    enabled: true
+    metrics:
+      export:
+        enabled: true
 
 logging:
   level:

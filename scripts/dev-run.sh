@@ -3,6 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
+# shellcheck source=lib/java17-precheck.sh
+source "$ROOT_DIR/scripts/lib/java17-precheck.sh"
+require_java_17
 
 echo "[1/3] Start middleware containers"
 docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch

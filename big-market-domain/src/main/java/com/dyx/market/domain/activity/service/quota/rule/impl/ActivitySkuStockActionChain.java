@@ -10,7 +10,7 @@ import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥

@@ -33,7 +33,9 @@ nacos:
       group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
       runtimeDataId: ${NACOS_RUNTIME_DATA_ID:big-market-runtime-switches}
       runtimeGroup: ${NACOS_RUNTIME_GROUP:DEFAULT_GROUP}
-      namespace: ${NACOS_CONFIG_NAMESPACE:}
+      namespace: ${NACOS_CONFIG_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
 
 management:
   health:

@@ -5,7 +5,7 @@ import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 积分写操作的本地进程内实现。

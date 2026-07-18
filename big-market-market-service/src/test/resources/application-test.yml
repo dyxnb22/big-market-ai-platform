@@ -42,12 +42,19 @@ redis:
 # Do not set metadata-type/local overrides that fail ApplicationConfig creation.
 dubbo:
   registry:
+    # Context tests must not register host providers into shared Nacos used by Docker.
+    # Keep subscribe enabled so @DubboReference beans can still resolve against Nacos.
+    register: false
     check: false
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
   consumer:
     check: false
   application:
     qos-enable: false
+    register-consumer: false
+  metadata-report:
+    report-metadata: false
+    report-definition: false
 
 nacos:
   config:

@@ -7,7 +7,7 @@ import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.infrastructure.dao.po.Task;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 发奖派发任务 Outbox 的遗留本地适配器。

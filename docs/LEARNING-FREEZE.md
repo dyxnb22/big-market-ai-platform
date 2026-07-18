@@ -1,18 +1,15 @@
 # Big Market 学习冻结基线
 
-最后更新：2026-07-17。
+最后更新：2026-07-18。
 
 ## 结论
 
-**有条件冻结。** 当前最终拓扑已完成 clean Maven 构建、静态安全门禁、
-Mapper/DDL 门禁、Compose 配置校验和核心 Docker smoke。完整 acceptance、
-fresh 空卷和完整 secure overlay 尚未验证，因此不能写成“全环境已验证”
-或“生产就绪”。
+**有条件冻结（栈已升级）。** 当前最终拓扑在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、核心 Docker smoke，以及抽奖发奖 / chat refund E2E（reuse 路径）。完整 acceptance（含 Playwright 全量）、fresh 空卷和完整 secure overlay 仍需按工作树再跑，因此不能写成“全环境已验证”或“生产就绪”。
 
 本仓库冻结的是一套可复现、可讲解的本地微服务学习样本，不是生产发布基线。
-详细证据与限制见 docs/audit/2026-07-17-learning-freeze-audit.md。
+栈升级决策见 docs/adr/2026-07-18-stack-upgrade.md；历史证据见 docs/audit/2026-07-17-learning-freeze-audit.md。
 
-## 当前最终拓扑（核心 Docker smoke 已通过）
+## 当前最终拓扑（核心 Docker smoke + 钱路径 E2E 已通过）
 
     big-market-web :5173
            |
@@ -25,9 +22,10 @@ fresh 空卷和完整 secure overlay 尚未验证，因此不能写成“全环�
     message-job :8085 -- RabbitMQ consumers + XXL executor
     account :8086     -- credit/quota RPC
 
-MySQL、Redis、RabbitMQ、Nacos、XXL-Job Admin、Prometheus/Grafana 等由
-docs/dev-ops/docker-compose-environment.yml 提供。docker-compose.yml 是最终
-应用入口，仅包含 8080-8086。策略与返利固定在 market 内部执行，积分奖固定由
+中间件默认镜像（docs/dev-ops/docker-compose-environment.yml）：
+MySQL **8.4.5**、Redis **7.4.9**、RabbitMQ **4.3.2**、Nacos **v3.2.3-slim**、
+XXL-Job Admin **2.5.0**（Apple Silicon 用 `kuschzzp/xxl-job-aarch64:2.5.0`）。
+docker-compose.yml 是最终应用入口，仅包含 8080-8086。策略与返利固定在 market 内部执行，积分奖固定由
 message-job 本地 outbox 派发到 account。
 
 默认 compose 中积分奖走本地 outbox：SendAwardConsumer 写
@@ -37,16 +35,16 @@ user_award_record.award_state=completed 表示发奖已被持久化接管，不�
 
 ## 当前证据
 
-| 项目 | 2026-07-17 结果 |
+| 项目 | 2026-07-18（upgrade/java17-boot3）结果 |
 | --- | --- |
-| Maven | 19 个 reactor 模块通过 |
-| Mapper/DDL 门禁 | 18/18 通过 |
-| 运行时安全门禁 | 98/98 通过 |
-| Compose 配置 | 默认与 secure 配置均通过 |
-| 旧路径扫描 | 无残留 |
-| JSON、Shell 语法和 git diff 检查 | 通过 |
-| 核心 Docker smoke | 20/20 通过；7 个应用健康、Web 200 |
-| 完整 acceptance | 尚未运行 |
+| Maven | 19 个 reactor 模块 `mvn clean verify` 通过（Boot 3.5.16） |
+| Mapper/DDL 门禁 | 通过 |
+| 运行时安全门禁 | 通过 |
+| Compose 配置 | 默认配置通过 |
+| 核心 Docker smoke | 健康检查与路由 smoke 通过（偶发 chatbot AI 配置残留时 ask 可能非 0000） |
+| 抽奖发奖 E2E | `smoke-raffle-award-e2e.sh` PASSED |
+| Chat refund E2E | `smoke-chat-refund-e2e.sh` PASSED |
+| 完整 acceptance | 以当次 `./scripts/acceptance.sh --reuse` 结果为准 |
 
 静态门禁不能替代 fresh、secure 和业务状态验收。
 
@@ -82,7 +80,7 @@ secure overlay 需要非默认 JWT、内部 RPC、管理、XXL、MySQL 和 Rabbi
 
 ## 冻结后约束
 
-- 不为“更像微服务”而拆物理库、重写共享 kernel 或迁移框架。
+- 不为“更像微服务”而拆物理库、重写共享 kernel 或再次大迁移框架。
 - 不改变积分、额度、发奖、返利、SKU/奖品库存的业务幂等键。
 - 不让 market 扫描 trigger.job / trigger.listener；消息消费与 XXL 归 message-job。
 - 不把静态 validator、健康端点或 award_state=completed 单独当作业务闭环证据。
@@ -91,10 +89,11 @@ secure overlay 需要非默认 JWT、内部 RPC、管理、XXL、MySQL 和 Rabbi
 
 ## 已知边界
 
-- 最终 7 服务拓扑已执行核心 Docker smoke，尚未执行 fresh 空卷、完整 secure overlay 和全量 acceptance。
+- 最终 7 服务拓扑已执行核心 Docker smoke 与钱路径 E2E；fresh 空卷、完整 secure overlay 仍需显式授权再跑。
 - 默认拓扑仍共享物理 MySQL，DAO 归属主要靠文档和部分 ArchUnit 规则；
   Mapper XML 有多份启动器副本。
-- account 的失败注入与完整 Spring Context 覆盖仍需加强。
-- Java 8 / Spring Boot 2.7 属于学习基线；未完成本轮全量 CVE/SBOM 审计。
+- account 的失败注入覆盖仍可加强；已有最小 `@SpringBootTest` Context 门禁。
+- 栈基线为 Java 17 / Spring Boot 3.5；未完成本轮全量 CVE/SBOM 审计。
 - 前端 JWT 存在 localStorage，默认凭据、宽松 RPC 和关闭限流仅适用于本地隔离环境。
 - 没有生产灰度、容量、HA、灾备或真实外部奖品履约证明。
+- Dubbo Hessian 仍保留窄范围 `--add-opens`（见 Dockerfile.service / Surefire）；Nacos 3.x 学习栈关闭 namespace compatible mode；平台 DataId 以 empty 为 SDK 写入 SoT，admin 通过 JDBC fail-closed 确认并镜像 `public` twin；Redis fan-out 同样 fail-closed，并禁用本地 snapshot。

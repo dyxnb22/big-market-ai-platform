@@ -18,7 +18,12 @@ nacos:
       group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
       runtimeDataId: ${NACOS_RUNTIME_DATA_ID:big-market-runtime-switches}
       runtimeGroup: ${NACOS_RUNTIME_GROUP:DEFAULT_GROUP}
-      namespace: ${NACOS_CONFIG_NAMESPACE:}
+      namespace: ${NACOS_CONFIG_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+      confirmJdbcUrl: ${NACOS_CONFIG_CONFIRM_JDBC_URL:jdbc:mysql://mysql:3306/nacos_config?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai}
+      confirmJdbcUser: ${NACOS_CONFIG_CONFIRM_JDBC_USER:root}
+      confirmJdbcPassword: ${NACOS_CONFIG_CONFIRM_JDBC_PASSWORD:123456}
 
 gateway:
   config:

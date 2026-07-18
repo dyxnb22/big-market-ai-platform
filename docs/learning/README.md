@@ -60,7 +60,7 @@
 
 | 维度 | 内容 |
 | --- | --- |
-| 语言/框架 | Java 8 + Spring Boot 2.7.12 |
+| 语言/框架 | Java 17 + Spring Boot 3.5.16（历史基线曾为 Java 8 + Boot 2.7.12） |
 | 前端 | `big-market-web`：原生 HTML/CSS/JS（非 React） |
 | 架构 | DDD 分层 + 微服务启动器；rebate/strategy 固定 market-local |
 | 核心技术 | Dubbo、Nacos、RabbitMQ、Redis/Redisson、MySQL、XXL-Job、ES（可选） |

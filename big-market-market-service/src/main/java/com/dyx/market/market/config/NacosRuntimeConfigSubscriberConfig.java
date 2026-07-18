@@ -2,15 +2,20 @@ package com.dyx.market.market.config;
 
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.dyx.market.management.config.NacosConfigSyncService;
+import com.dyx.market.management.config.PlatformConfigChangeNotifier;
 import com.dyx.market.types.config.RuntimeConfigHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.Resource;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 
 /**
- * Subscribes the market request path to the Nacos runtime-switch DataId.
+ * Subscribes the market request path to the Nacos runtime-switch DataId,
+ * with a Redis pub/sub fallback for Nacos 3.x empty/public listener gaps.
  */
 @Slf4j
 @Configuration
@@ -23,7 +28,10 @@ public class NacosRuntimeConfigSubscriberConfig {
     @Resource
     private RuntimeConfigHolder runtimeConfigHolder;
 
-    @javax.annotation.PostConstruct
+    @Autowired(required = false)
+    private RedissonClient redissonClient;
+
+    @PostConstruct
     public void initialize() {
         nacosConfigSyncService.addRuntimeSwitchesListener(new AbstractListener() {
             @Override
@@ -31,6 +39,13 @@ public class NacosRuntimeConfigSubscriberConfig {
                 refresh(configInfo, "listener");
             }
         });
+
+        if (redissonClient != null) {
+            redissonClient.getTopic(PlatformConfigChangeNotifier.RUNTIME_TOPIC)
+                    .addListener(String.class, (channel, msg) -> refresh(msg, "pubsub"));
+            log.info("Subscribed Redis topic {} for runtime switch fan-out",
+                    PlatformConfigChangeNotifier.RUNTIME_TOPIC);
+        }
 
         refresh(nacosConfigSyncService.fetchRuntimeSwitches(3000), "startup");
     }

@@ -27,7 +27,7 @@ STAGE_ID=$(resolve_stage_activity_id "$GW" "$CHANNEL" "$SOURCE")
 echo "Resolved stage activityId=${STAGE_ID} (channel=${CHANNEL} source=${SOURCE})"
 
 curl -sf -X POST "$GW/api/v1/admin/config/save" \
-  -H "Authorization: $ADMIN_TOKEN" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"namespace\":\"activity.${STAGE_ID}\",\"configKey\":\"state\",\"configValue\":\"online\",\"description\":\"demo online\"}" >/dev/null
 
@@ -36,7 +36,7 @@ for payload in \
   '{"namespace":"chatbot","configKey":"provider","configValue":"local","description":"demo reset"}' \
   '{"namespace":"chatbot","configKey":"apiKey","configValue":"","description":"demo reset"}'; do
   curl -sf -X POST "$GW/api/v1/admin/config/save" \
-    -H "Authorization: $ADMIN_TOKEN" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "Content-Type: application/json" \
     -d "$payload" >/dev/null
 done

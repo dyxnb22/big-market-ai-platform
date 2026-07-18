@@ -46,12 +46,10 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-  metrics:
-    export:
-      prometheus:
-        enabled: true
   prometheus:
-    enabled: true
+    metrics:
+      export:
+        enabled: true
 
 logging:
   level:

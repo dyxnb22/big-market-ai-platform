@@ -4,7 +4,7 @@ import com.dyx.market.domain.rebate.model.entity.BehaviorEntity;
 import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 /**

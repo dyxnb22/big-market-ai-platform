@@ -7,7 +7,7 @@ import com.dyx.market.domain.activity.service.IRaffleActivityAccountQuotaService
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 活动配额写操作的本地进程内实现。

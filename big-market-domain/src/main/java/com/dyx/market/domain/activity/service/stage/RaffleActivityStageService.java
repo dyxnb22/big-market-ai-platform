@@ -5,7 +5,7 @@ import com.dyx.market.domain.activity.model.entity.RaffleActivityStageEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivityStageService;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 /**

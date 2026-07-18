@@ -22,6 +22,47 @@ fi
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$NACOS_PLATFORM_SQL"
 echo "Nacos platform DataIds ensured without overwriting existing configuration."
 
+# Nacos 3.x default-namespace dual-writes empty + public. Prefer empty as canonical
+# seed, keep public when identical, fail closed on content conflicts, and copy
+# empty → public only when public is missing (so getConfig has a twin to read).
+conflict_count="$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "
+USE nacos_config;
+SELECT COUNT(*) FROM config_info p
+JOIN config_info e
+  ON p.data_id = e.data_id
+ AND IFNULL(p.group_id,'') = IFNULL(e.group_id,'')
+WHERE p.tenant_id = 'public'
+  AND IFNULL(e.tenant_id,'') = ''
+  AND p.data_id IN ('big-market-platform-config', 'big-market-runtime-switches')
+  AND (p.content <> e.content OR IFNULL(p.md5,'') <> IFNULL(e.md5,''));
+" 2>/dev/null | tr -d '[:space:]')"
+if [ "${conflict_count:-0}" != "0" ]; then
+  echo "FAIL: Nacos empty/public tenant content conflict for platform DataIds (count=${conflict_count}). Resolve manually before re-running migrations." >&2
+  exit 1
+fi
+
+docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+USE nacos_config;
+INSERT INTO config_info
+  (data_id, group_id, content, md5, gmt_create, gmt_modified, src_user, src_ip, app_name,
+   tenant_id, c_desc, c_use, effect, type, c_schema, encrypted_data_key)
+SELECT e.data_id, e.group_id, e.content, e.md5, NOW(), NOW(), e.src_user, e.src_ip, e.app_name,
+       'public', e.c_desc, e.c_use, e.effect, e.type, e.c_schema, e.encrypted_data_key
+FROM config_info e
+LEFT JOIN config_info p
+  ON p.data_id = e.data_id
+ AND IFNULL(p.group_id,'') = IFNULL(e.group_id,'')
+ AND p.tenant_id = 'public'
+WHERE IFNULL(e.tenant_id,'') = ''
+  AND e.data_id IN ('big-market-platform-config', 'big-market-runtime-switches')
+  AND p.id IS NULL;
+DELETE FROM config_info
+ WHERE tenant_id = 'big-market'
+   AND data_id IN ('big-market-platform-config', 'big-market-runtime-switches');
+" >/dev/null
+echo "Nacos platform configs normalized (empty SoT + matching public twin; conflicts fail closed)."
+
+
 # The upstream XXL init SQL has a learning-only admin/123456 row. When the
 # operator supplies both environment values, rotate it idempotently before any
 # acceptance smoke logs in. Values are quoted for a MySQL string literal and
@@ -112,14 +153,27 @@ if [ -n "${XXL_JOB_ADMIN_USER:-}" ]; then
   echo "  OK  XXL administrator credentials from environment"
 fi
 
-nacos_config_count=$(mysql_query "SELECT COUNT(*) FROM nacos_config.config_info
-  WHERE (data_id='big-market-platform-config' AND group_id='DEFAULT_GROUP')
-     OR (data_id='big-market-runtime-switches' AND group_id='DEFAULT_GROUP');")
+nacos_config_count=$(mysql_query "SELECT COUNT(DISTINCT data_id) FROM nacos_config.config_info
+  WHERE IFNULL(tenant_id,'') = ''
+    AND ((data_id='big-market-platform-config' AND group_id='DEFAULT_GROUP')
+      OR (data_id='big-market-runtime-switches' AND group_id='DEFAULT_GROUP'));")
 if [ "${nacos_config_count:-0}" != "2" ]; then
-  echo "FAIL: required Nacos platform DataIds are missing" >&2
+  echo "FAIL: required Nacos platform DataIds missing under empty tenant" >&2
   exit 1
 fi
-echo "  OK  Nacos platform and runtime DataIds"
+echo "  OK  Nacos platform and runtime DataIds (empty tenant)"
+
+nacos_conflict=$(mysql_query "SELECT COUNT(*) FROM nacos_config.config_info p
+  JOIN nacos_config.config_info e
+    ON p.data_id=e.data_id AND IFNULL(p.group_id,'')=IFNULL(e.group_id,'')
+  WHERE p.tenant_id='public' AND IFNULL(e.tenant_id,'')=''
+    AND p.data_id IN ('big-market-platform-config','big-market-runtime-switches')
+    AND (p.content <> e.content OR IFNULL(p.md5,'') <> IFNULL(e.md5,''));")
+if [ "${nacos_conflict:-0}" != "0" ]; then
+  echo "FAIL: empty/public tenant content still conflicts for platform DataIds" >&2
+  exit 1
+fi
+echo "  OK  empty/public twins identical when both present"
 
 demo_rate=$(mysql_query "SELECT CONCAT(
     SUM(CASE WHEN award_id=101 AND award_rate=1.0000 THEN 1 ELSE 0 END), ':',

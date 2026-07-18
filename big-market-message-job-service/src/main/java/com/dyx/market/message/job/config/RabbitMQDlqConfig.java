@@ -20,7 +20,7 @@ import org.springframework.util.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import com.rabbitmq.client.Channel;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.nio.charset.StandardCharsets;
 
 /**

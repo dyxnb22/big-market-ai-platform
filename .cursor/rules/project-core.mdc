@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Project core
 
-- Stack: Spring Boot microservices + Dubbo/Nacos + RabbitMQ + XXL-Job + MySQL + Redis; frontend `big-market-web` is static HTML/JS (not React).
+- Stack: Java 17 + Spring Boot 3.5 microservices + Dubbo/Nacos + RabbitMQ + XXL-Job + MySQL + Redis; frontend `big-market-web` is static HTML/JS (not React). Stack ADR: `docs/adr/2026-07-18-stack-upgrade.md`.
 - Architecture entry: `docs/MICROSERVICES.md`. Current readiness boundary: `docs/LEARNING-FREEZE.md`. Agent entry: `AGENTS.md`.
 - Final application ports: gateway `8080`, auth `8081`, admin `8082`, market `8083`, chatbot `8084`, message-job `8085`, account `8086`. The frontend is `big-market-web` on `5173`.
 - Rebate and strategy are fixed local capabilities inside market. Award credit dispatch is fixed in message-job through the local outbox and account RPC. Do not recreate standalone Provider applications, Provider Compose files, or removed mode switches.

@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.security.SecureRandom;
 
 /**

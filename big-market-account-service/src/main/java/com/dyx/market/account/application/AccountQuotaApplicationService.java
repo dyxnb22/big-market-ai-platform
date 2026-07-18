@@ -15,7 +15,7 @@ import com.dyx.market.types.exception.AppException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 活动账户额度应用服务：下单、更新、查询与扣减/回滚额度。

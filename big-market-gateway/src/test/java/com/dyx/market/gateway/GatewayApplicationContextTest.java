@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = GatewayApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "spring.main.lazy-initialization=true",
-        "spring.cloud.gateway.discovery.locator.enabled=false"
+        "spring.cloud.gateway.server.webflux.discovery.locator.enabled=false"
 })
 @ActiveProfiles("test")
 public class GatewayApplicationContextTest {

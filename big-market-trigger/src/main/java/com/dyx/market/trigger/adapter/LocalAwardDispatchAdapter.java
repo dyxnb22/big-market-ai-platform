@@ -4,7 +4,7 @@ import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
 import com.dyx.market.domain.award.service.IAwardService;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 发奖派发的本地进程内实现。

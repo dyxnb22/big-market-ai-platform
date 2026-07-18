@@ -5,8 +5,10 @@ spring:
     active: dev
   cloud:
     gateway:
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
 logging:
   config: classpath:logback-spring.xml
@@ -27,12 +29,10 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-  metrics:
-    export:
-      prometheus:
-        enabled: true
   prometheus:
-    enabled: true
+    metrics:
+      export:
+        enabled: true
 
 resilience4j:
   timelimiter:

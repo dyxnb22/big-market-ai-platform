@@ -138,6 +138,9 @@ dubbo:
     port: -1
   scan:
     base-packages: com.dyx.market.trigger
+  metadata-report:
+    report-metadata: ${DUBBO_REPORT_METADATA:false}
+    report-definition: ${DUBBO_REPORT_DEFINITION:false}
 
 gateway:
   config:
@@ -161,12 +164,10 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-  metrics:
-    export:
-      prometheus:
-        enabled: true
   prometheus:
-    enabled: true
+    metrics:
+      export:
+        enabled: true
 
 logging:
   level:

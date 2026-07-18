@@ -8,7 +8,7 @@ import com.dyx.market.types.common.Constants;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.ArrayList;

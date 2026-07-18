@@ -9,8 +9,8 @@ import com.dyx.market.types.enums.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Chatbot HTTP 接口：AI 对话问答。

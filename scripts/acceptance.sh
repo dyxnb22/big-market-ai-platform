@@ -74,6 +74,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 # shellcheck source=lib/health-poll.sh
 source "$ROOT/scripts/lib/health-poll.sh"
+# shellcheck source=lib/java17-precheck.sh
+source "$ROOT/scripts/lib/java17-precheck.sh"
+require_java_17
 
 ARTIFACT_DIR="${ROOT}/target/acceptance-artifacts"
 mkdir -p "$ARTIFACT_DIR"

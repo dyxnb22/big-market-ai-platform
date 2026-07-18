@@ -10,7 +10,7 @@ import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * {@link IAccountQuotaService} 的 Dubbo Provider 实现：活动账户额度（quota）操作。

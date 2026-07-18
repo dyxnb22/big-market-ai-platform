@@ -13,7 +13,7 @@ import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 积分写路径：远程 account-service 失败时写 pending 任务，不回退本地写。

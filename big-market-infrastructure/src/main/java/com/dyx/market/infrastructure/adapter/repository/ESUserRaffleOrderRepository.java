@@ -7,7 +7,7 @@ import com.dyx.market.queries.model.valobj.ESUserRaffleOrderVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 

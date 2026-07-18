@@ -2,7 +2,7 @@
 
 最后修订：2026-07-17。
 
-本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot 服务、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。
+本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot **3.5** 服务（Java **17**）、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。当前栈版本见 `docs/adr/2026-07-18-stack-upgrade.md` 与 `docs/LEARNING-FREEZE.md`。
 
 **就绪说明：** 当前 7 服务默认拓扑已通过 clean Maven、静态安全、Mapper/DDL、Compose 配置校验和核心 Docker smoke（7 个应用健康、Web 200、Smoke 20/20）；完整 acceptance、fresh 空卷和 secure overlay 尚未运行，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`。
 

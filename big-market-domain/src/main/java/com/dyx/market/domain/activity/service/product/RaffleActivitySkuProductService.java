@@ -5,7 +5,7 @@ import com.dyx.market.domain.activity.adapter.repository.IActivityRepository;
 import com.dyx.market.domain.activity.service.IRaffleActivitySkuProductService;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 /**

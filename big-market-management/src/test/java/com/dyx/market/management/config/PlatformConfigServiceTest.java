@@ -10,12 +10,23 @@ import java.io.IOException;
 
 class PlatformConfigServiceTest {
 
+    private static void wirePublishDeps(PlatformConfigService service,
+                                        NacosConfigSyncService nacos,
+                                        PlatformConfigChangeNotifier notifier) {
+        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
+        ReflectionTestUtils.setField(service, "platformConfigChangeNotifier", notifier);
+    }
+
+    private static PlatformConfigChangeNotifier okNotifier() {
+        return org.mockito.Mockito.mock(PlatformConfigChangeNotifier.class);
+    }
+
     @Test
     void savePublishesToNacosWithoutLocalPersistence() throws Exception {
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
-        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
+        wirePublishDeps(service, nacos, okNotifier());
         service.afterPropertiesSet();
 
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
@@ -39,7 +50,7 @@ class PlatformConfigServiceTest {
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         org.mockito.Mockito.when(nacos.publishRuntimeSwitches(org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(true);
-        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
+        wirePublishDeps(service, nacos, okNotifier());
         service.afterPropertiesSet();
 
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
@@ -59,9 +70,9 @@ class PlatformConfigServiceTest {
     void save_should_fail_when_nacos_publish_fails_closed() throws Exception {
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
-        org.mockito.Mockito.doThrow(new IllegalStateException("Nacos publishConfig returned false"))
+        org.mockito.Mockito.doThrow(new IllegalStateException("Nacos publish did not persist expected content"))
                 .when(nacos).publish(org.mockito.ArgumentMatchers.anyString());
-        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
+        wirePublishDeps(service, nacos, okNotifier());
         service.afterPropertiesSet();
 
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
@@ -76,11 +87,33 @@ class PlatformConfigServiceTest {
     }
 
     @Test
+    void save_should_fail_when_redis_fanout_fails_closed() throws Exception {
+        PlatformConfigService service = new PlatformConfigService();
+        NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
+        PlatformConfigChangeNotifier notifier = org.mockito.Mockito.mock(PlatformConfigChangeNotifier.class);
+        org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        org.mockito.Mockito.doThrow(new IllegalStateException("redis down"))
+                .when(notifier).notifyPlatform(org.mockito.ArgumentMatchers.anyString());
+        wirePublishDeps(service, nacos, notifier);
+        service.afterPropertiesSet();
+
+        AdminConfigRequestDTO request = new AdminConfigRequestDTO();
+        request.setNamespace("chatbot");
+        request.setConfigKey("enabled");
+        request.setConfigValue("false");
+        request.setDescription("redis fail");
+
+        IOException ex = Assertions.assertThrows(IOException.class, () -> service.save(request));
+        Assertions.assertTrue(ex.getMessage().contains("redis down") || ex.getMessage().contains("Nacos"));
+        Assertions.assertEquals("true", service.get("chatbot", "enabled").getConfigValue());
+    }
+
+    @Test
     void save_should_attach_content_hash_and_nacos_metadata() throws Exception {
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
-        ReflectionTestUtils.setField(service, "nacosConfigSyncService", nacos);
+        wirePublishDeps(service, nacos, okNotifier());
         service.afterPropertiesSet();
 
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();

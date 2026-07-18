@@ -33,6 +33,9 @@ dubbo:
   registry:
     id: nacos-registry
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://nacos:8848}
+  metadata-report:
+    report-metadata: false
+    report-definition: false
 
 nacos:
   config:
@@ -43,7 +46,9 @@ nacos:
       group: ${NACOS_CONFIG_GROUP:DEFAULT_GROUP}
       runtimeDataId: ${NACOS_RUNTIME_DATA_ID:big-market-runtime-switches}
       runtimeGroup: ${NACOS_RUNTIME_GROUP:DEFAULT_GROUP}
-      namespace: ${NACOS_CONFIG_NAMESPACE:}
+      namespace: ${NACOS_CONFIG_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
 
 xxl:
   job:

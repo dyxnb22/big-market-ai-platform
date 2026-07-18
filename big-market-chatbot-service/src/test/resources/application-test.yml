@@ -31,12 +31,18 @@ redis:
 
 dubbo:
   registry:
+    # Context tests must not register host providers into shared Nacos used by Docker.
+    register: false
     check: false
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
   consumer:
     check: false
   application:
     qos-enable: false
+    register-consumer: false
+  metadata-report:
+    report-metadata: false
+    report-definition: false
 
 nacos:
   config:

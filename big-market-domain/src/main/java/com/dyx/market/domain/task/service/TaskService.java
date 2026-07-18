@@ -4,7 +4,7 @@ import com.dyx.market.domain.task.model.entity.TaskEntity;
 import com.dyx.market.domain.task.repository.ITaskRepository;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 /**

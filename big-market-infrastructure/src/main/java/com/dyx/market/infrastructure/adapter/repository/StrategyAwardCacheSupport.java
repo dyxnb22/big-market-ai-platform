@@ -14,11 +14,12 @@ import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -193,7 +194,7 @@ public class StrategyAwardCacheSupport {
         long lockTtlMillis = endDateTime == null
                 ? TimeUnit.DAYS.toMillis(30)
                 : Math.max(TimeUnit.SECONDS.toMillis(1), endDateTime.getTime() - System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
-        Object scriptResult = redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+        Object scriptResult = redissonClient.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                 "local saved = redis.call('get', KEYS[1]); "
                         + "if saved then return tonumber(saved); end; "
                         + "local surplus = redis.call('decr', KEYS[2]); "
@@ -204,7 +205,7 @@ public class StrategyAwardCacheSupport {
                         + "redis.call('set', KEYS[1], surplus, 'EX', ARGV[2]); return surplus;",
                 RScript.ReturnType.INTEGER,
                 java.util.Arrays.asList("stock_reservation:" + reservationId, cacheKey),
-                lockTtlMillis, TimeUnit.DAYS.toSeconds(30));
+                String.valueOf(lockTtlMillis), String.valueOf(TimeUnit.DAYS.toSeconds(30)));
         long surplus = ((Number) scriptResult).longValue();
         if (surplus < 0) {
             strategyAwardStockDecrementLedgerDao.updateStatusReleased(reservationId);
@@ -302,7 +303,7 @@ public class StrategyAwardCacheSupport {
             }
             String lockKey = null == reservation.getLockSurplus()
                     ? "" : cacheKey + Constants.UNDERLINE + reservation.getLockSurplus();
-            redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+            redissonClient.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                     "if redis.call('setnx', KEYS[1], '1') == 1 then "
                             + "redis.call('expire', KEYS[1], 2592000); "
                             + "redis.call('incr', KEYS[2]); "

@@ -17,7 +17,7 @@
 # Then run this script (health poll + smoke only).
 #
 # Prerequisites:
-#   - JDK 8, Maven 3.x
+#   - JDK 17+, Maven 3.x
 #   - Docker + Docker Compose v2 (when using --start-stack or for smoke against local stack)
 #   - python3 (used by smoke test for JSON parsing)
 #
@@ -46,6 +46,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 # shellcheck source=lib/health-poll.sh
 source "$ROOT/scripts/lib/health-poll.sh"
+# shellcheck source=lib/java17-precheck.sh
+source "$ROOT/scripts/lib/java17-precheck.sh"
+require_java_17
 
 echo "================================================================="
 echo "  big-market microservices stack validation"

@@ -16,7 +16,7 @@ import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 

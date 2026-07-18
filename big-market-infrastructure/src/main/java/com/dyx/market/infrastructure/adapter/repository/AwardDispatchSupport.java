@@ -16,7 +16,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 中奖记录写入与发奖任务派发，从 {@link AwardRepository} 拆分以降低单类复杂度。

@@ -4,7 +4,7 @@ import com.dyx.market.domain.strategy.service.armory.IStrategyArmory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 抽奖策略装配应用服务：触发领域层策略预热与缓存装配。

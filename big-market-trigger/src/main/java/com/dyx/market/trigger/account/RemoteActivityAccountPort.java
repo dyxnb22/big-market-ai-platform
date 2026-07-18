@@ -17,7 +17,7 @@ import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigDecimal;
 
 /**

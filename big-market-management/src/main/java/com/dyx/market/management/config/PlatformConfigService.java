@@ -42,6 +42,9 @@ public class PlatformConfigService implements InitializingBean {
     @Autowired(required = false)
     private NacosConfigSyncService nacosConfigSyncService;
 
+    @Autowired(required = false)
+    private PlatformConfigChangeNotifier platformConfigChangeNotifier;
+
     @Override
     public void afterPropertiesSet() {
         configSnapshot.set(immutable(defaultConfigs()));
@@ -233,12 +236,20 @@ public class PlatformConfigService implements InitializingBean {
         if (nacosConfigSyncService == null) {
             throw new IOException("Nacos config service is required for platform configuration writes");
         }
+        if (platformConfigChangeNotifier == null) {
+            throw new IOException("Redis config fan-out is required for platform configuration writes");
+        }
         try {
             boolean published = runtimeConfig
                     ? nacosConfigSyncService.publishRuntimeSwitches(content)
                     : nacosConfigSyncService.publish(content);
             if (!published) {
                 throw new IOException("Nacos rejected platform configuration publish");
+            }
+            if (runtimeConfig) {
+                platformConfigChangeNotifier.notifyRuntime(content);
+            } else {
+                platformConfigChangeNotifier.notifyPlatform(content);
             }
         } catch (IllegalStateException e) {
             throw new IOException("Failed to publish config to Nacos: " + e.getMessage(), e);

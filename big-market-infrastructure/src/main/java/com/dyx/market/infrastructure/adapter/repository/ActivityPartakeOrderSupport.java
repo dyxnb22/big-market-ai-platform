@@ -14,7 +14,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 参与抽奖订单持久化：本地事务内扣减总/月/日额度并写入 {@code user_raffle_order}。

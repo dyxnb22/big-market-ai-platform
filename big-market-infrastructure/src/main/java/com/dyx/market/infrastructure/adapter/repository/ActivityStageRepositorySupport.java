@@ -5,7 +5,7 @@ import com.dyx.market.infrastructure.dao.IRaffleActivityStageDao;
 import com.dyx.market.infrastructure.dao.po.RaffleActivityStage;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 

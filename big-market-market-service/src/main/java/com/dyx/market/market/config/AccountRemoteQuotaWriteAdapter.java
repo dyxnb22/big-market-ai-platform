@@ -17,7 +17,7 @@ import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * 活动配额写路径：REJECTED 不入 pending；UNKNOWN 先 exists 探测再入 pending。

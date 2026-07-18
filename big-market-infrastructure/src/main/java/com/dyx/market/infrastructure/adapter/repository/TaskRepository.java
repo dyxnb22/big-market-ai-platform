@@ -7,7 +7,7 @@ import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.infrastructure.dao.po.Task;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 

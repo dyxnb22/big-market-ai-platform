@@ -10,7 +10,7 @@ import com.dyx.market.trigger.support.DubboRpcAuthSupport;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 

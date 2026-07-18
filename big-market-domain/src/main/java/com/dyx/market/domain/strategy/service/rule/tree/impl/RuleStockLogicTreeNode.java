@@ -8,7 +8,7 @@ import com.dyx.market.domain.strategy.service.rule.tree.factory.DefaultTreeFacto
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.Date;
 
 /**

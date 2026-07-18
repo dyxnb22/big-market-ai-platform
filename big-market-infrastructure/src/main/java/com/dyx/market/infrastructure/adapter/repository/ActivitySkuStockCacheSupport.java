@@ -16,11 +16,12 @@ import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RLock;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -97,7 +98,7 @@ public class ActivitySkuStockCacheSupport {
                     ? TimeUnit.DAYS.toMillis(30)
                     : Math.max(TimeUnit.SECONDS.toMillis(1),
                     endDateTime.getTime() - System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
-            Object scriptResult = redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+            Object scriptResult = redissonClient.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                     "local saved = redis.call('get', KEYS[1]); "
                             + "if saved then return tonumber(saved); end; "
                             + "local current = tonumber(redis.call('get', KEYS[2]) or '0'); "
@@ -110,7 +111,10 @@ public class ActivitySkuStockCacheSupport {
                             + "redis.call('set', KEYS[1], surplus, 'EX', ARGV[3]); return surplus;",
                     RScript.ReturnType.INTEGER,
                     java.util.Arrays.asList("activity_reservation:" + sku + ":" + expectedSurplus, cacheKey),
-                    expectedSurplus, lockTtlMillis, TimeUnit.DAYS.toSeconds(30));
+                    // Use StringCodec so ARGV are plain digits (JsonJacksonCodec wraps values).
+                    String.valueOf(expectedSurplus),
+                    String.valueOf(lockTtlMillis),
+                    String.valueOf(TimeUnit.DAYS.toSeconds(30)));
             long surplus = ((Number) scriptResult).longValue();
             if (surplus < 0) {
                 activitySkuStockDecrementLedgerDao.updateStatusReleased(reservation);
@@ -196,7 +200,7 @@ public class ActivitySkuStockCacheSupport {
         String cacheKey = Constants.RedisKey.ACTIVITY_SKU_STOCK_COUNT_KEY + reserved.getSku();
         String markerKey = "activity_reservation:" + reserved.getSku() + ":" + reserved.getLockSurplus();
         if (!redisService.isExists(markerKey)) {
-            Object result = redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+            Object result = redissonClient.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                     "local saved = redis.call('get', KEYS[1]); "
                             + "if saved then return tonumber(saved); end; "
                             + "local current = tonumber(redis.call('get', KEYS[2]) or '0'); "
@@ -205,7 +209,7 @@ public class ActivitySkuStockCacheSupport {
                             + "if surplus ~= tonumber(ARGV[1]) then redis.call('incr', KEYS[2]); return -2; end; "
                             + "redis.call('set', KEYS[1], surplus, 'EX', 2592000); return surplus;",
                     RScript.ReturnType.INTEGER,
-                    java.util.Arrays.asList(markerKey, cacheKey), reserved.getLockSurplus());
+                    java.util.Arrays.asList(markerKey, cacheKey), String.valueOf(reserved.getLockSurplus()));
             if (((Number) result).longValue() < 0) {
                 activitySkuStockDecrementLedgerDao.updateStatusReleased(reserved);
                 return;
@@ -343,7 +347,7 @@ public class ActivitySkuStockCacheSupport {
         // SETNX + INCR is one Redis-side state transition. If the process dies
         // before the DB status update, a retry sees the marker and only closes
         // the durable ledger instead of incrementing twice.
-        redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+        redissonClient.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                 "local result = -1; "
                         + "if redis.call('setnx', KEYS[1], '1') == 1 then "
                         + "redis.call('expire', KEYS[1], 2592000); "
