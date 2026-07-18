@@ -2,8 +2,8 @@
 
 Status: **completed on branch `upgrade/java17-boot3` (2026-07-18)**
 
-Final baseline: Java **17**, Spring Boot **3.5.16**, Spring Cloud **2025.0.3**.  
-Authoritative decision record: `docs/adr/2026-07-18-stack-upgrade.md`.  
+Final baseline: Java **17**, Spring Boot **3.5.16**, Spring Cloud **2025.0.3**.
+Authoritative decision record: `docs/adr/2026-07-18-stack-upgrade.md`.
 Readiness wording: `docs/LEARNING-FREEZE.md`.
 
 ## Outcome

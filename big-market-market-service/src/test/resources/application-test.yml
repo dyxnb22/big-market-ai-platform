@@ -43,8 +43,9 @@ redis:
 dubbo:
   registry:
     # Context tests must not register host providers into shared Nacos used by Docker.
-    # Keep subscribe enabled so @DubboReference beans can still resolve against Nacos.
+    # Context tests only verify bean wiring; do not subscribe to shared Nacos providers.
     register: false
+    subscribe: false
     check: false
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
   consumer:

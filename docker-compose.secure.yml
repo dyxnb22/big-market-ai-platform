@@ -17,6 +17,9 @@ x-secure-env: &secure-env
   XXL_JOB_TOKEN: ${XXL_JOB_TOKEN:?XXL_JOB_TOKEN is required for secure compose}
   MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required for secure compose}
   MYSQL_PASS: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required for secure compose}
+  # Nacos and admin-side JDBC confirmation must use the same database credentials.
+  NACOS_CONFIG_CONFIRM_JDBC_USER: ${MYSQL_USER:?MYSQL_USER is required for secure Nacos confirmation}
+  NACOS_CONFIG_CONFIRM_JDBC_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required for secure Nacos confirmation}
   RABBITMQ_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required for secure compose}
   RABBITMQ_PASS: ${RABBITMQ_PASS:?RABBITMQ_PASS is required for secure compose}
   APP_AUTH_DEV_USERS: ${APP_AUTH_DEV_USERS:?APP_AUTH_DEV_USERS is required for secure compose}

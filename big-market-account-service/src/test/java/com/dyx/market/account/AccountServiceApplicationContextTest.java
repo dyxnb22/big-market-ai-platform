@@ -8,7 +8,7 @@ import org.junit.runner.RunWith;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -34,11 +34,12 @@ public class AccountServiceApplicationContextTest {
         System.setProperty("spring.cloud.client.ip-address", "127.0.0.1");
         java.io.File dubboCache = new java.io.File("target/dubbo-cache");
         dubboCache.mkdirs();
+        System.setProperty("dubbo.registry.file", new java.io.File(dubboCache, "registry.properties").getAbsolutePath());
         System.setProperty("dubbo.meta.cache.filePath", new java.io.File(dubboCache, "meta").getAbsolutePath());
         System.setProperty("dubbo.mapping.cache.filePath", new java.io.File(dubboCache, "mapping").getAbsolutePath());
     }
 
-    @MockBean
+    @MockitoBean
     private RedissonClient redissonClient;
 
     @Autowired

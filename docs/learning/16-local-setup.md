@@ -9,7 +9,7 @@
 | 工具 | 版本要求 |
 | ------ | --------- |
 | Docker Desktop | 4.x+，建议分配内存 ≥ 12 GB（8 GB 全栈重建曾触发 XXL OOM） |
-| JDK | 8（`java -version` 确认） |
+| JDK | 17+（`java -version` 确认，项目编译基线为 Java 17） |
 | Maven | 3.6+（`mvn -version` 确认） |
 | Node.js / npm | 用于前端与 Playwright 验收 |
 

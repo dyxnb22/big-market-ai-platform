@@ -82,6 +82,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
     @Override
     public void afterPropertiesSet() {
         try {
+            validateNamespace();
             Properties nacosProps = new Properties();
             nacosProps.put(PropertyKeyConst.SERVER_ADDR, serverAddr);
             nacosProps.put(PropertyKeyConst.NAMESPACE,
@@ -100,6 +101,18 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         } catch (NacosException e) {
             throw new IllegalStateException("Nacos config service initialization failed", e);
         }
+    }
+
+    private void validateNamespace() {
+        if (!isSupportedNamespace(namespace)) {
+            throw new IllegalStateException("Only the public Nacos namespace is supported by the empty-tenant sync bridge; "
+                    + "configure nacos.config.sync.namespace=public or leave it blank");
+        }
+    }
+
+    static boolean isSupportedNamespace(String configuredNamespace) {
+        return StringUtils.isBlank(configuredNamespace)
+                || "public".equalsIgnoreCase(configuredNamespace.trim());
     }
 
     private void alignLiveTenantToEmptyStorage(ConfigService service) {
@@ -215,43 +228,43 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         String sqlRead = "SELECT content FROM config_info WHERE data_id=? AND IFNULL(group_id,'')=IFNULL(?, '') "
                 + "AND IFNULL(tenant_id,'')='' LIMIT 1";
         try (Connection connection = DriverManager.getConnection(
-                confirmJdbcUrl, confirmJdbcUser, confirmJdbcPassword);
-             PreparedStatement read = connection.prepareStatement(sqlRead)) {
-            read.setString(1, targetDataId);
-            read.setString(2, targetGroup);
-            try (ResultSet rs = read.executeQuery()) {
-                if (!rs.next() || !sameConfigValues(content, rs.getString(1))) {
-                    log.warn("JDBC confirmation missed empty-tenant content for dataId={}", targetDataId);
-                    return false;
+                confirmJdbcUrl, confirmJdbcUser, confirmJdbcPassword)) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement read = connection.prepareStatement(sqlRead + " FOR UPDATE")) {
+                read.setString(1, targetDataId);
+                read.setString(2, targetGroup);
+                try (ResultSet rs = read.executeQuery()) {
+                    if (!rs.next() || !sameConfigValues(content, rs.getString(1))) {
+                        connection.rollback();
+                        log.warn("JDBC confirmation missed empty-tenant content for dataId={}", targetDataId);
+                        return false;
+                    }
                 }
+                upsertPublicTwin(connection, targetDataId, targetGroup, content);
+                connection.commit();
+                log.info("JDBC confirmed empty-tenant content and synced public twin for dataId={}", targetDataId);
+                return true;
+            } catch (Exception ex) {
+                connection.rollback();
+                throw ex;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
             }
-            upsertPublicTwin(connection, targetDataId, targetGroup, content);
-            log.info("JDBC confirmed empty-tenant content and synced public twin for dataId={}", targetDataId);
-            return true;
         } catch (Exception ex) {
             log.warn("JDBC confirmation failed for dataId={}: {}", targetDataId, ex.toString());
             return false;
         }
     }
 
-    private void upsertPublicTwin(Connection connection, String targetDataId, String targetGroup, String content)
+    void upsertPublicTwin(Connection connection, String targetDataId, String targetGroup, String content)
             throws Exception {
         String md5 = md5Hex(content);
-        String update = "UPDATE config_info SET content=?, md5=?, gmt_modified=NOW() "
-                + "WHERE data_id=? AND IFNULL(group_id,'')=IFNULL(?, '') AND tenant_id='public'";
-        try (PreparedStatement ps = connection.prepareStatement(update)) {
-            ps.setString(1, content);
-            ps.setString(2, md5);
-            ps.setString(3, targetDataId);
-            ps.setString(4, targetGroup);
-            if (ps.executeUpdate() > 0) {
-                return;
-            }
-        }
-        String insert = "INSERT INTO config_info "
+        String upsert = "INSERT INTO config_info "
                 + "(data_id, group_id, content, md5, gmt_create, gmt_modified, tenant_id, c_desc, c_use, effect, type, "
-                + "c_schema, encrypted_data_key) VALUES (?,?,?,?,NOW(),NOW(),'public','','','','properties','','')";
-        try (PreparedStatement ps = connection.prepareStatement(insert)) {
+                + "c_schema, encrypted_data_key) VALUES (?,?,?,?,NOW(),NOW(),'public','','','','properties','','') "
+                + "ON DUPLICATE KEY UPDATE content=VALUES(content), md5=VALUES(md5), gmt_modified=NOW()";
+        try (PreparedStatement ps = connection.prepareStatement(upsert)) {
             ps.setString(1, targetDataId);
             ps.setString(2, targetGroup);
             ps.setString(3, content);

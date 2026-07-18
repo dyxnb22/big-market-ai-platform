@@ -15,8 +15,9 @@ import org.springframework.stereotype.Component;
  * reused volumes. Redis pub/sub keeps admin → market/chatbot refresh reliable for the
  * learning stack without changing money-path contracts.</p>
  *
- * <p>Notify is fail-closed: missing Redisson or transport exceptions fail the admin save.
- * A publish that reaches zero confirmed receivers still succeeds (subscribers may join later).</p>
+ * <p>Notify is fail-closed: missing Redisson, transport exceptions, or zero confirmed
+ * receivers fail the admin save. A configuration write is not complete until at least
+ * one live consumer has received the fan-out notification.</p>
  */
 @Component
 public class PlatformConfigChangeNotifier {
@@ -52,6 +53,15 @@ public class PlatformConfigChangeNotifier {
             try {
                 RTopic topic = redissonClient.getTopic(topicName);
                 long receivers = topic.publish(content);
+                if (receivers <= 0) {
+                    lastError = new IllegalStateException("Redis topic has no active receivers");
+                    log.warn("Redis config fan-out attempt {}/{} reached zero receivers for topic={}",
+                            attempt, NOTIFY_ATTEMPTS, topicName);
+                    if (attempt < NOTIFY_ATTEMPTS) {
+                        sleepQuietly(NOTIFY_BACKOFF_MS * attempt);
+                    }
+                    continue;
+                }
                 log.info("Published config change to Redis topic={}, receivers={}, attempt={}",
                         topicName, receivers, attempt);
                 return;

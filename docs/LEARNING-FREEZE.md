@@ -1,10 +1,10 @@
 # Big Market 学习冻结基线
 
-最后更新：2026-07-18。
+最后更新：2026-07-19。
 
 ## 结论
 
-**有条件冻结（栈已升级）。** 当前最终拓扑在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、核心 Docker smoke，以及抽奖发奖 / chat refund E2E（reuse 路径）。完整 acceptance（含 Playwright 全量）、fresh 空卷和完整 secure overlay 仍需按工作树再跑，因此不能写成“全环境已验证”或“生产就绪”。
+**有条件冻结（栈已升级）。** 当前最终拓扑在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、核心 Docker smoke，以及抽奖发奖 / chat refund E2E；`./scripts/acceptance.sh --reuse` 已在当前工作树通过全部门禁（含 Playwright 18 个用例连续两轮）。fresh 空卷和完整 secure overlay 尚未执行，因此不能写成“全环境已验证”或“生产就绪”。
 
 本仓库冻结的是一套可复现、可讲解的本地微服务学习样本，不是生产发布基线。
 栈升级决策见 docs/adr/2026-07-18-stack-upgrade.md；历史证据见 docs/audit/2026-07-17-learning-freeze-audit.md。
@@ -35,7 +35,7 @@ user_award_record.award_state=completed 表示发奖已被持久化接管，不�
 
 ## 当前证据
 
-| 项目 | 2026-07-18（upgrade/java17-boot3）结果 |
+| 项目 | 2026-07-19（upgrade/java17-boot3）结果 |
 | --- | --- |
 | Maven | 19 个 reactor 模块 `mvn clean verify` 通过（Boot 3.5.16） |
 | Mapper/DDL 门禁 | 通过 |
@@ -44,7 +44,7 @@ user_award_record.award_state=completed 表示发奖已被持久化接管，不�
 | 核心 Docker smoke | 健康检查与路由 smoke 通过（偶发 chatbot AI 配置残留时 ask 可能非 0000） |
 | 抽奖发奖 E2E | `smoke-raffle-award-e2e.sh` PASSED |
 | Chat refund E2E | `smoke-chat-refund-e2e.sh` PASSED |
-| 完整 acceptance | 以当次 `./scripts/acceptance.sh --reuse` 结果为准 |
+| 完整 acceptance | `./scripts/acceptance.sh --reuse` 通过；Playwright 18/18，连续两轮 |
 
 静态门禁不能替代 fresh、secure 和业务状态验收。
 
@@ -89,7 +89,7 @@ secure overlay 需要非默认 JWT、内部 RPC、管理、XXL、MySQL 和 Rabbi
 
 ## 已知边界
 
-- 最终 7 服务拓扑已执行核心 Docker smoke 与钱路径 E2E；fresh 空卷、完整 secure overlay 仍需显式授权再跑。
+- 最终 7 服务拓扑已执行完整 reuse acceptance 与钱路径 E2E；fresh 空卷、完整 secure overlay 仍需显式授权再跑。
 - 默认拓扑仍共享物理 MySQL，DAO 归属主要靠文档和部分 ArchUnit 规则；
   Mapper XML 有多份启动器副本。
 - account 的失败注入覆盖仍可加强；已有最小 `@SpringBootTest` Context 门禁。

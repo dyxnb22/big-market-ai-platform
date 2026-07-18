@@ -7,7 +7,7 @@ import org.junit.runner.RunWith;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -27,7 +27,7 @@ import static org.junit.Assert.assertNotNull;
 @ActiveProfiles("test")
 public class AuthServiceApplicationContextTest {
 
-    @MockBean
+    @MockitoBean
     private RedissonClient redissonClient;
 
     @Autowired
