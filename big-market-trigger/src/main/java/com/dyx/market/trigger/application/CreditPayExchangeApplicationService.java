@@ -66,6 +66,17 @@ public class CreditPayExchangeApplicationService {
         payAndDeliver(unpaid, sku, userId);
     }
 
+    /** Continue a conversion after account-service confirmed the credit debit. */
+    public void continueAfterRemoteCreditCreated(String userId, String outBusinessNo) {
+        UnpaidActivityOrderEntity unpaid = activityRepository.queryQuotaOrderByOutBusinessNo(userId, outBusinessNo);
+        if (unpaid == null) {
+            throw new AppException(ResponseCode.UN_ERROR.getCode(),
+                    "兑换订单不存在，无法继续发货: " + outBusinessNo);
+        }
+        accountQuotaWriteAdapter.updateOrder(DeliveryOrderEntity.builder()
+                .userId(userId).outBusinessNo(outBusinessNo).build());
+    }
+
     private void payAndDeliver(UnpaidActivityOrderEntity unpaidActivityOrder, Long sku, String userId) {
         try {
             String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
@@ -80,9 +91,13 @@ public class CreditPayExchangeApplicationService {
             log.info("积分兑换商品，支付订单完成 userId:{} sku:{} orderId:{}", userId, sku, orderId);
         } catch (AppException e) {
             if (!ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
-                log.warn("积分兑换商品，支付扣积分失败，恢复SKU库存 userId:{} sku:{} outBusinessNo:{}",
-                        userId, sku, unpaidActivityOrder.getOutBusinessNo());
-                restoreActivitySkuStock(sku);
+                // UNKNOWN means the remote debit may already have committed. Keep
+                // the reservation until the credit outbox continuation resolves it.
+                if (!ResponseCode.UN_ERROR.getCode().equals(e.getCode())) {
+                    log.warn("积分兑换商品，明确拒绝扣积分，恢复SKU库存 userId:{} sku:{} outBusinessNo:{}",
+                            userId, sku, unpaidActivityOrder.getOutBusinessNo());
+                    restoreActivitySkuStock(sku, unpaidActivityOrder.getOutBusinessNo());
+                }
                 throw e;
             }
             log.warn("积分兑换商品，支付订单已存在，继续补偿发货 userId:{} sku:{} outBusinessNo:{}",
@@ -108,9 +123,9 @@ public class CreditPayExchangeApplicationService {
         return userId + "_" + sku + "_" + requestId;
     }
 
-    private void restoreActivitySkuStock(Long sku) {
+    private void restoreActivitySkuStock(Long sku, String reservationId) {
         try {
-            activityRepository.restoreActivitySkuStock(sku);
+            activityRepository.restoreActivitySkuStock(sku, reservationId);
         } catch (Exception e) {
             log.error("恢复SKU库存失败 sku:{}", sku, e);
         }

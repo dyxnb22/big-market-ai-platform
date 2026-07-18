@@ -26,10 +26,16 @@ public class ActivitySkuStockActionChain extends AbstractActionChain {
 
     @Override
     public boolean action(ActivitySkuEntity activitySkuEntity, ActivityEntity activityEntity, ActivityCountEntity activityCountEntity) {
+        return action(activitySkuEntity, activityEntity, activityCountEntity, null);
+    }
+
+    @Override
+    public boolean action(ActivitySkuEntity activitySkuEntity, ActivityEntity activityEntity,
+                          ActivityCountEntity activityCountEntity, String reservationId) {
         log.info("活动责任链-商品库存处理【有效期、状态、库存(sku)】开始。sku:{} activityId:{}", activitySkuEntity.getSku(), activityEntity.getActivityId());
         // 扣减库存（成功后内部写入延迟队列，携带 lockSurplus 用于落库幂等）
         boolean status = activityDispatch.subtractionActivitySkuStock(
-                activitySkuEntity.getSku(), activityEntity.getActivityId(), activityEntity.getEndDateTime());
+                activitySkuEntity.getSku(), activityEntity.getActivityId(), activityEntity.getEndDateTime(), reservationId);
         // true；库存扣减成功
         if (status) {
             log.info("活动责任链-商品库存处理【有效期、状态、库存(sku)】成功。sku:{} activityId:{}", activitySkuEntity.getSku(), activityEntity.getActivityId());

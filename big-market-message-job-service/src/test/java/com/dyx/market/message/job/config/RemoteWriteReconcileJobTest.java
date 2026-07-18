@@ -65,6 +65,7 @@ public class RemoteWriteReconcileJobTest {
                 .build();
         when(pendingRemoteWriteTaskDao.queryPendingTasks(anyInt(), anyInt()))
                 .thenReturn(Collections.singletonList(task))
+                .thenReturn(Collections.emptyList())
                 .thenReturn(Collections.emptyList());
         doThrow(new RuntimeException("continuation boom"))
                 .when(remoteWriteContinuationDispatcher).dispatch(task);
@@ -73,8 +74,9 @@ public class RemoteWriteReconcileJobTest {
 
         verify(pendingRemoteWriteTaskDao, never()).updateDone(any());
         verify(pendingRemoteWriteTaskDao).updateRetryFailed(eq(9L), anyInt());
-        // setDBKey called for scan + finally restore per task (db1 and db2 loops)
-        verify(dbRouter, atLeast(2)).setDBKey(1);
+        // The first scan is the central compensation store: setDBKey is
+        // called for the scan and once more after the continuation attempt.
+        verify(dbRouter, atLeast(2)).setDBKey(0);
     }
 
     @Test

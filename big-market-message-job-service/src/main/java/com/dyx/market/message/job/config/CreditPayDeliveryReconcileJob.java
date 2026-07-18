@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 public class CreditPayDeliveryReconcileJob {
 
     private static final String RETRY_KEY_PREFIX = "credit_pay_delivery_retry:";
-    private static final String SKU_RESTORED_KEY_PREFIX = "credit_pay_sku_restored:";
 
     @Value("${job.credit-pay-delivery.max-retries:5}")
     private int maxRetries;
@@ -204,18 +203,15 @@ public class CreditPayDeliveryReconcileJob {
         if (!restoreSkuStock || order.getSku() == null) {
             return true;
         }
-        String skuKey = SKU_RESTORED_KEY_PREFIX + order.getUserId() + Constants.UNDERLINE + order.getOutBusinessNo();
-        if (!Boolean.TRUE.equals(redisService.setNx(skuKey))) {
-            log.info("[CreditPayDeliveryReconcileJob] SKU already restored userId:{} outBusinessNo:{}",
-                    order.getUserId(), order.getOutBusinessNo());
-            return true;
-        }
         try {
-            activityRepository.restoreActivitySkuStock(order.getSku());
+            // The repository owns the durable restore ledger and its atomic
+            // Redis/DB transition. Do not put a Redis marker in front of it:
+            // a crash after SETNX and before the DB ledger write would make a
+            // later compensation attempt skip the restore forever.
+            activityRepository.restoreActivitySkuStock(order.getSku(), order.getOutBusinessNo());
             log.info("[CreditPayDeliveryReconcileJob] SKU stock restored sku:{}", order.getSku());
             return true;
         } catch (Exception e) {
-            redisService.remove(skuKey);
             log.error("[CreditPayDeliveryReconcileJob] SKU stock restore failed sku:{}", order.getSku(), e);
             return false;
         }

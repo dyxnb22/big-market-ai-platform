@@ -29,4 +29,6 @@ public interface IStrategyAwardStockConfirmTaskDao {
     int revertStaleProcessing(@Param("staleBefore") java.util.Date staleBefore, @Param("limit") int limit);
 
     int countPending();
+
+    int countByState(@Param("state") String state);
 }

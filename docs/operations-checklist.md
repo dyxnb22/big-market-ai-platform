@@ -37,6 +37,7 @@ MQ 消费者与 XXL handlers 运行在 **`big-market-message-job-service`**；ma
   `JOB_DLQ_REPLAY_ENABLED=true`, and manually enables/triggers the stopped XXL seed.
 - `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes. It caps retries at five and marks exhausted rows `failed`; after fixing the root cause, first inspect with `./scripts/replay-pending-remote-write.sh --dry-run <out-business-no> <operation>`, then replay the exact reviewed key without changing its payload. Valid operations are `credit_create`, `quota_create`, `quota_update`, and `quota_rollback`.
 - `ChatRefundReconcileJob` retries chat `refund_state=pending` sessions.
+- `ChatDeductReconcileJob` probes account orders for chat sessions stuck in `deduct_state=deducting`; it marks only the local session and never repeats the debit.
 
 Check consumer/job logs primarily from `big-market-message-job-service`; use `big-market-market-service` for draw/HTTP path only.
 
@@ -68,7 +69,7 @@ Check consumer/job logs primarily from `big-market-message-job-service`; use `bi
 
 - Actuator health is enabled on each service.
 - Prometheus scrape config is in `docs/dev-ops/prometheus/prometheus.yml`.
-- Alert rules: `docs/dev-ops/prometheus/rules/big-market-alerts.yml` (pending remote write, DLQ, chat refund, strategy stock confirm).
+- Alert rules: `docs/dev-ops/prometheus/rules/big-market-alerts.yml` (pending/failed remote write, DLQ, chat refund/deducting, credit award failed, strategy stock pending/manual).
 - Grafana config is under `docs/dev-ops/grafana`; the learning stack has annotated
   dev-only credentials, while secure acceptance requires explicit non-default
   `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` overrides.

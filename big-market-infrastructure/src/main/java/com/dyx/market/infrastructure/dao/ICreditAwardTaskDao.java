@@ -30,4 +30,6 @@ public interface ICreditAwardTaskDao {
     @DBRouter
     int updateRetryFailed(CreditAwardTask task);
 
+    int countByState(String state);
+
 }

@@ -7,6 +7,7 @@
         <result column="sku" property="sku"/>
         <result column="activity_id" property="activityId"/>
         <result column="lock_surplus" property="lockSurplus"/>
+        <result column="reservation_id" property="reservationId"/>
         <result column="status" property="status"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
@@ -14,17 +15,46 @@
 
     <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockDecrementLedger">
         insert into activity_sku_stock_decrement_ledger(
-            sku, activity_id, lock_surplus, status, create_time, update_time
+            sku, activity_id, lock_surplus, reservation_id, status, create_time, update_time
         ) values (
-            #{sku}, #{activityId}, #{lockSurplus}, 'applied', now(), now()
+            #{sku}, #{activityId}, #{lockSurplus}, #{reservationId}, COALESCE(#{status}, 'applied'), now(), now()
         )
     </insert>
 
     <select id="queryBySkuAndLockSurplus" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockDecrementLedger" resultMap="dataMap">
-        select id, sku, activity_id, lock_surplus, status, create_time, update_time
+        select id, sku, activity_id, lock_surplus, reservation_id, status, create_time, update_time
         from activity_sku_stock_decrement_ledger
         where sku = #{sku} and lock_surplus = #{lockSurplus}
         limit 1
+    </select>
+
+    <select id="queryByReservationId" resultMap="dataMap">
+        select id, sku, activity_id, lock_surplus, reservation_id, status, create_time, update_time
+        from activity_sku_stock_decrement_ledger
+        where reservation_id = #{reservationId}
+        limit 1
+    </select>
+
+    <delete id="deleteBySkuAndLockSurplus" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockDecrementLedger">
+        delete from activity_sku_stock_decrement_ledger
+        where sku = #{sku} and lock_surplus = #{lockSurplus} and status = 'released'
+    </delete>
+
+    <update id="updateStatusApplied" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockDecrementLedger">
+        update activity_sku_stock_decrement_ledger set status = 'applied', update_time = now()
+        where sku = #{sku} and lock_surplus = #{lockSurplus} and status = 'reserved'
+    </update>
+
+    <update id="updateStatusReleased" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockDecrementLedger">
+        update activity_sku_stock_decrement_ledger set status = 'released', update_time = now()
+        where sku = #{sku} and lock_surplus = #{lockSurplus} and status in ('reserved', 'applied')
+    </update>
+
+    <select id="queryReservedBySku" resultMap="dataMap">
+        select id, sku, activity_id, lock_surplus, reservation_id, status, create_time, update_time
+        from activity_sku_stock_decrement_ledger
+        where sku = #{sku} and status = 'reserved'
+        order by create_time asc
     </select>
 
 </mapper>

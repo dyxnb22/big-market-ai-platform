@@ -126,6 +126,30 @@ public class AccountQuotaApplicationService {
         }
     }
 
+    public UnpaidActivityOrderResponseDTO queryActivityOrder(String userId, String outBusinessNo) {
+        if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        try {
+            dbRouter.doRouter(userId);
+            RaffleActivityOrder query = new RaffleActivityOrder();
+            query.setUserId(userId);
+            query.setOutBusinessNo(outBusinessNo);
+            RaffleActivityOrder order = raffleActivityOrderDao.queryRaffleActivityOrder(query);
+            if (order == null) {
+                return null;
+            }
+            return UnpaidActivityOrderResponseDTO.builder()
+                    .userId(order.getUserId())
+                    .orderId(order.getOrderId())
+                    .outBusinessNo(order.getOutBusinessNo())
+                    .payAmount(order.getPayAmount())
+                    .build();
+        } finally {
+            dbRouter.clear();
+        }
+    }
+
     public boolean isActivityOrderCompleted(String userId, String outBusinessNo) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());

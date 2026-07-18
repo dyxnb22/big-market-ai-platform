@@ -4,6 +4,7 @@ import com.dyx.market.domain.rebate.model.entity.BehaviorEntity;
 import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
 
 import java.util.List;
+import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -28,5 +29,7 @@ public interface IBehaviorRebateService {
      * @return 返利订单实体
      */
     List<BehaviorRebateOrderEntity> queryOrderByOutBusinessNo(String userId, String outBusinessNo);
+
+    List<DailyBehaviorRebateVO> queryDailyBehaviorRebateConfig();
 
 }

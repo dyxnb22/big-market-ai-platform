@@ -1,0 +1,14 @@
+# Mapper statement exceptions are intentional and reviewed with the Owner matrix.
+# Format:
+#   mapper.xml|namespace#statement|kind|services|reason
+# kind is SERVICE_SPECIFIC for a statement intentionally scoped to a subset of
+# launchers, or DRIFT for a deliberate body difference between copies.
+
+chat_credit_session_mapper.xml|com.dyx.market.infrastructure.dao.IChatCreditSessionDao#countPendingRefunds|SERVICE_SPECIFIC|market-service,message-job-service|Async refund/reconcile metric owned by the market session workflow.
+credit_award_task_mapper.xml|com.dyx.market.infrastructure.dao.ICreditAwardTaskDao#countByState|SERVICE_SPECIFIC|message-job-service|Message-job-owned credit award outbox metric.
+strategy_award_stock_confirm_task_mapper.xml|com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao#countByState|SERVICE_SPECIFIC|message-job-service|Message-job-owned stock confirmation metric.
+strategy_award_stock_confirm_task_mapper.xml|com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao#countPending|SERVICE_SPECIFIC|message-job-service|Message-job-owned stock confirmation query.
+activity_sku_stock_restore_ledger_mapper.xml|com.dyx.market.infrastructure.dao.IActivitySkuStockRestoreLedgerDao#insert|DRIFT|account-service|Account copy accepts an explicit status for compatibility; market/message-job producers always append reserved.
+user_credit_account_mapper.xml|com.dyx.market.infrastructure.dao.IUserCreditAccountDao#updateAddAmount|DRIFT|account-service|Account Owner protects writes with account_status=open; non-account copies remain legacy local-profile compatibility.
+user_credit_account_mapper.xml|com.dyx.market.infrastructure.dao.IUserCreditAccountDao#updateSubtractionAmount|DRIFT|account-service|Account Owner protects writes with account_status=open; non-account copies remain legacy local-profile compatibility.
+user_credit_account_mapper.xml|com.dyx.market.infrastructure.dao.IUserCreditAccountDao#updateDeductAvailableAmount|DRIFT|account-service|Account Owner protects writes with account_status=open; non-account copies remain legacy local-profile compatibility.

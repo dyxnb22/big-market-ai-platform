@@ -7,6 +7,20 @@
 
 USE `big_market`;
 
+-- The legacy 100301 strategy references fulfillment handlers that are not
+-- present in the seven-service stack. Close it in both the database gate and
+-- the reused-volume Nacos display configuration.
+UPDATE `raffle_activity`
+SET `state` = 'close', `update_time` = NOW()
+WHERE `activity_id` = 100301;
+
+UPDATE `nacos_config`.`config_info`
+SET `content` = REPLACE(`content`, 'activity.100301.state.value=online', 'activity.100301.state.value=closed'),
+    `md5` = MD5(REPLACE(`content`, 'activity.100301.state.value=online', 'activity.100301.state.value=closed')),
+    `gmt_modified` = NOW()
+WHERE `data_id` = 'big-market-platform-config'
+  AND `group_id` = 'DEFAULT_GROUP';
+
 UPDATE `award`
 SET `award_key` = 'user_credit_random',
     `award_config` = '5,5',

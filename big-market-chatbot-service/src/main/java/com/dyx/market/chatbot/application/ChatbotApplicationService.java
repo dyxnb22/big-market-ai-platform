@@ -36,7 +36,8 @@ public class ChatbotApplicationService {
     private static final String DEFAULT_API_KEY = "";
     private static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
     private static final String DEFAULT_MODEL = "deepseek-chat";
-    private static final int DEFAULT_COST_PER_ASK = 1;
+    /** Local canned replies are a free learning fallback; only a configured remote provider may charge. */
+    private static final int DEFAULT_COST_PER_ASK = 0;
 
     @Resource
     private PlatformConfigService platformConfigService;
@@ -65,7 +66,8 @@ public class ChatbotApplicationService {
             return disabledResponse(token);
         }
 
-        int effectiveCost = parseCostConfig(runtimeConfig.costPerAsk);
+        int configuredCost = parseCostConfig(runtimeConfig.costPerAsk);
+        int effectiveCost = isChargeableRemoteProvider(runtimeConfig) ? configuredCost : 0;
         if (effectiveCost > 0 && StringUtils.isBlank(token)) {
             throw new AppException(ResponseCode.Login.TOKEN_ERROR.getCode(), ResponseCode.Login.TOKEN_ERROR.getInfo());
         }
@@ -214,10 +216,6 @@ public class ChatbotApplicationService {
                         "积分不足（需要 " + effectiveCost + " 积分，当前 " + balance + " 积分），请签到赚取积分或兑换后再试。");
             }
             BigDecimal newBalance = marketCreditGatewayClient.deductCredit(token, effectiveCost, requestId);
-            String userId = chatTokenUserSupport.resolveUserId(token);
-            if (StringUtils.isNotBlank(userId)) {
-                chatCreditSessionSupport.recordDeduction(userId, requestId, effectiveCost);
-            }
             return new CreditDeductionResult(requestId, BigDecimal.valueOf(effectiveCost), newBalance);
         }
         BigDecimal balance = StringUtils.isBlank(token)
@@ -244,6 +242,12 @@ public class ChatbotApplicationService {
         } catch (NumberFormatException e) {
             return DEFAULT_COST_PER_ASK;
         }
+    }
+
+    private boolean isChargeableRemoteProvider(ChatbotRuntimeConfig runtimeConfig) {
+        return runtimeConfig != null
+                && PROVIDER_DEEPSEEK.equalsIgnoreCase(runtimeConfig.provider)
+                && StringUtils.isNotBlank(runtimeConfig.apiKey);
     }
 
     @SuppressWarnings("unchecked")

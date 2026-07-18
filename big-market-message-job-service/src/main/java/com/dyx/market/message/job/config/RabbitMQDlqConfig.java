@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.util.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import com.rabbitmq.client.Channel;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
@@ -95,27 +96,27 @@ public class RabbitMQDlqConfig {
         return BindingBuilder.bind(sendAwardDlq()).to(dlxExchange()).with(QUEUE_SEND_AWARD);
     }
 
-    @RabbitListener(queues = "activity_sku_stock_zero.dlq")
-    public void onActivitySkuStockZeroDlq(Message message) {
-        persistDeadLetter(QUEUE_ACTIVITY_SKU_STOCK_ZERO, message);
+    @RabbitListener(queues = "activity_sku_stock_zero.dlq", ackMode = "MANUAL")
+    public void onActivitySkuStockZeroDlq(Message message, Channel channel) {
+        persistDeadLetter(QUEUE_ACTIVITY_SKU_STOCK_ZERO, message, channel);
     }
 
-    @RabbitListener(queues = "credit_adjust_success.dlq")
-    public void onCreditAdjustSuccessDlq(Message message) {
-        persistDeadLetter(QUEUE_CREDIT_ADJUST_SUCCESS, message);
+    @RabbitListener(queues = "credit_adjust_success.dlq", ackMode = "MANUAL")
+    public void onCreditAdjustSuccessDlq(Message message, Channel channel) {
+        persistDeadLetter(QUEUE_CREDIT_ADJUST_SUCCESS, message, channel);
     }
 
-    @RabbitListener(queues = "send_rebate.dlq")
-    public void onSendRebateDlq(Message message) {
-        persistDeadLetter(QUEUE_SEND_REBATE, message);
+    @RabbitListener(queues = "send_rebate.dlq", ackMode = "MANUAL")
+    public void onSendRebateDlq(Message message, Channel channel) {
+        persistDeadLetter(QUEUE_SEND_REBATE, message, channel);
     }
 
-    @RabbitListener(queues = "send_award.dlq")
-    public void onSendAwardDlq(Message message) {
-        persistDeadLetter(QUEUE_SEND_AWARD, message);
+    @RabbitListener(queues = "send_award.dlq", ackMode = "MANUAL")
+    public void onSendAwardDlq(Message message, Channel channel) {
+        persistDeadLetter(QUEUE_SEND_AWARD, message, channel);
     }
 
-    private void persistDeadLetter(String originalQueue, Message message) {
+    private void persistDeadLetter(String originalQueue, Message message, Channel channel) {
         String payload = new String(message.getBody(), StandardCharsets.UTF_8);
         String businessMessageId = resolveBusinessMessageId(originalQueue, payload);
         String userId = resolveUserId(payload);
@@ -126,6 +127,17 @@ public class RabbitMQDlqConfig {
                 dbRouter.setDBKey(1);
             }
             persistDeadLetterOnCurrentShard(originalQueue, payload, businessMessageId);
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+        } catch (Exception e) {
+            // The database is the audit/replay hand-off. Until it accepts the row,
+            // retain the only durable copy in RabbitMQ instead of rejecting it.
+            try {
+                channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+            } catch (Exception nackEx) {
+                log.error("[DLQ] failed to requeue message queue:{}", originalQueue, nackEx);
+            }
+            log.error("[DLQ] persistence failed; message requeued queue:{} businessMessageId:{}",
+                    originalQueue, businessMessageId, e);
         } finally {
             dbRouter.clear();
         }

@@ -95,6 +95,11 @@ public class AccountQuotaServiceRPC implements IAccountQuotaService {
     }
 
     @Override
+    public Response<UnpaidActivityOrderResponseDTO> queryActivityOrder(String userId, String outBusinessNo) {
+        return ApiResponses.execute(() -> accountQuotaApplicationService.queryActivityOrder(userId, outBusinessNo));
+    }
+
+    @Override
     public Response<Boolean> isActivityOrderCompleted(String userId, String outBusinessNo) {
         return ApiResponses.execute(() -> accountQuotaApplicationService.isActivityOrderCompleted(userId, outBusinessNo));
     }

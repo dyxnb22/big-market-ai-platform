@@ -65,21 +65,22 @@ public class ChatbotApplicationServiceIdempotencyTest {
     }
 
     @Test
-    public void invalidToken_doesNotReadCache() {
-        when(chatTokenUserSupport.resolveUserId("bad-token")).thenReturn(null);
+    public void localFallback_doesNotRequireTokenOrCredit() {
+        when(chatRequestIdempotencySupport.findCompleted("__anonymous__", "req-invalid")).thenReturn(null);
+        when(chatRequestIdempotencySupport.tryMarkProcessing("__anonymous__", "req-invalid")).thenReturn(false);
 
         ChatbotAskRequestDTO request = new ChatbotAskRequestDTO();
         request.setMessage("hi");
         request.setRequestId("req-invalid");
 
         try {
-            chatbotApplicationService.ask(request, "bad-token");
+            chatbotApplicationService.ask(request, null);
         } catch (AppException e) {
-            assertEquals(ResponseCode.Login.TOKEN_ERROR.getCode(), e.getCode());
+            assertEquals(ResponseCode.UN_ERROR.getCode(), e.getCode());
         }
 
-        verify(chatRequestIdempotencySupport, never()).findCompleted(anyString(), anyString());
-        verify(chatRequestIdempotencySupport, never()).tryMarkProcessing(anyString(), anyString());
+        verify(chatRequestIdempotencySupport, times(2)).findCompleted("__anonymous__", "req-invalid");
+        verify(chatRequestIdempotencySupport).tryMarkProcessing("__anonymous__", "req-invalid");
         verify(marketCreditGatewayClient, never()).deductCredit(anyString(), anyInt(), anyString());
     }
 

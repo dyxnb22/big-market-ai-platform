@@ -84,7 +84,7 @@ for schema in big_market_01 big_market_02; do
   echo "  OK  ${schema}.raffle_quota_decrement_ledger_000..003"
 done
 
-for table in strategy_award_stock_decrement_ledger activity_sku_stock_decrement_ledger; do
+for table in strategy_award_stock_decrement_ledger activity_sku_stock_decrement_ledger activity_sku_stock_restore_ledger; do
   cnt=$(mysql_query "SELECT COUNT(*) FROM information_schema.tables
     WHERE table_schema='big_market' AND table_name='${table}';")
   if [ "${cnt:-0}" != "1" ]; then

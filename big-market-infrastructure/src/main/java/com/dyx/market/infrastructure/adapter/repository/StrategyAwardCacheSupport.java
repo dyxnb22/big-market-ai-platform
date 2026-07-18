@@ -12,6 +12,8 @@ import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
+import org.redisson.api.RScript;
+import org.redisson.api.RedissonClient;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -47,6 +49,8 @@ public class StrategyAwardCacheSupport {
     private IRedisService redisService;
     @Resource
     private TransactionTemplate transactionTemplate;
+    @Resource
+    private RedissonClient redissonClient;
 
     public List<StrategyAwardEntity> queryStrategyAwardList(Long strategyId) {
         // 优先从缓存获取
@@ -151,19 +155,65 @@ public class StrategyAwardCacheSupport {
      */
     public StrategyAwardStockKeyVO reserveStock(Long strategyId, Integer awardId, Date endDateTime, String reservationId) {
         String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_KEY + strategyId + Constants.UNDERLINE + awardId;
-        long surplus = redisService.decr(cacheKey);
+        if (reservationId == null || reservationId.trim().isEmpty()) {
+            throw new IllegalArgumentException("reservationId is required for finite award stock");
+        }
+        StrategyAwardStockDecrementLedger existing = strategyAwardStockDecrementLedgerDao.queryByReservationId(reservationId);
+        if (existing != null) {
+            if ("released".equals(existing.getStatus())) {
+                return null;
+            }
+            if (existing.getLockSurplus() != null) {
+                return StrategyAwardStockKeyVO.builder().strategyId(existing.getStrategyId()).awardId(existing.getAwardId())
+                        .reservationId(reservationId).lockSurplus(existing.getLockSurplus()).build();
+            }
+            strategyId = existing.getStrategyId();
+            awardId = existing.getAwardId();
+        }
+        final Long ledgerStrategyId = strategyId;
+        final Integer ledgerAwardId = awardId;
+        if (existing == null) {
+            transactionTemplate.execute(status -> {
+                try {
+                    strategyAwardStockDecrementLedgerDao.insert(StrategyAwardStockDecrementLedger.builder()
+                            .reservationId(reservationId).strategyId(ledgerStrategyId).awardId(ledgerAwardId).status("reserved").build());
+                } catch (DuplicateKeyException duplicate) {
+                    // Another request created the durable reservation. The Redis
+                    // script below is still safe to resume by reservationId.
+                }
+                return true;
+            });
+        }
+        // Mockito/unit wiring can exercise the repository without a Redisson
+        // client; production always supplies it. Keep the legacy branch only
+        // as a compatibility fallback for that environment.
+        if (redissonClient == null) {
+            return reserveStockWithLegacyRedis(strategyId, awardId, endDateTime, reservationId, cacheKey);
+        }
+        long lockTtlMillis = endDateTime == null
+                ? TimeUnit.DAYS.toMillis(30)
+                : Math.max(TimeUnit.SECONDS.toMillis(1), endDateTime.getTime() - System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
+        Object scriptResult = redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+                "local saved = redis.call('get', KEYS[1]); "
+                        + "if saved then return tonumber(saved); end; "
+                        + "local surplus = redis.call('decr', KEYS[2]); "
+                        + "if surplus < 0 then redis.call('set', KEYS[2], 0); return -1; end; "
+                        + "local lockKey = KEYS[2] .. '_' .. surplus; "
+                        + "local locked = redis.call('set', lockKey, '1', 'NX', 'PX', ARGV[1]); "
+                        + "if not locked then redis.call('incr', KEYS[2]); return -2; end; "
+                        + "redis.call('set', KEYS[1], surplus, 'EX', ARGV[2]); return surplus;",
+                RScript.ReturnType.INTEGER,
+                java.util.Arrays.asList("stock_reservation:" + reservationId, cacheKey),
+                lockTtlMillis, TimeUnit.DAYS.toSeconds(30));
+        long surplus = ((Number) scriptResult).longValue();
         if (surplus < 0) {
-            redisService.setAtomicLong(cacheKey, 0);
+            strategyAwardStockDecrementLedgerDao.updateStatusReleased(reservationId);
             return null;
         }
-        String lockKey = cacheKey + Constants.UNDERLINE + surplus;
-        Boolean lock = null != endDateTime
-                ? redisService.setNx(lockKey, endDateTime.getTime() - System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS)
-                : redisService.setNx(lockKey);
-        if (!Boolean.TRUE.equals(lock)) {
-            log.warn("策略奖品库存预占加锁失败，回滚扣减 {}", lockKey);
-            redisService.incr(cacheKey);
-            return null;
+        int updated = strategyAwardStockDecrementLedgerDao.updateLockSurplus(StrategyAwardStockDecrementLedger.builder()
+                .reservationId(reservationId).lockSurplus(surplus).build());
+        if (updated != 1) {
+            throw new IllegalStateException("strategy stock reservation durable update failed: " + reservationId);
         }
         return StrategyAwardStockKeyVO.builder()
                 .strategyId(strategyId)
@@ -171,6 +221,31 @@ public class StrategyAwardCacheSupport {
                 .reservationId(reservationId)
                 .lockSurplus(surplus)
                 .build();
+    }
+
+    private StrategyAwardStockKeyVO reserveStockWithLegacyRedis(Long strategyId, Integer awardId,
+                                                                  Date endDateTime, String reservationId,
+                                                                  String cacheKey) {
+        long surplus = redisService.decr(cacheKey);
+        if (surplus < 0) {
+            redisService.setAtomicLong(cacheKey, 0);
+            strategyAwardStockDecrementLedgerDao.updateStatusReleased(reservationId);
+            return null;
+        }
+        String lockKey = cacheKey + Constants.UNDERLINE + surplus;
+        Boolean lock = endDateTime == null
+                ? redisService.setNx(lockKey)
+                : redisService.setNx(lockKey, endDateTime.getTime() - System.currentTimeMillis()
+                        + TimeUnit.DAYS.toMillis(1), TimeUnit.MILLISECONDS);
+        if (!Boolean.TRUE.equals(lock)) {
+            redisService.incr(cacheKey);
+            strategyAwardStockDecrementLedgerDao.updateStatusReleased(reservationId);
+            return null;
+        }
+        strategyAwardStockDecrementLedgerDao.updateLockSurplus(StrategyAwardStockDecrementLedger.builder()
+                .reservationId(reservationId).lockSurplus(surplus).build());
+        return StrategyAwardStockKeyVO.builder().strategyId(strategyId).awardId(awardId)
+                .reservationId(reservationId).lockSurplus(surplus).build();
     }
 
     /**
@@ -206,10 +281,42 @@ public class StrategyAwardCacheSupport {
             return;
         }
         String cacheKey = Constants.RedisKey.STRATEGY_AWARD_COUNT_KEY + reservation.getStrategyId() + Constants.UNDERLINE + reservation.getAwardId();
+        if (reservation.getReservationId() != null) {
+            StrategyAwardStockDecrementLedger existing = strategyAwardStockDecrementLedgerDao
+                    .queryByReservationId(reservation.getReservationId());
+            if (existing != null && "released".equals(existing.getStatus())) {
+                return;
+            }
+            if (existing != null && "applied".equals(existing.getStatus())) {
+                return;
+            }
+            if (redissonClient == null) {
+                redisService.incr(cacheKey);
+                if (reservation.getLockSurplus() != null) {
+                    redisService.remove(cacheKey + Constants.UNDERLINE + reservation.getLockSurplus());
+                }
+                if (existing != null) {
+                    strategyAwardStockDecrementLedgerDao.updateStatusReleased(reservation.getReservationId());
+                }
+                return;
+            }
+            String lockKey = null == reservation.getLockSurplus()
+                    ? "" : cacheKey + Constants.UNDERLINE + reservation.getLockSurplus();
+            redissonClient.getScript().eval(RScript.Mode.READ_WRITE,
+                    "if redis.call('setnx', KEYS[1], '1') == 1 then "
+                            + "redis.call('expire', KEYS[1], 2592000); "
+                            + "redis.call('incr', KEYS[2]); "
+                            + "if ARGV[1] ~= '' then redis.call('del', ARGV[1]); end; return 1; "
+                            + "end; return 0;",
+                    RScript.ReturnType.INTEGER,
+                    java.util.Collections.singletonList("stock_release:" + reservation.getReservationId()),
+                    cacheKey, lockKey);
+            strategyAwardStockDecrementLedgerDao.updateStatusReleased(reservation.getReservationId());
+            return;
+        }
         redisService.incr(cacheKey);
         if (null != reservation.getLockSurplus()) {
-            String lockKey = cacheKey + Constants.UNDERLINE + reservation.getLockSurplus();
-            redisService.remove(lockKey);
+            redisService.remove(cacheKey + Constants.UNDERLINE + reservation.getLockSurplus());
         }
         log.info("奖品库存预占释放 strategyId:{} awardId:{} reservationId:{}",
                 reservation.getStrategyId(), reservation.getAwardId(), reservation.getReservationId());
@@ -252,6 +359,13 @@ public class StrategyAwardCacheSupport {
     public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
         StrategyAwardStockKeyVO stockKey = peekQueueValue(strategyId, awardId);
         if (null == stockKey) {
+            // A process can die after the durable reservation and before the
+            // delayed-queue offer. Resume those reservations from MySQL so a
+            // Redis-only queue is not the sole recovery record.
+            for (StrategyAwardStockDecrementLedger reserved :
+                    strategyAwardStockDecrementLedgerDao.queryReservedByStrategyAward(strategyId, awardId)) {
+                resumeReservedStock(reserved);
+            }
             redisService.removeFromSet(Constants.RedisKey.STRATEGY_AWARD_STOCK_PENDING_SET,
                     strategyId + Constants.UNDERLINE + awardId);
             return;
@@ -262,6 +376,26 @@ public class StrategyAwardCacheSupport {
         } catch (Exception e) {
             log.error("奖品库存落库失败，保留队列重试 strategyId:{} awardId:{}", strategyId, awardId, e);
         }
+    }
+
+    private void resumeReservedStock(StrategyAwardStockDecrementLedger reserved) {
+        if (reserved == null || reserved.getReservationId() == null) {
+            return;
+        }
+        StrategyAwardStockKeyVO stockKey = StrategyAwardStockKeyVO.builder()
+                .strategyId(reserved.getStrategyId())
+                .awardId(reserved.getAwardId())
+                .reservationId(reserved.getReservationId())
+                .lockSurplus(reserved.getLockSurplus())
+                .build();
+        if (reserved.getLockSurplus() == null) {
+            stockKey = reserveStock(reserved.getStrategyId(), reserved.getAwardId(), null,
+                    reserved.getReservationId());
+            if (stockKey == null) {
+                return;
+            }
+        }
+        updateStrategyAwardStockOnce(stockKey);
     }
 
     public StrategyAwardStockKeyVO takeQueueValue(Long strategyId, Integer awardId) {
@@ -294,7 +428,8 @@ public class StrategyAwardCacheSupport {
         String dedupeKey = STOCK_MYSQL_DECREMENT_KEY_PREFIX + reservationId;
         // Optional fast-path: if Redis says done, still verify MySQL ledger before skipping.
         if (!Boolean.TRUE.equals(redisService.setNx(dedupeKey, 7, TimeUnit.DAYS))) {
-            if (null != strategyAwardStockDecrementLedgerDao.queryByReservationId(reservationId)) {
+            StrategyAwardStockDecrementLedger existing = strategyAwardStockDecrementLedgerDao.queryByReservationId(reservationId);
+            if (existing != null && !"reserved".equals(existing.getStatus())) {
                 log.info("奖品库存 MySQL 扣减已落账，跳过重复 reservationId:{}", reservationId);
                 return;
             }
@@ -304,6 +439,16 @@ public class StrategyAwardCacheSupport {
 
         try {
             Boolean applied = transactionTemplate.execute(status -> {
+                StrategyAwardStockDecrementLedger existing = strategyAwardStockDecrementLedgerDao
+                        .queryByReservationId(reservationId);
+                if (existing != null && "applied".equals(existing.getStatus())) {
+                    return true;
+                }
+                if (existing != null && "reserved".equals(existing.getStatus())) {
+                    strategyAwardStockDecrementLedgerDao.updateStatusApplied(reservationId);
+                    updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
+                    return true;
+                }
                 try {
                     strategyAwardStockDecrementLedgerDao.insert(StrategyAwardStockDecrementLedger.builder()
                             .reservationId(reservationId)
@@ -361,6 +506,18 @@ public class StrategyAwardCacheSupport {
                             .build());
                 } catch (NumberFormatException ignored) {
                     log.warn("invalid pending strategy award stock key: {}", member);
+                }
+            }
+        }
+        List<StrategyAwardStockDecrementLedger> reserved = strategyAwardStockDecrementLedgerDao.queryAllReserved(500);
+        if (reserved != null) {
+            for (StrategyAwardStockDecrementLedger row : reserved) {
+                String key = row.getStrategyId() + Constants.UNDERLINE + row.getAwardId();
+                if (seen.add(key)) {
+                    merged.add(StrategyAwardStockKeyVO.builder()
+                            .strategyId(row.getStrategyId())
+                            .awardId(row.getAwardId())
+                            .build());
                 }
             }
         }

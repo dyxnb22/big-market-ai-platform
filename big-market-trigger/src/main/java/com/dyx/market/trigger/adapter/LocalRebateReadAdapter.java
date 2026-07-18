@@ -4,6 +4,8 @@ import com.dyx.market.domain.rebate.service.IBehaviorRebateService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.List;
+import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
 
 /**
  * 返利读查询的本地进程内实现。
@@ -20,6 +22,11 @@ public class LocalRebateReadAdapter implements IRebateReadAdapter {
     @Override
     public boolean isCalendarSignRebate(String userId, String outBusinessNo) {
         return !behaviorRebateService.queryOrderByOutBusinessNo(userId, outBusinessNo).isEmpty();
+    }
+
+    @Override
+    public List<DailyBehaviorRebateVO> queryCalendarSignRebateConfig() {
+        return behaviorRebateService.queryDailyBehaviorRebateConfig();
     }
 
 }

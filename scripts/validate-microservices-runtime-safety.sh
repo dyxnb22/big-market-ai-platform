@@ -460,7 +460,7 @@ MARKET_APP="$REPO_ROOT/big-market-market-service/src/main/java/com/dyx/market/ma
 
 if [[ -f "$XXL_SQL" ]]; then
   SEEDED_HANDLERS=$(grep -E "^\s*\([0-9]+,1," "$XXL_SQL" \
-    | grep -oE "'(updateAwardStockJob|SendMessageTaskJob_DB[12]|UpdateActivitySkuStockJob|DispatchCreditAwardTaskJob_DB[12]|StrategyAwardStockConfirmJob_DB[12]|CreditPayDeliveryReconcileJob_DB[12]|RemoteWriteReconcileJob|DlqReplayJob|ChatRefundReconcileJob)'" \
+    | grep -oE "'(updateAwardStockJob|SendMessageTaskJob_DB[12]|UpdateActivitySkuStockJob|DispatchCreditAwardTaskJob_DB[12]|StrategyAwardStockConfirmJob_DB[12]|CreditPayDeliveryReconcileJob_DB[12]|RemoteWriteReconcileJob|DlqReplayJob|ChatRefundReconcileJob|ChatDeductReconcileJob)'" \
     | tr -d "'" \
     | sort -u)
   while IFS= read -r handler; do

@@ -49,4 +49,8 @@
         where user_id = #{userId} and award_order_id = #{awardOrderId}
     </update>
 
+    <select id="countByState" resultType="int">
+        select count(*) from credit_award_task where state = #{state}
+    </select>
+
 </mapper>

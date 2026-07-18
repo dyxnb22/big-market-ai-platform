@@ -117,7 +117,7 @@ Gateway 日志 → 目标 Service 日志 → Domain 日志 → 数据库/Redis �
 
 1. 查 `user_credit_account.available_amount`：当前积分余额。
 2. 查 `raffle_activity_sku` 表：该 SKU 对应的 `product_amount`（积分价格）。
-3. 检查 `RaffleActivityController.creditPayExchangeSku()` 中的库存恢复逻辑：积分扣减失败后是否触发了 `restoreActivitySkuStock()`（Redis `INCR` 恢复）。
+3. 检查 `RaffleActivityController.creditPayExchangeSku()` 中的库存恢复逻辑：积分扣减明确拒绝后是否按 `outBusinessNo` 进入 SKU restore ledger；该流程会原子恢复 Redis、取消待落账队列，并在已落账时补回 MySQL，重复执行不会重复恢复。
 
 ---
 

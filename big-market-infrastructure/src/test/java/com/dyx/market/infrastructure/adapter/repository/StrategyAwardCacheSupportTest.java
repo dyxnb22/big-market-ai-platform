@@ -16,6 +16,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.redisson.api.RBlockingQueue;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -196,6 +197,22 @@ public class StrategyAwardCacheSupportTest {
         }
 
         verify(redisService).remove(MYSQL_DEDUPE_KEY);
+    }
+
+    @Test
+    public void syncStrategyAwardStockFromQueue_resumesDurableReservationWhenQueueMissing() {
+        RBlockingQueue<StrategyAwardStockKeyVO> queue = mock(RBlockingQueue.class);
+        doReturn(queue).when(redisService).getBlockingQueue(anyString());
+        when(queue.peek()).thenReturn(null);
+        when(strategyAwardStockDecrementLedgerDao.queryReservedByStrategyAward(STRATEGY_ID, AWARD_ID))
+                .thenReturn(java.util.Collections.singletonList(StrategyAwardStockDecrementLedger.builder()
+                        .strategyId(STRATEGY_ID).awardId(AWARD_ID).reservationId(ORDER_ID).lockSurplus(5L)
+                        .status("reserved").build()));
+        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);
+
+        support.syncStrategyAwardStockFromQueue(STRATEGY_ID, AWARD_ID);
+
+        verify(strategyAwardDao).updateStrategyAwardStock(any());
     }
 
     private static StrategyAwardStockKeyVO buildReservation() {

@@ -1,7 +1,7 @@
 # XXL-Job Handlers
 
 Seed source: `docs/dev-ops/mysql/sql/xxl_job.sql` (executor group `big-market-message-job`).
-Older volumes may need `docs/dev-ops/mysql/sql/z-xxl-job-extra-handlers.sql` for jobs 7–13.
+Older volumes may need `docs/dev-ops/mysql/sql/z-xxl-job-extra-handlers.sql` for jobs 7–14.
 
 `trigger_status`: `0` = stopped, `1` = running.
 
@@ -20,5 +20,6 @@ Older volumes may need `docs/dev-ops/mysql/sql/z-xxl-job-extra-handlers.sql` for
 | `RemoteWriteReconcileJob` | 11 | 1 | Retries `pending_remote_write_task` UNKNOWN outcomes; **money-adjacent**. |
 | `DlqReplayJob` | 12 | 0 | Replays `mq_dead_letter` rows in `reviewed` only. **Money-replay**; keep stopped until operator review + `JOB_DLQ_REPLAY_ENABLED=true`. |
 | `ChatRefundReconcileJob` | 13 | 1 | Retries chat `refund_state=pending`; **money path** but idempotent by `chat_refund_{userId}_{requestId}`. |
+| `ChatDeductReconcileJob` | 14 | 1 | Resolves `deduct_state=deducting` by probing account order `chat_{userId}_{requestId}`; never debits again. |
 
 Alignment gate: `XxlJobHandlerAlignmentTest` / `scripts/validate-microservices-runtime-safety.sh` section 8.

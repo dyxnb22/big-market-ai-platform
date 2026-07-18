@@ -32,10 +32,9 @@ public class PendingRemoteWriteSupport implements IPendingRemoteWritePort {
      */
     @Override
     public boolean enqueue(String outBusinessNo, String operation, Object payload, String userId) {
-        if (StringUtils.isBlank(userId)) {
-            return enqueue(outBusinessNo, operation, payload);
-        }
-        return DBRouterTemplate.executeOnShard(dbRouter, userId,
+        // Compensation must survive an outage of the user's market shard.
+        // Keep the userId in the payload, but persist the hand-off centrally.
+        return DBRouterTemplate.executeOnDb(dbRouter, 0,
                 () -> enqueue(outBusinessNo, operation, payload));
     }
 

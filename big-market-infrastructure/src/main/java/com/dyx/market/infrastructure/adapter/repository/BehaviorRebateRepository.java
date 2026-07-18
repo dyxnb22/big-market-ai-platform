@@ -94,18 +94,21 @@ public class BehaviorRebateRepository implements IBehaviorRebateRepository {
             dbRouter.clear();
         }
 
-        // 同步发送MQ消息
-        for (BehaviorRebateAggregate behaviorRebateAggregate : behaviorRebateAggregates) {
-            TaskEntity taskEntity = behaviorRebateAggregate.getTaskEntity();
-            try {
-                // 发送消息【在事务外执行，如果失败还有任务补偿】
-                eventPublisher.publish(taskEntity.getTopic(), taskEntity.getMessage());
-                // 更新数据库记录，task 任务表
-                rebateTaskOutboxPort.markSendMessageCompleted(taskEntity);
-            } catch (Exception e) {
-                log.error("写入返利记录，发送MQ消息失败 userId: {} topic: {}", userId, taskEntity.getTopic());
-                rebateTaskOutboxPort.markSendMessageFail(taskEntity);
+        // 同步发送MQ消息；事务结束后重新设置用户分片，避免 task 更新落到 db00。
+        try {
+            dbRouter.doRouter(userId);
+            for (BehaviorRebateAggregate behaviorRebateAggregate : behaviorRebateAggregates) {
+                TaskEntity taskEntity = behaviorRebateAggregate.getTaskEntity();
+                try {
+                    eventPublisher.publish(taskEntity.getTopic(), taskEntity.getMessage());
+                    rebateTaskOutboxPort.markSendMessageCompleted(taskEntity);
+                } catch (Exception e) {
+                    log.error("写入返利记录，发送MQ消息失败 userId: {} topic: {}", userId, taskEntity.getTopic(), e);
+                    rebateTaskOutboxPort.markSendMessageFail(taskEntity);
+                }
             }
+        } finally {
+            dbRouter.clear();
         }
 
     }

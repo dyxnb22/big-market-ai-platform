@@ -55,6 +55,8 @@ public class ActivityQuotaLedgerSupport {
                                     .userId(userId)
                                     .activityId(activityId)
                                     .outBusinessNo(outBusinessNo)
+                                    .month(month)
+                                    .day(day)
                                     .build());
                 } catch (DuplicateKeyException e) {
                     log.info("[decrementQuotaWithLedger] duplicate userId:{} activityId:{} outBusinessNo:{}",
@@ -143,8 +145,6 @@ public class ActivityQuotaLedgerSupport {
     }
 
     public boolean rollbackQuotaWithLedger(String userId, Long activityId, String outBusinessNo) {
-        String month = RaffleActivityAccountMonth.currentMonth();
-        String day = RaffleActivityAccountDay.currentDay();
         try {
             dbRouter.doRouter(userId);
             Boolean result = transactionTemplate.execute(status -> {
@@ -162,7 +162,7 @@ public class ActivityQuotaLedgerSupport {
                 }
                 raffleActivityAccountDao.addAccountTotalSurplusQuota(
                         RaffleActivityAccount.builder().userId(userId).activityId(activityId).build());
-                restoreMonthDayQuota(userId, activityId, month, day);
+                restoreMonthDayQuota(userId, activityId, ledger.getMonth(), ledger.getDay());
                 return true;
             });
             return Boolean.TRUE.equals(result);

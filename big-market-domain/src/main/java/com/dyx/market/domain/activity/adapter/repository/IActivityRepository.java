@@ -30,6 +30,11 @@ public interface IActivityRepository {
 
     boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey, Date endDateTime);
 
+    default boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey,
+                                                Date endDateTime, String reservationId) {
+        return subtractionActivitySkuStock(sku, activityId, cacheKey, endDateTime);
+    }
+
     void activitySkuStockConsumeSendQueue(ActivitySkuStockKeyVO activitySkuStockKeyVO);
 
     ActivitySkuStockKeyVO takeQueueValue();
@@ -52,6 +57,11 @@ public interface IActivityRepository {
      * so the slot is returned to the available pool.
      */
     void restoreActivitySkuStock(Long sku);
+
+    /** Idempotently restore one previously reserved SKU slot. */
+    default void restoreActivitySkuStock(Long sku, String reservationId) {
+        restoreActivitySkuStock(sku);
+    }
 
     List<Long> querySkuList();
 

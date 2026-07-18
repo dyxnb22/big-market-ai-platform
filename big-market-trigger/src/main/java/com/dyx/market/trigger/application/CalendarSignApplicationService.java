@@ -6,6 +6,7 @@ import com.dyx.market.domain.rebate.model.valobj.BehaviorTypeVO;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
 import com.dyx.market.trigger.adapter.IRebateOrderAdapter;
 import com.dyx.market.trigger.adapter.IRebateReadAdapter;
+import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
 import com.dyx.market.trigger.api.dto.SignInResponseDTO;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
@@ -50,13 +51,24 @@ public class CalendarSignApplicationService {
             behaviorEntity.setUserId(userId);
             behaviorEntity.setBehaviorTypeVO(BehaviorTypeVO.SIGN);
             behaviorEntity.setOutBusinessNo(outBusinessNo);
+            List<DailyBehaviorRebateVO> configs = rebateReadAdapter.queryCalendarSignRebateConfig();
+            if (configs == null || configs.isEmpty()) {
+                throw new AppException(ResponseCode.UN_ERROR.getCode(), "签到返利未配置");
+            }
+            BigDecimal rewardCredit = configs.stream()
+                    .filter(config -> "integral".equalsIgnoreCase(config.getRebateType()))
+                    .map(config -> parseReward(config.getRebateConfig()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             List<String> orderIds = rebateOrderAdapter.createOrder(behaviorEntity);
+            if (orderIds == null || orderIds.isEmpty()) {
+                throw new AppException(ResponseCode.UN_ERROR.getCode(), "签到返利未生成任何有效权益");
+            }
             log.info("日历签到返利完成 userId:{} orderIds: {}", userId, JSON.toJSONString(orderIds));
             return SignInResponseDTO.builder()
                     .signedToday(true)
-                    .rewardCredit(BigDecimal.TEN)
+                    .rewardCredit(rewardCredit)
                     .creditBalance(queryCreditBalanceSafe(userId))
-                    .message("签到成功，+10 积分")
+                    .message("签到成功，+" + rewardCredit.stripTrailingZeros().toPlainString() + " 积分")
                     .build();
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
@@ -64,6 +76,18 @@ public class CalendarSignApplicationService {
                 return alreadySignedResponse(userId);
             }
             throw e;
+        }
+    }
+
+    private BigDecimal parseReward(String value) {
+        try {
+            BigDecimal reward = new BigDecimal(value);
+            if (reward.signum() <= 0) {
+                throw new NumberFormatException("reward must be positive");
+            }
+            return reward;
+        } catch (Exception e) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "签到积分返利配置非法");
         }
     }
 

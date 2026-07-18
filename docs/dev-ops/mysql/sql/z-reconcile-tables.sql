@@ -23,12 +23,44 @@ CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
     `sku`             BIGINT       NOT NULL,
     `activity_id`     BIGINT       DEFAULT NULL,
     `lock_surplus`    BIGINT       NOT NULL,
+    `reservation_id`  VARCHAR(128) DEFAULT NULL,
     `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_sku_lock_surplus` (`sku`, `lock_surplus`),
-    KEY `idx_activity` (`activity_id`)
+    KEY `idx_activity` (`activity_id`),
+    KEY `idx_reservation` (`reservation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `activity_sku_stock_restore_ledger` (
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+    `sku`             BIGINT       NOT NULL,
+    `reservation_id`  VARCHAR(128) NOT NULL,
+    `status`          VARCHAR(16) NOT NULL DEFAULT 'reserved',
+    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_restore_reservation` (`reservation_id`),
+    KEY `idx_restore_sku` (`sku`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- A central copy is the independent hand-off for cross-service compensation.
+-- It is intentionally outside the user's market shard, so a market shard
+-- outage cannot erase the only pending rollback/continuation record.
+USE `big_market`;
+CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+    `out_business_no` VARCHAR(128) NOT NULL,
+    `operation`       VARCHAR(32)  NOT NULL,
+    `payload`         TEXT         NOT NULL,
+    `state`           VARCHAR(24)  NOT NULL DEFAULT 'pending',
+    `retry_count`     TINYINT      NOT NULL DEFAULT 0,
+    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_out_business_no_op` (`out_business_no`, `operation`),
+    KEY `idx_state_retry` (`state`, `retry_count`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 USE `big_market_01`;
@@ -55,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
     `out_business_no` VARCHAR(128) NOT NULL,
     `operation`       VARCHAR(32)  NOT NULL,
     `payload`         TEXT         NOT NULL,
-    `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending',
+    `state`           VARCHAR(24)  NOT NULL DEFAULT 'pending',
     `retry_count`     TINYINT      NOT NULL DEFAULT 0,
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -105,6 +137,8 @@ CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
     `user_id`         VARCHAR(128) NOT NULL,
     `activity_id`     BIGINT       NOT NULL,
     `out_business_no` VARCHAR(64)  NOT NULL,
+    `month`           VARCHAR(7)   NOT NULL,
+    `day`             VARCHAR(10)  NOT NULL,
     `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

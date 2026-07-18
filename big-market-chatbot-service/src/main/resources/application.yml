@@ -18,11 +18,11 @@ chatbot:
 mini-db-router:
   jdbc:
     datasource:
-      dbCount: 1
+      dbCount: 2
       tbCount: 1
       default: db01
       routerKey: userId
-      list: db01
+      list: db01,db02
       db01:
         driver-class-name: com.mysql.cj.jdbc.Driver
         username: ${MYSQL_USER:root}
@@ -31,6 +31,19 @@ mini-db-router:
         type-class-name: com.zaxxer.hikari.HikariDataSource
         pool:
           pool-name: Chatbot_HikariCP
+          minimum-idle: 2
+          maximum-pool-size: 5
+          auto-commit: true
+          connection-timeout: 30000
+          connection-test-query: SELECT 1
+      db02:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${MYSQL_USER:root}
+        password: ${MYSQL_PASS:123456}
+        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/big_market_02?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+        type-class-name: com.zaxxer.hikari.HikariDataSource
+        pool:
+          pool-name: Chatbot_HikariCP_DB02
           minimum-idle: 2
           maximum-pool-size: 5
           auto-commit: true

@@ -76,6 +76,13 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
+    public boolean subtractionActivitySkuStock(Long sku, Long activityId, String cacheKey,
+                                               Date endDateTime, String reservationId) {
+        return activitySkuStockCacheSupport.subtractionActivitySkuStock(
+                sku, activityId, cacheKey, endDateTime, reservationId);
+    }
+
+    @Override
     public void activitySkuStockConsumeSendQueue(ActivitySkuStockKeyVO activitySkuStockKeyVO) {
         activitySkuStockCacheSupport.activitySkuStockConsumeSendQueue(activitySkuStockKeyVO);
     }
@@ -128,6 +135,11 @@ public class ActivityRepository implements IActivityRepository {
     @Override
     public void restoreActivitySkuStock(Long sku) {
         activitySkuStockCacheSupport.restoreActivitySkuStock(sku);
+    }
+
+    @Override
+    public void restoreActivitySkuStock(Long sku, String reservationId) {
+        activitySkuStockCacheSupport.restoreActivitySkuStock(sku, reservationId);
     }
 
     @Override

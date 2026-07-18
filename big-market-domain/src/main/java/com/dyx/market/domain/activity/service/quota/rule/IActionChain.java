@@ -13,4 +13,14 @@ public interface IActionChain extends IActionChainArmory {
 
     boolean action(ActivitySkuEntity activitySkuEntity, ActivityEntity activityEntity, ActivityCountEntity activityCountEntity);
 
+    /**
+     * Execute the chain with an optional durable reservation key. Existing
+     * callers keep the legacy behavior; credit-pay orders pass their business
+     * number so SKU compensation can cancel/restore the exact reservation.
+     */
+    default boolean action(ActivitySkuEntity activitySkuEntity, ActivityEntity activityEntity,
+                           ActivityCountEntity activityCountEntity, String reservationId) {
+        return action(activitySkuEntity, activityEntity, activityCountEntity);
+    }
+
 }

@@ -22,10 +22,24 @@ CREATE TABLE IF NOT EXISTS `activity_sku_stock_decrement_ledger` (
     `sku`             BIGINT       NOT NULL,
     `activity_id`     BIGINT       DEFAULT NULL,
     `lock_surplus`    BIGINT       NOT NULL,
+    `reservation_id`  VARCHAR(128) DEFAULT NULL,
     `status`          VARCHAR(16)  NOT NULL DEFAULT 'applied',
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_sku_lock_surplus` (`sku`, `lock_surplus`),
-    KEY `idx_activity` (`activity_id`)
+    KEY `idx_activity` (`activity_id`),
+    KEY `idx_reservation` (`reservation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Activity SKU stock decrement ledger';
+
+CREATE TABLE IF NOT EXISTS `activity_sku_stock_restore_ledger` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `sku` BIGINT NOT NULL,
+    `reservation_id` VARCHAR(128) NOT NULL,
+    `status` VARCHAR(16) NOT NULL DEFAULT 'reserved',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_restore_reservation` (`reservation_id`),
+    KEY `idx_restore_sku` (`sku`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Activity SKU stock restore ledger';

@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
     `user_id`         VARCHAR(128)  NOT NULL                                     COMMENT 'User id (shard key)',
     `activity_id`     BIGINT(12)    NOT NULL                                     COMMENT 'Activity id',
     `out_business_no` VARCHAR(64)   NOT NULL                                     COMMENT 'Idempotency key — raffle order outBusinessNo',
+    `month`           VARCHAR(7)    NOT NULL                                     COMMENT 'Original monthly quota bucket',
+    `day`             VARCHAR(10)   NOT NULL                                     COMMENT 'Original daily quota bucket',
     `status`          VARCHAR(16)   NOT NULL DEFAULT 'applied'                   COMMENT 'applied | rolled_back',
     `create_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP           COMMENT 'Row creation time',
     `update_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP

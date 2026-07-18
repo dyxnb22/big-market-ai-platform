@@ -79,7 +79,7 @@ public class CreditPayDeliveryReconcileJobTest {
         ArgumentCaptor<TradeEntity> tradeCaptor = ArgumentCaptor.forClass(TradeEntity.class);
         verify(accountCreditWriteAdapter).createOrder(tradeCaptor.capture());
         assertEquals("refund_" + OUT_BUSINESS_NO, tradeCaptor.getValue().getOutBusinessNo());
-        verify(activityRepository).restoreActivitySkuStock(eq(order.getSku()));
+        verify(activityRepository).restoreActivitySkuStock(eq(order.getSku()), eq(OUT_BUSINESS_NO));
         verify(raffleActivityOrderDao).updateOrderFailed(any());
     }
 
@@ -93,7 +93,7 @@ public class CreditPayDeliveryReconcileJobTest {
 
         invokePrivate(job, "finishCompensatingOrder", order);
 
-        verify(activityRepository).restoreActivitySkuStock(eq(order.getSku()));
+        verify(activityRepository).restoreActivitySkuStock(eq(order.getSku()), eq(OUT_BUSINESS_NO));
         verify(raffleActivityOrderDao).updateOrderFailed(any());
     }
 
@@ -111,7 +111,7 @@ public class CreditPayDeliveryReconcileJobTest {
 
         invokePrivate(job, "completeCompensation", order);
         verify(accountCreditWriteAdapter, times(2)).createOrder(any(TradeEntity.class));
-        verify(activityRepository).restoreActivitySkuStock(eq(order.getSku()));
+        verify(activityRepository).restoreActivitySkuStock(eq(order.getSku()), eq(OUT_BUSINESS_NO));
         verify(raffleActivityOrderDao).updateOrderFailed(any());
     }
 
@@ -120,12 +120,11 @@ public class CreditPayDeliveryReconcileJobTest {
         RaffleActivityOrder order = buildOrder();
         when(redisService.setNx(any())).thenReturn(true);
         doThrow(new RuntimeException("sku restore failed"))
-                .when(activityRepository).restoreActivitySkuStock(eq(order.getSku()));
+                .when(activityRepository).restoreActivitySkuStock(eq(order.getSku()), eq(OUT_BUSINESS_NO));
 
         invokePrivate(job, "completeCompensation", order);
 
         verify(accountCreditWriteAdapter).createOrder(any(TradeEntity.class));
-        verify(redisService).remove(any());
         verify(raffleActivityOrderDao, never()).updateOrderFailed(any());
     }
 
@@ -135,14 +134,14 @@ public class CreditPayDeliveryReconcileJobTest {
         when(redisService.setNx(any())).thenReturn(true);
         doThrow(new RuntimeException("sku restore failed"))
                 .doNothing()
-                .when(activityRepository).restoreActivitySkuStock(eq(order.getSku()));
+                .when(activityRepository).restoreActivitySkuStock(eq(order.getSku()), eq(OUT_BUSINESS_NO));
         when(raffleActivityOrderDao.updateOrderFailed(any())).thenReturn(1);
 
         invokePrivate(job, "completeCompensation", order);
         verify(raffleActivityOrderDao, never()).updateOrderFailed(any());
 
         invokePrivate(job, "completeCompensation", order);
-        verify(activityRepository, times(2)).restoreActivitySkuStock(eq(order.getSku()));
+        verify(activityRepository, times(2)).restoreActivitySkuStock(eq(order.getSku()), eq(OUT_BUSINESS_NO));
         verify(raffleActivityOrderDao).updateOrderFailed(any());
     }
 

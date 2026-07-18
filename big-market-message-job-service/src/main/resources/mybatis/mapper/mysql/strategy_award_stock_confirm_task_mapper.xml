@@ -50,4 +50,10 @@
         where state = 'pending'
     </select>
 
+    <select id="countByState" resultType="int">
+        select count(*)
+        from strategy_award_stock_confirm_task
+        where state = #{state}
+    </select>
+
 </mapper>

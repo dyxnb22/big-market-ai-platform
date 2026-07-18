@@ -14,6 +14,8 @@
         <result column="user_id" property="userId"/>
         <result column="activity_id" property="activityId"/>
         <result column="out_business_no" property="outBusinessNo"/>
+        <result column="month" property="month"/>
+        <result column="day" property="day"/>
         <result column="status" property="status"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
@@ -21,14 +23,14 @@
 
     <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.RaffleQuotaDecrementLedger">
         insert into raffle_quota_decrement_ledger(
-            user_id, activity_id, out_business_no, status, create_time, update_time
+            user_id, activity_id, out_business_no, month, day, status, create_time, update_time
         ) values (
-            #{userId}, #{activityId}, #{outBusinessNo}, 'applied', now(), now()
+            #{userId}, #{activityId}, #{outBusinessNo}, #{month}, #{day}, 'applied', now(), now()
         )
     </insert>
 
     <select id="queryByKey" parameterType="com.dyx.market.infrastructure.dao.po.RaffleQuotaDecrementLedger" resultMap="dataMap">
-        select user_id, activity_id, out_business_no, status, create_time, update_time
+        select user_id, activity_id, out_business_no, month, day, status, create_time, update_time
         from raffle_quota_decrement_ledger
         where user_id = #{userId} and activity_id = #{activityId} and out_business_no = #{outBusinessNo}
         limit 1

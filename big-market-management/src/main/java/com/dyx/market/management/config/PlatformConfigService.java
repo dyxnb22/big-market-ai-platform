@@ -270,7 +270,7 @@ public class PlatformConfigService implements InitializingBean {
         putDefault(defaults, "chatbot", "model", "deepseek-chat", "LLM model name");
         putDefault(defaults, "system", "degradeSwitch", "close", "Global raffle degrade switch");
         putDefault(defaults, "system", "rateLimiterSwitch", "close", "Global rate limiter switch");
-        putDefault(defaults, "activity.100301", "state", "online", "Demo activity display state");
+        putDefault(defaults, "activity.100301", "state", "closed", "Legacy activity display state (fulfillment unavailable)");
         putDefault(defaults, "activity.100301", "title", "幸运轮盘活动", "Demo activity title");
         putDefault(defaults, "activity.100301", "copy", "登录参与抽奖，AI 帮你解读活动权益。", "Demo activity copy");
         putDefault(defaults, "activity.100401", "state", "online", "Staged demo activity display state");

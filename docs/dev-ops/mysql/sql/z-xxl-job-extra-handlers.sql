@@ -1,4 +1,4 @@
--- Idempotent seed for reconcile / stock-confirm XXL handlers (jobs 7–13).
+-- Idempotent seed for reconcile / stock-confirm XXL handlers (jobs 7–14).
 -- Older dev MySQL volumes may only have jobs 1–6 from an earlier xxl_job.sql dump.
 USE `xxl_job`;
 
@@ -10,7 +10,8 @@ VALUES
 	(10,1,'积分支付履约对账(DB2)','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','CreditPayDeliveryReconcileJob_DB2','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
 	(11,1,'远程写对账','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','RemoteWriteReconcileJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
 	(12,1,'DLQ重放','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','DlqReplayJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
-	(13,1,'Chat退款对账','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','ChatRefundReconcileJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0)
+	(13,1,'Chat退款对账','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','ChatRefundReconcileJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0),
+	(14,1,'Chat扣费确认对账','2024-08-10 09:10:09','2024-08-10 09:15:00','XXL','','CRON','0/10 * * * * ?','DO_NOTHING','FIRST','ChatDeductReconcileJob','','SERIAL_EXECUTION',0,0,'BEAN','','GLUE代码初始化','2024-08-10 09:10:09','',1,0,0)
 ON DUPLICATE KEY UPDATE
   `job_desc` = VALUES(`job_desc`),
   `executor_handler` = VALUES(`executor_handler`),

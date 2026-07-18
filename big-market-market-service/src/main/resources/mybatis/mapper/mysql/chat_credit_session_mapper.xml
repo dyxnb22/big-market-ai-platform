@@ -81,4 +81,20 @@
         limit #{limit}
     </select>
 
+    <select id="queryPendingDeductions" resultMap="dataMap">
+        select id, user_id, request_id, deducted, deduct_amount, deduct_state, refund_state, retry_count
+        from chat_credit_session
+        where deduct_state = 'deducting' and retry_count &lt; #{maxRetry}
+        order by create_time asc
+        limit #{limit}
+    </select>
+
+    <select id="countPendingRefunds" resultType="int">
+        select count(*) from chat_credit_session where refund_state = 'pending'
+    </select>
+
+    <select id="countByDeductState" resultType="int">
+        select count(*) from chat_credit_session where deduct_state = #{state}
+    </select>
+
 </mapper>

@@ -18,4 +18,8 @@ public interface IActivityDispatch {
      */
     boolean subtractionActivitySkuStock(Long sku, Long activityId, Date endDateTime);
 
+    default boolean subtractionActivitySkuStock(Long sku, Long activityId, Date endDateTime, String reservationId) {
+        return subtractionActivitySkuStock(sku, activityId, endDateTime);
+    }
+
 }

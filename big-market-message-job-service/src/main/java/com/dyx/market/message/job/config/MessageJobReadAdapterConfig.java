@@ -9,6 +9,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
+import java.util.List;
+
 /**
  * message-job 本地读适配器（BM-002）：供 application 层签到/策略查询等使用。
  */
@@ -25,7 +28,16 @@ public class MessageJobReadAdapterConfig {
     @Bean
     @ConditionalOnMissingBean(IRebateReadAdapter.class)
     public IRebateReadAdapter rebateReadAdapter(IBehaviorRebateService behaviorRebateService) {
-        return (userId, outBusinessNo) ->
-                !behaviorRebateService.queryOrderByOutBusinessNo(userId, outBusinessNo).isEmpty();
+        return new IRebateReadAdapter() {
+            @Override
+            public boolean isCalendarSignRebate(String userId, String outBusinessNo) {
+                return !behaviorRebateService.queryOrderByOutBusinessNo(userId, outBusinessNo).isEmpty();
+            }
+
+            @Override
+            public List<DailyBehaviorRebateVO> queryCalendarSignRebateConfig() {
+                return behaviorRebateService.queryDailyBehaviorRebateConfig();
+            }
+        };
     }
 }

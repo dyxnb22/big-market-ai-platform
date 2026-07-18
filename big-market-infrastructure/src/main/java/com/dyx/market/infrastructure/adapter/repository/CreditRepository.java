@@ -84,11 +84,23 @@ public class CreditRepository implements ICreditRepository {
                     // 1. 保存账户积分
                     UserCreditAccount userCreditAccount = userCreditAccountDao.queryUserCreditAccount(userCreditAccountReq);
                     if (null == userCreditAccount) {
+                        if (userCreditAccountReq.getAvailableAmount().signum() < 0) {
+                            status.setRollbackOnly();
+                            throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(), "积分账户不存在，不能直接扣减");
+                        }
                         userCreditAccountDao.insert(userCreditAccountReq);
                     } else {
+                        if (!AccountStatusVO.open.getCode().equals(userCreditAccount.getAccountStatus())) {
+                            status.setRollbackOnly();
+                            throw new AppException(ResponseCode.UN_ERROR.getCode(), "积分账户已冻结");
+                        }
                         BigDecimal availableAmount = userCreditAccountReq.getAvailableAmount();
                         if (availableAmount.compareTo(BigDecimal.ZERO) >= 0) {
-                            userCreditAccountDao.updateAddAmount(userCreditAccountReq);
+                            int addCount = userCreditAccountDao.updateAddAmount(userCreditAccountReq);
+                            if (addCount != 1) {
+                                status.setRollbackOnly();
+                                throw new AppException(ResponseCode.UN_ERROR.getCode(), "积分账户状态已变更");
+                            }
                         } else {
                             int subtractionCount = userCreditAccountDao.updateSubtractionAmount(userCreditAccountReq);
                             if (1 != subtractionCount) {
@@ -143,11 +155,10 @@ public class CreditRepository implements ICreditRepository {
         try {
             dbRouter.doRouter(userId);
             UserCreditAccount userCreditAccount = userCreditAccountDao.queryUserCreditAccount(userCreditAccountReq);
-            BigDecimal availableAmount = BigDecimal.ZERO;
-            if (null != userCreditAccount) {
-                availableAmount = userCreditAccount.getAvailableAmount();
+            if (userCreditAccount == null) {
+                return null;
             }
-            return CreditAccountEntity.builder().userId(userId).adjustAmount(availableAmount).build();
+            return CreditAccountEntity.builder().userId(userId).adjustAmount(userCreditAccount.getAvailableAmount()).build();
         } finally {
             dbRouter.clear();
         }

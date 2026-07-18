@@ -1,5 +1,25 @@
 -- Reconcile / DLQ / chat session tables (G-02, G-05, G-06, G-07).
--- Apply to big_market_01 and big_market_02 (Docker: docs/dev-ops/mysql/sql/z-reconcile-tables.sql).
+-- Apply the independent pending_remote_write_task copy to big_market, and the
+-- DLQ/chat/stock tables to big_market_01 and big_market_02 (Docker:
+-- docs/dev-ops/mysql/sql/z-reconcile-tables.sql).
+
+USE `big_market`;
+
+CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+    `out_business_no` VARCHAR(128) NOT NULL,
+    `operation`       VARCHAR(32)  NOT NULL COMMENT 'credit_create | quota_create | quota_update | quota_rollback',
+    `payload`         TEXT         NOT NULL,
+    `state`           VARCHAR(24)  NOT NULL DEFAULT 'pending' COMMENT 'pending | continuation_pending | done | failed',
+    `retry_count`     TINYINT      NOT NULL DEFAULT 0,
+    `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_out_business_no_op` (`out_business_no`, `operation`),
+    KEY `idx_state_retry` (`state`, `retry_count`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Central remote RPC write reconcile outbox';
+
+USE `big_market_01`;
 
 CREATE TABLE IF NOT EXISTS `mq_dead_letter` (
     `id`           BIGINT       NOT NULL AUTO_INCREMENT,
@@ -18,9 +38,9 @@ CREATE TABLE IF NOT EXISTS `mq_dead_letter` (
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `out_business_no` VARCHAR(128) NOT NULL,
-    `operation`       VARCHAR(32)  NOT NULL COMMENT 'credit_create | quota_create | quota_update',
+    `operation`       VARCHAR(32)  NOT NULL COMMENT 'legacy compatibility copy',
     `payload`         TEXT         NOT NULL,
-    `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending' COMMENT 'pending | done | failed',
+    `state`           VARCHAR(24)  NOT NULL DEFAULT 'pending' COMMENT 'legacy compatibility copy',
     `retry_count`     TINYINT      NOT NULL DEFAULT 0,
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -35,6 +55,7 @@ CREATE TABLE IF NOT EXISTS `chat_credit_session` (
     `request_id`    VARCHAR(64)  NOT NULL,
     `deducted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `deduct_amount` INT          NOT NULL DEFAULT 0,
+    `deduct_state`  VARCHAR(16)  NOT NULL DEFAULT 'deducted' COMMENT 'deducting | deducted | failed',
     `refund_state`  VARCHAR(16)  NOT NULL DEFAULT 'none' COMMENT 'none | refunded | pending',
     `retry_count`   TINYINT      NOT NULL DEFAULT 0,
     `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -17,7 +17,7 @@
         insert into strategy_award_stock_decrement_ledger(
             reservation_id, strategy_id, award_id, lock_surplus, status, create_time, update_time
         ) values (
-            #{reservationId}, #{strategyId}, #{awardId}, #{lockSurplus}, 'applied', now(), now()
+            #{reservationId}, #{strategyId}, #{awardId}, #{lockSurplus}, COALESCE(#{status}, 'applied'), now(), now()
         )
     </insert>
 
@@ -27,5 +27,38 @@
         where reservation_id = #{reservationId}
         limit 1
     </select>
+
+    <select id="queryReservedByStrategyAward" resultMap="dataMap">
+        select id, reservation_id, strategy_id, award_id, lock_surplus, status, create_time, update_time
+        from strategy_award_stock_decrement_ledger
+        where strategy_id = #{strategyId} and award_id = #{awardId} and status = 'reserved'
+        order by create_time asc
+    </select>
+
+    <select id="queryAllReserved" resultMap="dataMap">
+        select id, reservation_id, strategy_id, award_id, lock_surplus, status, create_time, update_time
+        from strategy_award_stock_decrement_ledger
+        where status = 'reserved'
+        order by create_time asc
+        limit #{limit}
+    </select>
+
+    <update id="updateLockSurplus" parameterType="com.dyx.market.infrastructure.dao.po.StrategyAwardStockDecrementLedger">
+        update strategy_award_stock_decrement_ledger
+        set lock_surplus = #{lockSurplus}, update_time = now()
+        where reservation_id = #{reservationId} and status = 'reserved' and lock_surplus is null
+    </update>
+
+    <update id="updateStatusApplied">
+        update strategy_award_stock_decrement_ledger
+        set status = 'applied', update_time = now()
+        where reservation_id = #{reservationId} and status = 'reserved'
+    </update>
+
+    <update id="updateStatusReleased">
+        update strategy_award_stock_decrement_ledger
+        set status = 'released', update_time = now()
+        where reservation_id = #{reservationId} and status in ('reserved', 'applied')
+    </update>
 
 </mapper>

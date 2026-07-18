@@ -34,7 +34,7 @@ public class AccountCreditApplicationService {
 
     /** 创建积分交易订单（赚取或消费积分）。 */
     public String createOrder(CreditTradeRequestDTO request) {
-        if (StringUtils.isBlank(request.getUserId())
+        if (request == null || StringUtils.isBlank(request.getUserId())
                 || StringUtils.isBlank(request.getTradeName())
                 || StringUtils.isBlank(request.getTradeType())
                 || request.getAmount() == null

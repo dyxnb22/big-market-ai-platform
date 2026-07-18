@@ -1,5 +1,8 @@
 package com.dyx.market.trigger.adapter;
 
+import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
+import java.util.List;
+
 /**
  * 返利订单读取适配器契约。
  *
@@ -9,5 +12,7 @@ package com.dyx.market.trigger.adapter;
 public interface IRebateReadAdapter {
 
     boolean isCalendarSignRebate(String userId, String outBusinessNo);
+
+    List<DailyBehaviorRebateVO> queryCalendarSignRebateConfig();
 
 }

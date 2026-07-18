@@ -186,7 +186,7 @@ flowchart TD
 - Entry: `RaffleActivityController.creditPayExchangeSku`
 - Domain/Adapter: `IAccountQuotaWriteAdapter.createOrder`、`IAccountCreditWriteAdapter.createOrder`、`IAccountQuotaWriteAdapter.updateOrder`
 - Repository: `ActivityQuotaOrderSupport.doSaveCreditPayOrder`、`CreditRepository.saveUserCreditTradeOrder`
-- 重要机制: SKU 库存扣减、积分扣减、扣减失败恢复 SKU 库存、发货失败由 MQ 补偿。
+- 重要机制: SKU 库存按 `outBusinessNo` 建立预占 ledger，积分明确拒绝时幂等恢复 Redis 与 MySQL/队列；未知结果保留订单等待对账，发货失败由 MQ/XXL 补偿。
 
 ```mermaid
 flowchart TD

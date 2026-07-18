@@ -62,7 +62,9 @@ public class RemoteWriteReconcileJob {
             if (!lock.tryLock(3, 0, TimeUnit.SECONDS)) {
                 return;
             }
-            for (int dbIdx = 1; dbIdx <= 2; dbIdx++) {
+            // db00 is the independent compensation store; 01/02 are scanned
+            // for backwards compatibility with tasks written by older builds.
+            for (int dbIdx = 0; dbIdx <= 2; dbIdx++) {
                 dbRouter.setDBKey(dbIdx);
                 List<PendingRemoteWriteTask> tasks = pendingRemoteWriteTaskDao.queryPendingTasks(maxRetries, scanLimit);
                 for (PendingRemoteWriteTask task : tasks) {

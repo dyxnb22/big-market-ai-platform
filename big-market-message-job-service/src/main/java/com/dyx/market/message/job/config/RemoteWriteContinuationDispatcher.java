@@ -35,7 +35,13 @@ public class RemoteWriteContinuationDispatcher {
             return;
         }
         if (RemoteWriteOperations.CREDIT_CREATE.equals(task.getOperation())) {
-            continueChatDeductIfNeeded(task);
+            CreditTradeRequestDTO dto = JSON.parseObject(task.getPayload(), CreditTradeRequestDTO.class);
+            if (dto != null && "CONVERT_SKU".equals(dto.getTradeName())) {
+                creditPayExchangeApplicationService.continueAfterRemoteCreditCreated(
+                        dto.getUserId(), dto.getOutBusinessNo());
+            } else {
+                continueChatDeductIfNeeded(task);
+            }
         }
     }
 

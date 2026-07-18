@@ -7,20 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
-/**
- * 活动 SKU 库存 MySQL 扣减幂等账本：{@code activity_sku_stock_decrement_ledger}。
- * 唯一键 {@code (sku, lock_surplus)} 对应每次 Redis DECR。
- */
+/** Durable idempotency record for a SKU stock release. */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ActivitySkuStockDecrementLedger {
-
+public class ActivitySkuStockRestoreLedger {
     private Long id;
     private Long sku;
-    private Long activityId;
-    private Long lockSurplus;
     private String reservationId;
     private String status;
     private Date createTime;

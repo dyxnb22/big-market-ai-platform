@@ -33,6 +33,7 @@ public class CreditAdjustService implements ICreditAdjustService {
 
     @Override
     public String createOrder(TradeEntity tradeEntity) {
+        validateTrade(tradeEntity);
         log.info("创建账户积分额度订单开始 userId:{} tradeName:{} amount:{}", tradeEntity.getUserId(), tradeEntity.getTradeName(), tradeEntity.getAmount());
         // 0. 判断处理，逆向交易，扣减积分，需要查询账户是否存在以及积分额度是否充足
         if (TradeTypeVO.REVERSE.equals(tradeEntity.getTradeType())) {
@@ -40,9 +41,10 @@ public class CreditAdjustService implements ICreditAdjustService {
             if (null == creditAccountEntity) {
                 throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(), "积分账户不存在");
             }
-            if (creditAccountEntity.getAdjustAmount().compareTo(tradeEntity.getAmount()) < 0) {
+            java.math.BigDecimal requiredAmount = tradeEntity.getAmount().abs();
+            if (creditAccountEntity.getAdjustAmount().compareTo(requiredAmount) < 0) {
                 throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(),
-                    "积分不足（当前 " + creditAccountEntity.getAdjustAmount() + "，需要 " + tradeEntity.getAmount() + " 积分）");
+                    "积分不足（当前 " + creditAccountEntity.getAdjustAmount() + "，需要 " + requiredAmount + " 积分）");
             }
         }
 
@@ -87,6 +89,21 @@ public class CreditAdjustService implements ICreditAdjustService {
     @Override
     public CreditAccountEntity queryUserCreditAccount(String userId) {
         return creditRepository.queryUserCreditAccount(userId);
+    }
+
+    private void validateTrade(TradeEntity tradeEntity) {
+        if (tradeEntity == null || tradeEntity.getUserId() == null || tradeEntity.getUserId().trim().isEmpty()
+                || tradeEntity.getTradeName() == null || tradeEntity.getTradeType() == null
+                || tradeEntity.getAmount() == null || tradeEntity.getAmount().signum() == 0
+                || tradeEntity.getOutBusinessNo() == null || tradeEntity.getOutBusinessNo().trim().isEmpty()) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        if (TradeTypeVO.FORWARD.equals(tradeEntity.getTradeType()) && tradeEntity.getAmount().signum() <= 0) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "正向积分交易金额必须为正数");
+        }
+        if (TradeTypeVO.REVERSE.equals(tradeEntity.getTradeType()) && tradeEntity.getAmount().signum() >= 0) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "逆向积分交易金额必须为负数");
+        }
     }
 
 }

@@ -128,7 +128,7 @@ LOCK TABLES `raffle_activity` WRITE;
 
 INSERT INTO `raffle_activity` (`id`, `activity_id`, `activity_name`, `activity_desc`, `begin_date_time`, `end_date_time`, `strategy_id`, `state`, `create_time`, `update_time`)
 VALUES
-	(1,100301,'测试活动','测试活动','2024-03-09 10:15:10','2034-03-09 10:15:10',100006,'open','2024-03-09 10:15:10','2024-03-30 12:07:36'),
+	(1,100301,'测试活动','测试活动','2024-03-09 10:15:10','2034-03-09 10:15:10',100006,'close','2024-03-09 10:15:10','2024-03-30 12:07:36'),
 	(2,100401,'OpenAi抽奖活动','签到&支付有奖返利','2024-10-06 12:09:34','2026-10-06 12:09:34',10007,'open','2024-10-06 12:10:03','2024-10-06 12:10:17');
 
 /*!40000 ALTER TABLE `raffle_activity` ENABLE KEYS */;

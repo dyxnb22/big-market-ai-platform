@@ -111,15 +111,11 @@ public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter
 
     private UnpaidActivityOrderEntity recoverCreateIfExists(SkuRechargeEntity skuRechargeEntity) {
         try {
-            Response<Boolean> exists = accountQuotaService.existsActivityOrder(
+            Response<UnpaidActivityOrderResponseDTO> response = accountQuotaService.queryActivityOrder(
                     skuRechargeEntity.getUserId(), skuRechargeEntity.getOutBusinessNo());
-            if (exists != null
-                    && ResponseCode.SUCCESS.getCode().equals(exists.getCode())
-                    && Boolean.TRUE.equals(exists.getData())) {
-                return UnpaidActivityOrderEntity.builder()
-                        .userId(skuRechargeEntity.getUserId())
-                        .outBusinessNo(skuRechargeEntity.getOutBusinessNo())
-                        .build();
+            if (response != null && ResponseCode.SUCCESS.getCode().equals(response.getCode())
+                    && response.getData() != null) {
+                return toEntity(response.getData());
             }
         } catch (Exception probeEx) {
             log.warn("[AccountRemoteQuotaWriteAdapter] existsActivityOrder probe failed userId:{} outBusinessNo:{}",

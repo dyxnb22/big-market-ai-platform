@@ -21,7 +21,7 @@ docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$SQL_
 
 docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e \
   "SELECT id, executor_handler FROM xxl_job.xxl_job_info
-   WHERE executor_handler IN ('ChatRefundReconcileJob','RemoteWriteReconcileJob','DlqReplayJob')
+   WHERE executor_handler IN ('ChatRefundReconcileJob','ChatDeductReconcileJob','RemoteWriteReconcileJob','DlqReplayJob')
    ORDER BY id;"
 
 echo "XXL extra job handlers seeded."

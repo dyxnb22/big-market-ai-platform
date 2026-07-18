@@ -61,6 +61,36 @@ else
   fail "quota decrement ledger Docker DDL is incomplete"
 fi
 
+for schema in big_market big_market_01 big_market_02; do
+  if [[ "$schema" = "big_market_02" ]]; then
+    if grep -q 'CREATE TABLE IF NOT EXISTS `pending_remote_write_task` LIKE `big_market_01`.`pending_remote_write_task`' \
+      "$REPO_ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql" \
+      && awk '
+        $0 ~ "USE `big_market_01`;" { in_schema=1; next }
+        /^USE `/ && $0 !~ "USE `big_market_01`;" { in_schema=0 }
+        in_schema && /`state`[[:space:]]+VARCHAR\(24\)/ { found=1 }
+        END { exit !found }
+      ' "$REPO_ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql"; then
+      pass "$schema.pending_remote_write_task inherits VARCHAR(24) state"
+    else
+      fail "$schema.pending_remote_write_task must inherit VARCHAR(24) state"
+    fi
+    continue
+  fi
+
+  if awk -v schema="$schema" '
+    $0 ~ "USE `" schema "`;" { in_schema=1; next }
+    /^USE `/ && $0 !~ "USE `" schema "`;" { in_schema=0 }
+    in_schema && /CREATE TABLE IF NOT EXISTS `pending_remote_write_task`/ { found=1 }
+    in_schema && /`state`[[:space:]]+VARCHAR\(24\)/ { state_ok=1 }
+    END { exit !(found && state_ok) }
+  ' "$REPO_ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql"; then
+    pass "$schema.pending_remote_write_task.state is VARCHAR(24)"
+  else
+    fail "$schema.pending_remote_write_task.state must be VARCHAR(24)"
+  fi
+done
+
 QUOTA_LEDGER_MAPPER="$REPO_ROOT/big-market-account-service/src/main/resources/mybatis/mapper/mysql/raffle_quota_decrement_ledger_mapper.xml"
 if [[ -f "$QUOTA_LEDGER_MAPPER" ]] && grep -q 'raffle_quota_decrement_ledger' "$QUOTA_LEDGER_MAPPER"; then
   pass "account mapper uses quota decrement ledger covered by Docker DDL"
@@ -80,15 +110,34 @@ for svc in market-service message-job-service; do
 done
 
 echo ""
-echo "── Mapper statement-id drift (market vs message-job) ──"
+echo "── Mapper statement/result contract drift (explicit allowlist) ──"
 if REPO_ROOT="$REPO_ROOT" python3 - <<'PY'
 import os, re, sys
 
 root = os.environ["REPO_ROOT"]
 dirs = [
-    os.path.join(root, "big-market-market-service/src/main/resources/mybatis/mapper/mysql"),
-    os.path.join(root, "big-market-message-job-service/src/main/resources/mybatis/mapper/mysql"),
+    ("market-service", os.path.join(root, "big-market-market-service/src/main/resources/mybatis/mapper/mysql")),
+    ("message-job-service", os.path.join(root, "big-market-message-job-service/src/main/resources/mybatis/mapper/mysql")),
+    ("account-service", os.path.join(root, "big-market-account-service/src/main/resources/mybatis/mapper/mysql")),
+    ("chatbot-service", os.path.join(root, "big-market-chatbot-service/src/main/resources/mybatis/mapper/mysql")),
 ]
+
+allowlist_path = os.path.join(root, "docs/mapper-statement-allowlist.txt")
+allowlist = {}
+with open(allowlist_path, encoding="utf-8") as stream:
+    for line_number, raw in enumerate(stream, 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("|", 4)
+        if len(parts) != 5:
+            raise SystemExit("invalid allowlist row %d: %s" % (line_number, line))
+        mapper, key, kind, services, reason = parts
+        allowlist[(mapper, key)] = {
+            "kind": kind,
+            "services": set(services.split(",")),
+            "reason": reason,
+        }
 
 def statements(path):
     text = open(path, encoding="utf-8").read()
@@ -104,16 +153,17 @@ def statements(path):
     return out
 
 by_file = {}
-for d in dirs:
+for service, d in dirs:
     if not os.path.isdir(d):
         continue
     for name in sorted(os.listdir(d)):
         if not name.endswith(".xml"):
             continue
-        by_file.setdefault(name, {})[d] = statements(os.path.join(d, name))
+        by_file.setdefault(name, {})[service] = statements(os.path.join(d, name))
 
-fail = 0
+errors = []
 checked = 0
+allowlist_hits = set()
 for name, copies in sorted(by_file.items()):
     if len(copies) < 2:
         continue
@@ -121,21 +171,44 @@ for name, copies in sorted(by_file.items()):
     for stmts in copies.values():
         keys |= set(stmts)
     for key in sorted(keys):
-        bodies = [stmts[key] for stmts in copies.values() if key in stmts]
-        if len(bodies) < 2:
-            continue
         checked += 1
-        if bodies[0] != bodies[1]:
-            print("DRIFT " + name + " " + key)
-            fail += 1
+        present = {service for service, stmts in copies.items() if key in stmts}
+        entry = allowlist.get((name, key))
+        if present != set(copies):
+            if not entry or entry["kind"] != "SERVICE_SPECIFIC" or present != entry["services"]:
+                errors.append("MISSING/EXTRA %s %s present=%s" % (name, key, ",".join(sorted(present))))
+            else:
+                allowlist_hits.add((name, key))
+            continue
+        bodies = {stmts[key] for stmts in copies.values()}
+        if len(bodies) > 1:
+            if not entry or entry["kind"] != "DRIFT":
+                errors.append("DRIFT %s %s" % (name, key))
+            else:
+                allowlist_hits.add((name, key))
 
-print("compared=%d drift=%d" % (checked, fail))
-sys.exit(1 if fail else 0)
+for key, entry in allowlist.items():
+    if key not in allowlist_hits and entry["kind"] in ("DRIFT", "SERVICE_SPECIFIC"):
+        # SERVICE_SPECIFIC entries may belong to a mapper present in only one
+        # launcher, so verify them against all service files below instead.
+        mapper, statement = key
+        observed = set()
+        for service, directory in dirs:
+            path = os.path.join(directory, mapper)
+            if os.path.isfile(path) and statement in statements(path):
+                observed.add(service)
+        if observed != entry["services"]:
+            errors.append("STALE ALLOWLIST %s %s observed=%s" % (mapper, statement, ",".join(sorted(observed))))
+
+print("compared=%d exceptions=%d errors=%d" % (checked, len(allowlist_hits), len(errors)))
+for error in errors:
+    print(error)
+sys.exit(1 if errors else 0)
 PY
 then
-  pass "market/message-job mapper statement bodies aligned for shared ids"
+  pass "all duplicated mapper statement contracts aligned or explicitly allowlisted"
 else
-  fail "market/message-job mapper statement-id drift detected"
+  fail "mapper statement/result contract drift or missing allowlist detected"
 fi
 
 echo ""

@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 /** Ensures an UNKNOWN remote rollback is durable rather than silently logged. */
@@ -65,5 +66,25 @@ public class RemoteActivityAccountPortTest {
             return;
         }
         throw new AssertionError("UNKNOWN decrement must be compensated by a durable rollback task");
+    }
+
+    @Test
+    public void decrementQuota_unknownResponsePersistsRollbackReconcileTaskWithoutReissuingDebit() {
+        when(accountQuotaService.decrementQuota(any(AccountQuotaDecrementRequestDTO.class)))
+                .thenReturn(com.dyx.market.trigger.api.response.Response.<Boolean>builder()
+                        .code("9999").data(null).build());
+        when(pendingRemoteWritePort.enqueue(eq("draw-unknown"), eq(RemoteWriteOperations.QUOTA_ROLLBACK),
+                any(), eq("user-1"))).thenReturn(true);
+
+        try {
+            remoteActivityAccountPort.decrementQuota("user-1", 100401L, "draw-unknown");
+        } catch (AppException expected) {
+            assertEquals("0001", expected.getCode());
+            verify(pendingRemoteWritePort).enqueue(eq("draw-unknown"),
+                    eq(RemoteWriteOperations.QUOTA_ROLLBACK), any(), eq("user-1"));
+            verify(accountQuotaService, times(1)).decrementQuota(any(AccountQuotaDecrementRequestDTO.class));
+            return;
+        }
+        throw new AssertionError("UNKNOWN decrement response must be handed off for rollback reconciliation");
     }
 }

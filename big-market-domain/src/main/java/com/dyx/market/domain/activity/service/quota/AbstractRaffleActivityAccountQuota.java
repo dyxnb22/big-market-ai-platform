@@ -69,7 +69,11 @@ public abstract class AbstractRaffleActivityAccountQuota extends RaffleActivityA
 
         // 5. 活动动作规则校验 「过滤失败则直接抛异常」- 责任链扣减sku库存
         IActionChain actionChain = defaultActivityChainFactory.openActionChain();
-        actionChain.action(activitySkuEntity, activityEntity, activityCountEntity);
+        if (OrderTradeTypeVO.credit_pay_trade.equals(skuRechargeEntity.getOrderTradeType())) {
+            actionChain.action(activitySkuEntity, activityEntity, activityCountEntity, outBusinessNo);
+        } else {
+            actionChain.action(activitySkuEntity, activityEntity, activityCountEntity);
+        }
 
         // 6. 构建订单聚合对象
         CreateQuotaOrderAggregate createOrderAggregate = buildOrderAggregate(skuRechargeEntity, activitySkuEntity, activityEntity, activityCountEntity);

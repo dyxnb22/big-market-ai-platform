@@ -17,8 +17,10 @@ award-credit `award_order_id`.
 Chat billing: Redis idempotency key is `chat:request:{userId}:{requestId}`.
 `ChatCreditSession` lives on shards `big_market_01` / `big_market_02` only (see
 `z-reconcile-tables.sql`). Both `ChatCreditSessionRepository` (market/job) and
-`ChatCreditSessionSupport` (chatbot) must call `IDBRouterStrategy.doRouter(userId)`
-before DAO access. `recordDeduction` is insert-only; duplicate keys must not reset
+`ChatCreditSessionSupport` (chatbot fallback refund bookkeeping) must call
+`IDBRouterStrategy.doRouter(userId)` before DAO access. The market session is the
+authoritative deduction record; chatbot does not create a second deduction row.
+Duplicate keys must not reset
 `refund_state`. Paid chat requires valid JWT before idempotency cache lookup.
 Refunds require a deduction session; public refund HTTP is removed — chatbot uses internal token route.
 Credit out_business_no: `chat_{userId}_{requestId}` / `chat_refund_{userId}_{requestId}`.
@@ -26,6 +28,13 @@ Refund compensation: `refund_state` may transition `none|pending → refunding �
 
 Exchange (NR-007): `SkuProductShopCartRequestDTO.requestId` is required; `out_business_no`
 is derived as `{userId}_{sku}_{requestId}` (no millisecond suffix).
+
+Exchange SKU stock uses the same `out_business_no` as the durable reservation key.
+The decrement ledger carries that key through the delayed flush queue; explicit
+credit rejection uses the restore ledger to remove an unapplied queue item or
+increment MySQL once when the decrement was already applied. Unknown credit
+results keep the `wait_pay` reservation for delivery reconciliation and do not
+restore stock early.
 
 ## Award
 
@@ -92,7 +101,9 @@ MySQL ledger (`strategy_award_stock_decrement_ledger` /
 `activity_sku_stock_decrement_ledger`) in the same transaction as the surplus
 `-1`. Redis `SETNX` is an optional fast-path only — a crash between SETNX and DB
 must still apply the ledger on retry. Pending queue keys are tracked in Redis
-sets so flush jobs can drain work after an activity goes offline.
+sets so flush jobs can drain work after an activity goes offline; the flush scan
+also merges durable `reserved` ledger rows, so recovery does not depend on the
+Redis pending set surviving a process failure.
 
 ## Chat billing intent
 
@@ -104,8 +115,10 @@ mark `failed`; UNKNOWN keeps `deducting` for reconcile. Refund keys remain
 
 ## Pending remote write
 
-`PendingRemoteWriteSupport.enqueue(..., userId)` routes inserts through
-`dbRouter.doRouter(userId)` so compensation tasks land on the correct shard.
+`PendingRemoteWriteSupport.enqueue(..., userId)` writes to the central
+`big_market.pending_remote_write_task` store (the userId remains in the payload)
+so a market-shard outage cannot erase the only compensation hand-off. Older
+per-shard copies are scanned for backward compatibility.
 Task states: `pending` → `continuation_pending` → `done`. Remote adapters
 classify `SUCCESS` / `REJECTED` / `UNKNOWN`; only UNKNOWN enqueues pending.
 Continuation failures must not mark `done`.

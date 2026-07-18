@@ -11,6 +11,10 @@ spring:
   rabbitmq:
     username: ${RABBITMQ_USER:admin}
     password: ${RABBITMQ_PASS:admin}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
     listener:
       simple:
         prefetch: 1

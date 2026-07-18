@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dyx.market.infrastructure.dao.IActivitySkuStockRestoreLedgerDao">
+    <resultMap id="dataMap" type="com.dyx.market.infrastructure.dao.po.ActivitySkuStockRestoreLedger">
+        <id column="id" property="id"/>
+        <result column="sku" property="sku"/>
+        <result column="reservation_id" property="reservationId"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+    <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockRestoreLedger">
+        insert into activity_sku_stock_restore_ledger(sku, reservation_id, status, create_time, update_time)
+        values (#{sku}, #{reservationId}, 'reserved', now(), now())
+    </insert>
+    <select id="queryByReservationId" parameterType="java.lang.String" resultMap="dataMap">
+        select id, sku, reservation_id, status, create_time, update_time
+        from activity_sku_stock_restore_ledger where reservation_id = #{reservationId} limit 1
+    </select>
+    <update id="updateStatusApplied" parameterType="com.dyx.market.infrastructure.dao.po.ActivitySkuStockRestoreLedger">
+        update activity_sku_stock_restore_ledger
+        set status = 'applied', update_time = now()
+        where reservation_id = #{reservationId} and status = 'reserved'
+    </update>
+</mapper>

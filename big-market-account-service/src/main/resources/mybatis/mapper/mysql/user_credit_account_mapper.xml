@@ -17,6 +17,7 @@
         total_amount = total_amount + #{totalAmount},
         available_amount = available_amount + #{availableAmount}
         where user_id = #{userId}
+          and account_status = 'open'
     </update>
 
     <update id="updateSubtractionAmount" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditAccount">
@@ -25,6 +26,7 @@
         where user_id = #{userId}
           and #{availableAmount} &lt; 0
           and available_amount + #{availableAmount} &gt;= 0
+          and account_status = 'open'
     </update>
 
     <update id="updateDeductAvailableAmount" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditAccount">
@@ -33,6 +35,7 @@
         where user_id = #{userId}
           and #{availableAmount} &lt; 0
           and available_amount + #{availableAmount} &gt;= 0
+          and account_status = 'open'
     </update>
 
     <insert id="insert" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditAccount">

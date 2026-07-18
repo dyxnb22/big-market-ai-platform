@@ -68,7 +68,7 @@ stateDiagram-v2
 - Business meaning: 用户用积分购买活动 SKU，得到额外抽奖额度。
 - Code location: `RaffleActivityController.creditPayExchangeSku`、`ActivityQuotaOrderSupport.doSaveCreditPayOrder`、`CreditRepository.saveUserCreditTradeOrder`、`CreditAdjustSuccessConsumer`。
 - Data written: 活动订单、积分订单、账户额度。
-- Failure branch: 积分扣减失败会调用 `restoreActivitySkuStock`；发货失败记录日志并依赖 MQ 消费补偿。
+- Failure branch: 积分明确拒绝会按兑换业务号幂等恢复 SKU 预占（同步处理 Redis、待落账队列和 MySQL ledger）；未知结果保留订单等待对账，发货失败依赖 MQ/XXL 补偿。
 
 ```mermaid
 flowchart TD

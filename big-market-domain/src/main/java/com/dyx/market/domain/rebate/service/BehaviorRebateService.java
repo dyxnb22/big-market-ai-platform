@@ -6,11 +6,14 @@ import com.dyx.market.domain.rebate.model.entity.BehaviorEntity;
 import com.dyx.market.domain.rebate.model.entity.BehaviorRebateOrderEntity;
 import com.dyx.market.domain.rebate.model.entity.TaskEntity;
 import com.dyx.market.domain.rebate.model.valobj.DailyBehaviorRebateVO;
+import com.dyx.market.domain.rebate.model.valobj.BehaviorTypeVO;
 import com.dyx.market.domain.rebate.model.valobj.TaskStateVO;
 import com.dyx.market.domain.rebate.repository.IBehaviorRebateRepository;
 import com.dyx.market.types.common.Constants;
 import com.dyx.market.types.common.OrderIdGenerator;
 import com.dyx.market.types.event.BaseEvent;
+import com.dyx.market.types.enums.ResponseCode;
+import com.dyx.market.types.exception.AppException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -34,12 +37,15 @@ public class BehaviorRebateService implements IBehaviorRebateService {
     public List<String> createOrder(BehaviorEntity behaviorEntity) {
         // 1. 查询返利配置
         List<DailyBehaviorRebateVO> dailyBehaviorRebateVOS = behaviorRebateRepository.queryDailyBehaviorRebateConfig(behaviorEntity.getBehaviorTypeVO());
-        if (null == dailyBehaviorRebateVOS || dailyBehaviorRebateVOS.isEmpty()) return new ArrayList<>();
+        if (null == dailyBehaviorRebateVOS || dailyBehaviorRebateVOS.isEmpty()) {
+            throw new AppException(ResponseCode.UN_ERROR.getCode(), "行为返利未配置");
+        }
 
         // 2. 构建聚合对象
         List<String> orderIds = new ArrayList<>();
         List<BehaviorRebateAggregate> behaviorRebateAggregates = new ArrayList<>();
         for (DailyBehaviorRebateVO dailyBehaviorRebateVO : dailyBehaviorRebateVOS) {
+            validateRebateConfig(dailyBehaviorRebateVO);
             // 拼装业务ID；用户ID_返利类型_外部透彻业务ID
             String bizId = behaviorEntity.getUserId() + Constants.UNDERLINE + dailyBehaviorRebateVO.getRebateType() + Constants.UNDERLINE + behaviorEntity.getOutBusinessNo();
             BehaviorRebateOrderEntity behaviorRebateOrderEntity = BehaviorRebateOrderEntity.builder()
@@ -89,9 +95,32 @@ public class BehaviorRebateService implements IBehaviorRebateService {
         return orderIds;
     }
 
+    private void validateRebateConfig(DailyBehaviorRebateVO config) {
+        if (config == null || ("sku".equalsIgnoreCase(config.getRebateType())
+                ? !isPositiveLong(config.getRebateConfig())
+                : "integral".equalsIgnoreCase(config.getRebateType())
+                ? !isPositiveDecimal(config.getRebateConfig()) : true)) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(),
+                    "返利配置非法或返利类型不支持");
+        }
+    }
+
+    private boolean isPositiveLong(String value) {
+        try { return Long.parseLong(value) > 0; } catch (Exception e) { return false; }
+    }
+
+    private boolean isPositiveDecimal(String value) {
+        try { return new java.math.BigDecimal(value).signum() > 0; } catch (Exception e) { return false; }
+    }
+
     @Override
     public List<BehaviorRebateOrderEntity> queryOrderByOutBusinessNo(String userId, String outBusinessNo) {
         return behaviorRebateRepository.queryOrderByOutBusinessNo(userId, outBusinessNo);
+    }
+
+    @Override
+    public List<DailyBehaviorRebateVO> queryDailyBehaviorRebateConfig() {
+        return behaviorRebateRepository.queryDailyBehaviorRebateConfig(BehaviorTypeVO.SIGN);
     }
 
 }

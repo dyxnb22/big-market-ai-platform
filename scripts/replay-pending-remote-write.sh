@@ -36,7 +36,7 @@ esac
 mysql_container="${MYSQL_CONTAINER:-mysql}"
 mysql_root_password="${MYSQL_ROOT_PASSWORD:-123456}"
 
-for database in big_market_01 big_market_02; do
+for database in big_market big_market_01 big_market_02; do
   count="$(docker exec "$mysql_container" mysql -uroot -p"$mysql_root_password" -N -s -e \
     "SELECT COUNT(*) FROM ${database}.pending_remote_write_task WHERE out_business_no='${out_business_no}' AND operation='${operation}' AND state='failed';" 2>/dev/null)"
   [ -n "$count" ] || count=0

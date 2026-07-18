@@ -21,8 +21,8 @@ public class RebateMessageApplicationServiceTest {
     }
 
     @Test
-    public void isBenignConsumerError_activitySkuStock() {
-        assertTrue(service.isBenignConsumerError(
+    public void isBenignConsumerError_activitySkuStock_isRetryable() {
+        assertFalse(service.isBenignConsumerError(
                 new AppException(ResponseCode.ACTIVITY_SKU_STOCK_ERROR.getCode(),
                         ResponseCode.ACTIVITY_SKU_STOCK_ERROR.getInfo())));
     }
