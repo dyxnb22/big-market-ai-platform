@@ -1,14 +1,14 @@
 # ADR: Stack upgrade to Java 17 + Spring Boot 3.5
 
-- Status: Accepted (PoC branch `upgrade/java17-boot3`)
+- Status: Accepted and merged to `main` (2026-07-19)
 - Date: 2026-07-18
-- Completed: 2026-07-18 (Phase 0→7 on this branch)
+- Completed: 2026-07-19 (Phase 0→7 plus reuse acceptance on `main`)
 
 ## Context
 
 Previous baseline was Java 8 + Spring Boot 2.7.12 + Spring Framework 5.3.x, with Spring Cloud Gateway versions pinned per-component (no Cloud BOM) and no Spring Cloud Alibaba. Several runtime dependencies (Boot 2.7, Redis 6.2, RabbitMQ 3.12) were at or past community maintenance boundaries.
 
-`docs/LEARNING-FREEZE.md` previously treated Java 8 / Boot 2.7 as the learning freeze baseline. This ADR records the completed progressive upgrade on PoC branch `upgrade/java17-boot3`.
+`docs/LEARNING-FREEZE.md` previously treated Java 8 / Boot 2.7 as the learning freeze baseline. This ADR records the completed progressive upgrade, originally developed on `upgrade/java17-boot3` and merged to `main`.
 
 ## Decision
 
@@ -17,10 +17,10 @@ Previous baseline was Java 8 + Spring Boot 2.7.12 + Spring Framework 5.3.x, with
 | Target | Java 17 + Spring Boot **3.5.16** + Spring Cloud **2025.0.3** |
 | SCA | Do **not** introduce Spring Cloud Alibaba; keep direct Nacos Client + Dubbo |
 | Path | Phase 0 baseline → Phase 1 BOM/deps → JDK 17 → Boot 2.7.18 → Boot 3.5/Jakarta → middleware one-by-one |
-| Branch | `upgrade/java17-boot3` |
+| Branch | `main` (implemented on `upgrade/java17-boot3`) |
 | Topology / money-path | Unchanged (seven services, outbox, idempotency keys, XXL appname `big-market-message-job`) |
 
-## Final stack (this branch)
+## Final stack (mainline)
 
 | Layer | Version |
 | --- | --- |
@@ -50,9 +50,9 @@ Previous baseline was Java 8 + Spring Boot 2.7.12 + Spring Framework 5.3.x, with
 - `validate-microservices-stack.sh --skip-build` mutates the learning DB; not read-only.
 - Fresh-volume acceptance remains opt-in and destructive.
 
-## Merge gate
+## Merge gate (satisfied)
 
-Reuse acceptance + `smoke-raffle-award-e2e.sh` + chat refund E2E must be green on this working tree before merging to main.
+Reuse acceptance + `smoke-raffle-award-e2e.sh` + chat refund E2E were green on the merge source; the result is now in `main`. Fresh-volume and secure-overlay acceptance remain separate gates.
 
 ## References
 

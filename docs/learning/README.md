@@ -1,6 +1,6 @@
 # Big Market 学习文档索引
 
-本目录是 Big Market 微服务项目的学习材料，基于 2026-07-17 的**有条件冻结**工作树编写。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
+本目录是 Big Market 微服务项目的学习材料，基于 2026-07-19 `main` 分支的**有条件冻结**基线编写。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
 
 ## 权威源（避免重复维护）
 

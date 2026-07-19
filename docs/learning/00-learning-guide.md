@@ -48,4 +48,4 @@ mvn -B verify -DfailIfNoTests=false
 ./scripts/smoke-security.sh
 ```
 
-`validate-microservices-runtime-safety.sh` 只校验静态护栏，不能替代 Context、XXL 注册、业务表终态和浏览器测试。当前最终拓扑是 8080-8086 七个应用服务；本工作树的 fresh / secure 尚未重新验证，见 `LEARNING-FREEZE.md`。
+`validate-microservices-runtime-safety.sh` 只校验静态护栏，不能替代 Context、XXL 注册、业务表终态和浏览器测试。当前最终拓扑是 8080-8086 七个应用服务；reuse acceptance 已通过，fresh / secure 仍需单独验证，见 `LEARNING-FREEZE.md`。

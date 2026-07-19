@@ -80,14 +80,14 @@ npx playwright test --workers=1
 
 | Field | Value |
 | --- | --- |
-| Evidence date | 2026-07-17 |
-| Git | current working tree |
-| Command | `mvn -B clean verify -DfailIfNoTests=false` plus static and Compose gates |
-| Result | **PASS** — 19 reactor modules, runtime safety 98/98, Mapper/DDL 18/18, Compose configuration valid. |
-| Scope | Final seven-service topology; core Docker smoke passed 20/20 with all seven applications healthy and Web HTTP 200. Full acceptance, fresh-volume and secure-overlay verification remain pending. |
+| Evidence date | 2026-07-19 |
+| Git | `main` at `a4809f2` |
+| Command | `mvn -B clean verify -DfailIfNoTests=false`, static/Compose gates, and `./scripts/acceptance.sh --reuse` |
+| Result | **PASS** — 19 reactor modules, runtime safety 99 checks/0 failures, Mapper/DDL 23 checks/0 failures (`compared=141`, `exceptions=8`), Compose configuration valid. |
+| Scope | Full reuse acceptance passed: all seven applications healthy, Web HTTP 200, microservice smoke 20/20, raffle-award and chat-refund E2E, and Playwright 18/18 in two consecutive runs. Fresh-volume and secure-overlay runtime verification remain pending. |
 
-This table records current static/configuration evidence only. Dynamic acceptance,
-fresh-volume and full secure-overlay verification require Docker; see
+This table records current static/configuration and reuse-acceptance evidence.
+Fresh-volume and full secure-overlay verification require separate Docker runs; see
 [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md).
 
 ## Frontend
@@ -104,7 +104,7 @@ Frontend API calls use `http://127.0.0.1:8080/api/v1` by default.
 - [AGENTS.md](AGENTS.md) - guidance for Cursor/Codex agents (rules & skills under `.cursor/`)
 - [docs/LEARNING-FREEZE.md](docs/LEARNING-FREEZE.md) - current learning baseline, evidence, and limits
 - [docs/MICROSERVICES.md](docs/MICROSERVICES.md) - authoritative architecture entry
-- [docs/audit/2026-07-17-learning-freeze-audit.md](docs/audit/2026-07-17-learning-freeze-audit.md) - current final-topology audit
+- [docs/audit/2026-07-17-learning-freeze-audit.md](docs/audit/2026-07-17-learning-freeze-audit.md) - historical pre-full-acceptance audit
 - [docs/learning/README.md](docs/learning/README.md) - final-state learning guide
 - [docs/production-readiness-learning.md](docs/production-readiness-learning.md) - learning readiness notes
 - [docs/operations-checklist.md](docs/operations-checklist.md) - local operations checklist

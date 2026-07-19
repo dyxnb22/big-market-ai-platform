@@ -12,7 +12,7 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 | --- | --- |
 | `docs/LEARNING-FREEZE.md` | **Current readiness, verified commands, limits, freeze constraints** |
 | `docs/MICROSERVICES.md` | Architecture entry, service ports, core flows |
-| `docs/audit/2026-07-17-learning-freeze-audit.md` | Current final-topology audit evidence and verification boundary |
+| `docs/audit/2026-07-17-learning-freeze-audit.md` | Historical pre-full-acceptance audit evidence; current boundary is in `docs/LEARNING-FREEZE.md` |
 | `docs/data-and-outbox.md` | Outbox, idempotency keys, duplicate handling |
 | `docs/microservices-dao-ownership.md` | Table/DAO ownership (logical; not hard-enforced) |
 | `docs/operations-checklist.md` | Local ops checks |
@@ -21,11 +21,11 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 
 **Doc vs code:** prefer **code + config + Docker init SQL**. If docs claim “stable / completed closed loop” but code cannot boot, treat docs as stale and fix code first (or update docs).
 
-## Current readiness (2026-07-18)
+## Current readiness (2026-07-19)
 
-- Result: **conditional learning freeze** on **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3**. The final seven-service topology passes clean Maven verification, Context tests, Mapper/DDL, Compose configuration, raffle-award E2E, and chat-refund E2E on the upgrade PoC path.
+- Result: **conditional learning freeze** on **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3**. The final seven-service topology passes clean Maven verification, Context tests, Mapper/DDL, Compose configuration, full reuse acceptance, raffle-award E2E, chat-refund E2E, and Playwright (18 tests, two consecutive runs) on `main`.
 - Middleware defaults: MySQL 8.4.5, Redis 7.4.9, RabbitMQ 4.3.2, Nacos 3.2.3, XXL-Job 2.5.0. See `docs/adr/2026-07-18-stack-upgrade.md`.
-- Fresh volumes, full secure overlay, and full `acceptance.sh` still require Docker runtime verification against this working tree; production HA/capacity/security are out of scope.
+- Fresh volumes and full secure overlay still require separate Docker runtime verification; production HA/capacity/security are out of scope.
 - Do not infer current readiness from BM numbers or historical PASS records. Re-run the target working tree and preserve the verified/unverified boundary.
 
 ## Service map (default ports)

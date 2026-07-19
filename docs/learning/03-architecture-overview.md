@@ -26,7 +26,7 @@ flowchart TD
     Gateway --> Metrics["Prometheus/Grafana"]
 ```
 
-> **说明：** 默认 compose 也是最终拓扑，仅启 8080-8086。策略与返利固定在 market 内部执行；`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。当前工作树的 fresh / secure / 完整 acceptance 仍需重新执行后再更新验证结论。
+> **说明：** 默认 compose 也是最终拓扑，仅启 8080-8086。策略与返利固定在 market 内部执行；`SendAwardConsumer`（message-job）写 `credit_award_task`，`DispatchCreditAwardTaskJob` 再调 account。当前 `main` 已通过完整 reuse acceptance；fresh / secure 仍需单独执行。
 
 ## 主要职责（摘要）
 

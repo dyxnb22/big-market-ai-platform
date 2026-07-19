@@ -4,7 +4,7 @@
 
 ## 结论
 
-**有条件冻结（栈已升级）。** 当前最终拓扑在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、核心 Docker smoke，以及抽奖发奖 / chat refund E2E；`./scripts/acceptance.sh --reuse` 已在当前工作树通过全部门禁（含 Playwright 18 个用例连续两轮）。fresh 空卷和完整 secure overlay 尚未执行，因此不能写成“全环境已验证”或“生产就绪”。
+**有条件冻结（栈已升级）。** 当前最终拓扑在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、核心 Docker smoke，以及抽奖发奖 / chat refund E2E；`main` 上的 `./scripts/acceptance.sh --reuse` 已通过全部门禁（含 Playwright 18 个用例连续两轮）。fresh 空卷和完整 secure overlay 尚未执行，因此不能写成“全环境已验证”或“生产就绪”。
 
 本仓库冻结的是一套可复现、可讲解的本地微服务学习样本，不是生产发布基线。
 栈升级决策见 docs/adr/2026-07-18-stack-upgrade.md；历史证据见 docs/audit/2026-07-17-learning-freeze-audit.md。
