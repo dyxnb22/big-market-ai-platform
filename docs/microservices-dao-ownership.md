@@ -16,7 +16,8 @@ launcher and service-level SQL ownership is not yet fully enforced.
 ## Contexts
 
 activity / draw; account / quota; credit; fulfillment / award; rebate;
-strategy; task / outbox; query / ES; auth; admin / config; chatbot.
+strategy; task / outbox; chat billing / compensation; MQ / DLQ; query / ES;
+auth; admin / config; chatbot.
 
 ## Owner rules
 
@@ -61,7 +62,7 @@ independent database permission or failure domains.
 `user_credit_account`, `user_credit_order`, `credit_award_task`, `award`,
 `user_award_record`, `daily_behavior_rebate`, `user_behavior_rebate_order`,
 `strategy`, `strategy_award`, `strategy_rule`, `rule_tree`, `rule_tree_node`,
-`rule_tree_node_line`, `task`.
+`rule_tree_node_line`, `task`, `chat_credit_session`, `mq_dead_letter`.
 
 ## AL Couplings
 
@@ -91,7 +92,8 @@ file with the Owner and the exact exception. At minimum, check:
 4. every duplicated Mapper statement is compared across launchers, while
    service-specific statements are explicitly documented;
 5. fresh DDL and old-volume migrations agree on state widths, especially
-   `pending_remote_write_task.state VARCHAR(24)`.
+   `pending_remote_write_task.state VARCHAR(24)`, task retry metadata, and
+   chat `manual_pending`/`last_error` fields.
 
 This checklist is **not** a claim that the shared infrastructure scan is
 strictly owner-scoped. Physical single-source Mapper XML remains deferred

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 /**
  * Chatbot HTTP 接口：AI 对话问答。
@@ -31,7 +32,7 @@ public class ChatbotController {
      * <p>通过请求属性标记 /ask 端点，避免反向代理改写 URI 后异常响应格式不一致。</p>
      */
     @PostMapping("ask")
-    public Response<ChatbotAskResponseDTO> ask(@RequestBody ChatbotAskRequestDTO request,
+    public Response<ChatbotAskResponseDTO> ask(@Valid @RequestBody ChatbotAskRequestDTO request,
                                                @RequestHeader(value = "Authorization", required = false) String token,
                                                HttpServletRequest httpRequest) {
         // Mark this request so the exception handler knows to include ChatbotAskResponseDTO

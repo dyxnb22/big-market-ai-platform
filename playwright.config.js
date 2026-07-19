@@ -3,6 +3,9 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests/e2e",
+  // The acceptance suite intentionally exercises one shared demo account.
+  // Serial workers keep credit, quota, and sign-in assertions deterministic.
+  workers: 1,
   timeout: 30 * 1000,
   expect: {
     timeout: 5 * 1000

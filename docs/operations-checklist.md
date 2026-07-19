@@ -26,7 +26,9 @@ MQ 消费者与 XXL handlers 运行在 **`big-market-message-job-service`**；ma
 
 - XXL executor `appname` must be **`big-market-message-job`** (see `docs/dev-ops/mysql/sql/xxl_job.sql` and `message-job-service` `application.yml`). Handler catalog (seed id, default `trigger_status`, money-replay notes): `docs/xxl-job-handlers.md`.
 - Do not stop at XXL Admin HTTP health: its executor group must contain a non-empty registered address. `acceptance.sh` enforces this.
-- `SendMessageTaskJob` scans shared task rows.
+- `SendMessageTaskJob` scans shared task rows whose retry time is due; after the
+  bounded retry limit, inspect `manual_pending` rows instead of expecting an
+  infinite automatic loop.
 - `UpdateActivitySkuStockJob` flushes activity SKU stock.
 - `UpdateAwardStockJob` flushes award stock.
 - `DispatchCreditAwardTaskJob` dispatches award-credit outbox rows.
@@ -36,7 +38,9 @@ MQ 消费者与 XXL handlers 运行在 **`big-market-message-job-service`**；ma
   an operator moves selected `mq_dead_letter` rows to `reviewed`, enables
   `JOB_DLQ_REPLAY_ENABLED=true`, and manually enables/triggers the stopped XXL seed.
 - `RemoteWriteReconcileJob` retries `pending_remote_write_task` RPC writes. It caps retries at five and marks exhausted rows `failed`; after fixing the root cause, first inspect with `./scripts/replay-pending-remote-write.sh --dry-run <out-business-no> <operation>`, then replay the exact reviewed key without changing its payload. Valid operations are `credit_create`, `quota_create`, `quota_update`, and `quota_rollback`.
-- `ChatRefundReconcileJob` retries chat `refund_state=pending` sessions.
+- `ChatRefundReconcileJob` retries due chat `refund_state=pending` sessions and
+  moves exhausted rows to `manual_pending`; `ChatDeductReconcileJob` does the
+  same for unresolved deductions.
 - `ChatDeductReconcileJob` probes account orders for chat sessions stuck in `deduct_state=deducting`; it marks only the local session and never repeats the debit.
 
 Check consumer/job logs primarily from `big-market-message-job-service`; use `big-market-market-service` for draw/HTTP path only.
@@ -45,6 +49,8 @@ Check consumer/job logs primarily from `big-market-message-job-service`; use `bi
 
 - Outbox: `docs/sql/credit-award-task-outbox.sql` (Docker: `docs/dev-ops/mysql/sql/z-credit-award-task-outbox.sql`)
 - Reconcile tables: `docs/sql/reconcile-tables.sql` (Docker: `docs/dev-ops/mysql/sql/z-reconcile-tables.sql`)
+- Bounded retry migration: `docs/sql/migrations/V20260719__bounded-retry-states.sql`
+  (old volumes: run `./scripts/apply-stack-migrations.sh`)
 - Stock confirm outbox: `docs/sql/strategy-award-stock-confirm-task.sql`
 - DLQ reference: `docs/sql/mq-dead-letter.sql`
 
@@ -70,6 +76,9 @@ Check consumer/job logs primarily from `big-market-message-job-service`; use `bi
 - Actuator health is enabled on each service.
 - Prometheus scrape config is in `docs/dev-ops/prometheus/prometheus.yml`.
 - Alert rules: `docs/dev-ops/prometheus/rules/big-market-alerts.yml` (pending/failed remote write, DLQ, chat refund/deducting, credit award failed, strategy stock pending/manual).
+- Additional message-job gauges expose legacy task backlog/oldest age/poison
+  rows and chat `manual_pending` rows; alert on sustained growth and review
+  the exact business key before replaying.
 - Grafana config is under `docs/dev-ops/grafana`; the learning stack has annotated
   dev-only credentials, while secure acceptance requires explicit non-default
   `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` overrides.
@@ -83,6 +92,7 @@ Gauges are published by `BusinessMetricsPublisher` on **message-job** (`big_mark
 | `ChatRefundPending` | `big_market_chat_refund_pending` | Confirm `ChatRefundReconcileJob` enabled/firing; inspect `chat_credit_session` rows with `refund_state=pending` | Fix account RPC / token; let reconcile retry; do not manually clear without matching credit ledger |
 | `StrategyStockConfirmPending` | `big_market_strategy_stock_confirm_pending` | Confirm `StrategyAwardStockConfirmJob`; inspect `strategy_award_stock_confirm_task` pending rows vs award save failures | Restore DB/Redis connectivity; replay job after root cause; avoid double-confirming stock |
 | `PendingRemoteWriteBacklog` / `MqDeadLetterPending` | existing rules | Remote-write reconcile / DLQ review flow above | Review the exact business key; replay failed remote writes with `replay-pending-remote-write.sh` only after root-cause repair, and use `DlqReplayJob` only for reviewed MQ dead letters |
+| Legacy task backlog / chat manual pending | `big_market_legacy_task_backlog`, `big_market_legacy_task_oldest_age_seconds`, `big_market_legacy_task_manual_pending`, `big_market_chat_manual_pending` | Query due/poison rows and inspect `last_error` | Repair dependency, then replay one reviewed idempotency key; do not reset retry metadata blindly |
 
 ## Secure profile
 
@@ -98,7 +108,7 @@ Gauges are published by `BusinessMetricsPublisher` on **message-job** (`big_mark
 
 ## Acceptance entry (preferred)
 
-Gates (Maven + health + DDL/XXL + real raffle-award/account closure + Chat compensation + Playwright twice; optional secure). **No implicit `docker compose up`.**
+Gates (Maven + health + DDL/XXL + real raffle-award/account closure + Chat compensation + Playwright twice; the shared demo account is run with one worker; optional secure). **No implicit `docker compose up`.**
 
 | Mode | Proves | Notes |
 | --- | --- | --- |

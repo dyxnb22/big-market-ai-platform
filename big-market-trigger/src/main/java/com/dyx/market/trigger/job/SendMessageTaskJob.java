@@ -59,7 +59,8 @@ public class SendMessageTaskJob {
                     taskService.updateTaskSendMessageCompleted(taskEntity.getUserId(), taskEntity.getMessageId());
                 } catch (Exception e) {
                     log.error("定时任务，发送MQ消息失败 userId: {} topic: {}", taskEntity.getUserId(), taskEntity.getTopic());
-                    taskService.updateTaskSendMessageFail(taskEntity.getUserId(), taskEntity.getMessageId());
+                    taskService.updateTaskSendMessageFail(taskEntity.getUserId(), taskEntity.getMessageId(),
+                            compactError(e));
                 }
             }
         } catch (Exception e) {
@@ -98,7 +99,8 @@ public class SendMessageTaskJob {
                     taskService.updateTaskSendMessageCompleted(taskEntity.getUserId(), taskEntity.getMessageId());
                 } catch (Exception e) {
                     log.error("定时任务，发送MQ消息失败 userId: {} topic: {}", taskEntity.getUserId(), taskEntity.getTopic());
-                    taskService.updateTaskSendMessageFail(taskEntity.getUserId(), taskEntity.getMessageId());
+                    taskService.updateTaskSendMessageFail(taskEntity.getUserId(), taskEntity.getMessageId(),
+                            compactError(e));
                 }
             }
         } catch (Exception e) {
@@ -109,6 +111,11 @@ public class SendMessageTaskJob {
                 lock.unlock();
             }
         }
+    }
+
+    private String compactError(Exception e) {
+        String message = e == null ? "unknown" : e.getClass().getSimpleName() + ": " + e.getMessage();
+        return message.length() <= 512 ? message : message.substring(0, 512);
     }
 
 }

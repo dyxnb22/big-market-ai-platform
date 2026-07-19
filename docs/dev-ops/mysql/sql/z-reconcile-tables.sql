@@ -103,13 +103,15 @@ CREATE TABLE IF NOT EXISTS `chat_credit_session` (
     `deducted`      TINYINT(1)   NOT NULL DEFAULT 0,
     `deduct_amount` INT          NOT NULL DEFAULT 0,
     `deduct_state`  VARCHAR(16)  NOT NULL DEFAULT 'deducted',
-    `refund_state`  VARCHAR(16)  NOT NULL DEFAULT 'none',
+    `refund_state`  VARCHAR(16)  NOT NULL DEFAULT 'none' COMMENT 'none | pending | refunding | refunded | manual_pending',
     `retry_count`   TINYINT      NOT NULL DEFAULT 0,
+    `last_error`    VARCHAR(512) DEFAULT NULL,
+    `next_retry_time` DATETIME   DEFAULT NULL,
     `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_user_request` (`user_id`, `request_id`),
-    KEY `idx_refund_pending` (`refund_state`, `retry_count`, `create_time`),
+    KEY `idx_refund_pending` (`refund_state`, `next_retry_time`, `retry_count`, `create_time`),
     KEY `idx_deduct_state` (`deduct_state`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

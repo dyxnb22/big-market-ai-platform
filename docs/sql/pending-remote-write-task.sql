@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
     `out_business_no` VARCHAR(128) NOT NULL,
     `operation`       VARCHAR(32)  NOT NULL COMMENT 'credit_create | quota_create | quota_update',
     `payload`         TEXT         NOT NULL,
-    `state`           VARCHAR(16)  NOT NULL DEFAULT 'pending' COMMENT 'pending | done | failed',
+    `state`           VARCHAR(24)  NOT NULL DEFAULT 'pending' COMMENT 'pending | continuation_pending | done | failed',
     `retry_count`     TINYINT      NOT NULL DEFAULT 0,
     `create_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

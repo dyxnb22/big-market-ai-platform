@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.Resource;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -48,9 +51,23 @@ public class UpdateAwardStockJob {
 
             List<StrategyAwardStockKeyVO> strategyAwardStockKeyVOS = raffleAward.queryOpenActivityStrategyAwardList();
             if (null == strategyAwardStockKeyVOS) return;
+            List<Future<?>> submitted = new ArrayList<>(strategyAwardStockKeyVOS.size());
             for (StrategyAwardStockKeyVO strategyAwardStockKeyVO : strategyAwardStockKeyVOS) {
-                executor.execute(() -> raffleStock.syncStrategyAwardStockFromQueue(
-                        strategyAwardStockKeyVO.getStrategyId(), strategyAwardStockKeyVO.getAwardId()));
+                submitted.add(executor.submit(() -> raffleStock.syncStrategyAwardStockFromQueue(
+                        strategyAwardStockKeyVO.getStrategyId(), strategyAwardStockKeyVO.getAwardId())));
+            }
+            // Keep the distributed lock until every worker has finished. The
+            // previous fire-and-forget submission allowed the next scheduler
+            // round to process the same reservation concurrently.
+            for (Future<?> future : submitted) {
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("award stock sync interrupted", e);
+                } catch (ExecutionException e) {
+                    throw new IllegalStateException("award stock sync worker failed", e.getCause());
+                }
             }
         } catch (Exception e) {
             log.error("定时任务，更新奖品消耗库存失败", e);

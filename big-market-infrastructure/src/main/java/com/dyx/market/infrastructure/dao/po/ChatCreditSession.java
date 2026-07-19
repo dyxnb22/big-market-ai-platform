@@ -18,10 +18,13 @@ public class ChatCreditSession {
     private String requestId;
     private Boolean deducted;
     private Integer deductAmount;
-    /** deducting | deducted | failed */
+    /** deducting | deducted | failed | manual_pending */
     private String deductState;
+    /** none | pending | refunding | refunded | manual_pending */
     private String refundState;
     private Integer retryCount;
+    private String lastError;
+    private Date nextRetryTime;
     private Date createTime;
     private Date updateTime;
 }

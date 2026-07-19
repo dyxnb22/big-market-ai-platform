@@ -34,7 +34,7 @@ public class ActivitySkuStockZeroConsumer {
     ))
     public void listener(String message) {
         try {
-            log.info("监听活动sku库存消耗为0消息 topic: {} message: {}", topic, message);
+            log.info("监听活动sku库存消耗为0消息 topic: {} payloadLength: {}", topic, message.length());
             // 转换对象
             BaseEvent.EventMessage<Long> eventMessage = JSON.parseObject(message, new TypeReference<BaseEvent.EventMessage<Long>>() {
             }.getType());
@@ -44,7 +44,7 @@ public class ActivitySkuStockZeroConsumer {
             // 清空队列
             skuStock.clearQueueValue(sku);
         } catch (Exception e) {
-            log.error("监听活动sku库存消耗为0消息，消费失败 topic: {} message: {}", topic, message);
+            log.error("监听活动sku库存消耗为0消息，消费失败 topic: {} payloadLength: {}", topic, message.length());
             throw e;
         }
     }

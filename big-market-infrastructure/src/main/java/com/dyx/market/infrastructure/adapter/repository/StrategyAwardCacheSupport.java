@@ -446,8 +446,12 @@ public class StrategyAwardCacheSupport {
                     return true;
                 }
                 if (existing != null && "reserved".equals(existing.getStatus())) {
-                    strategyAwardStockDecrementLedgerDao.updateStatusApplied(reservationId);
-                    updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
+                    // The status transition is the authorization for the
+                    // physical decrement. A concurrent worker may have read
+                    // the same reserved row and won the CAS first.
+                    if (strategyAwardStockDecrementLedgerDao.updateStatusApplied(reservationId) == 1) {
+                        updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
+                    }
                     return true;
                 }
                 try {

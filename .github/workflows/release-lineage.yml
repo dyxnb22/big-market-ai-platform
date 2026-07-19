@@ -1,0 +1,23 @@
+name: Release Lineage Guard
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing tag to validate before release promotion"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  lineage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Validate Java mainline ancestry
+        run: ./scripts/validate-release-lineage.sh "${{ inputs.release_tag }}"

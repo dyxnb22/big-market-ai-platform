@@ -28,8 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>The in-process map is only an immutable read snapshot of the two Nacos
  * DataIds. It is never persisted to a local file and a failed publish never
- * reports a successful admin save. Safe compiled defaults are used only when a
- * key is deleted or an empty/invalid Nacos payload must be interpreted.</p>
+ * reports a successful admin save. Nacos persistence is the commit point;
+ * Redis fan-out is a retriable delivery hint and never rolls back a committed
+ * Nacos write. Safe compiled defaults are used only when a key is deleted or
+ * an empty/invalid Nacos payload must be interpreted.</p>
  */
 @Service
 public class PlatformConfigService implements InitializingBean {
@@ -61,7 +63,7 @@ public class PlatformConfigService implements InitializingBean {
         List<AdminConfigResponseDTO> values = new ArrayList<>();
         for (AdminConfigResponseDTO config : configSnapshot.get().values()) {
             if (StringUtils.isBlank(namespace) || namespace.equals(config.getNamespace())) {
-                values.add(config);
+                values.add(withCurrentMetadata(config));
             }
         }
         values.sort(Comparator.comparing(AdminConfigResponseDTO::getNamespace)
@@ -70,7 +72,8 @@ public class PlatformConfigService implements InitializingBean {
     }
 
     public AdminConfigResponseDTO get(String namespace, String configKey) {
-        return configSnapshot.get().get(storeKey(namespace, configKey));
+        AdminConfigResponseDTO config = configSnapshot.get().get(storeKey(namespace, configKey));
+        return config == null ? null : withCurrentMetadata(config);
     }
 
     public String getValue(String namespace, String configKey, String defaultValue) {
@@ -105,29 +108,45 @@ public class PlatformConfigService implements InitializingBean {
         candidate.put(storeKey(config.getNamespace(), config.getConfigKey()), config);
 
         boolean runtimeConfig = isRuntimeConfig(config);
+        verifyExpectedContentHash(request.getExpectedContentHash(), runtimeConfig);
         String content = serializePropertiesContent(candidate, runtimeConfig);
-        publishToNacos(content, runtimeConfig);
+        boolean notificationPending = !publishToNacos(content, runtimeConfig);
         configSnapshot.set(immutable(candidate));
         return config.toBuilder()
                 .contentHash(contentHash(content))
                 .nacosPublished(true)
+                .notificationPending(notificationPending)
                 .source("nacos")
                 .build();
     }
 
     public synchronized void delete(String namespace, String configKey) throws IOException {
+        AdminConfigRequestDTO request = new AdminConfigRequestDTO();
+        request.setNamespace(namespace);
+        request.setConfigKey(configKey);
+        delete(request);
+    }
+
+    /** Deletes a key with the same optimistic-concurrency contract as save. */
+    public synchronized void delete(AdminConfigRequestDTO request) throws IOException {
         AdminConfigResponseDTO tombstone = AdminConfigResponseDTO.builder()
-                .namespace(namespace)
-                .configKey(configKey)
+                .namespace(request.getNamespace())
+                .configKey(request.getConfigKey())
                 .configValue("")
                 .description("__DELETED__")
                 .updateTime(System.currentTimeMillis())
                 .build();
         Map<String, AdminConfigResponseDTO> candidate = new LinkedHashMap<>(configSnapshot.get());
-        candidate.put(storeKey(namespace, configKey), tombstone);
+        candidate.put(storeKey(request.getNamespace(), request.getConfigKey()), tombstone);
         boolean runtimeConfig = isRuntimeConfig(tombstone);
-        publishToNacos(serializePropertiesContent(candidate, runtimeConfig), runtimeConfig);
+        verifyExpectedContentHash(request.getExpectedContentHash(), runtimeConfig);
+        boolean notificationPending = !publishToNacos(
+                serializePropertiesContent(candidate, runtimeConfig), runtimeConfig);
         configSnapshot.set(immutable(candidate));
+        if (notificationPending) {
+            log.warn("Deleted config committed to Nacos but Redis fan-out is pending: namespace={}, key={}",
+                    request.getNamespace(), request.getConfigKey());
+        }
     }
 
     /** Replaces the complete non-runtime snapshot from one Nacos payload. */
@@ -232,12 +251,9 @@ public class PlatformConfigService implements InitializingBean {
         return false;
     }
 
-    private void publishToNacos(String content, boolean runtimeConfig) throws IOException {
+    private boolean publishToNacos(String content, boolean runtimeConfig) throws IOException {
         if (nacosConfigSyncService == null) {
             throw new IOException("Nacos config service is required for platform configuration writes");
-        }
-        if (platformConfigChangeNotifier == null) {
-            throw new IOException("Redis config fan-out is required for platform configuration writes");
         }
         try {
             boolean published = runtimeConfig
@@ -246,13 +262,32 @@ public class PlatformConfigService implements InitializingBean {
             if (!published) {
                 throw new IOException("Nacos rejected platform configuration publish");
             }
-            if (runtimeConfig) {
-                platformConfigChangeNotifier.notifyRuntime(content);
-            } else {
-                platformConfigChangeNotifier.notifyPlatform(content);
+            if (platformConfigChangeNotifier == null) {
+                log.warn("Nacos config committed but Redis fan-out is unavailable; Nacos listeners remain the delivery fallback");
+                return false;
             }
+            boolean notified;
+            if (runtimeConfig) {
+                notified = platformConfigChangeNotifier.notifyRuntime(content);
+            } else {
+                notified = platformConfigChangeNotifier.notifyPlatform(content);
+            }
+            if (!notified) {
+                log.warn("Nacos config committed but Redis fan-out is pending; contentHash={}", contentHash(content));
+            }
+            return notified;
         } catch (IllegalStateException e) {
             throw new IOException("Failed to publish config to Nacos: " + e.getMessage(), e);
+        }
+    }
+
+    private void verifyExpectedContentHash(String expectedContentHash, boolean runtimeConfig) throws IOException {
+        if (StringUtils.isBlank(expectedContentHash)) {
+            return;
+        }
+        String currentContent = serializePropertiesContent(configSnapshot.get(), runtimeConfig);
+        if (!expectedContentHash.equals(contentHash(currentContent))) {
+            throw new IOException("配置已被其他 Admin 副本修改，请重新读取后重试");
         }
     }
 
@@ -267,9 +302,40 @@ public class PlatformConfigService implements InitializingBean {
             properties.setProperty(prefix + ".value", StringUtils.defaultString(config.getConfigValue()));
             properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
         }
+        // Properties.store() writes a current-time comment, which would make
+        // contentHash change on every read and invalidate optimistic CAS.
+        List<String> names = new ArrayList<>(properties.stringPropertyNames());
+        names.sort(String::compareTo);
         StringWriter writer = new StringWriter();
-        properties.store(writer, runtimeOnly ? "Big Market runtime switches" : "Big Market platform configuration");
+        for (String name : names) {
+            writer.append(escapeProperty(name, true))
+                    .append('=')
+                    .append(escapeProperty(properties.getProperty(name), false))
+                    .append('\n');
+        }
         return writer.toString();
+    }
+
+    private String escapeProperty(String value, boolean key) {
+        StringBuilder escaped = new StringBuilder(value.length() + 16);
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            if (character == '\\') {
+                escaped.append("\\\\");
+            } else if (character == '\n') {
+                escaped.append("\\n");
+            } else if (character == '\r') {
+                escaped.append("\\r");
+            } else if (character == '\t') {
+                escaped.append("\\t");
+            } else if ((i == 0 && (character == ' ' || character == '#' || character == '!'))
+                    || (key && (character == '=' || character == ':'))) {
+                escaped.append('\\').append(character);
+            } else {
+                escaped.append(character);
+            }
+        }
+        return escaped.toString();
     }
 
     private Map<String, AdminConfigResponseDTO> defaultConfigs() {
@@ -330,6 +396,18 @@ public class PlatformConfigService implements InitializingBean {
             return sb.toString();
         } catch (Exception e) {
             return "";
+        }
+    }
+
+    private AdminConfigResponseDTO withCurrentMetadata(AdminConfigResponseDTO config) {
+        try {
+            return config.toBuilder()
+                    .contentHash(contentHash(serializePropertiesContent(configSnapshot.get(), isRuntimeConfig(config))))
+                    .source("nacos")
+                    .build();
+        } catch (IOException e) {
+            log.warn("Unable to compute current platform config hash: {}", e.getMessage());
+            return config;
         }
     }
 

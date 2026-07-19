@@ -279,13 +279,17 @@ CREATE TABLE `task` (
   `topic` varchar(32) NOT NULL COMMENT '消息主题',
   `message_id` varchar(11) DEFAULT NULL COMMENT '消息编号',
   `message` varchar(512) NOT NULL COMMENT '消息主体',
-  `state` varchar(16) NOT NULL DEFAULT 'create' COMMENT '任务状态；create-创建、completed-完成、fail-失败',
+  `state` varchar(16) NOT NULL DEFAULT 'create' COMMENT '任务状态；create-创建、completed-完成、fail-可重试、manual_pending-人工处理',
+  `retry_count` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '发送失败次数',
+  `next_retry_time` datetime DEFAULT NULL COMMENT '下一次允许重试时间',
+  `last_error` varchar(512) DEFAULT NULL COMMENT '最近一次失败原因',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_message_id` (`message_id`),
   KEY `idx_state` (`state`),
-  KEY `idx_create_time` (`update_time`)
+  KEY `idx_create_time` (`update_time`),
+  KEY `idx_task_retry` (`state`,`next_retry_time`,`retry_count`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务表，发送MQ';
 
 LOCK TABLES `task` WRITE;

@@ -2,6 +2,8 @@ package com.dyx.market.trigger.api.dto;
 
 import lombok.Data;
 
+import jakarta.validation.constraints.Size;
+
 import java.io.Serializable;
 
 /**
@@ -20,9 +22,11 @@ public class ChatbotAskRequestDTO implements Serializable {
     private Long activityId;
 
     /** 用户输入的问题或指令 */
+    @Size(max = 4000, message = "message 长度不能超过 4000")
     private String message;
 
     /** 客户端生成的幂等键，标识一次问答请求 */
+    @Size(max = 128, message = "requestId 长度不能超过 128")
     private String requestId;
 
 }

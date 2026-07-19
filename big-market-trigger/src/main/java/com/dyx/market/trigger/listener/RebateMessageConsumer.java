@@ -33,19 +33,19 @@ public class RebateMessageConsumer {
     ))
     public void listener(String message) {
         try {
-            log.info("监听用户行为返利消息 topic: {} message: {}", topic, message);
+            log.info("监听用户行为返利消息 topic: {} payloadLength: {}", topic, message.length());
             BaseEvent.EventMessage<SendRebateMessageEvent.RebateMessage> eventMessage = JSON.parseObject(message,
                     new TypeReference<BaseEvent.EventMessage<SendRebateMessageEvent.RebateMessage>>() {
                     }.getType());
             rebateMessageApplicationService.processRebateMessage(eventMessage.getData());
         } catch (AppException e) {
             if (rebateMessageApplicationService.isBenignConsumerError(e)) {
-                log.warn("监听用户行为返利消息，可忽略的业务异常 topic: {} message: {}", topic, message, e);
+                log.warn("监听用户行为返利消息，可忽略的业务异常 topic: {} payloadLength: {}", topic, message.length(), e);
                 return;
             }
             throw e;
         } catch (Exception e) {
-            log.error("监听用户行为返利消息，消费失败 topic: {} message: {}", topic, message, e);
+            log.error("监听用户行为返利消息，消费失败 topic: {} payloadLength: {}", topic, message.length(), e);
             throw e;
         }
     }

@@ -5,7 +5,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 class PlatformConfigChangeNotifierTest {
 
     @Test
-    void zeroReceivers_failClosedAfterRetries() {
+    void zeroReceivers_areReportedAsPendingAfterRetries() {
         RedissonClient client = mock(RedissonClient.class);
         RTopic topic = mock(RTopic.class);
         when(client.getTopic(PlatformConfigChangeNotifier.RUNTIME_TOPIC)).thenReturn(topic);
@@ -24,7 +24,7 @@ class PlatformConfigChangeNotifierTest {
         PlatformConfigChangeNotifier notifier = new PlatformConfigChangeNotifier();
         ReflectionTestUtils.setField(notifier, "redissonClient", client);
 
-        assertThrows(IllegalStateException.class, () -> notifier.notifyRuntime("key=value\n"));
+        assertFalse(notifier.notifyRuntime("key=value\n"));
         verify(topic, times(3)).publish("key=value\n");
     }
 }

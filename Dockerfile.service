@@ -1,10 +1,10 @@
 # Shared parameterized Dockerfile for all Spring Boot microservices.
 # Usage: docker build --build-arg MODULE_NAME=big-market-auth-service -t big-market-auth-service .
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:17-jre-jammy@sha256:475d8e96b4b2bfe08999e5e854755c773af1581acdf959a4545d88f0696a2339
 
 ARG MODULE_NAME
 ENV PARAMS=""
-# Dubbo 3.0.9 Hessian2 on JDK 17: temporary opens until Phase 4 Dubbo upgrade.
+# Dubbo 3.3.6 Hessian2 on JDK 17: temporary opens retained for the learning stack.
 ENV JAVA_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.math=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED"
 ENV TZ=Asia/Shanghai
 

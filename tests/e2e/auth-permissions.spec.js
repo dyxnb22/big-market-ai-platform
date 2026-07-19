@@ -174,11 +174,11 @@ test("login redirect param only allows same-origin destinations", async ({ page 
   await page.locator("#loginBtn").click();
   await expect(page).toHaveURL(/\/index\.html\?from=login/);
 
-  // Logout to reset state for next test
-  await page.evaluate(() => { localStorage.clear(); location.reload(); });
-  await page.waitForLoadState("networkidle");
-
-  await page.goto("/index.html");
+  // Use the product logout path so the reset exercises the same cleanup as a
+  // real user session, without racing a storage clear against navigation.
+  await page.locator("#userMenuBtn").click();
+  await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
+  await page.locator("#logoutBtn").click();
   await expect(page.locator("#landingView")).toBeVisible();
 
   // External URL param is ignored — falls back to index.html

@@ -104,7 +104,7 @@ public class AdminConfigController {
     @PostMapping("delete")
     public Response<Boolean> delete(@RequestBody AdminConfigRequestDTO request) throws IOException {
         requireValidRequest(request);
-        platformConfigService.delete(request.getNamespace(), request.getConfigKey());
+        platformConfigService.delete(request);
         return Response.<Boolean>builder()
                 .code(ResponseCode.SUCCESS.getCode())
                 .info(ResponseCode.SUCCESS.getInfo())

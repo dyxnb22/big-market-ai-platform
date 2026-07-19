@@ -33,7 +33,8 @@ import java.util.Properties;
  * When {@code nacos.config.sync.confirmJdbcUrl} is configured (learning Docker),
  * confirmation reads empty-tenant MySQL rows and mirrors them to {@code public}.
  * Otherwise confirmation falls back to {@code getConfig}.
- * Local snapshots are disabled. Redis fan-out remains required for market/chatbot.
+ * Local snapshots are disabled. Redis fan-out is a best-effort acceleration;
+ * Nacos listeners and startup reads remain the durable delivery fallback.
  */
 @Service
 @ConditionalOnProperty(value = "nacos.config.sync.enabled", havingValue = "true")

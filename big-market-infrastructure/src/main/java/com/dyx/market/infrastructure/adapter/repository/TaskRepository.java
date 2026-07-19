@@ -54,9 +54,15 @@ public class TaskRepository implements ITaskRepository {
 
     @Override
     public void updateTaskSendMessageFail(String userId, String messageId) {
+        updateTaskSendMessageFail(userId, messageId, null);
+    }
+
+    @Override
+    public void updateTaskSendMessageFail(String userId, String messageId, String errorMessage) {
         Task taskReq = new Task();
         taskReq.setUserId(userId);
         taskReq.setMessageId(messageId);
+        taskReq.setLastError(errorMessage);
         taskDao.updateTaskSendMessageFail(taskReq);
     }
 

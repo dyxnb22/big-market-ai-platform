@@ -5,6 +5,7 @@ import com.dyx.market.infrastructure.dao.ICreditAwardTaskDao;
 import com.dyx.market.infrastructure.dao.IMqDeadLetterDao;
 import com.dyx.market.infrastructure.dao.IPendingRemoteWriteTaskDao;
 import com.dyx.market.infrastructure.dao.IStrategyAwardStockConfirmTaskDao;
+import com.dyx.market.infrastructure.dao.ITaskDao;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -25,6 +26,7 @@ public class BusinessMetricsPublisher {
     private final IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao;
     private final IMqDeadLetterDao mqDeadLetterDao;
     private final IChatCreditSessionDao chatCreditSessionDao;
+    private final ITaskDao taskDao;
     private final IStrategyAwardStockConfirmTaskDao strategyAwardStockConfirmTaskDao;
     private final ICreditAwardTaskDao creditAwardTaskDao;
     private final IDBRouterStrategy dbRouter;
@@ -39,10 +41,15 @@ public class BusinessMetricsPublisher {
     private final AtomicInteger failedCreditAwards = new AtomicInteger(0);
     private final AtomicInteger manualPendingStockConfirm = new AtomicInteger(0);
     private final AtomicInteger deductingChatSessions = new AtomicInteger(0);
+    private final AtomicInteger legacyTaskBacklog = new AtomicInteger(0);
+    private final AtomicInteger legacyTaskPoisonRows = new AtomicInteger(0);
+    private final AtomicInteger legacyTaskOldestAgeSeconds = new AtomicInteger(0);
+    private final AtomicInteger manualPendingChatSessions = new AtomicInteger(0);
 
     public BusinessMetricsPublisher(IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao,
                                     IMqDeadLetterDao mqDeadLetterDao,
                                     IChatCreditSessionDao chatCreditSessionDao,
+                                    ITaskDao taskDao,
                                     IStrategyAwardStockConfirmTaskDao strategyAwardStockConfirmTaskDao,
                                     ICreditAwardTaskDao creditAwardTaskDao,
                                     IDBRouterStrategy dbRouter,
@@ -50,6 +57,7 @@ public class BusinessMetricsPublisher {
         this.pendingRemoteWriteTaskDao = pendingRemoteWriteTaskDao;
         this.mqDeadLetterDao = mqDeadLetterDao;
         this.chatCreditSessionDao = chatCreditSessionDao;
+        this.taskDao = taskDao;
         this.strategyAwardStockConfirmTaskDao = strategyAwardStockConfirmTaskDao;
         this.creditAwardTaskDao = creditAwardTaskDao;
         this.dbRouter = dbRouter;
@@ -88,6 +96,18 @@ public class BusinessMetricsPublisher {
         Gauge.builder("big_market_chat_deducting", deductingChatSessions, AtomicInteger::get)
                 .description("chat sessions waiting for account debit reconciliation")
                 .register(meterRegistry);
+        Gauge.builder("big_market_legacy_task_backlog", legacyTaskBacklog, AtomicInteger::get)
+                .description("legacy task outbox rows eligible for retry")
+                .register(meterRegistry);
+        Gauge.builder("big_market_legacy_task_oldest_age_seconds", legacyTaskOldestAgeSeconds, AtomicInteger::get)
+                .description("age of the oldest eligible legacy task outbox row")
+                .register(meterRegistry);
+        Gauge.builder("big_market_legacy_task_manual_pending", legacyTaskPoisonRows, AtomicInteger::get)
+                .description("legacy task outbox rows parked after exhausting retries")
+                .register(meterRegistry);
+        Gauge.builder("big_market_chat_manual_pending", manualPendingChatSessions, AtomicInteger::get)
+                .description("chat credit sessions requiring manual compensation")
+                .register(meterRegistry);
         refresh();
     }
 
@@ -103,6 +123,10 @@ public class BusinessMetricsPublisher {
             int failedCreditAwardCount = 0;
             int manualPendingStockConfirmCount = 0;
             int deductingChatCount = 0;
+            int legacyTaskBacklogCount = 0;
+            int legacyTaskPoisonCount = 0;
+            int legacyTaskOldestAge = 0;
+            int manualPendingChatCount = 0;
             // The central compensation store exists on db00. The historical
             // per-shard copies are only compatibility data. MQ/DLQ, chat and
             // strategy tables, however, exist on the business shards only.
@@ -114,11 +138,17 @@ public class BusinessMetricsPublisher {
             }
             for (int dbIdx = 1; dbIdx <= 2; dbIdx++) {
                 dbRouter.setDBKey(dbIdx);
+                dbRouter.setTBKey(0);
+                legacyTaskBacklogCount += taskDao.countLegacyTaskBacklog();
+                legacyTaskPoisonCount += taskDao.countLegacyTaskPoisonRows();
+                Integer oldestAge = taskDao.queryOldestLegacyTaskAgeSeconds();
+                legacyTaskOldestAge = Math.max(legacyTaskOldestAge, oldestAge == null ? 0 : oldestAge);
                 pendingDlqCount += mqDeadLetterDao.countByState("pending");
                 pendingChatRefundCount += chatCreditSessionDao.countPendingRefunds();
                 pendingStockConfirmCount += strategyAwardStockConfirmTaskDao.countPending();
                 manualPendingStockConfirmCount += strategyAwardStockConfirmTaskDao.countByState("manual_pending");
                 deductingChatCount += chatCreditSessionDao.countByDeductState("deducting");
+                manualPendingChatCount += chatCreditSessionDao.countByRefundState("manual_pending");
             }
             for (int dbIdx = 1; dbIdx <= 2; dbIdx++) {
                 dbRouter.setDBKey(dbIdx);
@@ -136,6 +166,10 @@ public class BusinessMetricsPublisher {
             failedCreditAwards.set(failedCreditAwardCount);
             manualPendingStockConfirm.set(manualPendingStockConfirmCount);
             deductingChatSessions.set(deductingChatCount);
+            legacyTaskBacklog.set(legacyTaskBacklogCount);
+            legacyTaskPoisonRows.set(legacyTaskPoisonCount);
+            legacyTaskOldestAgeSeconds.set(legacyTaskOldestAge);
+            manualPendingChatSessions.set(manualPendingChatCount);
         } catch (Exception e) {
             log.warn("Business metrics refresh failed: {}", e.getMessage());
         } finally {

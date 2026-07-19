@@ -7,6 +7,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PreDestroy;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * Fan-out for Nacos config changes.
  *
@@ -15,9 +23,9 @@ import org.springframework.stereotype.Component;
  * reused volumes. Redis pub/sub keeps admin → market/chatbot refresh reliable for the
  * learning stack without changing money-path contracts.</p>
  *
- * <p>Notify is fail-closed: missing Redisson, transport exceptions, or zero confirmed
- * receivers fail the admin save. A configuration write is not complete until at least
- * one live consumer has received the fan-out notification.</p>
+ * <p>Nacos persistence is the commit point. Redis fan-out is retried in the
+ * background and is reported to Admin as {@code notificationPending}; Nacos
+ * listeners and startup reads remain the durable delivery fallback.</p>
  */
 @Component
 public class PlatformConfigChangeNotifier {
@@ -33,20 +41,45 @@ public class PlatformConfigChangeNotifier {
     @Autowired(required = false)
     private RedissonClient redissonClient;
 
-    public void notifyRuntime(String content) {
-        publish(RUNTIME_TOPIC, content);
+    private final Map<String, PendingNotification> pending = new ConcurrentHashMap<>();
+    private final AtomicLong publishGeneration = new AtomicLong();
+    private final ScheduledExecutorService retryExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread thread = new Thread(r, "platform-config-fanout-retry");
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    public boolean notifyRuntime(String content) {
+        return publish(RUNTIME_TOPIC, content);
     }
 
-    public void notifyPlatform(String content) {
-        publish(PLATFORM_TOPIC, content);
+    public boolean notifyPlatform(String content) {
+        return publish(PLATFORM_TOPIC, content);
     }
 
-    private void publish(String topicName, String content) {
-        if (redissonClient == null) {
-            throw new IllegalStateException("RedissonClient unavailable; config fan-out rejected (fail-closed)");
-        }
+    private boolean publish(String topicName, String content) {
         if (content == null) {
             throw new IllegalStateException("config fan-out payload must not be null");
+        }
+        PendingNotification notification = new PendingNotification(
+                topicName, content, publishGeneration.incrementAndGet());
+        boolean delivered = attemptPublish(topicName, content);
+        if (delivered) {
+            // A newer successful publish supersedes any older retry. Keeping an
+            // older retry alive could deliver stale configuration after the
+            // current generation and roll a consumer back.
+            pending.computeIfPresent(topicName, (key, current) ->
+                    current.generation <= notification.generation ? null : current);
+        } else {
+            scheduleRetry(notification);
+        }
+        return delivered;
+    }
+
+    private boolean attemptPublish(String topicName, String content) {
+        if (redissonClient == null) {
+            log.warn("Redis config fan-out unavailable for topic={}; waiting for Nacos listener fallback", topicName);
+            return false;
         }
         RuntimeException lastError = null;
         for (int attempt = 1; attempt <= NOTIFY_ATTEMPTS; attempt++) {
@@ -64,7 +97,7 @@ public class PlatformConfigChangeNotifier {
                 }
                 log.info("Published config change to Redis topic={}, receivers={}, attempt={}",
                         topicName, receivers, attempt);
-                return;
+                return true;
             } catch (RuntimeException ex) {
                 lastError = ex;
                 log.warn("Redis config fan-out attempt {}/{} failed for topic={}: {}",
@@ -74,8 +107,47 @@ public class PlatformConfigChangeNotifier {
                 }
             }
         }
-        throw new IllegalStateException("Failed to publish config change to Redis topic=" + topicName
-                + " after " + NOTIFY_ATTEMPTS + " attempts", lastError);
+        log.warn("Redis config fan-out remains pending topic={} after {} attempts: {}",
+                topicName, NOTIFY_ATTEMPTS, lastError == null ? "unknown" : lastError.getMessage());
+        return false;
+    }
+
+    private void scheduleRetry(PendingNotification notification) {
+        // Keep one pending generation per topic. A stale retry must never be
+        // allowed to arrive after a newer configuration generation.
+        PendingNotification previous = pending.compute(notification.topicName, (key, current) ->
+                current == null || current.generation <= notification.generation ? notification : current);
+        if (previous == notification) {
+            retryExecutor.schedule(() -> retry(notification), 5, TimeUnit.SECONDS);
+        }
+    }
+
+    private void retry(PendingNotification notification) {
+        if (pending.get(notification.topicName) != notification) {
+            return;
+        }
+        if (attemptPublish(notification.topicName, notification.content)) {
+            pending.remove(notification.topicName, notification);
+        } else {
+            retryExecutor.schedule(() -> retry(notification), 30, TimeUnit.SECONDS);
+        }
+    }
+
+    @PreDestroy
+    void shutdown() {
+        retryExecutor.shutdownNow();
+    }
+
+    private static final class PendingNotification {
+        private final String topicName;
+        private final String content;
+        private final long generation;
+
+        private PendingNotification(String topicName, String content, long generation) {
+            this.topicName = topicName;
+            this.content = content;
+            this.generation = generation;
+        }
     }
 
     private static void sleepQuietly(long millis) {

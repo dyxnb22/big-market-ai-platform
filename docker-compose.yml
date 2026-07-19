@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-auth-service
-    image: big-market-auth-service:latest
+    image: big-market-auth-service:${APP_IMAGE_TAG:-dev}
     container_name: big-market-auth-service
     restart: "no"
     ports:
@@ -53,7 +53,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-admin-service
-    image: big-market-admin-service:latest
+    image: big-market-admin-service:${APP_IMAGE_TAG:-dev}
     container_name: big-market-admin-service
     restart: "no"
     ports:
@@ -95,7 +95,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-chatbot-service
-    image: big-market-chatbot-service:latest
+    image: big-market-chatbot-service:${APP_IMAGE_TAG:-dev}
     container_name: big-market-chatbot-service
     restart: "no"
     ports:
@@ -140,7 +140,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-market-service
-    image: big-market-market-service:latest
+    image: big-market-market-service:${APP_IMAGE_TAG:-dev}
     container_name: big-market-market-service
     restart: "no"
     ports:
@@ -200,7 +200,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-message-job-service
-    image: big-market-message-job-service:latest
+    image: big-market-message-job-service:${APP_IMAGE_TAG:-dev}
     container_name: big-market-message-job-service
     restart: "no"
     ports:
@@ -245,7 +245,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-account-service
-    image: big-market-account-service:latest
+    image: big-market-account-service:${APP_IMAGE_TAG:-dev}
     container_name: big-market-account-service
     restart: "no"
     ports:
@@ -284,7 +284,7 @@ services:
       dockerfile: Dockerfile.service
       args:
         MODULE_NAME: big-market-gateway
-    image: big-market-gateway:latest
+    image: big-market-gateway:${APP_IMAGE_TAG:-dev}
     container_name: big-market-gateway
     restart: "no"
     ports:
@@ -326,7 +326,7 @@ services:
       dockerfile: big-market-web/Dockerfile
       args:
         APP_VERSION: ${WEB_APP_VERSION:-dev}
-    image: big-market-web:latest
+    image: big-market-web:${APP_IMAGE_TAG:-dev}
     container_name: big-market-web
     restart: "no"
     ports:

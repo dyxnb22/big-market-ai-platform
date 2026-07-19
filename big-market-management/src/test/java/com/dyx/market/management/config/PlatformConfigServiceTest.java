@@ -29,6 +29,8 @@ class PlatformConfigServiceTest {
         wirePublishDeps(service, nacos, okNotifier());
         service.afterPropertiesSet();
 
+        String firstHash = service.get("chatbot", "enabled").getContentHash();
+        Assertions.assertEquals(firstHash, service.get("chatbot", "enabled").getContentHash());
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
         request.setNamespace("chatbot");
         request.setConfigKey("enabled");
@@ -87,13 +89,13 @@ class PlatformConfigServiceTest {
     }
 
     @Test
-    void save_should_fail_when_redis_fanout_fails_closed() throws Exception {
+    void save_should_succeed_when_redis_fanout_is_pending() throws Exception {
         PlatformConfigService service = new PlatformConfigService();
         NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
         PlatformConfigChangeNotifier notifier = org.mockito.Mockito.mock(PlatformConfigChangeNotifier.class);
         org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
-        org.mockito.Mockito.doThrow(new IllegalStateException("redis down"))
-                .when(notifier).notifyPlatform(org.mockito.ArgumentMatchers.anyString());
+        org.mockito.Mockito.when(notifier.notifyPlatform(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(false);
         wirePublishDeps(service, nacos, notifier);
         service.afterPropertiesSet();
 
@@ -103,9 +105,10 @@ class PlatformConfigServiceTest {
         request.setConfigValue("false");
         request.setDescription("redis fail");
 
-        IOException ex = Assertions.assertThrows(IOException.class, () -> service.save(request));
-        Assertions.assertTrue(ex.getMessage().contains("redis down") || ex.getMessage().contains("Nacos"));
-        Assertions.assertEquals("true", service.get("chatbot", "enabled").getConfigValue());
+        AdminConfigResponseDTO saved = service.save(request);
+        Assertions.assertTrue(saved.getNacosPublished());
+        Assertions.assertTrue(saved.getNotificationPending());
+        Assertions.assertEquals("false", service.get("chatbot", "enabled").getConfigValue());
     }
 
     @Test
@@ -127,6 +130,29 @@ class PlatformConfigServiceTest {
         Assertions.assertEquals(16, saved.getContentHash().length());
         Assertions.assertTrue(saved.getNacosPublished());
         Assertions.assertEquals("nacos", saved.getSource());
+    }
+
+    @Test
+    void save_should_reject_stale_content_hash() throws Exception {
+        PlatformConfigService service = new PlatformConfigService();
+        NacosConfigSyncService nacos = org.mockito.Mockito.mock(NacosConfigSyncService.class);
+        org.mockito.Mockito.when(nacos.publish(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        wirePublishDeps(service, nacos, okNotifier());
+        service.afterPropertiesSet();
+
+        String staleHash = service.get("chatbot", "enabled").getContentHash();
+        AdminConfigRequestDTO first = new AdminConfigRequestDTO();
+        first.setNamespace("chatbot");
+        first.setConfigKey("enabled");
+        first.setConfigValue("false");
+        service.save(first);
+
+        AdminConfigRequestDTO stale = new AdminConfigRequestDTO();
+        stale.setNamespace("chatbot");
+        stale.setConfigKey("enabled");
+        stale.setConfigValue("true");
+        stale.setExpectedContentHash(staleHash);
+        Assertions.assertThrows(IOException.class, () -> service.save(stale));
     }
 
     @Test

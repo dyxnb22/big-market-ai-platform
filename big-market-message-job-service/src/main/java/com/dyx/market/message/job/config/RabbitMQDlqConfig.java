@@ -51,6 +51,9 @@ public class RabbitMQDlqConfig {
     @Value("${job.dlq-replay.max-consume-failures:5}")
     private int maxConsumeFailures;
 
+    @Value("${job.dlq-replay.persist-failure-backoff-ms:2000}")
+    private long persistFailureBackoffMs;
+
     @Bean
     public DirectExchange dlxExchange() {
         return new DirectExchange(DLX, true, false);
@@ -131,13 +134,14 @@ public class RabbitMQDlqConfig {
         } catch (Exception e) {
             // The database is the audit/replay hand-off. Until it accepts the row,
             // retain the only durable copy in RabbitMQ instead of rejecting it.
+            sleepBeforeRequeue();
             try {
                 channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
             } catch (Exception nackEx) {
                 log.error("[DLQ] failed to requeue message queue:{}", originalQueue, nackEx);
             }
-            log.error("[DLQ] persistence failed; message requeued queue:{} businessMessageId:{}",
-                    originalQueue, businessMessageId, e);
+            log.error("[DLQ] persistence failed; message requeued queue:{} businessMessageId:{} payloadLength:{}",
+                    originalQueue, businessMessageId, message.getBody().length, e);
         } finally {
             dbRouter.clear();
         }
@@ -179,8 +183,20 @@ public class RabbitMQDlqConfig {
                 log.warn("[DLQ] duplicate dead-letter ignored messageId:{} queue:{}", messageId, originalQueue);
             }
         } catch (Exception e) {
-            log.error("[DLQ] failed to persist dead-letter queue:{} payload:{}", originalQueue, payload, e);
+            log.error("[DLQ] failed to persist dead-letter queue:{} payloadLength:{}", originalQueue, payload.length(), e);
             throw e;
+        }
+    }
+
+    private void sleepBeforeRequeue() {
+        long backoff = Math.max(0L, Math.min(persistFailureBackoffMs, 10_000L));
+        if (backoff == 0L) {
+            return;
+        }
+        try {
+            Thread.sleep(backoff);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
         }
     }
 

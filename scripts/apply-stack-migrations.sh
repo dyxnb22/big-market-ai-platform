@@ -14,6 +14,14 @@ echo "=== Stack migrations ==="
 ./scripts/apply-reconcile-ddl.sh
 ./scripts/apply-xxl-job-seeds.sh
 
+BOUNDED_RETRY_SQL="$ROOT/docs/dev-ops/mysql/sql/z-bounded-retry-states.sql"
+if [ ! -f "$BOUNDED_RETRY_SQL" ]; then
+  echo "FAIL: bounded-retry migration SQL missing: $BOUNDED_RETRY_SQL" >&2
+  exit 1
+fi
+docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$BOUNDED_RETRY_SQL"
+echo "Bounded retry-state migration applied (V20260719__bounded_retry_states)."
+
 NACOS_PLATFORM_SQL="$ROOT/docs/dev-ops/mysql/sql/z-nacos-platform-config.sql"
 if [ ! -f "$NACOS_PLATFORM_SQL" ]; then
   echo "FAIL: Nacos platform seed SQL missing: $NACOS_PLATFORM_SQL" >&2
@@ -106,6 +114,15 @@ mysql_query() {
 }
 
 for schema in big_market_01 big_market_02; do
+  task_retry_columns=$(mysql_query "SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema='${schema}' AND table_name='task'
+      AND column_name IN ('retry_count','next_retry_time','last_error');")
+  if [ "${task_retry_columns:-0}" != "3" ]; then
+    echo "FAIL: ${schema}.task bounded retry columns incomplete" >&2
+    exit 1
+  fi
+  echo "  OK  ${schema}.task bounded retry columns"
+
   col=$(mysql_query "SELECT COUNT(*) FROM information_schema.columns
     WHERE table_schema='${schema}' AND table_name='chat_credit_session' AND column_name='deduct_state';")
   if [ "${col:-0}" != "1" ]; then
@@ -113,6 +130,15 @@ for schema in big_market_01 big_market_02; do
     exit 1
   fi
   echo "  OK  ${schema}.chat_credit_session.deduct_state"
+
+  chat_retry_columns=$(mysql_query "SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema='${schema}' AND table_name='chat_credit_session'
+      AND column_name IN ('last_error','next_retry_time');")
+  if [ "${chat_retry_columns:-0}" != "2" ]; then
+    echo "FAIL: ${schema}.chat_credit_session bounded retry columns incomplete" >&2
+    exit 1
+  fi
+  echo "  OK  ${schema}.chat_credit_session bounded retry columns"
 
   quota_ledger_count=$(mysql_query "SELECT COUNT(*) FROM information_schema.tables
     WHERE table_schema='${schema}'
@@ -124,6 +150,14 @@ for schema in big_market_01 big_market_02; do
   fi
   echo "  OK  ${schema}.raffle_quota_decrement_ledger_000..003"
 done
+
+migration_count=$(mysql_query "SELECT COUNT(*) FROM big_market.schema_migration
+  WHERE version='V20260719__bounded_retry_states';")
+if [ "${migration_count:-0}" != "1" ]; then
+  echo "FAIL: bounded retry-state migration ledger entry missing" >&2
+  exit 1
+fi
+echo "  OK  schema_migration V20260719__bounded_retry_states"
 
 for table in strategy_award_stock_decrement_ledger activity_sku_stock_decrement_ledger activity_sku_stock_restore_ledger; do
   cnt=$(mysql_query "SELECT COUNT(*) FROM information_schema.tables

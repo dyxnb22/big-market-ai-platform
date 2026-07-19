@@ -183,6 +183,22 @@ public class StrategyAwardCacheSupportTest {
     }
 
     @Test
+    public void updateStrategyAwardStockOnce_lostReservedCas_doesNotDecrementStock() {
+        StrategyAwardStockKeyVO stockKey = buildReservation();
+        when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);
+        when(strategyAwardStockDecrementLedgerDao.queryByReservationId(ORDER_ID))
+                .thenReturn(StrategyAwardStockDecrementLedger.builder()
+                        .reservationId(ORDER_ID).strategyId(STRATEGY_ID).awardId(AWARD_ID)
+                        .status("reserved").build());
+        when(strategyAwardStockDecrementLedgerDao.updateStatusApplied(ORDER_ID)).thenReturn(0);
+
+        support.updateStrategyAwardStockOnce(stockKey);
+
+        verify(strategyAwardStockDecrementLedgerDao).updateStatusApplied(ORDER_ID);
+        verify(strategyAwardDao, never()).updateStrategyAwardStock(any());
+    }
+
+    @Test
     public void updateStrategyAwardStockOnce_removes_dedupe_when_db_update_fails() {
         StrategyAwardStockKeyVO stockKey = buildReservation();
         when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);

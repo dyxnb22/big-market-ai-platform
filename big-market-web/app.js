@@ -1,6 +1,6 @@
 /**
  * 用户端主应用：登录门禁、转盘抽奖、签到兑换、AI 对话、用户中心。
- * 依赖：config.js → api-client.js；鉴权 Token 存 localStorage（CONFIG.AUTH_KEY）。
+ * 依赖：config.js → api-client.js；鉴权 Token 仅存 sessionStorage（CONFIG.AUTH_KEY）。
  */
 var auth = readAuth();
 var CHAT_KEY = "lucky-draw-chats-" + (auth.userId || "anon");

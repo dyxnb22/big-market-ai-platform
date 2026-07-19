@@ -6,16 +6,20 @@
 // ===== Auth =====
 function readAuth() {
   try {
-    var v = localStorage.getItem(CONFIG.AUTH_KEY);
+    // Tokens are session-scoped. Remove the old persistent copy instead of
+    // silently migrating it into a longer-lived browser session.
+    localStorage.removeItem(CONFIG.AUTH_KEY);
+    var v = sessionStorage.getItem(CONFIG.AUTH_KEY);
     return v ? JSON.parse(v) : {token: "", userId: ""};
   } catch (e) { return {token: "", userId: ""}; }
 }
 
 function saveAuth(token, userId) {
-  localStorage.setItem(CONFIG.AUTH_KEY, JSON.stringify({token: token, userId: userId}));
+  sessionStorage.setItem(CONFIG.AUTH_KEY, JSON.stringify({token: token, userId: userId}));
 }
 
 function clearAuth() {
+  sessionStorage.removeItem(CONFIG.AUTH_KEY);
   localStorage.removeItem(CONFIG.AUTH_KEY);
 }
 

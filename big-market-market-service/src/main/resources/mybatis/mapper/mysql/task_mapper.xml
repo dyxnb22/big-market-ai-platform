@@ -9,6 +9,9 @@
         <result column="message_id" property="messageId"/>
         <result column="message" property="message"/>
         <result column="state" property="state"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="next_retry_time" property="nextRetryTime"/>
+        <result column="last_error" property="lastError"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
@@ -24,22 +27,45 @@
     <update id="updateTaskSendMessageCompleted"
             parameterType="com.dyx.market.infrastructure.dao.po.Task">
         update task
-        set state = 'completed', update_time = now()
+        set state = 'completed', retry_count = 0, next_retry_time = null, last_error = null, update_time = now()
         where user_id = #{userId} and message_id = #{messageId}
     </update>
 
     <update id="updateTaskSendMessageFail" parameterType="com.dyx.market.infrastructure.dao.po.Task">
         update task
-        set state = 'fail', update_time = now()
+        set retry_count = retry_count + 1,
+            state = case when retry_count + 1 &gt;= 8 then 'manual_pending' else 'fail' end,
+            next_retry_time = case when retry_count + 1 &gt;= 8 then null
+                                   else DATE_ADD(NOW(), INTERVAL LEAST(3600, POW(2, retry_count)) SECOND) end,
+            last_error = LEFT(#{lastError}, 512),
+            update_time = now()
         where user_id = #{userId} and message_id = #{messageId}
     </update>
 
     <select id="queryNoSendMessageTaskList" resultMap="dataMap">
-        select user_id, topic, message_id, message
+        select user_id, topic, message_id, message, retry_count, next_retry_time, last_error
         from task
-        where state = 'fail' or (state = 'create' and update_time &lt; DATE_SUB(NOW(), INTERVAL 6 SECOND))
+        where state in ('fail', 'create')
+          and retry_count &lt; 8
+          and (next_retry_time is null or next_retry_time &lt;= NOW())
+          and (state = 'fail' or update_time &lt; DATE_SUB(NOW(), INTERVAL 6 SECOND))
+        order by case when state = 'fail' then 0 else 1 end,
+                 coalesce(next_retry_time, update_time), create_time, id
         limit 10
-        -- Recommended index: ALTER TABLE task ADD INDEX idx_state_update (state, update_time);
+    </select>
+
+    <select id="countLegacyTaskBacklog" resultType="int">
+        select count(*) from task
+        where state in ('fail', 'create') and retry_count &lt; 8
+    </select>
+
+    <select id="queryOldestLegacyTaskAgeSeconds" resultType="int">
+        select TIMESTAMPDIFF(SECOND, min(create_time), NOW()) from task
+        where state in ('fail', 'create') and retry_count &lt; 8
+    </select>
+
+    <select id="countLegacyTaskPoisonRows" resultType="int">
+        select count(*) from task where state = 'manual_pending'
     </select>
 
 </mapper>

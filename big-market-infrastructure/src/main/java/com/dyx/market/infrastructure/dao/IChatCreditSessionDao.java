@@ -13,7 +13,9 @@ public interface IChatCreditSessionDao {
 
     int updateRefundState(ChatCreditSession session);
 
-    int updateRetryFailed(ChatCreditSession session);
+    int updateRetryFailed(@Param("session") ChatCreditSession session,
+                          @Param("maxRetry") int maxRetry,
+                          @Param("lastError") String lastError);
 
     ChatCreditSession queryByRequestId(@Param("requestId") String requestId);
 
@@ -38,6 +40,8 @@ public interface IChatCreditSessionDao {
     List<ChatCreditSession> queryPendingDeductions(@Param("maxRetry") int maxRetry, @Param("limit") int limit);
 
     int countPendingRefunds();
+
+    int countByRefundState(@Param("state") String state);
 
     int countByDeductState(@Param("state") String state);
 }

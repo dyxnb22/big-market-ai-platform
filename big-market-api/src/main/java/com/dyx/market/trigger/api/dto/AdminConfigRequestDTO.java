@@ -22,4 +22,7 @@ public class AdminConfigRequestDTO implements Serializable {
     /** 配置说明 */
     private String description;
 
+    /** 乐观并发控制：填写上一次读取到的全量配置哈希。 */
+    private String expectedContentHash;
+
 }

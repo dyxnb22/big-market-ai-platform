@@ -24,4 +24,10 @@ public interface ITaskDao {
 
     List<Task> queryNoSendMessageTaskList();
 
+    int countLegacyTaskBacklog();
+
+    Integer queryOldestLegacyTaskAgeSeconds();
+
+    int countLegacyTaskPoisonRows();
+
 }

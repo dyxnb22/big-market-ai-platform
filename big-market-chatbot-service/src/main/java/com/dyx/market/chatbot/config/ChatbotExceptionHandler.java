@@ -5,7 +5,10 @@ import com.dyx.market.trigger.api.dto.ChatbotAskResponseDTO;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import com.dyx.market.trigger.api.response.Response;
+import com.dyx.market.types.web.ResponseHttpStatusMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
@@ -36,27 +39,39 @@ public class ChatbotExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     @SuppressWarnings("java:S1452")
-    public Response<?> handleAppException(AppException e, WebRequest request) {
+    public ResponseEntity<?> handleAppException(AppException e, WebRequest request) {
         log.warn("Chatbot business error code:{} info:{}", e.getCode(), e.getInfo());
         if (isAskEndpoint(request)) {
             String token = extractAuthorizationToken(request);
             ChatbotAskResponseDTO errorData = chatbotErrorResponseSupport.buildErrorData(e, token);
-            return Response.<ChatbotAskResponseDTO>builder()
+            Response<ChatbotAskResponseDTO> body = Response.<ChatbotAskResponseDTO>builder()
                     .code(e.getCode())
                     .info(e.getInfo())
                     .data(errorData)
                     .build();
+            return ResponseEntity.status(ResponseHttpStatusMapper.toHttpStatus(e.getCode())).body(body);
         }
-        return Response.<Void>builder().code(e.getCode()).info(e.getInfo()).build();
+        Response<Void> body = Response.<Void>builder().code(e.getCode()).info(e.getInfo()).build();
+        return ResponseEntity.status(ResponseHttpStatusMapper.toHttpStatus(e.getCode())).body(body);
     }
 
     @ExceptionHandler(Exception.class)
-    public Response<Void> handleException(Exception e) {
+    public ResponseEntity<Response<Void>> handleException(Exception e) {
         log.error("Chatbot system error", e);
-        return Response.<Void>builder()
+        Response<Void> body = Response.<Void>builder()
                 .code(ResponseCode.UN_ERROR.getCode())
                 .info(ResponseCode.UN_ERROR.getInfo())
                 .build();
+        return ResponseEntity.status(ResponseHttpStatusMapper.toHttpStatus(body.getCode())).body(body);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Response<Void>> handleValidationException(MethodArgumentNotValidException e) {
+        Response<Void> body = Response.<Void>builder()
+                .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
+                .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
+                .build();
+        return ResponseEntity.status(ResponseHttpStatusMapper.toHttpStatus(body.getCode())).body(body);
     }
 
     private boolean isAskEndpoint(WebRequest request) {

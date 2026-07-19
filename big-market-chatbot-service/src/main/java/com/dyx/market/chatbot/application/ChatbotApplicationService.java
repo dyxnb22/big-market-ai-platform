@@ -18,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 
 import jakarta.annotation.Resource;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -36,6 +38,8 @@ public class ChatbotApplicationService {
     private static final String DEFAULT_API_KEY = "";
     private static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
     private static final String DEFAULT_MODEL = "deepseek-chat";
+    private static final int MAX_MESSAGE_LENGTH = 4000;
+    private static final int MAX_REQUEST_ID_LENGTH = 128;
     /** Local canned replies are a free learning fallback; only a configured remote provider may charge. */
     private static final int DEFAULT_COST_PER_ASK = 0;
 
@@ -52,12 +56,18 @@ public class ChatbotApplicationService {
     @Resource
     private RestTemplate restTemplate;
 
+    /** Static deployment allowlist; Nacos may choose a provider but cannot add a new host. */
+    @org.springframework.beans.factory.annotation.Value("${chatbot.remote.allowed-hosts:api.deepseek.com}")
+    private String allowedRemoteHosts;
+
     /**
      * AI 对话主流程：校验开关与参数 → 扣减积分 → 调用 AI → 返回回答。
      * <p>AI 调用失败时按 requestId 退还已扣积分；退款 HTTP 失败则标记 pending 由补偿 Job 处理。</p>
      */
     public ChatbotAskResponseDTO ask(ChatbotAskRequestDTO request, String token) {
-        if (null == request || StringUtils.isBlank(request.getMessage())) {
+        if (null == request || StringUtils.isBlank(request.getMessage())
+                || StringUtils.length(request.getMessage()) > MAX_MESSAGE_LENGTH
+                || StringUtils.length(request.getRequestId()) > MAX_REQUEST_ID_LENGTH) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
         ChatbotRuntimeConfig runtimeConfig = ChatbotRuntimeConfig.from(
@@ -252,7 +262,8 @@ public class ChatbotApplicationService {
 
     @SuppressWarnings("unchecked")
     private String callDeepSeek(String userMessage, String apiKey, String baseUrl, String model) {
-        String url = baseUrl.replaceAll("/$", "") + "/v1/chat/completions";
+        String validatedBaseUrl = validateRemoteBaseUrl(baseUrl);
+        String url = validatedBaseUrl + "/v1/chat/completions";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -281,6 +292,39 @@ public class ChatbotApplicationService {
             }
         }
         throw new AppException(ResponseCode.UN_ERROR.getCode(), "DeepSeek 返回异常: " + response.getStatusCode());
+    }
+
+    private String validateRemoteBaseUrl(String baseUrl) {
+        if (StringUtils.isBlank(baseUrl)) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "远程 AI 地址不能为空");
+        }
+        try {
+            URI uri = new URI(baseUrl.trim());
+            String host = uri.getHost();
+            if (!"https".equalsIgnoreCase(uri.getScheme())
+                    || StringUtils.isBlank(host)
+                    || uri.getUserInfo() != null
+                    || uri.getQuery() != null
+                    || uri.getFragment() != null
+                    || (uri.getPort() != -1 && uri.getPort() != 443)
+                    || (uri.getPath() != null && !uri.getPath().isEmpty() && !"/".equals(uri.getPath()))
+                    || !isAllowedRemoteHost(host)) {
+                throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "远程 AI 地址不在 HTTPS 允许列表中");
+            }
+            return "https://" + host.toLowerCase(Locale.ROOT);
+        } catch (URISyntaxException e) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), "远程 AI 地址格式非法");
+        }
+    }
+
+    private boolean isAllowedRemoteHost(String host) {
+        if (StringUtils.isBlank(allowedRemoteHosts)) {
+            return false;
+        }
+        return Arrays.stream(allowedRemoteHosts.split(","))
+                .map(String::trim)
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .anyMatch(value -> value.equals(host.toLowerCase(Locale.ROOT)));
     }
 
     private String localFallback(String userMessage) {

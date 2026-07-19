@@ -78,10 +78,15 @@ public class ChatRefundReconcileJob {
                     session.getUserId(), session.getRequestId(), session.getRetryCount(), e);
             try {
                 dbRouter.doRouter(session.getUserId());
-                chatCreditSessionDao.updateRetryFailed(session);
+                chatCreditSessionDao.updateRetryFailed(session, maxRetries, compactError(e));
             } finally {
                 dbRouter.clear();
             }
         }
+    }
+
+    private String compactError(Exception e) {
+        String message = e == null ? "unknown" : e.getClass().getSimpleName() + ": " + e.getMessage();
+        return message.length() <= 512 ? message : message.substring(0, 512);
     }
 }

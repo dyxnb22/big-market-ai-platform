@@ -37,7 +37,7 @@ public class CreditAdjustSuccessConsumer {
     ))
     public void listener(String message) {
         try {
-            log.info("监听积分账户调整成功消息，进行交易商品发货 topic: {} message: {}", topic, message);
+            log.info("监听积分账户调整成功消息，进行交易商品发货 topic: {} payloadLength: {}", topic, message.length());
             BaseEvent.EventMessage<CreditAdjustSuccessMessageEvent.CreditAdjustSuccessMessage> eventMessage = JSON.parseObject(message, new TypeReference<BaseEvent.EventMessage<CreditAdjustSuccessMessageEvent.CreditAdjustSuccessMessage>>() {
             }.getType());
             CreditAdjustSuccessMessageEvent.CreditAdjustSuccessMessage creditAdjustSuccessMessage = eventMessage.getData();
@@ -49,12 +49,12 @@ public class CreditAdjustSuccessConsumer {
             accountQuotaWriteAdapter.updateOrder(deliveryOrderEntity);
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
-                log.warn("监听积分账户调整成功消息，进行交易商品发货，消费重复 topic: {} message: {}", topic, message, e);
+                log.warn("监听积分账户调整成功消息，进行交易商品发货，消费重复 topic: {} payloadLength: {}", topic, message.length(), e);
                 return;
             }
             throw e;
         } catch (Exception e) {
-            log.error("监听积分账户调整成功消息，进行交易商品发货失败 topic: {} message: {}", topic, message, e);
+            log.error("监听积分账户调整成功消息，进行交易商品发货失败 topic: {} payloadLength: {}", topic, message.length(), e);
             throw e;
         }
     }

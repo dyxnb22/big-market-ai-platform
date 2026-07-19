@@ -14,6 +14,8 @@ app:
 
 chatbot:
   gateway-url: ${CHATBOT_GATEWAY_URL:http://127.0.0.1:8080}
+  remote:
+    allowed-hosts: ${CHATBOT_REMOTE_ALLOWED_HOSTS:api.deepseek.com}
 
 mini-db-router:
   jdbc:

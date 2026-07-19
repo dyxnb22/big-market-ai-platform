@@ -4,7 +4,7 @@
 
 本仓库是 Big Market 抽奖平台的完整微服务学习与作品集项目。系统以本地学习的最终架构形态呈现：网关路由、可独立部署的 Spring Boot **3.5** 服务（Java **17**）、Dubbo/Nacos 服务契约、RabbitMQ 消息处理、XXL-Job 定时任务、MySQL 持久化、Redis 缓存，以及 Prometheus/Grafana 可观测性。当前栈版本见 `docs/adr/2026-07-18-stack-upgrade.md` 与 `docs/LEARNING-FREEZE.md`。
 
-**就绪说明：** 当前 7 服务默认拓扑已通过 clean Maven、静态安全、Mapper/DDL、Compose 配置校验和完整 reuse acceptance（7 个应用健康、Web 200、Smoke 20/20、抽奖奖励/Chat refund E2E、Playwright 18 个用例连续两轮）；fresh 空卷和 secure overlay 尚未运行，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`。
+**就绪说明：** 当前 7 服务默认拓扑已通过 clean Maven、静态安全、Mapper/DDL、Compose 配置校验和完整 reuse acceptance（7 个应用健康、Web 200、Smoke 20/20、抽奖奖励/Chat refund E2E、共享演示账号单 worker 下 Playwright 18 个用例连续两轮）；fresh 空卷和 secure overlay 尚未运行，结论为“有条件冻结”。当前证据与限制见 `docs/LEARNING-FREEZE.md`。
 
 本文档是当前架构的 authoritative entry point（权威入口文档）。补充学习材料位于 `docs/learning/`。
 
@@ -110,7 +110,7 @@ RabbitMQ Topic 承载奖品、返利、积分调整与库存归零等事件。XX
 
 服务边界矩阵见 `docs/microservices-dao-ownership.md`（**逻辑约定**，非编译器强制；边界靠 ports/adapters + ArchUnit 门禁）。DDL 与 Outbox 学习说明见 `docs/data-and-outbox.md` 与 `docs/sql/`。`docs/sql/` 下的 SQL 是需手动执行的学习参考；`docs/dev-ops/mysql/sql/` 会在 fresh MySQL 卷初始化时由 Docker 自动执行。旧卷不会重跑 init SQL，需执行 `./scripts/apply-stack-migrations.sh`。
 
-- Admin 平台配置：Nacos 是唯一权威来源；保存只有在 Nacos publish 成功后才返回成功。服务以完整 DataId 快照刷新，删除、空值和非法运行时开关都回到安全默认值。
+- Admin 平台配置：Nacos 是唯一权威来源；保存只有在 Nacos publish 成功后才返回成功，并支持全量 content hash 乐观并发控制。服务以完整 DataId 快照刷新，删除、空值和非法运行时开关都回到安全默认值；Redis 通知失败不会回滚已提交的 Nacos 配置。
 
 ## 本地完成标准
 

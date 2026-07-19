@@ -24,4 +24,6 @@ public interface ITaskService {
 
     void updateTaskSendMessageFail(String userId, String messageId);
 
+    void updateTaskSendMessageFail(String userId, String messageId, String errorMessage);
+
 }

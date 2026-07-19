@@ -50,6 +50,15 @@ Previous baseline was Java 8 + Spring Boot 2.7.12 + Spring Framework 5.3.x, with
 - `validate-microservices-stack.sh --skip-build` mutates the learning DB; not read-only.
 - Fresh-volume acceptance remains opt-in and destructive.
 
+### Follow-up: 2026-07-19 remediation
+
+The original upgrade decision above records the pre-remediation Redis
+fan-out behavior. The current configuration contract is superseded by
+`docs/audit/2026-07-19-remediation.md`: Nacos publish is the commit point,
+Redis fan-out is best-effort with bounded background retry, and Admin exposes
+`notificationPending` when Nacos is committed but notification is not yet
+confirmed. This historical ADR is intentionally not rewritten elsewhere.
+
 ## Merge gate (satisfied)
 
 Reuse acceptance + `smoke-raffle-award-e2e.sh` + chat refund E2E were green on the merge source; the result is now in `main`. Fresh-volume and secure-overlay acceptance remain separate gates.

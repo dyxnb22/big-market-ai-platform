@@ -38,7 +38,7 @@ public class SendAwardConsumer {
     ))
     public void listener(String message) {
         try {
-            log.info("监听用户奖品发送消息，发奖开始 topic: {} message: {}", topic, message);
+            log.info("监听用户奖品发送消息，发奖开始 topic: {} payloadLength: {}", topic, message.length());
             BaseEvent.EventMessage<SendAwardMessageEvent.SendAwardMessage> eventMessage = JSON.parseObject(message, new TypeReference<BaseEvent.EventMessage<SendAwardMessageEvent.SendAwardMessage>>() {
             }.getType());
             SendAwardMessageEvent.SendAwardMessage sendAwardMessage = eventMessage.getData();
@@ -51,15 +51,15 @@ public class SendAwardConsumer {
             distributeAwardEntity.setAwardConfig(sendAwardMessage.getAwardConfig());
             awardDispatchAdapter.distributeAward(distributeAwardEntity);
 
-            log.info("监听用户奖品发送消息，发奖完成 topic: {} message: {}", topic, message);
+            log.info("监听用户奖品发送消息，发奖完成 topic: {} payloadLength: {}", topic, message.length());
         } catch (AppException e) {
             if (ResponseCode.INDEX_DUP.getCode().equals(e.getCode())) {
-                log.warn("监听用户奖品发送消息，消费重复 topic: {} message: {}", topic, message, e);
+                log.warn("监听用户奖品发送消息，消费重复 topic: {} payloadLength: {}", topic, message.length(), e);
                 return;
             }
             throw e;
         } catch (Exception e) {
-            log.error("监听用户奖品发送消息，消费失败 topic: {} message: {}", topic, message, e);
+            log.error("监听用户奖品发送消息，消费失败 topic: {} payloadLength: {}", topic, message.length(), e);
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             }

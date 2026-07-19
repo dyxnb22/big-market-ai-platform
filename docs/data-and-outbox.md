@@ -25,6 +25,9 @@ Duplicate keys must not reset
 Refunds require a deduction session; public refund HTTP is removed — chatbot uses internal token route.
 Credit out_business_no: `chat_{userId}_{requestId}` / `chat_refund_{userId}_{requestId}`.
 Refund compensation: `refund_state` may transition `none|pending → refunding → refunded`.
+Retryable failures use `next_retry_time` with bounded exponential backoff; after the configured
+limit the session enters `manual_pending` with a truncated `last_error` instead of remaining
+indefinitely in an automatic retry loop.
 
 Exchange (NR-007): `SkuProductShopCartRequestDTO.requestId` is required; `out_business_no`
 is derived as `{userId}_{sku}_{requestId}` (no millisecond suffix).
@@ -93,6 +96,15 @@ and related events. Learning DDL references describe per-domain outbox tables:
 These SQL files show table shape, shard key, unique key, state machine, and
 retry indexes for local study.
 
+The shared `task` table has the same bounded-retry contract: `fail` rows are
+eligible only when `next_retry_time <= NOW()`, retry delay is capped, and the
+hard limit moves poison rows to `manual_pending`. `retry_count`,
+`next_retry_time`, and `last_error` make backlog, age, and manual-review gauges
+queryable without logging business payloads. The reusable migration is
+`docs/sql/migrations/V20260719__bounded-retry-states.sql`; old Docker volumes
+must run `./scripts/apply-stack-migrations.sh` because MySQL init scripts are
+not replayed.
+
 ## Stock flush
 
 Strategy award stock uses `reservationId` per queue event. Activity SKU stock uses
@@ -152,6 +164,9 @@ Continuation failures must not mark `done`.
 | `send_award` | `send_award.dlq` |
 
 Persistence table: `mq_dead_letter` (`docs/sql/mq-dead-letter.sql`). Auto-replay selects `state='reviewed'` only.
+If persistence fails, the consumer applies bounded delay before requeueing to
+avoid a tight retry loop. Listener logs record message identifiers and payload
+length, never the full money-effect payload.
 
 ## Duplicate Handling
 
@@ -161,7 +176,7 @@ The project prevents duplicate effects through:
 - Duplicate-key handling in repositories and consumers.
 - Redisson locks around account and task operations.
 - State fields such as `create`, `completed`, `fail`, `pending`, `dispatched`,
-  and `failed`.
+  `failed`, and `manual_pending`; retry timing and error metadata are bounded.
 - Explicit refund/rollback operations for chatbot credit and raffle quota.
 
 Chat debit `CREDIT_CREATE` tasks use a continuation after remote reconciliation:

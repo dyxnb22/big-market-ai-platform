@@ -33,6 +33,9 @@ public class AdminConfigResponseDTO implements Serializable {
     /** 本次保存是否已成功发布到 Nacos（未启用 sync 时为 false） */
     private Boolean nacosPublished;
 
+    /** Nacos 已提交但 Redis fan-out 尚未确认时为 true；Nacos listener 是持久化兜底。 */
+    private Boolean notificationPending;
+
     /** 权威来源：local | nacos */
     private String source;
 

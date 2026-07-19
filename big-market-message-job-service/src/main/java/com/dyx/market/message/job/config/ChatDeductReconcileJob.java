@@ -91,12 +91,17 @@ public class ChatDeductReconcileJob {
         } catch (Exception e) {
             try {
                 dbRouter.doRouter(session.getUserId());
-                chatCreditSessionDao.updateRetryFailed(session);
+                chatCreditSessionDao.updateRetryFailed(session, maxRetries, compactError(e));
             } finally {
                 dbRouter.clear();
             }
             log.warn("[ChatDeductReconcileJob] probe inconclusive userId:{} requestId:{} retry:{}",
                     session.getUserId(), session.getRequestId(), session.getRetryCount(), e);
         }
+    }
+
+    private String compactError(Exception e) {
+        String message = e == null ? "unknown" : e.getClass().getSimpleName() + ": " + e.getMessage();
+        return message.length() <= 512 ? message : message.substring(0, 512);
     }
 }

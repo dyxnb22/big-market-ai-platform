@@ -22,8 +22,14 @@ public class Task {
     private String messageId;
     /** 消息主体 */
     private String message;
-    /** 任务状态；create-创建、completed-完成、fail-失败 */
+    /** 任务状态；create-创建、completed-完成、fail-可重试、manual_pending-人工处理 */
     private String state;
+    /** 已经失败的发送次数 */
+    private Integer retryCount;
+    /** 下一次允许重试的时间 */
+    private Date nextRetryTime;
+    /** 最近一次失败原因（不保存完整消息体） */
+    private String lastError;
     /** 创建时间 */
     private Date createTime;
     /** 更新时间 */
