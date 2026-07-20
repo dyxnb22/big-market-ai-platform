@@ -31,7 +31,8 @@ Code/config/SQL win. Update docs in the same change set when behavior or **readi
 - Rewrite all of `docs/learning/` for a small fix.
 - Do not claim runtime closed-loop verification from a clean build or static gates alone; record Docker/acceptance limitations explicitly.
 - Do not leave active instructions that mention retired service topology or embedded/remote Provider switches.
-- Treat `docs/archive/` as current truth.
+- Treat `docs/LEARNING-FREEZE.md`, `docs/MICROSERVICES.md`, and the current
+  learning guides as the source of truth.
 
 ## Style
 

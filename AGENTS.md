@@ -12,18 +12,17 @@ Java microservices **marketing raffle** learning/portfolio project: gateway, aut
 | --- | --- |
 | `docs/LEARNING-FREEZE.md` | **Current readiness, verified commands, limits, freeze constraints** |
 | `docs/MICROSERVICES.md` | Architecture entry, service ports, core flows |
-| `docs/audit/2026-07-17-learning-freeze-audit.md` | Historical pre-full-acceptance audit evidence; current boundary is in `docs/LEARNING-FREEZE.md` |
 | `docs/data-and-outbox.md` | Outbox, idempotency keys, duplicate handling |
 | `docs/microservices-dao-ownership.md` | Table/DAO ownership (logical; not hard-enforced) |
 | `docs/operations-checklist.md` | Local ops checks |
 | `docs/learning/archive/risky-changes-remediation.md` | Money-path change constraints |
-| `docs/learning/` | Learning guides (01–19); prefer final-state docs over `docs/archive/` |
+| `docs/learning/` | Learning guides (01–19); use the final-state guides and current constraints |
 
 **Doc vs code:** prefer **code + config + Docker init SQL**. If docs claim “stable / completed closed loop” but code cannot boot, treat docs as stale and fix code first (or update docs).
 
-## Current readiness (2026-07-19)
+## Current readiness (2026-07-20)
 
-- Result: **conditional learning freeze** on **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3**. The final seven-service topology passes clean Maven verification, Context tests, Mapper/DDL, Compose configuration, full reuse acceptance, raffle-award E2E, chat-refund E2E, and Playwright (18 tests, two consecutive runs) on `main`.
+- Result: **conditional learning freeze** on **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3**. `main@03a9a30` passes clean Maven verification, Context tests, Mapper/DDL, Compose/Prometheus/security gates, full reuse acceptance, raffle-award/account closure, chat-refund E2E, and Playwright (18 tests, two consecutive runs).
 - Middleware defaults: MySQL 8.4.5, Redis 7.4.9, RabbitMQ 4.3.2, Nacos 3.2.3, XXL-Job 2.5.0. See `docs/adr/2026-07-18-stack-upgrade.md`.
 - Fresh volumes and full secure overlay still require separate Docker runtime verification; production HA/capacity/security are out of scope.
 - Do not infer current readiness from BM numbers or historical PASS records. Re-run the target working tree and preserve the verified/unverified boundary.

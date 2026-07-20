@@ -1,14 +1,14 @@
 # Interview Walkthrough
 
-Portfolio talking tracks for the Big Market AI Platform. Prefer **code + acceptance evidence** over archive docs (`docs/archive/` is historical only).
+Portfolio talking tracks for the Big Market AI Platform. Prefer **code + acceptance evidence** and the current-state docs.
 
 ## 5 minutes — elevator
 
 1. **What:** Learning/portfolio marketing raffle platform — Spring Boot microservices with a final 7-service runtime (gateway, auth, admin, market, chatbot, message-job, account); strategy and rebate stay inside market, while award credit dispatch stays in message-job.
 2. **Why interesting:** Shared domain/infrastructure kernels with independent launchers; money-like paths use idempotency keys, outbox/`task` rows, and reconcile jobs.
-3. **Honest readiness:** the current remediation worktree passes clean Maven, static gates, and full reuse acceptance (including raffle award, chat refund, and two Playwright runs); fresh and secure runtime modes remain unverified.
+3. **Honest readiness:** `main@03a9a30` passes clean Maven, static gates, and full reuse acceptance (including raffle award/account closure, chat refund, and two Playwright runs); fresh and secure runtime modes remain unverified.
 4. **Frontend:** Static `big-market-web` (HTML/JS) via gateway `:8080`, not React.
-5. **Pointer:** Current baseline `docs/LEARNING-FREEZE.md`; remediation map `docs/audit/2026-07-19-remediation.md`; architecture `docs/MICROSERVICES.md`; historical pre-acceptance evidence `docs/audit/2026-07-17-learning-freeze-audit.md`.
+5. **Pointer:** Current baseline `docs/LEARNING-FREEZE.md`; architecture `docs/MICROSERVICES.md`; detailed consistency notes `docs/data-and-outbox.md`.
 
 ## 15 minutes — architecture & flows
 

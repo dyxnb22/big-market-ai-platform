@@ -1,13 +1,13 @@
 # Big Market 学习冻结基线
 
-最后更新：2026-07-19。
+最后更新：2026-07-20。
 
 ## 结论
 
-**有条件冻结（栈已升级）。** 当前修复工作树在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、核心 Docker smoke，以及抽奖发奖 / chat refund E2E；本轮 `./scripts/acceptance.sh --reuse --start-stack` 已通过全部门禁（含共享演示账号使用单 worker 执行的 Playwright 18 个用例连续两轮）。fresh 空卷和完整 secure overlay 尚未执行，因此不能写成“全环境已验证”或“生产就绪”。
+**有条件冻结（栈已升级）。** 当前 `main` 提交 `03a9a30` 在 **Java 17 + Spring Boot 3.5.16 + Spring Cloud 2025.0.3** 上完成 clean Maven 构建、Context、Mapper/DDL、Compose 配置校验、Prometheus 与安全门禁，以及抽奖发奖 / chat refund E2E；2026-07-20 执行 `./scripts/acceptance.sh --reuse` 已通过全部门禁（含共享演示账号使用单 worker 执行的 Playwright 18 个用例连续两轮）。fresh 空卷和完整 secure overlay 尚未执行，因此不能写成“全环境已验证”或“生产就绪”。
 
 本仓库冻结的是一套可复现、可讲解的本地微服务学习样本，不是生产发布基线。
-栈升级决策见 docs/adr/2026-07-18-stack-upgrade.md；历史证据见 docs/audit/2026-07-17-learning-freeze-audit.md。
+栈升级决策见 docs/adr/2026-07-18-stack-upgrade.md；当前验证边界以本文为准。
 
 ## 当前最终拓扑（核心 Docker smoke + 钱路径 E2E 已通过）
 
@@ -35,7 +35,7 @@ user_award_record.award_state=completed 表示发奖已被持久化接管，不�
 
 ## 当前证据
 
-| 项目 | 2026-07-19（upgrade/java17-boot3）结果 |
+| 项目 | 2026-07-20（main@03a9a30）结果 |
 | --- | --- |
 | Maven | 19 个 reactor 模块 `mvn clean verify` 通过（Boot 3.5.16） |
 | Mapper/DDL 门禁 | 通过 |
@@ -44,7 +44,7 @@ user_award_record.award_state=completed 表示发奖已被持久化接管，不�
 | 核心 Docker smoke | 健康检查与路由 smoke 通过（偶发 chatbot AI 配置残留时 ask 可能非 0000） |
 | 抽奖发奖 E2E | `smoke-raffle-award-e2e.sh` PASSED |
 | Chat refund E2E | `smoke-chat-refund-e2e.sh` PASSED |
-| 完整 acceptance | `./scripts/acceptance.sh --reuse --start-stack` 通过；Playwright 18/18，单 worker 连续两轮 |
+| 完整 acceptance | `./scripts/acceptance.sh --reuse` 通过；Playwright 18/18，单 worker 连续两轮 |
 
 静态门禁不能替代 fresh、secure 和业务状态验收。
 
@@ -98,4 +98,4 @@ secure overlay 需要非默认 JWT、内部 RPC、管理、XXL、MySQL 和 Rabbi
 - 没有生产灰度、容量、HA、灾备或真实外部奖品履约证明。
 - Dubbo Hessian 仍保留窄范围 `--add-opens`（见 Dockerfile.service / Surefire）；Nacos 3.x 学习栈关闭 namespace compatible mode；平台 DataId 以 empty 为 SDK 写入 SoT，admin 通过 JDBC fail-closed 确认并镜像 `public` twin。Nacos publish 是配置提交点，Redis fan-out 只作可重试通知；通知暂挂会返回 `notificationPending`，Nacos listener/启动读取负责最终收敛。
 
-本轮报告问题、代码落点、迁移与验证证据见 `docs/audit/2026-07-19-remediation.md`。
+代码落点、迁移、幂等和验证证据见本文、`docs/data-and-outbox.md` 与 `docs/operations-checklist.md`。

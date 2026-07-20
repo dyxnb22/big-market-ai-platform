@@ -46,7 +46,7 @@ assert_pattern_absent() {
   local label="$1" pattern="$2"
   shift 2
   local matches
-  matches=$(grep -RInE "$pattern" "$@" 2>/dev/null | grep -v '/target/' | grep -v '/docs/archive/' || true)
+  matches=$(grep -RInE "$pattern" "$@" 2>/dev/null | grep -v '/target/' || true)
   if [[ -z "$matches" ]]; then
     pass "$label"
   else
@@ -396,16 +396,15 @@ echo ""
 echo "── 6. Learning DDL stays under docs/sql/*.sql ──"
 
 # This section checks specifically for executable DDL-looking statements outside
-# docs/sql learning references and archive material.
+# docs/sql learning references.
 DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' \
   "$REPO_ROOT/docs" --include='*.sql' 2>/dev/null \
   | grep -v '/docs/sql/' \
-  | grep -v '/docs/archive/' \
   | grep -v '/docs/dev-ops/' \
   || true)
 
 if [[ -z "$DDL_VIOLATIONS" ]]; then
-  pass "No DDL outside docs/sql learning references (excluding archive)"
+  pass "No DDL outside docs/sql learning references"
 else
   fail "DDL statements found outside docs/sql learning references:"
   printf '%s\n' "$DDL_VIOLATIONS"
@@ -533,7 +532,6 @@ FINAL_STATE_FORBIDDEN_PATTERN="$(IFS='|'; echo \
 FINAL_STATE_MATCHES=$(grep -RInE "$FINAL_STATE_FORBIDDEN_PATTERN" \
   "$REPO_ROOT/README.md" "$REPO_ROOT/docs" "$REPO_ROOT/scripts" \
   --include='*.md' --include='*.sh' 2>/dev/null \
-  | grep -v '/docs/archive/' \
   | grep -v '/docs/dev-ops/' \
   || true)
 

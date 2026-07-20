@@ -1,6 +1,6 @@
 # Big Market 学习文档索引
 
-本目录是 Big Market 微服务项目的学习材料，基于 2026-07-19 `main` 分支的**有条件冻结**基线编写。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
+本目录是 Big Market 微服务项目的学习材料，基于 2026-07-20 `main@03a9a30` 的**有条件冻结**基线编写。先看 [`../LEARNING-FREEZE.md`](../LEARNING-FREEZE.md) 了解已验证与未验证边界。
 
 ## 权威源（避免重复维护）
 
@@ -13,7 +13,7 @@
 | 十步路径 + 完成标准 | [00-learning-guide.md](00-learning-guide.md) |
 | 可靠性约束 | [`../data-and-outbox.md`](../data-and-outbox.md) 与 [`../operations-checklist.md`](../operations-checklist.md) |
 
-**本目录文档均已译为中文。** 与代码冲突时以代码 / compose / SQL 为准。归档英文维护文档见 `archive/`。
+**本目录文档均已译为中文。** 与代码冲突时以代码 / compose / SQL 为准。
 
 ## 推荐学习顺序
 
@@ -54,7 +54,6 @@
 - [00-learning-guide.md](00-learning-guide.md)
 - [09-code-map.md](09-code-map.md)
 - [10-troubleshooting.md](10-troubleshooting.md)
-- [archive/](archive/)
 
 ## 项目核心信息
 

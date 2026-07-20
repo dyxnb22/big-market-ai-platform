@@ -1,6 +1,6 @@
 # Unused / optional dependency inventory (GOV-B07)
 
-Status as of 2026-07-19. These libraries appear in dependencyManagement or module POMs but are **not** required for the current default learning-freeze acceptance path (`acceptance.sh --reuse`).
+Status as of 2026-07-20 (`main@03a9a30`). These libraries appear in dependencyManagement or module POMs but are **not** required for the current default learning-freeze acceptance path (`acceptance.sh --reuse`).
 
 | Capability | Artifact | Current use | Action |
 | --- | --- | --- | --- |

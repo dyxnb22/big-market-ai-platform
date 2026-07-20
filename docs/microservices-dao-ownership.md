@@ -98,10 +98,10 @@ file with the Owner and the exact exception. At minimum, check:
 This checklist is **not** a claim that the shared infrastructure scan is
 strictly owner-scoped. Physical single-source Mapper XML remains deferred
 (BM-017 subset).
-Historical decision notes live in
-`docs/archive/microservices-historical-docs-index.md`.
+Decision notes are consolidated in `docs/MICROSERVICES.md` and
+`docs/LEARNING-FREEZE.md`.
 
 ## Cross-References
 
 - Current index: `docs/MICROSERVICES.md`
-- Historical summary: `docs/archive/microservices-history.md`
+- Readiness boundary: `docs/LEARNING-FREEZE.md`
