@@ -37,6 +37,7 @@ public class MarketCreditGatewayClient {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** 查询当前登录用户的积分余额；未登录时返回 0，不发起远程请求。 */
     public BigDecimal fetchCreditBalance(String token) {
         if (StringUtils.isBlank(token)) {
             return BigDecimal.ZERO;
@@ -47,6 +48,7 @@ public class MarketCreditGatewayClient {
         return parseBalance(resp);
     }
 
+    /** 按 requestId 扣减积分，重试必须复用同一 requestId。 */
     public BigDecimal deductCredit(String token, int amount, String requestId) {
         String url = baseUrl() + "/raffle/activity/chat_credit_deduct_by_token?amount=" + amount
                 + "&requestId=" + urlEncode(requestId);
@@ -54,6 +56,7 @@ public class MarketCreditGatewayClient {
         return parseBalance(resp);
     }
 
+    /** 通过内部路由按原始 requestId 发起一次幂等退款。 */
     public void refundCredit(String token, String originalRequestId) {
         String url = internalBaseUrl() + "/chat_credit_refund_by_token?originalRequestId="
                 + urlEncode(originalRequestId);
@@ -69,6 +72,7 @@ public class MarketCreditGatewayClient {
         }
     }
 
+    /** 远程退款失败时登记 pending，让 message-job 后续补偿。 */
     public void markRefundPending(String token, String requestId) {
         String url = internalBaseUrl() + "/chat_credit_mark_refund_pending_by_token?requestId="
                 + urlEncode(requestId);

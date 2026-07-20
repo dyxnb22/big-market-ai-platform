@@ -64,6 +64,12 @@ public class CreditPayDeliveryReconcileJob {
     @Resource
     private RedissonClient redissonClient;
 
+    /**
+     * 扫描积分已扣但额度订单仍未完成的悬挂订单。
+     *
+     * <p>处理顺序是先重试发货，超过阈值后认领补偿，再依次退款积分、恢复 SKU 库存、
+     * 标记订单失败；每一步都使用业务幂等键或持久化状态保护。</p>
+     */
     @Timed(value = "CreditPayDeliveryReconcileJob_DB1", description = "Credit pay delivery reconcile DB1")
     @XxlJob("CreditPayDeliveryReconcileJob_DB1")
     public void execDb01() {
@@ -161,6 +167,8 @@ public class CreditPayDeliveryReconcileJob {
     }
 
     private void completeCompensation(RaffleActivityOrder order) {
+        // 补偿必须按顺序推进：后一步成功前，前一步失败会让订单保持 compensating，
+        // 供下一轮 Job 从断点继续，避免“已退款但未恢复库存”被错误标记完成。
         if (!refundCreditOnce(order)) {
             return;
         }

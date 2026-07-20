@@ -31,6 +31,12 @@ public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter
     @DubboReference(version = "1.0", check = false)
     private IAccountQuotaService accountQuotaService;
 
+    /**
+     * 创建额度订单时，UNKNOWN 结果不能直接重试写入。
+     *
+     * <p>先按 outBusinessNo 查询远程订单，仍无法确认时才落 pending；这样可覆盖超时、
+     * 连接断开等“请求已到达但响应丢失”的场景。</p>
+     */
     @Override
     public UnpaidActivityOrderEntity createOrder(SkuRechargeEntity skuRechargeEntity) {
         AccountQuotaCreateOrderRequestDTO request = AccountQuotaCreateOrderRequestDTO.builder()
@@ -72,6 +78,10 @@ public class AccountRemoteQuotaWriteAdapter implements IAccountQuotaWriteAdapter
         throw new AppException(ResponseCode.UN_ERROR.getCode(), "远程额度订单写入失败，已记录待对账任务");
     }
 
+    /**
+     * 更新额度订单发货状态；失败后由 pending 对账任务继续重试。
+     * <p>远程接口按 outBusinessNo 幂等，因此重复发货不会重复增加额度。</p>
+     */
     @Override
     public void updateOrder(DeliveryOrderEntity deliveryOrderEntity) {
         AccountQuotaUpdateOrderRequestDTO request = AccountQuotaUpdateOrderRequestDTO.builder()

@@ -27,6 +27,7 @@ public class LocalCreditAwardTaskDispatchPort implements ICreditAwardTaskDispatc
     @Resource
     private ICreditAwardTaskDao creditAwardTaskDao;
 
+    /** 查询待派发积分奖任务并转换为领域实体。 */
     @Override
     public List<CreditAwardTaskEntity> queryPendingTasks() {
         List<CreditAwardTask> tasks = creditAwardTaskDao.queryPendingTasks();
@@ -37,11 +38,13 @@ public class LocalCreditAwardTaskDispatchPort implements ICreditAwardTaskDispatc
         return entities;
     }
 
+    /** 标记任务已派发；账户服务以 awardOrderId 做最终幂等保护。 */
     @Override
     public int updateDispatched(CreditAwardTaskEntity task) {
         return creditAwardTaskDao.updateDispatched(toPo(task));
     }
 
+    /** 记录派发失败并增加重试元数据。 */
     @Override
     public int updateRetryFailed(CreditAwardTaskEntity task) {
         return creditAwardTaskDao.updateRetryFailed(toPo(task));

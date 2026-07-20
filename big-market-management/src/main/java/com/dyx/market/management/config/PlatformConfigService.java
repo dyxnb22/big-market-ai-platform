@@ -59,6 +59,7 @@ public class PlatformConfigService implements InitializingBean {
         refreshRuntimeFromContent(nacosConfigSyncService.fetchRuntimeSwitches(3000));
     }
 
+    /** 查询当前不可变配置快照，可按 namespace 过滤。 */
     public List<AdminConfigResponseDTO> list(String namespace) {
         List<AdminConfigResponseDTO> values = new ArrayList<>();
         for (AdminConfigResponseDTO config : configSnapshot.get().values()) {
@@ -71,11 +72,13 @@ public class PlatformConfigService implements InitializingBean {
         return values;
     }
 
+    /** 查询一个配置项，并附带当前快照的 content hash 元数据。 */
     public AdminConfigResponseDTO get(String namespace, String configKey) {
         AdminConfigResponseDTO config = configSnapshot.get().get(storeKey(namespace, configKey));
         return config == null ? null : withCurrentMetadata(config);
     }
 
+    /** 读取配置值；删除、空值或非法快照统一回退到调用方提供的安全默认值。 */
     public String getValue(String namespace, String configKey, String defaultValue) {
         AdminConfigResponseDTO config = get(namespace, configKey);
         if (config != null && "__DELETED__".equals(config.getDescription())) {
@@ -96,6 +99,10 @@ public class PlatformConfigService implements InitializingBean {
         return Collections.unmodifiableMap(values);
     }
 
+    /**
+     * 保存配置：校验期望 hash → 发布 Nacos → 更新本地快照 → 尝试 Redis fan-out。
+     * Nacos publish 是提交点，通知失败只返回 pending，不回滚已提交配置。
+     */
     public synchronized AdminConfigResponseDTO save(AdminConfigRequestDTO request) throws IOException {
         AdminConfigResponseDTO config = AdminConfigResponseDTO.builder()
                 .namespace(request.getNamespace())
@@ -120,6 +127,7 @@ public class PlatformConfigService implements InitializingBean {
                 .build();
     }
 
+    /** 以 tombstone 形式删除一个配置项，并复用 save 的乐观并发约束。 */
     public synchronized void delete(String namespace, String configKey) throws IOException {
         AdminConfigRequestDTO request = new AdminConfigRequestDTO();
         request.setNamespace(namespace);

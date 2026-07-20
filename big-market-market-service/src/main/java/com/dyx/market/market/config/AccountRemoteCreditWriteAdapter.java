@@ -28,6 +28,12 @@ public class AccountRemoteCreditWriteAdapter implements IAccountCreditWriteAdapt
     @DubboReference(version = "1.0", check = false)
     private IAccountCreditService accountCreditService;
 
+    /**
+     * 远程积分写入采用“结果分类 → 已成功探测 → pending 对账”的顺序。
+     *
+     * <p>网络超时无法证明远程是否落库，必须先用业务幂等号查询；只有确认未成功时
+     * 才创建 pending 任务，避免补偿与原请求并发造成重复入账。</p>
+     */
     @Override
     public String createOrder(TradeEntity tradeEntity) {
         CreditTradeRequestDTO request = CreditTradeRequestDTO.builder()

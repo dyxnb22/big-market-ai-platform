@@ -24,6 +24,7 @@ public class AccountCreditServiceRPC implements IAccountCreditService {
     @Resource
     private AccountCreditApplicationService accountCreditApplicationService;
 
+    /** 创建积分交易；account 侧按 outBusinessNo 做唯一性和幂等保护。 */
     @Override
     public Response<String> createOrder(CreditTradeRequestDTO request) {
         if (request == null) {
@@ -33,12 +34,14 @@ public class AccountCreditServiceRPC implements IAccountCreditService {
         return ApiResponses.execute(() -> accountCreditApplicationService.createOrder(request));
     }
 
+    /** 查询账户余额。 */
     @Override
     public Response<BigDecimal> queryUserCreditAccount(String userId) {
         log.info("account credit queryUserCreditAccount userId:{}", userId);
         return ApiResponses.execute(() -> accountCreditApplicationService.queryUserCreditAccount(userId));
     }
 
+    /** 供远程 UNKNOWN 结果探测积分订单是否已经落库。 */
     @Override
     public Response<Boolean> existsCreditOrder(String userId, String outBusinessNo) {
         return ApiResponses.execute(() -> accountCreditApplicationService.existsCreditOrder(userId, outBusinessNo));

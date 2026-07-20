@@ -24,6 +24,7 @@ public class EventPublisher {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    /** 序列化领域事件并等待 RabbitMQ publisher confirm 后返回。 */
     public void publish(String topic, BaseEvent.EventMessage<?> eventMessage) {
         try {
             String messageJson = JSON.toJSONString(eventMessage);
@@ -35,10 +36,12 @@ public class EventPublisher {
         }
     }
 
+    /** 发布没有显式 messageId 的原始 JSON 消息。 */
     public void publish(String topic, String eventMessageJSON){
         publish(topic, eventMessageJSON, null);
     }
 
+    /** 发布原始 JSON 消息，并将 messageId 透传到 RabbitMQ 属性。 */
     public void publish(String topic, String eventMessageJSON, String messageId){
         try {
             publishAndConfirm(topic, eventMessageJSON, messageId);

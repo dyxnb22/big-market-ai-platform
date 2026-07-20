@@ -12,11 +12,18 @@ import java.security.MessageDigest;
 
 @Slf4j
 @Component
+/**
+ * RabbitMQ 死信持久化适配器。
+ *
+ * <p>只保存队列名、消息摘要和原始 payload；消费者失败时先尽力落库，
+ * 后续由人工审核或受控 Job 决定是否重放。</p>
+ */
 public class MqDeadLetterPersistenceSupport {
 
     @Resource
     private IMqDeadLetterDao mqDeadLetterDao;
 
+    /** 持久化一条待审核死信，空消息直接忽略。 */
     public void persist(String queue, String payload) {
         if (StringUtils.isBlank(queue) || StringUtils.isBlank(payload)) {
             return;
@@ -36,6 +43,7 @@ public class MqDeadLetterPersistenceSupport {
         }
     }
 
+    /** 生成短 SHA-256 摘要，作为同队列同 payload 的稳定消息标识。 */
     private static String hashMessageId(String queue, String payload) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

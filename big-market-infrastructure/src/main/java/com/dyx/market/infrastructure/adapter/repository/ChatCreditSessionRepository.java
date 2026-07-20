@@ -17,6 +17,12 @@ import jakarta.annotation.Resource;
 
 @Slf4j
 @Repository
+/**
+ * Chat 积分会话仓储。
+ *
+ * <p>该表位于用户分片库，所有 DAO 操作都必须通过 userId 路由；
+ * deduct/refund 状态使用 CAS，使超时重试只能推进一次状态。</p>
+ */
 public class ChatCreditSessionRepository implements IChatCreditSessionRepository {
 
     public static final String REFUND_NONE = "none";
@@ -30,6 +36,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
     @Resource
     private IDBRouterStrategy dbRouter;
 
+    /** 先记录 deducting 意图，再允许远程账户扣费，确保超时后仍可对账。 */
     @Override
     public void recordDeductingIntent(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
@@ -55,6 +62,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         });
     }
 
+    /** 将会话推进为已扣费；不存在记录时补建零金额占位记录。 */
     @Override
     public void markDeducted(String userId, String requestId) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
@@ -85,6 +93,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         });
     }
 
+    /** 将仍处于 deducting 的会话标记失败，供上层决定是否重试。 */
     @Override
     public void markDeductFailed(String userId, String requestId) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
@@ -94,6 +103,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
                 () -> chatCreditSessionDao.casDeductState(userId, requestId, DEDUCT_DEDUCTING, DEDUCT_FAILED));
     }
 
+    /** 记录已完成的扣费会话；重复插入只修正状态，不重复写入金额。 */
     @Override
     public void recordDeduction(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
@@ -120,6 +130,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         });
     }
 
+    /** 查询当前用户分片上的权威扣费/退款快照。 */
     @Override
     public ChatCreditSessionSnapshot findSession(String userId, String requestId) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
@@ -131,6 +142,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         });
     }
 
+    /** CAS 抢占退款任务，只有一个执行者可以进入 refunding。 */
     @Override
     public boolean tryBeginRefund(String userId, String requestId) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
@@ -144,6 +156,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         });
     }
 
+    /** 持久化退款结果或 pending 状态，所有更新都在用户分片内完成。 */
     @Override
     public void updateRefundState(String userId, String requestId, String refundState) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
@@ -166,6 +179,7 @@ public class ChatCreditSessionRepository implements IChatCreditSessionRepository
         });
     }
 
+    /** 将退款标记为待补偿；已退款状态不可被回退。 */
     @Override
     public void markRefundPending(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {

@@ -87,11 +87,13 @@ public class AccountQuotaApplicationService {
                 .build();
     }
 
+    /** 查询活动累计参与次数。 */
     public Integer queryRaffleActivityAccountPartakeCount(Long activityId, String userId) {
         validateActivityUser(activityId, userId);
         return raffleActivityAccountQuotaService.queryRaffleActivityAccountPartakeCount(activityId, userId);
     }
 
+    /** 查询活动当天参与次数。 */
     public Integer queryRaffleActivityAccountDayPartakeCount(Long activityId, String userId) {
         validateActivityUser(activityId, userId);
         return raffleActivityAccountQuotaService.queryRaffleActivityAccountDayPartakeCount(activityId, userId);
@@ -111,6 +113,7 @@ public class AccountQuotaApplicationService {
                 request.getUserId(), request.getActivityId(), request.getOutBusinessNo());
     }
 
+    /** 按业务幂等号查询额度订单是否已创建，用于远程 UNKNOWN 结果恢复。 */
     public boolean existsActivityOrder(String userId, String outBusinessNo) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
@@ -126,6 +129,7 @@ public class AccountQuotaApplicationService {
         }
     }
 
+    /** 查询远程额度订单详情，用于确认超时请求是否已经落库。 */
     public UnpaidActivityOrderResponseDTO queryActivityOrder(String userId, String outBusinessNo) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
@@ -150,6 +154,7 @@ public class AccountQuotaApplicationService {
         }
     }
 
+    /** 查询额度订单是否已完成发货，用于补偿任务的终态判断。 */
     public boolean isActivityOrderCompleted(String userId, String outBusinessNo) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());

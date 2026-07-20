@@ -43,6 +43,12 @@ public class ActivityQuotaLedgerSupport {
     @Resource
     private IDBRouterStrategy dbRouter;
 
+    /**
+     * 在同一事务内写入扣减账本，并同步扣减总额度、月额度和日额度。
+     *
+     * <p>账本唯一键先于额度更新落库：重复请求直接视为已扣减，避免重试再次消费额度；
+     * 任一层级额度不足时事务回滚，不能留下部分扣减。</p>
+     */
     public boolean decrementQuotaWithLedger(String userId, Long activityId, String outBusinessNo) {
         String month = RaffleActivityAccountMonth.currentMonth();
         String day = RaffleActivityAccountDay.currentDay();
@@ -144,6 +150,11 @@ public class ActivityQuotaLedgerSupport {
         return true;
     }
 
+    /**
+     * 按原扣减账本执行一次 Saga 补偿，恢复总/月/日额度。
+     *
+     * <p>账本状态更新本身是幂等门闩；找不到账本或账本已经回滚时不重复加额度。</p>
+     */
     public boolean rollbackQuotaWithLedger(String userId, Long activityId, String outBusinessNo) {
         try {
             dbRouter.doRouter(userId);
@@ -171,6 +182,7 @@ public class ActivityQuotaLedgerSupport {
         }
     }
 
+    /** 将未完成的参与订单标记失败；状态更新结果用于防止重复补偿。 */
     public boolean markRaffleOrderFailed(String userId, String orderId) {
         try {
             dbRouter.doRouter(userId);
@@ -181,6 +193,11 @@ public class ActivityQuotaLedgerSupport {
         }
     }
 
+    /**
+     * 补偿已经创建参与单但未完成抽奖的请求。
+     *
+     * <p>只有订单状态从进行中成功切换为失败时才恢复额度，因此重复 Job 不会重复返还。</p>
+     */
     public void compensatePartakeQuota(String userId, Long activityId, String orderId, Date orderTime) {
         LocalDate date = orderTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         String month = date.format(MONTH_FMT);
@@ -205,6 +222,10 @@ public class ActivityQuotaLedgerSupport {
         }
     }
 
+    /**
+     * 仅保存参与订单，供远程额度模式下把订单写入与额度扣减拆成可对账的步骤。
+     * <p>订单号重复表示同一业务请求，交由上层按重复索引错误处理。</p>
+     */
     public void savePartakeOrderOnly(CreatePartakeOrderAggregate aggregate) {
         try {
             String userId = aggregate.getUserId();

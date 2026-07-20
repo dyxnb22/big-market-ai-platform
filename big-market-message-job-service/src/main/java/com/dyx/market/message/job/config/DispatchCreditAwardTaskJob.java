@@ -41,6 +41,12 @@ public class DispatchCreditAwardTaskJob {
     @Resource
     private RedissonClient redissonClient;
 
+    /**
+     * 按数据库和表分片扫描待派发任务。
+     *
+     * <p>同一分片使用分布式锁避免多实例重复扫描；锁只防止并发执行，真正的重复安全由
+     * {@code awardOrderId} 作为 account-service 的业务幂等键保证。</p>
+     */
     @Timed(value = "DispatchCreditAwardTaskJob_DB1", description = "Award credit outbox dispatch DB1")
     @XxlJob("DispatchCreditAwardTaskJob_DB1")
     public void execDb01() {
@@ -78,6 +84,8 @@ public class DispatchCreditAwardTaskJob {
     }
 
     private void dispatchTask(CreditAwardTaskEntity task) {
+        // 先调用远程账户服务，再标记 Outbox 完成；如果进程在两步之间崩溃，
+        // 下一轮会再次投递，但 account-service 会按 awardOrderId 幂等去重。
         try {
             TradeEntity trade = TradeEntity.builder()
                     .userId(task.getUserId())

@@ -49,10 +49,12 @@ public class PlatformConfigChangeNotifier {
         return thread;
     });
 
+    /** 发布 runtime 开关变更；Redis 失败时由 Nacos listener/启动读取兜底。 */
     public boolean notifyRuntime(String content) {
         return publish(RUNTIME_TOPIC, content);
     }
 
+    /** 发布平台配置变更；Nacos 持久化成功不因 Redis fan-out 失败而回滚。 */
     public boolean notifyPlatform(String content) {
         return publish(PLATFORM_TOPIC, content);
     }
