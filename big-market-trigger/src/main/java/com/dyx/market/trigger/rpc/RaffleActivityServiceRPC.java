@@ -106,6 +106,30 @@ public class RaffleActivityServiceRPC implements IRaffleActivityService {
     }
 
     @Override
+    public Response<List<UserAwardRecordResponseDTO>> queryUserAwardRecordsByToken(String token) {
+        return TriggerApiResponses.ok(raffleActivityFacade.queryUserAwardRecords(
+                authenticatedUserSupport.requireUserId(token)));
+    }
+
+    @Override
+    public Response<List<UserAwardRecordResponseDTO>> queryUserAwardRecords(String userId) {
+        DubboRpcAuthSupport.rejectInternalRpc("queryUserAwardRecords");
+        return null;
+    }
+
+    @Override
+    public Response<List<CreditOrderResponseDTO>> queryUserCreditOrdersByToken(String token) {
+        return TriggerApiResponses.ok(raffleActivityFacade.queryUserCreditOrders(
+                authenticatedUserSupport.requireUserId(token)));
+    }
+
+    @Override
+    public Response<List<CreditOrderResponseDTO>> queryUserCreditOrders(String userId) {
+        DubboRpcAuthSupport.rejectInternalRpc("queryUserCreditOrders");
+        return null;
+    }
+
+    @Override
     public Response<Boolean> creditPayExchangeSku(String token, SkuProductShopCartRequestDTO request) {
         request.setUserId(authenticatedUserSupport.requireUserId(token));
         return TriggerApiResponses.ok(raffleActivityFacade.creditPayExchangeSku(request));

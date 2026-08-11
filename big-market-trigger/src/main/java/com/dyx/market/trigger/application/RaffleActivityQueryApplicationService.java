@@ -4,10 +4,14 @@ import com.alibaba.fastjson.JSON;
 import com.dyx.market.domain.activity.model.entity.ActivityAccountEntity;
 import com.dyx.market.domain.activity.model.entity.SkuProductEntity;
 import com.dyx.market.domain.activity.service.IRaffleActivitySkuProductService;
+import com.dyx.market.domain.award.model.entity.UserAwardRecordLogEntity;
+import com.dyx.market.domain.award.service.IAwardService;
 import com.dyx.market.trigger.adapter.IAccountReadAdapter;
+import com.dyx.market.trigger.api.dto.CreditOrderResponseDTO;
 import com.dyx.market.trigger.api.dto.SkuProductResponseDTO;
 import com.dyx.market.trigger.api.dto.UserActivityAccountRequestDTO;
 import com.dyx.market.trigger.api.dto.UserActivityAccountResponseDTO;
+import com.dyx.market.trigger.api.dto.UserAwardRecordResponseDTO;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -26,10 +30,15 @@ import java.util.List;
 @Service
 public class RaffleActivityQueryApplicationService {
 
+    /** 抽奖历史 / 积分账本单次查询的最大返回条数（与 Mapper LIMIT 对齐）。 */
+    private static final int HISTORY_QUERY_LIMIT = 50;
+
     @Resource
     private IAccountReadAdapter accountRemoteReadAdapter;
     @Resource
     private IRaffleActivitySkuProductService raffleActivitySkuProductService;
+    @Resource
+    private IAwardService awardService;
 
     public UserActivityAccountResponseDTO queryUserActivityAccount(UserActivityAccountRequestDTO request) {
         log.info("查询用户活动账户开始 userId:{} activityId:{}", request.getUserId(), request.getActivityId());
@@ -59,6 +68,37 @@ public class RaffleActivityQueryApplicationService {
         BigDecimal balance = accountRemoteReadAdapter.queryUserCreditAccount(userId);
         log.info("查询用户积分值完成 userId:{} adjustAmount:{}", userId, balance);
         return balance;
+    }
+
+    /** 查询用户中奖记录（服务端抽奖历史，market 本地 award 领域）。 */
+    public List<UserAwardRecordResponseDTO> queryUserAwardRecords(String userId) {
+        if (StringUtils.isBlank(userId)) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        List<UserAwardRecordLogEntity> records = awardService.queryUserAwardRecords(userId, HISTORY_QUERY_LIMIT);
+        List<UserAwardRecordResponseDTO> result = new ArrayList<>(records.size());
+        for (UserAwardRecordLogEntity record : records) {
+            result.add(UserAwardRecordResponseDTO.builder()
+                    .activityId(record.getActivityId())
+                    .orderId(record.getOrderId())
+                    .awardId(record.getAwardId())
+                    .awardTitle(record.getAwardTitle())
+                    .awardState(record.getAwardState())
+                    .awardTime(record.getAwardTime())
+                    .build());
+        }
+        log.info("查询用户中奖记录完成 userId:{} size:{}", userId, result.size());
+        return result;
+    }
+
+    /** 查询用户积分流水（服务端积分账本，credit 归 account 领域，经读适配器路由）。 */
+    public List<CreditOrderResponseDTO> queryUserCreditOrders(String userId) {
+        if (StringUtils.isBlank(userId)) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        List<CreditOrderResponseDTO> result = accountRemoteReadAdapter.queryUserCreditOrders(userId, HISTORY_QUERY_LIMIT);
+        log.info("查询用户积分流水完成 userId:{} size:{}", userId, result.size());
+        return result;
     }
 
     public List<SkuProductResponseDTO> querySkuProductListByActivityId(Long activityId) {

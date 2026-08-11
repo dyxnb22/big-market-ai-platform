@@ -89,6 +89,16 @@ public class RaffleActivityFacade {
         return raffleActivityQueryApplicationService.queryUserCreditAccount(userId);
     }
 
+    /** 查询用户中奖记录（服务端抽奖历史）。 */
+    public List<UserAwardRecordResponseDTO> queryUserAwardRecords(String userId) {
+        return raffleActivityQueryApplicationService.queryUserAwardRecords(userId);
+    }
+
+    /** 查询用户积分流水（服务端积分账本）。 */
+    public List<CreditOrderResponseDTO> queryUserCreditOrders(String userId) {
+        return raffleActivityQueryApplicationService.queryUserCreditOrders(userId);
+    }
+
     /** 使用积分兑换 SKU，requestId 负责请求幂等。 */
     public Boolean creditPayExchangeSku(SkuProductShopCartRequestDTO request) {
         creditPayExchangeApplicationService.creditPayExchange(request);

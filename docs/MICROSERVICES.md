@@ -53,6 +53,8 @@
 
 积分余额与积分交易订单支撑签到奖励、SKU 兑换、聊天机器人扣费/退款，以及奖品积分发放。幂等性通过 `out_business_no`、`award_order_id` 及任务消息 ID 等业务编号保证。
 
+用户端积分账本查询：`POST /raffle/activity/query_user_credit_order_by_token` 返回服务端 `user_credit_order` 流水（读模型 `CreditOrderLogEntity`，最多 50 条）；credit 归 account 领域，market 经 `IAccountReadAdapter` 路由（本地 Profile 进程内查询，Docker Profile 走 `IAccountCreditService.queryUserCreditOrders` RPC）。
+
 代码路径：
 
 - `big-market-api/src/main/java/com/dyx/market/trigger/api/IAccountCreditService.java`
@@ -65,6 +67,8 @@
 抽奖路径写入中奖记录并发布 `send_award` 事件。message-job 的 `SendAwardConsumer` 消费事件后调用本地奖品领域；积分奖写入 `credit_award_task`，由 `DispatchCreditAwardTaskJob`（handlers `_DB1`/`_DB2`）派发到 account RPC。
 
 `user_award_record.award_state=completed` 表示发奖动作已被持久化接管；对积分奖，最终闭环必须继续核对 `credit_award_task=dispatched` 和账户积分流水，不能只看中奖记录。
+
+用户端抽奖历史查询：`POST /raffle/activity/query_user_award_record_by_token` 返回服务端 `user_award_record`（读模型 `UserAwardRecordLogEntity`，`awardState` 透传库内字符串 create/completed/fail，前端据此展示“发放中/已到账/发放失败”的异步发奖状态）。
 
 代码路径：
 

@@ -443,6 +443,16 @@ Job：UpdateAwardStockJob 拉取 → updateStrategyAwardStock（MySQL -1）
 
 > 订单停在 `create` 可复用继续抽；`executeDraw` 失败会走额度补偿（CAS，防重复回滚）。
 
+**Q7：用户怎么看到「发奖还没到账」？（查询闭环）**
+
+> 用户中心「最近抽奖」走 `query_user_award_record_by_token` 读服务端
+> `user_award_record`，`award_state=create` 显示「发放中」、`completed` 显示「已到账」；
+> 「积分流水」走 `query_user_credit_order_by_token` 读 `user_credit_order`。
+> 两张分表都有 `(user_id, 时间)` 复合索引支撑倒序查询。读路径用独立读模型
+> （`UserAwardRecordLogEntity` / `CreditOrderLogEntity`）透传库值字符串，
+> 不做枚举反解——因为历史库值 `completed` 与枚举编码 `complete` 不一致。
+> 这套查询把 Outbox 异步发奖的最终一致性直接展示给了用户。
+
 ### 4.6 表述陷阱
 
 | 容易说错 | 更准确 |

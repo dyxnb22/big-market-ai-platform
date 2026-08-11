@@ -22,6 +22,14 @@ fi
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$BOUNDED_RETRY_SQL"
 echo "Bounded retry-state migration applied (V20260719__bounded_retry_states)."
 
+HISTORY_INDEX_SQL="$ROOT/docs/dev-ops/mysql/sql/z-history-query-indexes.sql"
+if [ ! -f "$HISTORY_INDEX_SQL" ]; then
+  echo "FAIL: history-query index migration SQL missing: $HISTORY_INDEX_SQL" >&2
+  exit 1
+fi
+docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$HISTORY_INDEX_SQL"
+echo "History-query composite index migration applied (V20260812__history_query_indexes)."
+
 NACOS_PLATFORM_SQL="$ROOT/docs/dev-ops/mysql/sql/z-nacos-platform-config.sql"
 if [ ! -f "$NACOS_PLATFORM_SQL" ]; then
   echo "FAIL: Nacos platform seed SQL missing: $NACOS_PLATFORM_SQL" >&2

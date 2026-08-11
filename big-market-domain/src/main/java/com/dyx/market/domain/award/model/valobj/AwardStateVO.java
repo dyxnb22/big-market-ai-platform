@@ -4,16 +4,26 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
+ * 用户中奖记录（{@code user_award_record}）的发奖状态。
+ * <p>状态语义边界（详见 {@code docs/data-and-outbox.md}）：</p>
+ * <ul>
+ *   <li>{@code create} — 抽奖落库时写入，表示待发奖</li>
+ *   <li>{@code complete} — 本地发奖逻辑执行完毕（如积分任务入队），<b>不等于</b>积分已到账 account</li>
+ *   <li>{@code fail} — 发奖失败，需人工或对账处理</li>
+ * </ul>
+ *
  * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 奖品状态枚举值对象 【值对象，用于描述对象属性的值，一个对象中，一个属性，有多个状态值。】
  * @create 2024-04-06 09:13
  */
 @Getter
 @AllArgsConstructor
 public enum AwardStateVO {
 
+    /** 抽奖落库，待发奖 */
     create("create", "创建"),
+    /** 本地发奖完成（积分类奖品此时仅写入 credit_award_task，尚未 RPC 入账） */
     complete("complete", "发奖完成"),
+    /** 发奖失败 */
     fail("fail", "发奖失败"),
     ;
 

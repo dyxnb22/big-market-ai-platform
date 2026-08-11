@@ -28,6 +28,8 @@
 | `/api/v1/raffle/activity/query_user_activity_account_by_token` | POST | `RaffleActivityController.queryUserActivityAccount` | TokenAuthInterceptor | 查抽奖额度 |
 | `/api/v1/raffle/activity/query_sku_product_list_by_activity_id` | POST | `RaffleActivityController.querySkuProductListByActivityId` | 未见拦截 | 查可兑换 SKU |
 | `/api/v1/raffle/activity/query_user_credit_account_by_token` | POST | `RaffleActivityController.queryUserCreditAccountByToken` | TokenAuthInterceptor | 查积分 |
+| `/api/v1/raffle/activity/query_user_award_record_by_token` | POST | `RaffleActivityController.queryUserAwardRecordsByToken` | TokenAuthInterceptor | 查中奖记录（服务端抽奖历史，含发奖状态） |
+| `/api/v1/raffle/activity/query_user_credit_order_by_token` | POST | `RaffleActivityController.queryUserCreditOrdersByToken` | TokenAuthInterceptor | 查积分流水（服务端积分账本） |
 | `/api/v1/raffle/activity/credit_pay_exchange_sku_by_token` | POST | `RaffleActivityController.creditPayExchangeSku` | TokenAuthInterceptor | 积分兑换抽奖次数 |
 | `/api/v1/raffle/activity/chat_credit_deduct_by_token` | POST | `RaffleActivityController.chatCreditDeductByToken` | TokenAuthInterceptor | AI Chat 扣积分 |
 | `/api/v1/raffle/activity/chat_credit_refund_by_token` | POST | `RaffleActivityController.chatCreditRefundByToken` | TokenAuthInterceptor | AI Chat 退积分 |

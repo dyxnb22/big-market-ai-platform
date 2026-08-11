@@ -1,7 +1,10 @@
 package com.dyx.market.domain.credit.service;
 
 import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
+import com.dyx.market.domain.credit.model.entity.CreditOrderLogEntity;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
+
+import java.util.List;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -23,5 +26,14 @@ public interface ICreditAdjustService {
      * @return 积分账户实体
      */
     CreditAccountEntity queryUserCreditAccount(String userId);
+
+    /**
+     * 查询用户积分流水（按交易时间倒序，服务端积分账本）。
+     *
+     * @param userId 用户ID
+     * @param limit  最大返回条数
+     * @return 积分流水读模型集合
+     */
+    List<CreditOrderLogEntity> queryUserCreditOrders(String userId, int limit);
 
 }

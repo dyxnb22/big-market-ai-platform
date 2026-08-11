@@ -22,7 +22,13 @@ import java.math.BigDecimal;
 
 /**
  * Docker Profile 下统一使用 account-service 的活动账户 Port。
- * <p>抽奖额度扣减仍是同步门禁；订单写入失败时按抽奖订单号执行 Saga 回滚。</p>
+ * <p>Partake Saga（{@link #savePartakeOrder}）：</p>
+ * <ol>
+ *   <li>同步 RPC {@link #decrementQuota}（幂等键 = 抽奖单 {@code orderId}）</li>
+ *   <li>本地 {@code savePartakeOrderOnly} 仅存订单</li>
+ *   <li>步骤 2 失败 → {@link #rollbackQuota} 补偿</li>
+ * </ol>
+ * <p>RPC 超时/结果未知时写入 {@code pending_remote_write} 待对账（{@link #persistUnknownQuotaRollback}）。</p>
  */
 @Slf4j
 @Component
@@ -136,6 +142,9 @@ public class RemoteActivityAccountPort implements IActivityAccountPort {
                 || ResponseCode.ILLEGAL_PARAMETER.getCode().equals(code);
     }
 
+    /**
+     * Partake 持久化：先远程扣额度，再本地存订单；订单写入失败触发 quota 回滚。
+     */
     @Override
     public void savePartakeOrder(CreatePartakeOrderAggregate aggregate) {
         String userId = aggregate.getUserId();
@@ -158,6 +167,10 @@ public class RemoteActivityAccountPort implements IActivityAccountPort {
         }
     }
 
+    /**
+     * 抽奖失败补偿：仅当订单仍为 {@code create} 时标记 failed 并回滚远程额度；
+     * 已 {@code used} 的订单跳过回滚，避免误退额度。
+     */
     @Override
     public void compensatePartakeOrder(String userId, Long activityId, String orderId, java.util.Date orderTime) {
         if (activityRepository.markRaffleOrderFailed(userId, orderId)) {

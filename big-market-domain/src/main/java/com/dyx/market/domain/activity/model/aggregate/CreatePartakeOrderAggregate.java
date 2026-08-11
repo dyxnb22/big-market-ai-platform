@@ -10,8 +10,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
+ * 参与活动（partake）订单聚合：在一次扣额度 + 建抽奖单时携带账户快照与待持久化抽奖单。
+ * <p>由 {@code AbstractRaffleActivityPartake} 构建，经 {@code IActivityRepository} 或
+ * {@code IActivityAccountPort} 持久化：</p>
+ * <ul>
+ *   <li>本地模式：quota 扣减与订单插入在同一事务（{@code saveCreatePartakeOrderAggregate}）</li>
+ *   <li>远程模式：quota 已通过 Port 扣减，仅存订单（{@code savePartakeOrderOnly}）</li>
+ * </ul>
+ * <p>{@code isExistAccountMonth}/{@code isExistAccountDay} 控制保存时是否 upsert 月/日额度子账户。</p>
+ *
  * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 参与活动订单聚合对象
  * @create 2024-04-05 08:31
  */
 @Data
@@ -36,7 +44,7 @@ public class CreatePartakeOrderAggregate {
     private ActivityAccountEntity activityAccountEntity;
 
     /**
-     * 是否存在月账户
+     * 是否存在月账户；{@code false} 时保存流程会新建月额度记录
      */
     @Builder.Default
     private boolean isExistAccountMonth = true;
@@ -47,7 +55,7 @@ public class CreatePartakeOrderAggregate {
     private ActivityAccountMonthEntity activityAccountMonthEntity;
 
     /**
-     * 是否存在日账户
+     * 是否存在日账户；{@code false} 时保存流程会新建日额度记录
      */
     @Builder.Default
     private boolean isExistAccountDay = true;

@@ -29,4 +29,12 @@
         where user_id = #{userId} and order_id = #{orderId} and award_state = 'create'
     </update>
 
+    <select id="queryUserAwardRecordListByUserId" parameterType="com.dyx.market.infrastructure.dao.po.UserAwardRecord" resultMap="dataMap">
+        select user_id, activity_id, strategy_id, order_id, award_id, award_title, award_time, award_state, create_time
+        from user_award_record
+        where user_id = #{userId}
+        order by award_time desc, id desc
+        limit 50
+    </select>
+
 </mapper>

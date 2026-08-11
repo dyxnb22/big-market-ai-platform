@@ -33,6 +33,10 @@ public class BehaviorRebateService implements IBehaviorRebateService {
     @Resource
     private SendRebateMessageEvent sendRebateMessageEvent;
 
+    /**
+     * 根据行为类型创建返利订单（一次行为可产生多条，每种 rebateType 一条）。
+     * <p>幂等键 {@code bizId = userId_rebateType_outBusinessNo}，重复提交由唯一索引拦截。</p>
+     */
     @Override
     public List<String> createOrder(BehaviorEntity behaviorEntity) {
         // 1. 查询返利配置
@@ -46,7 +50,7 @@ public class BehaviorRebateService implements IBehaviorRebateService {
         List<BehaviorRebateAggregate> behaviorRebateAggregates = new ArrayList<>();
         for (DailyBehaviorRebateVO dailyBehaviorRebateVO : dailyBehaviorRebateVOS) {
             validateRebateConfig(dailyBehaviorRebateVO);
-            // 拼装业务ID；用户ID_返利类型_外部透彻业务ID
+            // 幂等键：userId_rebateType_outBusinessNo；同一行为 × 多种返利类型 → 多条订单
             String bizId = behaviorEntity.getUserId() + Constants.UNDERLINE + dailyBehaviorRebateVO.getRebateType() + Constants.UNDERLINE + behaviorEntity.getOutBusinessNo();
             BehaviorRebateOrderEntity behaviorRebateOrderEntity = BehaviorRebateOrderEntity.builder()
                     .userId(behaviorEntity.getUserId())

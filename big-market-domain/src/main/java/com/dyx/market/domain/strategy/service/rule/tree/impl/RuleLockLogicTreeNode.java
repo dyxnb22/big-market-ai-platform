@@ -11,8 +11,11 @@ import jakarta.annotation.Resource;
 import java.util.Date;
 
 /**
+ * 策略规则树 — 次数锁节点。
+ * <p>语义：用户当日抽奖次数 <b>达到</b> {@code ruleValue} 后才放行该奖品，否则拦截。
+ * 因此 {@code userRaffleCount >= raffleCount} 返回 {@code ALLOW}，未达到则 {@code TAKE_OVER}。</p>
+ *
  * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 次数锁节点
  * @create 2024-01-27 11:22
  */
 @Slf4j
@@ -22,6 +25,11 @@ public class RuleLockLogicTreeNode implements ILogicTreeNode {
     @Resource
     private IStrategyRepository repository;
 
+    /**
+     * 按当日抽奖次数判断是否解锁当前奖品。
+     *
+     * @param ruleValue 解锁所需的最小抽奖次数（含）
+     */
     @Override
     public DefaultTreeFactory.TreeActionEntity logic(String userId, Long strategyId, Integer awardId, String ruleValue, Date endDateTime, String orderId) {
         log.info("规则过滤-次数锁 userId:{} strategyId:{} awardId:{}", userId, strategyId, awardId);

@@ -5,6 +5,7 @@ import com.dyx.market.domain.credit.adapter.port.ICreditTradeTaskOutboxPort;
 import com.dyx.market.domain.credit.model.aggregate.TradeAggregate;
 import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
 import com.dyx.market.domain.credit.model.entity.CreditOrderEntity;
+import com.dyx.market.domain.credit.model.entity.CreditOrderLogEntity;
 import com.dyx.market.domain.credit.model.entity.TaskEntity;
 import com.dyx.market.domain.credit.repository.ICreditRepository;
 import com.dyx.market.infrastructure.event.EventPublisher;
@@ -25,6 +26,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -50,6 +53,14 @@ public class CreditRepository implements ICreditRepository {
     @Resource
     private EventPublisher eventPublisher;
 
+    /**
+     * 积分交易落库 + outbox 发 MQ（锁粒度：{@code userId_outBusinessNo}）。
+     * <ol>
+     *   <li>Redisson 锁 → 事务内 upsert 账户、插入订单、写入 task outbox</li>
+     *   <li>事务外 publish MQ；失败标记 task fail，由 job 补偿</li>
+     * </ol>
+     * {@code DuplicateKeyException} → {@code INDEX_DUP}，表示同 {@code outBusinessNo} 已处理。
+     */
     @Override
     public void saveUserCreditTradeOrder(TradeAggregate tradeAggregate) {
         String userId = tradeAggregate.getUserId();
@@ -163,6 +174,40 @@ public class CreditRepository implements ICreditRepository {
             dbRouter.clear();
         }
 
+    }
+
+    /**
+     * 查询用户积分流水读模型。user_credit_order 按 userId 分库分表，
+     * 需显式路由到用户分片；trade_name 落库为中文展示值，读路径原样透传。
+     */
+    @Override
+    public List<CreditOrderLogEntity> queryUserCreditOrders(String userId, int limit) {
+        UserCreditOrder query = new UserCreditOrder();
+        query.setUserId(userId);
+        List<UserCreditOrder> orders;
+        try {
+            dbRouter.doRouter(userId);
+            orders = userCreditOrderDao.queryUserCreditOrderListByUserId(query);
+        } finally {
+            dbRouter.clear();
+        }
+        List<CreditOrderLogEntity> result = new ArrayList<>();
+        if (orders == null) {
+            return result;
+        }
+        for (UserCreditOrder order : orders) {
+            if (result.size() >= limit) {
+                break;
+            }
+            result.add(CreditOrderLogEntity.builder()
+                    .orderId(order.getOrderId())
+                    .tradeName(order.getTradeName())
+                    .tradeType(order.getTradeType())
+                    .tradeAmount(order.getTradeAmount())
+                    .createTime(order.getCreateTime())
+                    .build());
+        }
+        return result;
     }
 
 }

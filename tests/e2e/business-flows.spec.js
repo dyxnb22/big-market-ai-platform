@@ -285,6 +285,45 @@ test("user center shows credit, surplus, and sign-in status", async ({ page }) =
   await expectNoClientErrors(errors);
 });
 
+test("user center loads server-backed draw history and credit ledger", async ({ page }) => {
+  const errors = collectClientErrors(page);
+  await loginUser(page);
+
+  const awardResPromise = page.waitForResponse(
+    (res) => res.url().includes("query_user_award_record_by_token") && res.request().method() === "POST",
+    { timeout: 15000 }
+  );
+  const creditResPromise = page.waitForResponse(
+    (res) => res.url().includes("query_user_credit_order_by_token") && res.request().method() === "POST",
+    { timeout: 15000 }
+  );
+  await page.locator("#userMenuBtn").click();
+  await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
+
+  const awardBody = await (await awardResPromise).json();
+  expect(awardBody.code).toBe("0000");
+  const creditBody = await (await creditResPromise).json();
+  expect(creditBody.code).toBe("0000");
+
+  // Panels must render server entries or the explicit empty state — never the error state.
+  await expect.poll(async () => {
+    const txt = await page.locator("#drawHistoryList").textContent();
+    return txt && !/加载失败/.test(txt);
+  }, { timeout: 10000 }).toBeTruthy();
+  await expect.poll(async () => {
+    const txt = await page.locator("#creditLedgerList").textContent();
+    return txt && !/加载失败/.test(txt);
+  }, { timeout: 10000 }).toBeTruthy();
+  if (Array.isArray(creditBody.data) && creditBody.data.length > 0) {
+    await expect(page.locator("#creditLedgerList .history-item").first()).toBeVisible();
+  }
+  if (Array.isArray(awardBody.data) && awardBody.data.length > 0) {
+    await expect(page.locator("#drawHistoryList .history-item").first()).toBeVisible();
+  }
+
+  await expectNoClientErrors(errors);
+});
+
 // ========== Exchange Flow Tests ==========
 
 test("exchange section is visible in lottery drawer", async ({ page }) => {

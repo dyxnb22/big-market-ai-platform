@@ -4,6 +4,7 @@ import com.dyx.market.domain.credit.event.CreditAdjustSuccessMessageEvent;
 import com.dyx.market.domain.credit.model.aggregate.TradeAggregate;
 import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
 import com.dyx.market.domain.credit.model.entity.CreditOrderEntity;
+import com.dyx.market.domain.credit.model.entity.CreditOrderLogEntity;
 import com.dyx.market.domain.credit.model.entity.TaskEntity;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
+import java.util.List;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -89,6 +91,11 @@ public class CreditAdjustService implements ICreditAdjustService {
     @Override
     public CreditAccountEntity queryUserCreditAccount(String userId) {
         return creditRepository.queryUserCreditAccount(userId);
+    }
+
+    @Override
+    public List<CreditOrderLogEntity> queryUserCreditOrders(String userId, int limit) {
+        return creditRepository.queryUserCreditOrders(userId, limit);
     }
 
     private void validateTrade(TradeEntity tradeEntity) {

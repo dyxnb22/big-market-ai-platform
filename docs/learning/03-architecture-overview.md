@@ -49,7 +49,9 @@ flowchart TD
 1. `query_stage_activity_id` 按渠道/来源解析 `activityId`。
 2. `GET /api/v1/admin/config/public/display?activityId=` 取标题、文案、`chatbotEnabled`。
 3. 按 `chatbotEnabled` 控制 Chatbot；消息渲染用 DOMPurify。
-4. 抽奖记录与积分流水在 `localStorage`；侧栏抽屉互斥。
+4. 抽奖记录与积分流水由服务端查询（`query_user_award_record_by_token` /
+   `query_user_credit_order_by_token`，打开用户中心时按需加载）；聊天历史仍在
+   `localStorage`；侧栏抽屉互斥。
 5. 未登录落地页可整页滚动；主应用聊天区居中。
 
 ## 基础设施

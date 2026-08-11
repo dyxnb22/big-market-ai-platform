@@ -105,6 +105,11 @@ stateDiagram-v2
 - Data written: `user_award_record`、shared `task` outbox、默认 Docker 下积分奖另写 `credit_award_task`；或外部 OpenAI 额度。
 - Async: `send_award` MQ → message-job 消费。
 - Risk: 外部 OpenAI 额度网关失败依赖异常和任务补偿；`award_state=completed` 不单独证明账户已入账。权威细节：[`docs/data-and-outbox.md`](../data-and-outbox.md)。
+- 用户可见性: 用户中心「最近抽奖」经 `query_user_award_record_by_token` 读服务端
+  `user_award_record` 并展示 `award_state`（发放中/已到账/发放失败），
+  「积分流水」经 `query_user_credit_order_by_token` 读 `user_credit_order`——
+  正好把本图的异步最终一致性过程可视化：抽完立即出现「发放中」，
+  outbox 派发入账后变为「已到账」并出现对应积分流水。
 
 ```mermaid
 flowchart TD

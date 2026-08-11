@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 积分奖品发放，从 {@link AwardRepository} 拆分以降低单类复杂度。
+ * <p>发奖路径：CAS 更新中奖记录为 complete → 插入 credit_award_task outbox（同事务）。</p>
  */
 @Slf4j
 @Component
@@ -64,6 +65,14 @@ public class AwardCreditGrantSupport {
         }
     }
 
+    /**
+     * 同事务内：先 CAS 将中奖记录标为 complete，再插入 credit_award_task。
+     * <ul>
+     *   <li>update 行数为 0 → 已处理，回滚（幂等）</li>
+     *   <li>{@code DuplicateKeyException} on outbox → {@code INDEX_DUP}，表示任务已存在</li>
+     * </ul>
+     * 外层 Redisson 锁（watchdog 续期）防止并发重复发奖。
+     */
     private void saveWithCreditOutbox(String userId, UserCreditAwardEntity userCreditAwardEntity,
                                       UserAwardRecordEntity userAwardRecordEntity,
                                       UserAwardRecord userAwardRecordReq) {

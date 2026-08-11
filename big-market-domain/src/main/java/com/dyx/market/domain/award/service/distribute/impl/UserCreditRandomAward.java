@@ -16,8 +16,11 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 
 /**
+ * 随机积分奖品发放（{@code awardKey = user_credit_random}）。
+ * <p>本地将中奖记录标为 {@code complete} 并写入 {@code credit_award_task} outbox；
+ * 实际积分入账由 {@code DispatchCreditAwardTaskJob} 异步 RPC 到 account（幂等键 {@code award_order_id}）。</p>
+ *
  * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 用户积分奖品，支持 award_config 透传，满足黑名单积分奖励。
  * @create 2024-05-18 08:53
  */
 @Component("user_credit_random")
@@ -26,6 +29,10 @@ public class UserCreditRandomAward implements IDistributeAward {
     @Resource
     private IAwardRepository repository;
 
+    /**
+     * 解析积分范围、生成随机额度，落库发奖聚合（含 credit_award_task）。
+     * {@code awardState=complete} 表示本地发奖逻辑完成，非 account 已入账。
+     */
     @Override
     public void giveOutPrizes(DistributeAwardEntity distributeAwardEntity) {
         // 奖品ID

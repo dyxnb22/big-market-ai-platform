@@ -32,7 +32,10 @@
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/application/ChatCreditApplicationService.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/application/RaffleDrawApplicationService.java`
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/application/CalendarSignApplicationService.java`
-- `big-market-trigger/src/main/java/com/dyx/market/trigger/application/RaffleActivityQueryApplicationService.java`
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/application/RaffleActivityQueryApplicationService.java`（含服务端抽奖历史/积分账本查询）
+- `big-market-trigger/src/main/java/com/dyx/market/trigger/adapter/IAccountReadAdapter.java`（账户只读适配器；Local/Remote 双实现，积分流水读经此路由）
+- `big-market-domain/src/main/java/com/dyx/market/domain/award/model/entity/UserAwardRecordLogEntity.java`（中奖记录读模型，awardState 透传库值）
+- `big-market-domain/src/main/java/com/dyx/market/domain/credit/model/entity/CreditOrderLogEntity.java`（积分流水读模型，tradeName 透传库值）
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/http/GlobalExceptionHandler.java`（作用域 `com.dyx.market.trigger.http`）
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/application/RaffleActivityFacade.java`（HTTP/RPC 共用编排）
 - `big-market-trigger/src/main/java/com/dyx/market/trigger/application/RebateMessageApplicationService.java`

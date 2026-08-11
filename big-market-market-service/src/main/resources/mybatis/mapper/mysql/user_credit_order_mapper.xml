@@ -28,4 +28,12 @@
         limit 1
     </select>
 
+    <select id="queryUserCreditOrderListByUserId" parameterType="com.dyx.market.infrastructure.dao.po.UserCreditOrder" resultMap="dataMap">
+        select user_id, order_id, trade_name, trade_type, trade_amount, out_business_no, create_time
+        from user_credit_order
+        where user_id = #{userId}
+        order by create_time desc, id desc
+        limit 50
+    </select>
+
 </mapper>

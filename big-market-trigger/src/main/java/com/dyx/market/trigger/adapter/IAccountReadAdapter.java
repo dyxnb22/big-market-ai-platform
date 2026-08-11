@@ -1,8 +1,10 @@
 package com.dyx.market.trigger.adapter;
 
 import com.dyx.market.domain.activity.model.entity.ActivityAccountEntity;
+import com.dyx.market.trigger.api.dto.CreditOrderResponseDTO;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 只读账户查询适配器契约。
@@ -20,5 +22,10 @@ public interface IAccountReadAdapter {
     Integer queryRaffleActivityAccountPartakeCount(Long activityId, String userId);
 
     Integer queryRaffleActivityAccountDayPartakeCount(Long activityId, String userId);
+
+    /**
+     * 查询用户积分流水（按交易时间倒序，积分账本展示）。
+     */
+    List<CreditOrderResponseDTO> queryUserCreditOrders(String userId, int limit);
 
 }

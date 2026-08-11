@@ -36,6 +36,11 @@ public abstract class AbstractRaffleActivityPartake implements IRaffleActivityPa
                 .build());
     }
 
+    /**
+     * 创建或复用抽奖参与单。
+     * <p>若存在同用户/活动的 {@code create} 状态未使用订单（{@code queryNoUsedRaffleOrder}），
+     * 直接返回该订单而不重复扣额度 — partake 幂等路径。</p>
+     */
     @Override
     public UserRaffleOrderEntity createOrder(PartakeRaffleActivityEntity partakeRaffleActivityEntity) {
         // 0. 基础信息

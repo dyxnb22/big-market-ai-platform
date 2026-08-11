@@ -29,8 +29,8 @@ proof of strict single-writer isolation:
 
 | Owner | Controlled exceptions |
 |---|---|
-| account | `message-job` temporarily claims and transitions `raffle_activity_order` during payment-delivery reconciliation; account remains the Owner of the order and all credit/quota invariants. |
-| market | `message-job` completes `user_award_record`, advances stock projections/ledgers, and reconciles chat session states; these writes are explicit compensating/projector operations protected by idempotency keys. `account` may read stable SKU/strategy configuration. |
+| account | `message-job` temporarily claims and transitions `raffle_activity_order` during payment-delivery reconciliation; account remains the Owner of the order and all credit/quota invariants. `user_credit_order` list reads for the user-facing credit ledger go through `IAccountCreditService.queryUserCreditOrders` RPC in Docker; dev/local/test profiles read in-process via `ICreditAdjustService` (documented shared query). |
+| market | `message-job` completes `user_award_record`, advances stock projections/ledgers, and reconciles chat session states; these writes are explicit compensating/projector operations protected by idempotency keys. `account` may read stable SKU/strategy configuration. `user_award_record` list reads for the user-facing draw history are market-local (`IAwardRepository.queryUserAwardRecords`). |
 | message-job | Producers may append to `task`, `pending_remote_write_task`, and stock-confirm tasks through typed Ports. `message-job` alone advances retry/failed/manual/done states and owns DLQ persistence. |
 
 The shared physical MySQL container means these are logical boundaries, not

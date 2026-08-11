@@ -11,8 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 策略奖品决策树引擎：从根节点起依次执行规则节点，按边条件跳转直至叶子。
+ * <p>节点返回 {@code ALLOW} 或 {@code TAKE_OVER} 的 code 与出边 {@code ruleLimitValue} 匹配以选下一跳；
+ * 若节点携带 {@code strategyAwardVO}，会覆盖前序结果（后者节点优先）。</p>
+ *
  * @author Fuzhengwei bugstack.cn @小傅哥
- * @description 决策树引擎
  * @create 2024-01-27 11:34
  */
 @Slf4j
@@ -27,6 +30,12 @@ public class DecisionTreeEngine implements IDecisionTreeEngine {
         this.ruleTreeVO = ruleTreeVO;
     }
 
+    /**
+     * 遍历规则树并返回最终奖品决策。
+     *
+     * @param orderId 抽奖单号，库存节点用作 reservationId
+     * @return 末次节点产出的奖品；整棵树无产出时可能为 {@code null}
+     */
     @Override
     public DefaultTreeFactory.StrategyAwardVO process(String userId, Long strategyId, Integer awardId, Date endDateTime, String orderId) {
         DefaultTreeFactory.StrategyAwardVO strategyAwardData = null;

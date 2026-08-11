@@ -31,7 +31,10 @@ public class UserRaffleOrderEntity {
     private String orderId;
     /** 下单时间 */
     private Date orderTime;
-    /** 活动状态；create-创建、used-已使用、cancel-已作废 */
+    /**
+     * 抽奖单状态；{@code create} 可被 {@code queryNoUsedRaffleOrder} 复用（partake 幂等），
+     * {@code used} 表示本次抽奖已消费。详见 {@link com.dyx.market.domain.activity.model.valobj.UserRaffleOrderStateVO}。
+     */
     private UserRaffleOrderStateVO orderState;
     /** 结束时间 */
     private Date endDateTime;

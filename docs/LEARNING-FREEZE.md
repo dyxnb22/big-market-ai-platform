@@ -94,7 +94,7 @@ secure overlay 需要非默认 JWT、内部 RPC、管理、XXL、MySQL 和 Rabbi
   Mapper XML 有多份启动器副本。
 - account 的失败注入覆盖仍可加强；已有最小 `@SpringBootTest` Context 门禁。
 - 栈基线为 Java 17 / Spring Boot 3.5；CI 默认生成 CycloneDX SBOM，但本轮未声称完成全量 CVE 审计。
-- 前端 JWT 仅放在 sessionStorage；聊天/抽奖历史仍在 localStorage，默认凭据、宽松 RPC 和关闭限流仅适用于本地隔离环境。
+- 前端 JWT 仅放在 sessionStorage；聊天历史仍在 localStorage（抽奖历史与积分流水已改为服务端查询：`query_user_award_record_by_token` / `query_user_credit_order_by_token`），默认凭据、宽松 RPC 和关闭限流仅适用于本地隔离环境。
 - 没有生产灰度、容量、HA、灾备或真实外部奖品履约证明。
 - Dubbo Hessian 仍保留窄范围 `--add-opens`（见 Dockerfile.service / Surefire）；Nacos 3.x 学习栈关闭 namespace compatible mode；平台 DataId 以 empty 为 SDK 写入 SoT，admin 通过 JDBC fail-closed 确认并镜像 `public` twin。Nacos publish 是配置提交点，Redis fan-out 只作可重试通知；通知暂挂会返回 `notificationPending`，Nacos listener/启动读取负责最终收敛。
 

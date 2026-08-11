@@ -1,6 +1,7 @@
 package com.dyx.market.account.application;
 
 import com.dyx.market.domain.credit.model.entity.CreditAccountEntity;
+import com.dyx.market.domain.credit.model.entity.CreditOrderLogEntity;
 import com.dyx.market.domain.credit.model.entity.TradeEntity;
 import com.dyx.market.domain.credit.model.valobj.TradeNameVO;
 import com.dyx.market.domain.credit.model.valobj.TradeTypeVO;
@@ -8,6 +9,7 @@ import com.dyx.market.domain.credit.service.ICreditAdjustService;
 import com.dyx.market.infrastructure.dao.IUserCreditOrderDao;
 import com.dyx.market.infrastructure.dao.po.UserCreditOrder;
 import com.dyx.market.middleware.db.router.strategy.IDBRouterStrategy;
+import com.dyx.market.trigger.api.dto.CreditOrderResponseDTO;
 import com.dyx.market.trigger.api.dto.CreditTradeRequestDTO;
 import com.dyx.market.types.enums.ResponseCode;
 import com.dyx.market.types.exception.AppException;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 积分账户应用服务：创建积分交易订单、查询可用余额。
@@ -57,6 +61,25 @@ public class AccountCreditApplicationService {
         }
         CreditAccountEntity entity = creditAdjustService.queryUserCreditAccount(userId);
         return entity != null ? entity.getAdjustAmount() : BigDecimal.ZERO;
+    }
+
+    /** 查询用户积分流水（按交易时间倒序，用于积分账本展示）。 */
+    public List<CreditOrderResponseDTO> queryUserCreditOrders(String userId, int limit) {
+        if (StringUtils.isBlank(userId) || limit <= 0) {
+            throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
+        }
+        List<CreditOrderLogEntity> orders = creditAdjustService.queryUserCreditOrders(userId, limit);
+        List<CreditOrderResponseDTO> result = new ArrayList<>(orders.size());
+        for (CreditOrderLogEntity order : orders) {
+            result.add(CreditOrderResponseDTO.builder()
+                    .orderId(order.getOrderId())
+                    .tradeName(order.getTradeName())
+                    .tradeType(order.getTradeType())
+                    .tradeAmount(order.getTradeAmount())
+                    .createTime(order.getCreateTime())
+                    .build());
+        }
+        return result;
     }
 
     /** 按 outBusinessNo 查询积分流水是否已存在。 */

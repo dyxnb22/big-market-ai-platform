@@ -5,6 +5,8 @@ import com.dyx.market.middleware.db.router.annotation.DBRouter;
 import com.dyx.market.middleware.db.router.annotation.DBRouterStrategy;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
  * @description 用户积分流水单 DAO
@@ -18,5 +20,9 @@ public interface IUserCreditOrderDao {
 
     @DBRouter
     UserCreditOrder queryByOutBusinessNo(UserCreditOrder userCreditOrderReq);
+
+    /** 查询用户积分流水，按交易时间倒序，最多 50 条（服务端积分账本）。 */
+    @DBRouter(key = "userId")
+    List<UserCreditOrder> queryUserCreditOrderListByUserId(UserCreditOrder userCreditOrderReq);
 
 }

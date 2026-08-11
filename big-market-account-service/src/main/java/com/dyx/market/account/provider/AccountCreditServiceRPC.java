@@ -2,6 +2,7 @@ package com.dyx.market.account.provider;
 
 import com.dyx.market.account.application.AccountCreditApplicationService;
 import com.dyx.market.trigger.api.IAccountCreditService;
+import com.dyx.market.trigger.api.dto.CreditOrderResponseDTO;
 import com.dyx.market.trigger.api.dto.CreditTradeRequestDTO;
 import com.dyx.market.trigger.api.response.Response;
 import com.dyx.market.trigger.api.support.ApiResponses;
@@ -11,6 +12,7 @@ import org.apache.dubbo.config.annotation.DubboService;
 
 import jakarta.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * {@link IAccountCreditService} 的 Dubbo Provider 实现：积分账户操作。
@@ -45,5 +47,12 @@ public class AccountCreditServiceRPC implements IAccountCreditService {
     @Override
     public Response<Boolean> existsCreditOrder(String userId, String outBusinessNo) {
         return ApiResponses.execute(() -> accountCreditApplicationService.existsCreditOrder(userId, outBusinessNo));
+    }
+
+    /** 查询用户积分流水（积分账本展示）。 */
+    @Override
+    public Response<List<CreditOrderResponseDTO>> queryUserCreditOrders(String userId, int limit) {
+        log.info("account credit queryUserCreditOrders userId:{} limit:{}", userId, limit);
+        return ApiResponses.execute(() -> accountCreditApplicationService.queryUserCreditOrders(userId, limit));
     }
 }

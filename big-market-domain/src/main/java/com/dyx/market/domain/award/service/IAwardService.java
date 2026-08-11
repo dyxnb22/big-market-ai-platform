@@ -2,6 +2,9 @@ package com.dyx.market.domain.award.service;
 
 import com.dyx.market.domain.award.model.entity.DistributeAwardEntity;
 import com.dyx.market.domain.award.model.entity.UserAwardRecordEntity;
+import com.dyx.market.domain.award.model.entity.UserAwardRecordLogEntity;
+
+import java.util.List;
 
 /**
  * @author Fuzhengwei bugstack.cn @小傅哥
@@ -16,5 +19,14 @@ public interface IAwardService {
      * 配送发货奖品
      */
     void distributeAward(DistributeAwardEntity distributeAwardEntity) throws Exception;
+
+    /**
+     * 查询用户中奖记录（按中奖时间倒序，服务端抽奖历史）。
+     *
+     * @param userId 用户ID
+     * @param limit  最大返回条数
+     * @return 中奖记录读模型集合
+     */
+    List<UserAwardRecordLogEntity> queryUserAwardRecords(String userId, int limit);
 
 }

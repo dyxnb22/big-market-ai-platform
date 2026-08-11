@@ -398,7 +398,7 @@ CREATE TABLE `user_award_record_000` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
-  KEY `idx_user_id` (`user_id`),
+  KEY `idx_user_id_award_time` (`user_id`,`award_time`),
   KEY `idx_activity_id` (`activity_id`),
   KEY `idx_award_id` (`strategy_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户中奖记录表';
@@ -438,7 +438,7 @@ CREATE TABLE `user_award_record_001` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
-  KEY `idx_user_id` (`user_id`),
+  KEY `idx_user_id_award_time` (`user_id`,`award_time`),
   KEY `idx_activity_id` (`activity_id`),
   KEY `idx_award_id` (`strategy_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户中奖记录表';
@@ -464,7 +464,7 @@ CREATE TABLE `user_award_record_002` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
-  KEY `idx_user_id` (`user_id`),
+  KEY `idx_user_id_award_time` (`user_id`,`award_time`),
   KEY `idx_activity_id` (`activity_id`),
   KEY `idx_award_id` (`strategy_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户中奖记录表';
@@ -490,7 +490,7 @@ CREATE TABLE `user_award_record_003` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
-  KEY `idx_user_id` (`user_id`),
+  KEY `idx_user_id_award_time` (`user_id`,`award_time`),
   KEY `idx_activity_id` (`activity_id`),
   KEY `idx_award_id` (`strategy_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户中奖记录表';
@@ -730,7 +730,7 @@ CREATE TABLE `user_credit_order_000` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
   UNIQUE KEY `uq_out_business_no` (`out_business_no`),
-  KEY `idx_user_id` (`user_id`)
+  KEY `idx_user_id_create_time` (`user_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户积分订单记录';
 
 LOCK TABLES `user_credit_order_000` WRITE;
@@ -764,7 +764,7 @@ CREATE TABLE `user_credit_order_001` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
   UNIQUE KEY `uq_out_business_no` (`out_business_no`),
-  KEY `idx_user_id` (`user_id`)
+  KEY `idx_user_id_create_time` (`user_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户积分订单记录';
 
 
@@ -787,7 +787,7 @@ CREATE TABLE `user_credit_order_002` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
   UNIQUE KEY `uq_out_business_no` (`out_business_no`),
-  KEY `idx_user_id` (`user_id`)
+  KEY `idx_user_id_create_time` (`user_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户积分订单记录';
 
 LOCK TABLES `user_credit_order_002` WRITE;
@@ -820,7 +820,7 @@ CREATE TABLE `user_credit_order_003` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_order_id` (`order_id`),
   UNIQUE KEY `uq_out_business_no` (`out_business_no`),
-  KEY `idx_user_id` (`user_id`)
+  KEY `idx_user_id_create_time` (`user_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户积分订单记录';
 
 LOCK TABLES `user_credit_order_003` WRITE;

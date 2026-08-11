@@ -60,6 +60,18 @@ ACCOUNT="$(curl -fsS "$API/raffle/activity/query_user_activity_account_by_token"
   -d "{\"activityId\":${ACTIVITY_ID}}")"
 assert_json_code "user activity account" "0000" "$ACCOUNT"
 
+AWARD_RECORDS="$(curl -fsS "$API/raffle/activity/query_user_award_record_by_token" \
+  -H "Authorization: $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{}')"
+assert_json_code "user award records" "0000" "$AWARD_RECORDS"
+
+CREDIT_ORDERS="$(curl -fsS "$API/raffle/activity/query_user_credit_order_by_token" \
+  -H "Authorization: $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{}')"
+assert_json_code "user credit orders" "0000" "$CREDIT_ORDERS"
+
 ADMIN_LIST="$(curl -fsS "$API/admin/config/list" -H "Authorization: $ADMIN_TOKEN")"
 assert_json_code "admin config list" "0000" "$ADMIN_LIST"
 

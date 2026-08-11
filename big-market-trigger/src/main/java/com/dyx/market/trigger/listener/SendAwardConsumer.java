@@ -32,6 +32,11 @@ public class SendAwardConsumer {
     @Resource
     private IAwardDispatchAdapter awardDispatchAdapter;
 
+    /**
+     * 消费 send_award MQ 消息并触发异步发奖。
+     * <p>{@code INDEX_DUP} 视为成功：表示该 {@code orderId} 已发放（MQ 重复投递），
+     * 不可将其他异常当作重复吞掉。</p>
+     */
     @RabbitListener(queuesToDeclare = @Queue(
             value = "${spring.rabbitmq.topic.send_award}",
             arguments = @Argument(name = "x-dead-letter-exchange", value = "dlx")

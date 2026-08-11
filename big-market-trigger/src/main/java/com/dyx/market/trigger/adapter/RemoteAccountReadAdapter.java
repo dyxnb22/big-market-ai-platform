@@ -3,6 +3,7 @@ package com.dyx.market.trigger.adapter;
 import com.dyx.market.domain.activity.model.entity.ActivityAccountEntity;
 import com.dyx.market.trigger.api.IAccountCreditService;
 import com.dyx.market.trigger.api.IAccountQuotaService;
+import com.dyx.market.trigger.api.dto.CreditOrderResponseDTO;
 import com.dyx.market.trigger.api.dto.UserActivityAccountResponseDTO;
 import com.dyx.market.trigger.api.response.Response;
 import com.dyx.market.types.enums.ResponseCode;
@@ -11,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * account-service 的只读 Dubbo 适配器。
@@ -78,6 +81,15 @@ public class RemoteAccountReadAdapter implements IAccountReadAdapter {
             return response.getData() == null ? 0 : response.getData();
         }
         throw readFailure("queryRaffleActivityAccountDayPartakeCount", userId, response);
+    }
+
+    @Override
+    public List<CreditOrderResponseDTO> queryUserCreditOrders(String userId, int limit) {
+        Response<List<CreditOrderResponseDTO>> response = accountCreditService.queryUserCreditOrders(userId, limit);
+        if (isSuccess(response)) {
+            return response.getData() == null ? Collections.emptyList() : response.getData();
+        }
+        throw readFailure("queryUserCreditOrders", userId, response);
     }
 
     private static boolean isSuccess(Response<?> response) {

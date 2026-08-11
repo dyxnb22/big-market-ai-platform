@@ -106,6 +106,30 @@ public class RaffleActivityController implements IRaffleActivityService {
         return TriggerApiResponses.ok(raffleActivityFacade.queryUserCreditAccount(userId));
     }
 
+    @PostMapping("query_user_award_record_by_token")
+    @Override
+    public Response<List<UserAwardRecordResponseDTO>> queryUserAwardRecordsByToken(
+            @RequestHeader("Authorization") String token) {
+        return queryUserAwardRecords(authenticatedUserSupport.requireUserId(token));
+    }
+
+    @Override
+    public Response<List<UserAwardRecordResponseDTO>> queryUserAwardRecords(String userId) {
+        return TriggerApiResponses.ok(raffleActivityFacade.queryUserAwardRecords(userId));
+    }
+
+    @PostMapping("query_user_credit_order_by_token")
+    @Override
+    public Response<List<CreditOrderResponseDTO>> queryUserCreditOrdersByToken(
+            @RequestHeader("Authorization") String token) {
+        return queryUserCreditOrders(authenticatedUserSupport.requireUserId(token));
+    }
+
+    @Override
+    public Response<List<CreditOrderResponseDTO>> queryUserCreditOrders(String userId) {
+        return TriggerApiResponses.ok(raffleActivityFacade.queryUserCreditOrders(userId));
+    }
+
     @PostMapping("credit_pay_exchange_sku_by_token")
     @Override
     public Response<Boolean> creditPayExchangeSku(@RequestHeader("Authorization") String token,

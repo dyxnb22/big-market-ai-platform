@@ -4,8 +4,6 @@
  */
 var auth = readAuth();
 var CHAT_KEY = "lucky-draw-chats-" + (auth.userId || "anon");
-var DRAW_HISTORY_KEY = function(uid) { return "lucky-draw-history-" + (uid || "anon"); };
-var CREDIT_LEDGER_KEY = function(uid) { return "lucky-draw-credit-" + (uid || "anon"); };
 
 function showLanding() {
   document.body.classList.add("page-landing");
@@ -130,31 +128,6 @@ function initApp() {
   var metricsLoading = true;
   var pendingAssistant = false;
 
-  // ---- Local history (draw / credit ledger) ----
-  function readHistory(keyFn, fallback) {
-    return readJson(keyFn(auth.userId), fallback);
-  }
-  function saveHistory(keyFn, data) {
-    localStorage.setItem(keyFn(auth.userId), JSON.stringify(data));
-  }
-
-  function pushDrawHistory(awardTitle, awardId) {
-    var list = readHistory(DRAW_HISTORY_KEY, []);
-    list.unshift({ awardTitle: awardTitle || "奖品", awardId: awardId, at: Date.now() });
-    if (list.length > 30) list.length = 30;
-    saveHistory(DRAW_HISTORY_KEY, list);
-    renderHistories();
-  }
-
-  function updateLatestDrawHistory(awardTitle) {
-    var list = readHistory(DRAW_HISTORY_KEY, []);
-    if (list.length) {
-      list[0].awardTitle = awardTitle;
-      saveHistory(DRAW_HISTORY_KEY, list);
-      renderHistories();
-    }
-  }
-
   function isRandomCreditAward(title) {
     return title && String(title).indexOf("随机积分") >= 0;
   }
@@ -184,36 +157,62 @@ function initApp() {
     return apiRequest(path, Object.assign({ method: "POST", body: "{}" }, extra || {}));
   }
 
-  function pushCreditLedger(delta, balance, note) {
-    var list = readHistory(CREDIT_LEDGER_KEY, []);
-    list.unshift({ delta: delta, balance: balance, note: note || "", at: Date.now() });
-    if (list.length > 40) list.length = 40;
-    saveHistory(CREDIT_LEDGER_KEY, list);
-    renderHistories();
-  }
-
   function formatTime(ts) {
     try { return new Date(ts).toLocaleString(); } catch (e) { return ""; }
   }
 
+  // ---- Server-backed histories（抽奖记录 / 积分流水均来自服务端持久化数据）----
+  var AWARD_STATE_LABEL = { create: "发放中", completed: "已到账", complete: "已到账", fail: "发放失败" };
+
+  function isUserCenterOpen() {
+    return d.userCenterDrawr && d.userCenterDrawr.classList.contains("open");
+  }
+
+  /** 抽奖/签到/兑换/聊天之后调用；仅在用户中心打开时刷新，避免多余请求。 */
+  function refreshHistoriesIfVisible() {
+    if (isUserCenterOpen()) renderHistories();
+  }
+
   function renderHistories() {
-    var draws = readHistory(DRAW_HISTORY_KEY, []);
-    if (d.drawHistoryList) {
-      d.drawHistoryList.innerHTML = draws.length
-        ? draws.map(function(item) {
-            return '<div class="history-item"><strong>' + esc(item.awardTitle) + '</strong><span>' + esc(formatTime(item.at)) + '</span></div>';
+    renderDrawHistory();
+    renderCreditLedger();
+  }
+
+  function renderDrawHistory() {
+    if (!d.drawHistoryList) return;
+    postJson("/raffle/activity/query_user_award_record_by_token").then(function(r) {
+      var list = r.data || [];
+      d.drawHistoryList.innerHTML = list.length
+        ? list.map(function(item) {
+            var stateKey = String(item.awardState || "").toLowerCase();
+            var stateLabel = AWARD_STATE_LABEL[stateKey] || item.awardState || "";
+            var stateClass = stateKey === "fail" ? "state-fail" : (stateKey === "create" ? "state-pending" : "state-done");
+            return '<div class="history-item"><strong>' + esc(item.awardTitle || "奖品") +
+              (stateLabel ? ' <span class="history-state ' + stateClass + '">' + esc(stateLabel) + '</span>' : '') +
+              '</strong><span>' + esc(formatTime(item.awardTime)) + '</span></div>';
           }).join("")
         : '<p class="history-empty">暂无记录</p>';
-    }
-    var ledger = readHistory(CREDIT_LEDGER_KEY, []);
-    if (d.creditLedgerList) {
-      d.creditLedgerList.innerHTML = ledger.length
-        ? ledger.map(function(item) {
-            var sign = item.delta > 0 ? "+" : "";
-            return '<div class="history-item"><strong>' + sign + item.delta + ' 积分</strong><span>' + esc(item.note || "") + ' · ' + esc(formatTime(item.at)) + (item.balance != null ? ' · 余额 ' + item.balance : '') + '</span></div>';
+    }).catch(function() {
+      d.drawHistoryList.innerHTML = '<p class="history-empty">加载失败，请稍后重试</p>';
+    });
+  }
+
+  function renderCreditLedger() {
+    if (!d.creditLedgerList) return;
+    postJson("/raffle/activity/query_user_credit_order_by_token").then(function(r) {
+      var list = r.data || [];
+      d.creditLedgerList.innerHTML = list.length
+        ? list.map(function(item) {
+            var reverse = item.tradeType === "reverse";
+            var amount = Math.abs(Number(item.tradeAmount) || 0);
+            return '<div class="history-item"><strong class="' + (reverse ? "ledger-out" : "ledger-in") + '">' +
+              (reverse ? "-" : "+") + amount + ' 积分</strong>' +
+              '<span>' + esc(item.tradeName || "") + ' · ' + esc(formatTime(item.createTime)) + '</span></div>';
           }).join("")
         : '<p class="history-empty">暂无记录</p>';
-    }
+    }).catch(function() {
+      d.creditLedgerList.innerHTML = '<p class="history-empty">加载失败，请稍后重试</p>';
+    });
   }
 
   // ---- Chatbot gate / activity display ----
@@ -505,11 +504,11 @@ function initApp() {
       if (d.wheel) d.wheel.style.transform = "rotate("+rotation+"deg)";
       var pendingTitle = isRandomCreditAward(title) ? "随机积分（发放中…）" : title;
       if (d.drawResult) d.drawResult.textContent = "恭喜获得：" + pendingTitle;
-      pushDrawHistory(pendingTitle, r.data?.awardId);
+      refreshHistoriesIfVisible();
 
       function finishDraw(displayTitle) {
         if (d.drawResult) d.drawResult.textContent = "恭喜获得：" + displayTitle;
-        updateLatestDrawHistory(displayTitle);
+        refreshHistoriesIfVisible();
         addMsg("assistant", "抽奖完成，你获得了：" + displayTitle);
       }
 
@@ -518,10 +517,6 @@ function initApp() {
           var displayTitle = gain != null ? ("随机积分 +" + gain) : title;
           finishDraw(displayTitle);
           loadCampaign().catch(function(){});
-          if (gain != null) {
-            var bal = creditBefore + gain;
-            pushCreditLedger(gain, bal, "抽奖奖励");
-          }
         });
       } else {
         finishDraw(title);
@@ -559,14 +554,12 @@ function initApp() {
       toast(data.message || "签到成功，+10 积分");
       if (data.creditBalance !== undefined && data.creditBalance !== null) {
         var bal = parseFloat(data.creditBalance);
-        var prev = currentCreditBalance();
         d.creditMetric.textContent = bal;
         d.ucCredit.textContent = bal;
         d.creditDisplay.textContent = "积分: " + bal;
         if (creditMobile) creditMobile.textContent = "积分: " + bal;
-        var reward = data.rewardCredit != null ? parseFloat(data.rewardCredit) : (bal > prev ? bal - prev : 0);
-        if (reward > 0) pushCreditLedger(reward, bal, "每日签到");
       }
+      refreshHistoriesIfVisible();
       loadCampaign().catch(function(){});
     }).catch(function(e) {
       if (e.code === "0003" || e.code === "0004" || (e.message && e.message.indexOf("已签到") >= 0)) {
@@ -717,7 +710,7 @@ function initApp() {
         d.ucCredit.textContent = bal;
         if (creditMobile) creditMobile.textContent = "积分: " + bal;
         if (data.creditDeducted && data.creditDeducted > 0) {
-          pushCreditLedger(-Number(data.creditDeducted), bal, "AI 对话");
+          refreshHistoriesIfVisible();
         }
       }
     }).catch(function(e) {
@@ -831,9 +824,7 @@ function initApp() {
       body: JSON.stringify({ sku: exchangeSku.sku, requestId: crypto.randomUUID() })
     }).then(function() {
       toast("兑换成功，获得 1 次抽奖机会");
-      var cost = exchangeSku ? (exchangeSku.productAmount || 0) : 0;
-      var bal = parseFloat(d.creditMetric.textContent) || 0;
-      if (cost > 0) pushCreditLedger(-cost, bal, "兑换抽奖次数");
+      refreshHistoriesIfVisible();
       loadCampaign().catch(function(){});
     }).catch(function(e) {
       toast(e.message || "兑换失败");
@@ -917,10 +908,9 @@ function initApp() {
     if ((e.metaKey||e.ctrlKey) && e.key==="k") { e.preventDefault(); d.msgInput.focus(); }
   });
 
-  // Init
+  // Init（历史/流水改为打开用户中心时按需从服务端加载）
   renderWheel();
   renderChats();
-  renderHistories();
   healthCheck();
   resolveActivityId()
     .then(function() { return loadDisplayConfig(); })

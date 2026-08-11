@@ -113,6 +113,38 @@ public interface IRaffleActivityService {
      */
     Response<BigDecimal> queryUserCreditAccount(String userId);
 
+    /**
+     * 查询用户中奖记录（服务端抽奖历史，按中奖时间倒序）
+     *
+     * @param token 登录Token
+     * @return 中奖记录集合
+     */
+    Response<List<UserAwardRecordResponseDTO>> queryUserAwardRecordsByToken(String token);
+
+    /**
+     * 查询用户中奖记录（服务端抽奖历史，按中奖时间倒序）
+     *
+     * @param userId 用户ID
+     * @return 中奖记录集合
+     */
+    Response<List<UserAwardRecordResponseDTO>> queryUserAwardRecords(String userId);
+
+    /**
+     * 查询用户积分流水（服务端积分账本，按交易时间倒序）
+     *
+     * @param token 登录Token
+     * @return 积分流水集合
+     */
+    Response<List<CreditOrderResponseDTO>> queryUserCreditOrdersByToken(String token);
+
+    /**
+     * 查询用户积分流水（服务端积分账本，按交易时间倒序）
+     *
+     * @param userId 用户ID
+     * @return 积分流水集合
+     */
+    Response<List<CreditOrderResponseDTO>> queryUserCreditOrders(String userId);
+
     Response<Boolean> creditPayExchangeSku(String token, SkuProductShopCartRequestDTO request);
 
     /**

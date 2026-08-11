@@ -31,6 +31,30 @@ public class MarketDaoMapperStatementTest {
     }
   }
 
+  @Test
+  public void userAwardRecordDaoStatementsPresent() throws Exception {
+    String xml = loadMapperText("mybatis/mapper/mysql/user_award_record_mapper.xml");
+    for (Method method : com.dyx.market.infrastructure.dao.IUserAwardRecordDao.class.getMethods()) {
+      if (method.getDeclaringClass() == Object.class) {
+        continue;
+      }
+      assertTrue("missing statement for " + method.getName(),
+          xml.contains("id=\"" + method.getName() + "\""));
+    }
+  }
+
+  @Test
+  public void userCreditOrderDaoStatementsPresent() throws Exception {
+    String xml = loadMapperText("mybatis/mapper/mysql/user_credit_order_mapper.xml");
+    for (Method method : com.dyx.market.infrastructure.dao.IUserCreditOrderDao.class.getMethods()) {
+      if (method.getDeclaringClass() == Object.class) {
+        continue;
+      }
+      assertTrue("missing statement for " + method.getName(),
+          xml.contains("id=\"" + method.getName() + "\""));
+    }
+  }
+
   private static String loadMapperText(String classpathResource) throws Exception {
     try (InputStream in = MarketDaoMapperStatementTest.class.getClassLoader().getResourceAsStream(classpathResource)) {
       if (in == null) {

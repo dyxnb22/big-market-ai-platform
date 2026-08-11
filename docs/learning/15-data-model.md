@@ -274,11 +274,17 @@ user_award_record
 └── award_state  varchar  create / completed
 ```
 
+索引：`uq_order_id`（幂等）、`idx_user_id_award_time (user_id, award_time)`（服务端抽奖历史
+`query_user_award_record_by_token` 按用户倒序查询，复合索引避免 filesort；老卷由
+`z-history-query-indexes.sql` 迁移）、`idx_activity_id`。
+
 **状态机：**
 ```
 [create] ──MQ 消费发奖成功──→ [completed]
 ```
 MQ 失败时 award_state 停留在 create，由 `SendMessageTaskJob` 补偿重发。
+读路径（`UserAwardRecordLogEntity` 读模型）对 `award_state` 原样透传字符串，
+不做枚举反解——历史上同时存在 `complete` 枚举编码与 `completed` 库值。
 
 ---
 
@@ -368,6 +374,12 @@ user_credit_order
 ├── trade_amount    decimal  交易金额（扣减为负数）
 └── out_business_no varchar  业务防重 ID（唯一索引）
 ```
+
+索引：`uq_order_id`、`uq_out_business_no`（幂等）、
+`idx_user_id_create_time (user_id, create_time)`（服务端积分账本
+`query_user_credit_order_by_token` 按用户倒序查询；老卷由
+`z-history-query-indexes.sql` 迁移）。`trade_name` 落库为中文展示值，
+读模型 `CreditOrderLogEntity` 原样透传，不做枚举反解。
 
 ---
 
