@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Apply reconcile / chat-session DDL to an existing Docker MySQL volume.
-# Fresh volumes already run docs/dev-ops/mysql/sql/z-reconcile-tables.sql on init;
-# this script is idempotent for dev stacks created before that file existed.
+# 将对账/聊天会话 DDL 应用到现有 Docker MySQL 卷。
+# 新建卷初始化时已经执行 docs/dev-ops/mysql/sql/z-reconcile-tables.sql；
+# 本脚本用于该文件出现以前创建的开发栈，并且可以幂等执行。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -23,8 +23,8 @@ fi
 echo "Applying reconcile DDL via container '$MYSQL_CONTAINER'..."
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$SQL_FILE"
 
-# continuation_pending is 20 characters. Older volumes used VARCHAR(16),
-# which fails under STRICT_TRANS_TABLES after a remote compensation succeeds.
+# continuation_pending 长度为 20 个字符。旧卷使用 VARCHAR(16)，
+# 远程补偿成功后在 STRICT_TRANS_TABLES 模式下会因此失败。
 for schema in big_market big_market_01 big_market_02; do
   state_length=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e \
     "SELECT COALESCE(MAX(CHARACTER_MAXIMUM_LENGTH), 0)
@@ -39,7 +39,7 @@ for schema in big_market big_market_01 big_market_02; do
   fi
 done
 
-# Idempotent column migrate for older chat_credit_session tables
+# 为旧版 chat_credit_session 表幂等迁移列。
 for schema in big_market_01 big_market_02; do
   col=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e \
     "SELECT COUNT(*) FROM information_schema.columns
@@ -53,7 +53,7 @@ for schema in big_market_01 big_market_02; do
   fi
 done
 
-# Older volumes need the original quota bucket facts for cross-day/month rollback.
+# 旧卷需要保留原始配额桶事实，以支持跨日/月回滚。
 for schema in big_market_01 big_market_02; do
   for shard in 000 001 002 003; do
     for column in month day; do
@@ -68,7 +68,7 @@ for schema in big_market_01 big_market_02; do
   done
 done
 
-# Older shared volumes may have the restore ledger without a state column.
+# 旧共享卷中的恢复账本可能缺少 state 列。
 restore_status=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e \
   "SELECT COUNT(*) FROM information_schema.columns
    WHERE table_schema='big_market' AND table_name='activity_sku_stock_restore_ledger' AND column_name='status';" 2>/dev/null || echo 0)
@@ -80,8 +80,8 @@ if [ "${restore_status:-0}" = "0" ]; then
     || echo "WARN: could not add status to activity_sku_stock_restore_ledger (table may be missing)"
 fi
 
-# Older shared volumes predate the credit-pay reservation link on the SKU
-# decrement ledger. It is nullable for legacy draw rows.
+# 旧共享卷创建时尚未有 SKU 扣减账本上的积分支付预留关联。
+# 对历史抽奖记录，该字段允许为空。
 decrement_reservation=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e \
   "SELECT COUNT(*) FROM information_schema.columns
    WHERE table_schema='big_market' AND table_name='activity_sku_stock_decrement_ledger' AND column_name='reservation_id';" 2>/dev/null || echo 0)

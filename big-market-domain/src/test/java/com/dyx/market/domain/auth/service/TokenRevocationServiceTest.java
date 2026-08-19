@@ -5,8 +5,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for InMemoryTokenRevocationService.
- * Verifies the basic token revocation lifecycle.
+ * InMemoryTokenRevocationService 单元测试，校验 Token 吊销的基本生命周期。
  */
 public class TokenRevocationServiceTest {
 
@@ -72,7 +71,7 @@ public class TokenRevocationServiceTest {
         long pastExpiry = System.currentTimeMillis() - 1_000L;
 
         svc.revoke(jti, pastExpiry);
-        svc.isRevoked(jti); // triggers eviction of expired entry
+        svc.isRevoked(jti); // 访问时触发过期条目淘汰。
         assertEquals("size should be 0 after expired entry evicted", 0, svc.size());
     }
 }

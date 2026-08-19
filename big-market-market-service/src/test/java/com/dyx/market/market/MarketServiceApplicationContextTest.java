@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * BM-001: market-service must declare scan for trigger.application/support/adapter.
+ * BM-001：market-service 启动类必须声明 trigger.application/support/adapter 的扫描范围。
  */
 public class MarketServiceApplicationContextTest {
 

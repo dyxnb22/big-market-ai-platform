@@ -20,7 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
-/** Ensures an UNKNOWN remote rollback is durable rather than silently logged. */
+/** 确保 UNKNOWN 远程回滚会持久化，而不是只记录日志后丢失。 */
 @RunWith(MockitoJUnitRunner.class)
 public class RemoteActivityAccountPortTest {
 

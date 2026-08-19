@@ -8,7 +8,7 @@ import org.junit.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * BM-017: domain must not depend on MyBatis DAO packages (ports/adapters only).
+ * BM-017：domain 不得依赖 MyBatis DAO 包，只能通过端口/适配器访问基础设施。
  */
 public class DomainArchitectureTest {
 

@@ -1,6 +1,6 @@
--- Initial Nacos DataIds for the seven-service topology.
--- INSERT IGNORE intentionally preserves administrator-managed values on reused
--- volumes. Learning SoT is empty tenant_id (Nacos 3.x default-namespace write target).
+-- 七服务拓扑的初始 Nacos DataId。
+-- INSERT IGNORE 有意保留复用卷中由管理员维护的值。
+-- 学习环境事实来源使用空 tenant_id（Nacos 3.x 默认命名空间的写入目标）。
 USE `nacos_config`;
 
 INSERT IGNORE INTO `config_info`

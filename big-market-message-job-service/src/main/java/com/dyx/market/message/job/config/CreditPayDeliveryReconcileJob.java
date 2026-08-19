@@ -212,10 +212,8 @@ public class CreditPayDeliveryReconcileJob {
             return true;
         }
         try {
-            // The repository owns the durable restore ledger and its atomic
-            // Redis/DB transition. Do not put a Redis marker in front of it:
-            // a crash after SETNX and before the DB ledger write would make a
-            // later compensation attempt skip the restore forever.
+            // 仓储负责持久化恢复账本以及 Redis/DB 的原子状态转换。不能在仓储前增加 Redis 标记：
+            // 如果进程在 SETNX 后、写入数据库账本前崩溃，后续补偿会永久误以为已经恢复。
             activityRepository.restoreActivitySkuStock(order.getSku(), order.getOutBusinessNo());
             log.info("[CreditPayDeliveryReconcileJob] SKU stock restored sku:{}", order.getSku());
             return true;

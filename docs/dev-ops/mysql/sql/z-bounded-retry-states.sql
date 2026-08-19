@@ -1,7 +1,6 @@
--- V20260719__bounded_retry_states: additive migration for reused MySQL volumes.
--- Fresh Docker volumes already receive these columns from the full schema dumps
--- and z-reconcile-tables.sql; this file makes the same contract explicit for
--- old volumes and records the applied version in a small central ledger.
+-- V20260719__bounded_retry_states：针对复用 MySQL 卷的增量迁移。
+-- 新建 Docker 卷已从完整 schema dump 和 z-reconcile-tables.sql 获得这些列；
+-- 本文件为旧卷明确同一契约，并在中央小型账本中记录已应用的版本。
 
 USE `big_market`;
 

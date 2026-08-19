@@ -23,7 +23,7 @@ function showVerifying() {
   if (v) v.style.display = "";
 }
 
-// ===== Auth gate =====
+// ===== 登录门禁 =====
 if (!auth.token) {
   showLanding();
 } else {
@@ -48,7 +48,7 @@ if (!auth.token) {
   });
 }
 
-// ===== Main App =====
+// ===== 主应用 =====
 function initApp() {
   document.body.classList.remove("page-landing", "page-verifying");
   document.getElementById("landingView").style.display = "none";
@@ -56,7 +56,7 @@ function initApp() {
   var verifying = document.getElementById("verifyingView");
   if (verifying) verifying.style.display = "none";
 
-  // DOM references
+  // DOM 元素引用。
   var d = {
     userMenuBtn:     qs("#userMenuBtn"),
     userNameBadge:   qs("#userNameBadge"),
@@ -115,7 +115,7 @@ function initApp() {
   };
 
   function qs(sel) { return document.querySelector(sel); }
-  var creditMobile = null; // mobile topbar removed
+  var creditMobile = null; // 移动端顶栏已移除。
 
   var chatState = readJson(CHAT_KEY, defaultChats());
   var awards = [];
@@ -161,7 +161,7 @@ function initApp() {
     try { return new Date(ts).toLocaleString(); } catch (e) { return ""; }
   }
 
-  // ---- Server-backed histories（抽奖记录 / 积分流水均来自服务端持久化数据）----
+  // ---- 服务端历史记录（抽奖记录 / 积分流水均来自服务端持久化数据）----
   var AWARD_STATE_LABEL = { create: "发放中", completed: "已到账", complete: "已到账", fail: "发放失败" };
 
   function isUserCenterOpen() {
@@ -215,7 +215,7 @@ function initApp() {
     });
   }
 
-  // ---- Chatbot gate / activity display ----
+  // ---- Chatbot 门禁 / 活动展示 ----
   function applyActivityGate(state) {
     var preparing = state !== "active" && state !== "online";
     if (d.drawBtn) {
@@ -328,17 +328,16 @@ function initApp() {
   }
   function saveChats() { localStorage.setItem(CHAT_KEY, JSON.stringify(chatState)); }
 
-  // ---- Health (via gateway) — only updates when loadCampaign hasn't set a
-  // business-level status.  loadCampaign calls setConnStatus which writes both
-  // class and text, so if the last API response was an error the business error
-  // message will not be overwritten by a green dot from this lightweight check.
+  // ---- 健康检查（经 gateway）——仅在 loadCampaign 尚未设置业务状态时更新。
+  // loadCampaign 调用 setConnStatus 同时写入样式和文本，因此最近一次 API 返回业务错误时，
+  // 不能让这个轻量检查的绿色圆点覆盖业务错误提示。
   function healthCheck() {
     fetch(CONFIG.API_BASE.replace(/\/api\/v1\/?$/, "") + "/actuator/health")
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var up = data.status === "UP";
-        // Only update if the current text is still the default — business
-        // errors set by loadCampaign (e.g. "加载积分失败") take precedence.
+        // 只有当前文本仍是默认状态时才更新；loadCampaign 设置的业务错误
+        //（例如“加载积分失败”）优先级更高。
         var cur = d.apiStatusText.textContent;
         if (cur === "已连接" || cur === "未连接" || cur === "连接中") {
           d.apiStatusDot.className = "status-dot" + (up ? " online" : "");
@@ -354,13 +353,13 @@ function initApp() {
       });
   }
 
-  // ---- Auth UI ----
+  // ---- 鉴权界面 ----
   d.userNameBadge.textContent = auth.userId || "用户";
   d.userName.textContent = auth.userId || "用户";
   d.userIdDisplay.textContent = "ID: " + (auth.userId || "-");
   d.userAvatar.textContent = (auth.userId || "?")[0].toUpperCase();
 
-  // ---- Logout ----
+  // ---- 退出登录 ----
   function logout() {
     var token = auth.token;
     var revoke = token
@@ -372,7 +371,7 @@ function initApp() {
     });
   }
 
-  // ---- Wheel / campaign / draw ----
+  // ---- 转盘 / 活动 / 抽奖 ----
   function renderWheel() {
     var seg = 360 / awards.length;
     var colors = ["#f97316","#14b8a6","#3b82f6","#facc15","#a855f7","#22c55e","#ef4444","#06b6d4"];
@@ -380,7 +379,7 @@ function initApp() {
     d.wheel.style.background = "conic-gradient(" + grad + ")";
     d.wheel.innerHTML = "";
     var mobile = window.innerWidth < 640;
-    // Keep labels well inside the circle to avoid clipping by border-radius
+    // 让标签保持在圆形内部，避免被 border-radius 裁切。
     var fontSize = mobile ? (awards.length > 6 ? 9 : 11) : (awards.length > 8 ? 10 : awards.length > 6 ? 12 : 14);
     var labelWidth = mobile ? (awards.length > 6 ? 54 : 70) : (awards.length > 6 ? 68 : 90);
     var radius = mobile ? 72 : 112;
@@ -396,19 +395,19 @@ function initApp() {
     });
   }
 
-  /** Update connection status indicator */
+  /** 更新连接状态指示器。 */
   function setConnStatus(ok, msg) {
     d.apiStatusDot.className = "status-dot" + (ok ? " online" : "");
     d.apiStatusText.textContent = msg || (ok ? "已连接" : "未连接");
   }
 
-  /** Returns a Promise that resolves when all campaign data has been refreshed. */
+  /** 刷新全部活动数据，并返回在刷新完成后兑现的 Promise。 */
   function loadCampaign() {
     var seq = ++loadCampaignSeq;
     setMetricsLoading(true);
     var proms = [];
 
-    // User activity account
+    // 用户活动账户。
     proms.push(
       apiRequest("/raffle/activity/query_user_activity_account_by_token", {
         method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
@@ -425,7 +424,7 @@ function initApp() {
       }).catch(function() { setConnStatus(false, "加载数据失败"); })
     );
 
-    // User credit account
+    // 用户积分账户。
     proms.push(
       apiRequest("/raffle/activity/query_user_credit_account_by_token", {method:"POST", body: "{}"}).then(function(r) {
         if (seq !== loadCampaignSeq) return;
@@ -437,7 +436,7 @@ function initApp() {
       }).catch(function() { setConnStatus(false, "加载积分失败"); })
     );
 
-    // Sign-in status
+    // 签到状态。
     proms.push(
       apiRequest("/raffle/activity/is_calendar_sign_rebate_by_token", {method:"POST", body: "{}"}).then(function(r) {
         if (seq !== loadCampaignSeq) return;
@@ -468,7 +467,7 @@ function initApp() {
       })
     );
 
-    // Award list
+    // 奖品列表。
     proms.push(
       apiRequest("/raffle/strategy/query_raffle_award_list_by_token", {
         method:"POST", body: JSON.stringify({activityId: CONFIG.ACTIVITY_ID})
@@ -485,7 +484,7 @@ function initApp() {
     });
   }
 
-  // ---- Draw（随机积分奖需轮询余额变化以展示实际到账） ----
+  // ---- 抽奖（随机积分奖需轮询余额变化以展示实际到账） ----
   function draw() {
     if (!activityDisplayReady) {
       toast("活动准备中，请稍后再试");
@@ -538,7 +537,7 @@ function initApp() {
     });
   }
 
-  // ---- Sign In ----
+  // ---- 签到 ----
   function signIn() {
     if (signedToday) { toast("今日已签到，明天再来"); return; }
     busy(d.signInBtn, true); busy(d.ucSignInBtn, true);
@@ -584,8 +583,8 @@ function initApp() {
     if (d.ucSigned) d.ucSigned.textContent = "是";
   }
 
-  // ---- Chat ----
-  // ---- Chat conversations ----
+  // ---- Chat 对话 ----
+  // ---- Chat 会话列表 ----
   function activeConv() {
     if (!chatState.conversations.length) {
       var id = crypto.randomUUID();
@@ -702,7 +701,7 @@ function initApp() {
         answer += "\n\n---\n*本次消耗 " + data.creditDeducted + " 积分*";
       }
       addMsg("assistant", answer, {creditDeducted: data.creditDeducted, creditBalance: data.creditBalance});
-      // Update credit display
+      // 更新积分展示。
       if (data.creditBalance !== undefined && data.creditBalance !== null) {
         var bal = data.creditBalance;
         d.creditDisplay.textContent = "积分: " + bal;
@@ -753,8 +752,8 @@ function initApp() {
     ctxTargetId = id;
   }
 
-  // ---- Drawers ----
-  // ---- Drawers (lottery / user center) ----
+  // ---- 抽屉面板 ----
+  // ---- 抽屉面板（抽奖 / 用户中心）----
   function openDrawer(drawer) {
     if (drawer !== d.lotteryDrawer) closeDrawer(d.lotteryDrawer);
     if (drawer !== d.userCenterDrawr) closeDrawer(d.userCenterDrawr);
@@ -768,8 +767,8 @@ function initApp() {
   function openUserCenter() { openDrawer(d.userCenterDrawr); loadCampaign().catch(function(){}); loadExchangeSku(); renderHistories(); }
   function closeUserCenter() { closeDrawer(d.userCenterDrawr); }
 
-  // ---- Credit Exchange ----
-  var exchangeSku = null; // cached SKU info from server
+  // ---- 积分兑换 ----
+  var exchangeSku = null; // 服务端返回的 SKU 缓存信息。
   function loadExchangeSku() {
     apiRequest("/raffle/activity/query_sku_product_list_by_activity_id?activityId=" + CONFIG.ACTIVITY_ID, {
       method: "POST"
@@ -799,7 +798,7 @@ function initApp() {
     var currentCredit = parseFloat(d.creditMetric.textContent) || 0;
     if (surplus <= 0) { disableExchange("库存不足"); return; }
     if (currentCredit < cost) { disableExchange("积分不足，需要 " + cost + " 积分"); return; }
-    // Enable exchange
+    // 启用兑换按钮。
     if (d.exchangeBtn) { d.exchangeBtn.disabled = false; d.exchangeBtn.textContent = "兑换 1 次抽奖机会（消耗 " + cost + " 积分）"; }
     if (d.ucExchangeBtn) { d.ucExchangeBtn.disabled = false; d.ucExchangeBtn.textContent = "兑换 1 次抽奖机会（" + cost + " 积分）"; }
     if (d.ucExchangeHint) { d.ucExchangeHint.style.display = "none"; }
@@ -834,14 +833,14 @@ function initApp() {
     });
   }
 
-  // ---- Utility ----
+  // ---- 工具函数 ----
   function busy(el, v) { if (el) { el.disabled = v; el.style.opacity = v?"0.5":""; } }
 
-  // Expose to inline onclick handlers
+  // 暴露给 HTML 内联 onclick 处理器。
   window._uc = openUserCenter;
   window._lottery = openLottery;
 
-// ===== EVENT BINDINGS =====
+  // ===== 事件绑定 =====
   d.userMenuBtn.onclick = openUserCenter;
   d.userCenterBtn.onclick = openUserCenter;
   d.openLotteryBtn.onclick = openLottery;
@@ -868,7 +867,7 @@ function initApp() {
   if (d.ucSignInBtn) d.ucSignInBtn.onclick = signIn;
   if (d.ucExchangeBtn) d.ucExchangeBtn.onclick = doExchange;
 
-  // Context menu
+  // 上下文菜单。
   document.addEventListener("click", function() { d.contextMenu.style.display = "none"; });
   d.contextMenu.querySelector("[data-action=delete]").onclick = function() {
     if (ctxTargetId) deleteConv(ctxTargetId); d.contextMenu.style.display = "none";
@@ -877,7 +876,7 @@ function initApp() {
     if (ctxTargetId) renameConv(ctxTargetId); d.contextMenu.style.display = "none";
   };
 
-  // Rename dialog
+  // 重命名对话框。
   d.renameConfirm.onclick = function() {
     var n = d.renameInput.value.trim();
     if (n && ctxTargetId) {
@@ -890,7 +889,7 @@ function initApp() {
   d.renameInput.onkeydown = function(e) { if (e.key==="Enter") d.renameConfirm.click(); };
   d.renameDialog.onclick = function(e) { if (e.target===d.renameDialog) d.renameDialog.style.display="none"; };
 
-  // Chat
+  // Chat 对话。
   d.newChatBtn.onclick = newChat;
   d.clearChatBtn.onclick = function() {
     if (!confirm("确定清空当前对话吗？")) return;
@@ -903,12 +902,12 @@ function initApp() {
     d.msgInput.style.height = Math.min(d.msgInput.scrollHeight, 150)+"px";
   };
 
-  // Global shortcut
+  // 全局快捷键。
   document.addEventListener("keydown", function(e) {
     if ((e.metaKey||e.ctrlKey) && e.key==="k") { e.preventDefault(); d.msgInput.focus(); }
   });
 
-  // Init（历史/流水改为打开用户中心时按需从服务端加载）
+  // 初始化（历史记录/流水改为打开用户中心时按需从服务端加载）。
   renderWheel();
   renderChats();
   healthCheck();

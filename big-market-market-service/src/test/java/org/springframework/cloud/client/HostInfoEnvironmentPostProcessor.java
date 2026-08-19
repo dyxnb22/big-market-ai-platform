@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Test-classpath override of Spring Cloud's HostInfoEnvironmentPostProcessor.
- * Avoids InetAddress.getLocalHost() which fails in restricted sandboxes
- * (SocketException: Operation not permitted).
+ * 测试类路径中的 Spring Cloud HostInfoEnvironmentPostProcessor 覆盖实现。
+ * 避免调用在受限沙箱中会失败的 InetAddress.getLocalHost()
+ *（SocketException: Operation not permitted）。
  */
 public class HostInfoEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
 
@@ -30,7 +30,7 @@ public class HostInfoEnvironmentPostProcessor implements EnvironmentPostProcesso
                 environment.getProperty("spring.cloud.client.hostname", "localhost"));
         map.putIfAbsent("spring.cloud.client.ip-address",
                 environment.getProperty("spring.cloud.client.ip-address", "127.0.0.1"));
-        // Always seed localhost for tests — do not call InetUtils.
+        // 测试始终预置 localhost，不调用 InetUtils。
         map.put("spring.cloud.client.hostname", "localhost");
         map.put("spring.cloud.client.ip-address", "127.0.0.1");
         environment.getPropertySources().addLast(new MapPropertySource("springCloudClientHostInfo", map));

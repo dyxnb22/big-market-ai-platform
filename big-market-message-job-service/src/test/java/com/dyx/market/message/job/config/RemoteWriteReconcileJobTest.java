@@ -74,8 +74,7 @@ public class RemoteWriteReconcileJobTest {
 
         verify(pendingRemoteWriteTaskDao, never()).updateDone(any());
         verify(pendingRemoteWriteTaskDao).updateRetryFailed(eq(9L), anyInt());
-        // The first scan is the central compensation store: setDBKey is
-        // called for the scan and once more after the continuation attempt.
+        // 第一次扫描的是中央补偿库：扫描时调用一次 setDBKey，续作尝试结束后还会再恢复一次。
         verify(dbRouter, atLeast(2)).setDBKey(0);
     }
 

@@ -5,7 +5,7 @@ function collectClientErrors(page) {
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
-    // Expected during wrong-password / non-admin probes
+    // 错误密码/非管理员探测期间预期出现的错误。
     if (/status of 401|status of 403|status of 422/.test(text)) return;
     errors.push("console: " + text);
   });
@@ -86,23 +86,23 @@ test("admin access is isolated from normal users", async ({ page }) => {
   await loginUser(page);
   await expect(page.locator("#appView")).toBeVisible();
 
-  // Navigate to admin — user is redirected back to index with token preserved
+  // 访问 admin：普通用户会被重定向回 index，同时保留令牌。
   await page.goto("/admin.html");
   await expect(page).toHaveURL(/\/index\.html/);
   await expect(page.locator("#appView")).toBeVisible();
   await expect(page.locator("#userNameBadge")).toContainText("xiaofuge");
 
-  // User can still access user pages after the admin redirect
+  // 完成 admin 重定向后，用户仍可访问用户端页面。
   await page.locator("#userMenuBtn").click();
   await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
 
-  // Admin-login page with user token shows toast but stays on page (token not cleared)
+  // 携带普通用户令牌访问管理员登录页时只显示提示并停留在当前页（不清除令牌）。
   await page.goto("/admin-login.html");
   await expect(page.locator("#toast")).toContainText("当前账号不是管理员");
-  // Should still be on admin-login page
+  // 此时仍应位于管理员登录页。
   await expect(page).toHaveURL(/\/admin-login\.html/);
 
-  // Admin login still works
+  // 管理员登录仍然可用。
   await loginAdmin(page);
   await expect(page.locator("#configList")).toContainText("chatbot");
 
@@ -110,7 +110,7 @@ test("admin access is isolated from normal users", async ({ page }) => {
   await expect(page.locator("#adminUserBadge")).toContainText("admin");
   await expect(page.locator("#opsGatewayStatus")).toContainText("正常");
 
-  // Logout — cannot go back
+  // 注销后不能通过返回操作重新进入。
   await page.locator("#adminLoginBtn").click();
   await expect(page).toHaveURL(/\/admin-login\.html/);
   await page.goBack();
@@ -153,12 +153,12 @@ test("draw button shows 抽奖中... while drawing and restores GO", async ({ pa
   await expect(page.locator("#lotteryDrawer")).toHaveClass(/open/);
   await expect(page.locator("#drawBtn")).toBeEnabled({ timeout: 15000 });
 
-  // Button text changes on click
+  // 点击后按钮文本发生变化。
   await page.locator("#drawBtn").click();
   await expect(page.locator("#drawBtn")).toHaveText("抽奖中...");
   await expect(page.locator("#drawBtn")).toBeDisabled();
 
-  // After the draw completes the button restores to GO
+  // 抽奖完成后按钮恢复为 GO。
   await expect(page.locator("#drawBtn")).toHaveText("GO", { timeout: 15000 });
   await expect(page.locator("#drawBtn")).not.toBeDisabled();
   await expectNoClientErrors(errors);
@@ -167,21 +167,21 @@ test("draw button shows 抽奖中... while drawing and restores GO", async ({ pa
 test("login redirect param only allows same-origin destinations", async ({ page }) => {
   const errors = collectClientErrors(page);
 
-  // Relative same-origin path is honored.
+  // 相对的同源路径应被接受。
   await page.goto("/login.html?redirect=./index.html?from=login");
   await page.locator("#userIdInput").fill("xiaofuge");
   await page.locator("#passwordInput").fill("demo");
   await page.locator("#loginBtn").click();
   await expect(page).toHaveURL(/\/index\.html\?from=login/);
 
-  // Use the product logout path so the reset exercises the same cleanup as a
-  // real user session, without racing a storage clear against navigation.
+  // 使用产品注销路径，使重置过程与真实用户会话执行相同的清理，
+  // 避免存储清理与页面跳转发生竞态。
   await page.locator("#userMenuBtn").click();
   await expect(page.locator("#userCenterDrawer")).toHaveClass(/open/);
   await page.locator("#logoutBtn").click();
   await expect(page.locator("#landingView")).toBeVisible();
 
-  // External URL param is ignored — falls back to index.html
+  // 外部 URL 参数会被忽略，并回退到 index.html。
   await page.goto("/login.html?redirect=http://evil.com");
   await page.locator("#userIdInput").fill("xiaofuge");
   await page.locator("#passwordInput").fill("demo");
@@ -207,7 +207,7 @@ test("frontend assets are cache-safe and gateway API remains compatible", async 
   expect(config.headers()["cache-control"]).toContain("no-store");
   await expect(await config.text()).toContain('return "/api/v1"');
 
-  // Final topology exposes auth through gateway :8080 (legacy monolith :8098 removed).
+  // 当前拓扑通过 gateway:8080 暴露鉴权服务（旧单体端口 :8098 已移除）。
   const apiBase = new URL(baseURL);
   apiBase.port = "8080";
   const gatewayLogin = await request.post(apiBase.origin + "/api/v1/auth/login", {

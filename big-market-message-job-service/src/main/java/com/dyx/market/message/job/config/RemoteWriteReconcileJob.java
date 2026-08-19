@@ -42,28 +42,34 @@ public class RemoteWriteReconcileJob {
     private int scanLimit;
 
     @Resource
+    /** 中央及历史分片中的远程写对账任务 DAO。 */
     private IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao;
     @Resource
+    /** 分库路由器。 */
     private IDBRouterStrategy dbRouter;
     @Resource
+    /** 对账任务分布式锁客户端。 */
     private RedissonClient redissonClient;
     @Resource
+    /** 远程写成功后的业务续作分发器。 */
     private RemoteWriteContinuationDispatcher remoteWriteContinuationDispatcher;
 
     @DubboReference(version = "1.0", check = false)
+    /** 账户积分远程服务。 */
     private IAccountCreditService accountCreditService;
     @DubboReference(version = "1.0", check = false)
+    /** 账户活动额度远程服务。 */
     private IAccountQuotaService accountQuotaService;
     @Timed(value = "RemoteWriteReconcileJob", description = "Pending remote write reconcile")
     @XxlJob("RemoteWriteReconcileJob")
+    /** 扫描待对账任务，完成远程写确认和后续业务续作。 */
     public void exec() {
         RLock lock = redissonClient.getLock("big-market-RemoteWriteReconcileJob");
         try {
             if (!lock.tryLock(3, 0, TimeUnit.SECONDS)) {
                 return;
             }
-            // db00 is the independent compensation store; 01/02 are scanned
-            // for backwards compatibility with tasks written by older builds.
+            // db00 是独立的中央补偿库；db01/db02 仍需扫描，以兼容旧版本写入的任务。
             for (int dbIdx = 0; dbIdx <= 2; dbIdx++) {
                 dbRouter.setDBKey(dbIdx);
                 List<PendingRemoteWriteTask> tasks = pendingRemoteWriteTaskDao.queryPendingTasks(maxRetries, scanLimit);
@@ -71,7 +77,7 @@ public class RemoteWriteReconcileJob {
                     try {
                         reconcile(task);
                     } finally {
-                        // continuation / adapters may clear router — restore scan shard
+                        // continuation 或适配器可能清理路由，这里恢复当前扫描分片。
                         dbRouter.setDBKey(dbIdx);
                     }
                 }
@@ -86,6 +92,10 @@ public class RemoteWriteReconcileJob {
         }
     }
 
+    /**
+     * 处理单条远程写任务：先确认或重试远程写，再推进 continuation，最后标记完成。
+     * continuation 失败时保留 {@code continuation_pending}，避免丢失已成功的远程写。
+     */
     private void reconcile(PendingRemoteWriteTask task) {
         try {
             if (STATE_CONTINUATION_PENDING.equals(task.getState())) {
@@ -111,6 +121,7 @@ public class RemoteWriteReconcileJob {
         }
     }
 
+    /** 通过远程幂等查询判断原始写操作是否已经生效。 */
     private boolean isRemoteDone(PendingRemoteWriteTask task) {
         switch (task.getOperation()) {
             case RemoteWriteOperations.CREDIT_CREATE: {
@@ -129,8 +140,7 @@ public class RemoteWriteReconcileJob {
                 return resp != null && ResponseCode.SUCCESS.getCode().equals(resp.getCode()) && Boolean.TRUE.equals(resp.getData());
             }
             case RemoteWriteOperations.QUOTA_ROLLBACK:
-                // rollbackQuota is ledger-idempotent. A retry is therefore both the
-                // reconciliation probe and the repair action for an UNKNOWN result.
+                // rollbackQuota 由账本保证幂等，因此重试同时承担 UNKNOWN 结果的确认和修复。
                 return false;
             default:
                 log.warn("[RemoteWriteReconcileJob] unknown operation:{} outBusinessNo:{}", task.getOperation(), task.getOutBusinessNo());
@@ -138,6 +148,7 @@ public class RemoteWriteReconcileJob {
         }
     }
 
+    /** 按操作类型重试远程写；所有远程接口都必须使用原业务幂等键。 */
     private void retryRemoteWrite(PendingRemoteWriteTask task) {
         switch (task.getOperation()) {
             case RemoteWriteOperations.CREDIT_CREATE: {

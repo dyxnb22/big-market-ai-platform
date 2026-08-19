@@ -3,8 +3,8 @@ const { defineConfig, devices } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests/e2e",
-  // The acceptance suite intentionally exercises one shared demo account.
-  // Serial workers keep credit, quota, and sign-in assertions deterministic.
+  // 验收套件有意使用同一个共享演示账户。
+  // 单 worker 串行执行，保证积分、配额和签到断言具有确定性。
   workers: 1,
   timeout: 30 * 1000,
   expect: {

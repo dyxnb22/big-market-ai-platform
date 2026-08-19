@@ -1,13 +1,12 @@
 /**
- * Shared API client & utilities for big-market-web frontend.
- * Pure JS, no framework — works with all three pages.
+ * big-market-web 前端共用 API 客户端与工具函数。
+ * 纯 JavaScript、无框架，供用户端、管理端和登录页共用。
  */
 
-// ===== Auth =====
+// ===== 鉴权 =====
 function readAuth() {
   try {
-    // Tokens are session-scoped. Remove the old persistent copy instead of
-    // silently migrating it into a longer-lived browser session.
+    // Token 只属于当前会话；删除旧的持久化副本，不将其静默迁移到生命周期更长的浏览器会话。
     localStorage.removeItem(CONFIG.AUTH_KEY);
     var v = sessionStorage.getItem(CONFIG.AUTH_KEY);
     return v ? JSON.parse(v) : {token: "", userId: ""};
@@ -23,19 +22,19 @@ function clearAuth() {
   localStorage.removeItem(CONFIG.AUTH_KEY);
 }
 
-// ===== Unified API Request =====
+// ===== 统一 API 请求 =====
 /**
- * Unified API request with consistent error handling.
+ * 发送统一 API 请求并集中处理错误。
  *
- * - HTTP non-2xx → throws Error with server message
- * - JSON parse failure → throws Error with status text
- * - Response code !== "0000" → throws Error with code + info
- * - Token expired / 0009 → optional onAuthExpired callback
+ * - HTTP 非 2xx：抛出包含服务端提示的 Error
+ * - JSON 解析失败：抛出包含 HTTP 状态文本的 Error
+ * - 业务码不等于 "0000"：抛出包含业务码和提示的 Error
+ * - Token 过期或业务码 0009：按需调用 onAuthExpired 回调
  *
- * @param {string} path  e.g. "/auth/login"
- * @param {object} opts  fetch options (method, body, headers)
- * @param {object} [ext] {onAuthExpired: function}
- * @returns {Promise<object>} parsed response body (code === "0000")
+ * @param {string} path 例如 "/auth/login"
+ * @param {object} opts fetch 配置（method、body、headers）
+ * @param {object} [ext] 扩展配置，例如 {onAuthExpired: function}
+ * @returns {Promise<object>} 解析后的响应体（code === "0000"）
  */
 function apiRequest(path, opts, ext) {
   ext = ext || {};
@@ -68,7 +67,7 @@ function apiRequest(path, opts, ext) {
     })
     .then(function(data) {
       if (data.code !== "0000") {
-        // Token expired or invalid
+        // Token 已过期或无效。
         if (data.code === "0009" && ext.onAuthExpired) {
           ext.onAuthExpired(data);
         }
@@ -81,7 +80,7 @@ function apiRequest(path, opts, ext) {
     });
 }
 
-// ===== Toast =====
+// ===== 提示消息 =====
 function toast(msg) {
   var el = document.getElementById("toast");
   if (!el) return;
@@ -91,14 +90,14 @@ function toast(msg) {
   el._timer = setTimeout(function() { el.classList.remove("show"); }, 2200);
 }
 
-// ===== Escape HTML =====
+// ===== HTML 转义 =====
 function esc(v) {
   return String(v).replace(/[&<>"'`]/g, function(c) {
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&#96;"}[c];
   });
 }
 
-// ===== randomUUID polyfill =====
+// ===== randomUUID 兼容实现 =====
 window.crypto = window.crypto || {};
 if (!window.crypto.randomUUID) {
   window.crypto.randomUUID = function() {

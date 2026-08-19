@@ -26,15 +26,14 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Optional Nacos config sync bridge.
- * <p>
- * Publish is fail-closed. Nacos 3.x default-namespace SDK writes land in empty
- * {@code tenant_id} while {@code getConfig} often reads a stale {@code public} twin.
- * When {@code nacos.config.sync.confirmJdbcUrl} is configured (learning Docker),
- * confirmation reads empty-tenant MySQL rows and mirrors them to {@code public}.
- * Otherwise confirmation falls back to {@code getConfig}.
- * Local snapshots are disabled. Redis fan-out is a best-effort acceleration;
- * Nacos listeners and startup reads remain the durable delivery fallback.
+ * 可选的 Nacos 配置同步桥接器。
+ *
+ * <p>配置发布采用失败即关闭策略。Nacos 3.x 默认命名空间的 SDK 写入通常落在空
+ * {@code tenant_id}，而 {@code getConfig} 可能读取到过期的 {@code public} 副本。
+ * 配置 {@code nacos.config.sync.confirmJdbcUrl} 后（学习环境 Docker 使用该方式），
+ * 发布确认会读取空租户的 MySQL 行，并同步一份 {@code public} 副本；未配置时退回
+ * {@code getConfig} 确认。这里禁用本地快照，Redis 广播只作为尽力加速通道，Nacos
+ * 监听器和启动读取仍是可持久依赖的投递兜底。</p>
  */
 @Service
 @ConditionalOnProperty(value = "nacos.config.sync.enabled", havingValue = "true")
@@ -46,41 +45,54 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
     private static final long PUBLISH_BACKOFF_MS = 200L;
 
     @Value("${nacos.config.sync.serverAddr:127.0.0.1:8848}")
+    /** Nacos 服务地址。 */
     private String serverAddr;
 
     @Value("${nacos.config.sync.namespace:}")
+    /** Nacos 命名空间；本桥接器只支持空值或 public。 */
     private String namespace;
 
     @Value("${nacos.config.sync.username:}")
+    /** Nacos 登录用户名。 */
     private String username;
 
     @Value("${nacos.config.sync.password:}")
+    /** Nacos 登录密码。 */
     private String password;
 
     @Value("${nacos.config.sync.dataId:big-market-platform-config}")
+    /** 平台配置使用的 Nacos DataId。 */
     private String dataId;
 
     @Value("${nacos.config.sync.group:DEFAULT_GROUP}")
+    /** 平台配置使用的 Nacos 分组。 */
     private String group;
 
     @Value("${nacos.config.sync.runtimeDataId:big-market-runtime-switches}")
+    /** 运行时开关使用的 Nacos DataId。 */
     private String runtimeDataId;
 
     @Value("${nacos.config.sync.runtimeGroup:DEFAULT_GROUP}")
+    /** 运行时开关使用的 Nacos 分组。 */
     private String runtimeGroup;
 
     @Value("${nacos.config.sync.confirmJdbcUrl:}")
+    /** 用于确认空租户持久化内容的 MySQL JDBC 地址；为空时使用 Nacos API 确认。 */
     private String confirmJdbcUrl;
 
     @Value("${nacos.config.sync.confirmJdbcUser:root}")
+    /** 确认 MySQL 的用户名。 */
     private String confirmJdbcUser;
 
     @Value("${nacos.config.sync.confirmJdbcPassword:}")
+    /** 确认 MySQL 的密码。 */
     private String confirmJdbcPassword;
 
+    /** 已创建的 Nacos 配置客户端。 */
     private ConfigService configService;
 
     @Override
+    /** 初始化 Nacos 客户端，校验命名空间并关闭可能污染发布确认的本地快照。 */
     public void afterPropertiesSet() {
         try {
             validateNamespace();
@@ -116,6 +128,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
                 || "public".equalsIgnoreCase(configuredNamespace.trim());
     }
 
+    /** 将 SDK 的运行时租户调整为空租户，使读写目标与 Nacos 数据库存储一致。 */
     private void alignLiveTenantToEmptyStorage(ConfigService service) {
         try {
             Field namespaceField = service.getClass().getDeclaredField("namespace");
@@ -137,6 +150,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         }
     }
 
+    /** 清理 Nacos 客户端本地快照，防止发布确认读到旧文件。 */
     private void clearLocalConfigSnapshots() {
         try {
             Class<?> processor = Class.forName("com.alibaba.nacos.client.config.impl.LocalConfigInfoProcessor");
@@ -148,6 +162,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         }
     }
 
+    /** 关闭 Nacos 本地快照；无法关闭时拒绝启动，确保确认逻辑不会被旧快照绕过。 */
     private void disableLocalSnapshots() {
         try {
             Class<?> snapShotSwitch = Class.forName("com.alibaba.nacos.client.config.utils.SnapShotSwitch");
@@ -160,10 +175,12 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         }
     }
 
+    /** 发布平台配置，并在 Nacos 持久化确认成功后返回成功。 */
     public boolean publish(String content) {
         return publish(dataId, group, content);
     }
 
+    /** 发布运行时开关配置，并在 Nacos 持久化确认成功后返回成功。 */
     public boolean publishRuntimeSwitches(String content) {
         return publish(runtimeDataId, runtimeGroup, content);
     }
@@ -220,6 +237,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         }
     }
 
+    /** 通过空租户 MySQL 行确认发布内容，并同步 public 副本供兼容读取。 */
     private boolean confirmViaJdbc(String targetDataId, String targetGroup, String content) {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -258,6 +276,7 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         }
     }
 
+    /** 在同一事务中写入或更新 public 租户的兼容副本。 */
     void upsertPublicTwin(Connection connection, String targetDataId, String targetGroup, String content)
             throws Exception {
         String md5 = md5Hex(content);
@@ -309,10 +328,12 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         return properties;
     }
 
+    /** 读取平台配置；配置未启用或读取失败时直接抛出，避免使用不确定快照启动。 */
     public String fetchCurrent(long timeoutMs) {
         return fetchCurrent(dataId, group, timeoutMs);
     }
 
+    /** 读取运行时开关配置；优先读取空租户数据库内容。 */
     public String fetchRuntimeSwitches(long timeoutMs) {
         return fetchCurrent(runtimeDataId, runtimeGroup, timeoutMs);
     }
@@ -351,10 +372,12 @@ public class NacosConfigSyncService implements InitializingBean, DisposableBean 
         }
     }
 
+    /** 注册平台配置监听器。 */
     public void addListener(Listener listener) {
         addListener(dataId, group, listener);
     }
 
+    /** 注册运行时开关配置监听器。 */
     public void addRuntimeSwitchesListener(Listener listener) {
         addListener(runtimeDataId, runtimeGroup, listener);
     }

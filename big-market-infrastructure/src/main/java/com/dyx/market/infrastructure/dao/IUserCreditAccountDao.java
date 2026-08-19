@@ -18,13 +18,14 @@ public interface IUserCreditAccountDao {
     UserCreditAccount queryUserCreditAccount(UserCreditAccount userCreditAccountReq);
 
     /**
-     * Deduct available_amount by a negative value.
-     * Guards: #{availableAmount} &lt; 0 AND available_amount + #{availableAmount} &gt;= 0
+     * 以负数扣减 available_amount。
+     * 守卫条件为 {@code availableAmount < 0} 且 {@code available_amount + availableAmount >= 0}，
+     * 从数据库层保证扣减后余额不会小于 0。
      */
     int updateSubtractionAmount(UserCreditAccount userCreditAccountReq);
 
     /**
-     * Semantic alias for updateSubtractionAmount — guards enforce negative amount.
+     * {@link #updateSubtractionAmount(UserCreditAccount)} 的语义别名；底层条件同样要求扣减金额为负数。
      */
     int updateDeductAvailableAmount(UserCreditAccount userCreditAccountReq);
 

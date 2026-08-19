@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Validate Prometheus config and alert rules (promtool). Static target check for 8080-8086.
+# 使用 promtool 校验 Prometheus 配置和告警规则，并静态检查 8080–8086 目标端口。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

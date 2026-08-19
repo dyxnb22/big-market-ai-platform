@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Acceptance gates: build → (optional stack start) → migrate → smoke →
-# chat refund E2E → Playwright. Fail-closed.
+# 验收门禁：构建 →（可选）启动服务栈 → 迁移 → 冒烟测试 →
+# 聊天退款 E2E → Playwright；任一门禁失败即终止。
 #
-# Docker is NEVER started unless --start-stack is passed.
-# Start the stack yourself first, or use --start-stack for CI bootstrap.
+# 除非传入 --start-stack，否则绝不启动 Docker。
+# 请先自行启动服务栈，或使用 --start-stack 完成 CI 引导启动。
 #
-# Usage:
-#   ./scripts/acceptance.sh                         # --reuse: require healthy stack
-#   ./scripts/acceptance.sh --reuse                  # old volumes OK; no compose up
+# 用法：
+#   ./scripts/acceptance.sh                         # --reuse：要求服务栈健康
+#   ./scripts/acceptance.sh --reuse                  # 允许旧卷；不执行 compose up
 #   ./scripts/acceptance.sh --fresh --confirm-destroy-volumes --start-stack
-#   ./scripts/acceptance.sh --secure --start-stack   # non-default credentials
+#   ./scripts/acceptance.sh --secure --start-stack   # 使用非默认凭据
 #   ./scripts/acceptance.sh --skip-build --skip-playwright
 #
-# Modes:
-#   --reuse   Prove compatibility with existing volumes (default).
-#   --fresh   Destroy volumes first; proves full init (needs --confirm-destroy-volumes).
-#   --secure  Run smoke-security; requires DEMO_* / ADMIN_TOKEN / GRAFANA_* env.
+# 模式：
+#   --reuse   验证与现有卷的兼容性（默认）。
+#   --fresh   先销毁卷，验证完整初始化（需要 --confirm-destroy-volumes）。
+#   --secure  执行 smoke-security；需要 DEMO_* / ADMIN_TOKEN / GRAFANA_* 环境变量。
 #
-# --fresh alone does not start containers; add --start-stack to rebuild after destroy.
+# 单独使用 --fresh 不会启动容器；销毁后请追加 --start-stack 重新构建并启动。
 
 set -euo pipefail
 
@@ -103,7 +103,7 @@ Start manually, then re-run acceptance:
   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
   ./scripts/apply-stack-migrations.sh
   docker compose up --build -d
-  # secure overlay:
+  # secure 配置覆盖层：
   # docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
 
 Or bootstrap via script:
@@ -216,8 +216,8 @@ begin_gate() {
 }
 
 count_playwright_tests() {
-  # Playwright 1.54 prints relative spec names (without the tests/e2e prefix)
-  # and finishes with: "Total: N tests in M files".
+  # Playwright 1.54 输出不含 tests/e2e 前缀的相对 spec 名称，
+  # 并以 "Total: N tests in M files" 结束。
   npx playwright test --list 2>/dev/null | awk '/^Total: [0-9]+ tests? / { print $2; found=1 } END { if (!found) print 0 }'
 }
 
@@ -235,7 +235,7 @@ echo "  $(date)"
 echo "================================================================="
 echo ""
 
-# ── Fresh: destroy volumes (does not start stack) ─────────────────────────────
+# ── Fresh：销毁卷（不启动服务栈） ─────────────────────────────
 
 if [ "$MODE" = "fresh" ]; then
   if [ "$CONFIRM_DESTROY" != true ]; then
@@ -249,7 +249,7 @@ if [ "$MODE" = "fresh" ]; then
   pass_gate "destroy volumes"
 fi
 
-# ── Build ─────────────────────────────────────────────────────────────────────
+# ── 构建 ─────────────────────────────────────────────────────────────────────
 
 if [ "$SKIP_BUILD" = false ]; then
   begin_gate "mvn verify"
@@ -261,7 +261,7 @@ else
   pass_gate "mvn verify (skipped)"
 fi
 
-# ── Docker: optional start, always require health ──────────────────────────────
+# ── Docker：可选启动，但始终要求健康检查通过 ──────────────────────────────
 
 COMPOSE_FILES=(-f docker-compose.yml)
 if [ "$RUN_SECURE" = true ]; then
@@ -282,7 +282,7 @@ if [ "$START_STACK" = true ]; then
   pass_gate "start stack"
 else
   echo "Gate: start stack (skipped — no --start-stack; will only health-check)"
-  # Still apply migrations if MySQL is already up (idempotent; fail soft if down).
+  # 如果 MySQL 已启动，仍执行迁移（可幂等；MySQL 未启动时软失败）。
   if docker exec mysql mysqladmin ping -uroot -p"${MYSQL_ROOT_PASSWORD:-123456}" --silent 2>/dev/null; then
     begin_gate "apply-stack-migrations"
     if ! ./scripts/apply-stack-migrations.sh; then
@@ -295,7 +295,7 @@ else
 fi
 
 begin_gate "stack health"
-# Fast preflight when not starting stack: fail in seconds if gateway is down.
+# 不启动服务栈时执行快速预检：网关未启动则在数秒内失败。
 if [ "$START_STACK" != true ]; then
   if ! curl -sf --max-time 3 "http://${HOST}:8080/actuator/health" >/dev/null 2>&1; then
     print_manual_start_hint
@@ -310,7 +310,7 @@ if ! wait_for_stack_healthy "$HOST" 240; then
 fi
 pass_gate "stack health"
 
-# ── Ensure demo activity ──────────────────────────────────────────────────────
+# ── 确保演示活动 ──────────────────────────────────────────────────────
 
 begin_gate "ensure-demo-activity-online"
 ENSURE_OK=false
@@ -326,10 +326,10 @@ if [ "$ENSURE_OK" != true ]; then
 fi
 pass_gate "ensure-demo-activity-online"
 
-# Allow Nacos/chatbot config propagation after admin save.
+# admin 保存后，等待 Nacos/chatbot 配置传播完成。
 sleep 3
 
-# ── Smoke ─────────────────────────────────────────────────────────────────────
+# ── 冒烟测试 ─────────────────────────────────────────────────────────────────────
 
 begin_gate "test-http-contracts"
 if ! ./scripts/test-http-contracts.sh; then
@@ -355,7 +355,7 @@ if ! ./scripts/smoke-nacos-runtime-config.sh; then
 fi
 pass_gate "smoke-nacos-runtime-config"
 
-# ── Chat refund E2E ───────────────────────────────────────────────────────────
+# ── 聊天退款 E2E ───────────────────────────────────────────────────────────
 
 begin_gate "xxl-job-admin health"
 if ! wait_for_xxl_admin "$HOST" 120; then
@@ -381,7 +381,7 @@ if ! ./scripts/smoke-chat-refund-e2e.sh; then
 fi
 pass_gate "smoke-chat-refund-e2e"
 
-# ── Security (optional) ───────────────────────────────────────────────────────
+# ── 安全测试（可选） ───────────────────────────────────────────────────────
 
 if [ "$SKIP_SECURITY" = false ]; then
   begin_gate "smoke-security"
@@ -395,7 +395,7 @@ if [ "$SKIP_SECURITY" = false ]; then
   fi
 fi
 
-# ── Playwright ────────────────────────────────────────────────────────────────
+# ── Playwright 测试 ────────────────────────────────────────────────────────────────
 
 if [ "$SKIP_PLAYWRIGHT" = false ]; then
   begin_gate "playwright"

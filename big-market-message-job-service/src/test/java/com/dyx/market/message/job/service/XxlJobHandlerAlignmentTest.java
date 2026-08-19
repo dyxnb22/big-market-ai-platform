@@ -20,7 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * BM-003: {@code @XxlJob} handler names must be seeded in docs/dev-ops/mysql/sql/xxl_job.sql.
+ * BM-003：{@code @XxlJob} 处理器名称必须预置在 docs/dev-ops/mysql/sql/xxl_job.sql 中。
  */
 public class XxlJobHandlerAlignmentTest {
 
@@ -75,7 +75,7 @@ public class XxlJobHandlerAlignmentTest {
                         }
                     }
                 } catch (ClassNotFoundException ignored) {
-                    // skip non-loadable sources during IDE partial compiles
+                    // IDE 局部编译时跳过无法加载的源码。
                 }
             });
         }

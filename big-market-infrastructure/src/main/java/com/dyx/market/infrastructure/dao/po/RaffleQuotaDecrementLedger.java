@@ -28,7 +28,7 @@ public class RaffleQuotaDecrementLedger {
     /** 幂等键，等于抽奖订单的 outBusinessNo */
     private String outBusinessNo;
 
-    /** Original quota buckets; rollback must not recalculate these at retry time. */
+    /** 原始额度桶标识；回滚重试时必须使用这些值，不能重新计算。 */
     private String month;
     private String day;
 

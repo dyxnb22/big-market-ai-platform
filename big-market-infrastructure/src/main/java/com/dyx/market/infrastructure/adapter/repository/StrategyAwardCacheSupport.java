@@ -39,7 +39,7 @@ import static com.dyx.market.types.enums.ResponseCode.UN_ASSEMBLED_STRATEGY_ARMO
 public class StrategyAwardCacheSupport {
 
     private static final String STOCK_CONFIRM_DEDUPE_KEY_PREFIX = "stock_confirm:";
-    /** Redis SETNX is an optional fast-path only; MySQL ledger is the durable truth. */
+    /** Redis SETNX 仅是可选的快速路径，MySQL 账本才是库存扣减的持久化事实。 */
     private static final String STOCK_MYSQL_DECREMENT_KEY_PREFIX = "stock_mysql_decrement:";
 
     @Resource
@@ -179,15 +179,13 @@ public class StrategyAwardCacheSupport {
                     strategyAwardStockDecrementLedgerDao.insert(StrategyAwardStockDecrementLedger.builder()
                             .reservationId(reservationId).strategyId(ledgerStrategyId).awardId(ledgerAwardId).status("reserved").build());
                 } catch (DuplicateKeyException duplicate) {
-                    // Another request created the durable reservation. The Redis
-                    // script below is still safe to resume by reservationId.
+                    // 其他请求已经创建了持久化预占；下面的 Redis 脚本仍可按 reservationId 安全恢复。
                 }
                 return true;
             });
         }
-        // Mockito/unit wiring can exercise the repository without a Redisson
-        // client; production always supplies it. Keep the legacy branch only
-        // as a compatibility fallback for that environment.
+        // Mockito/单元测试的 Bean 装配可能不提供 Redisson 客户端，生产环境始终会提供。
+        // 这里保留旧分支，仅作为测试环境的兼容兜底。
         if (redissonClient == null) {
             return reserveStockWithLegacyRedis(strategyId, awardId, endDateTime, reservationId, cacheKey);
         }
@@ -360,9 +358,8 @@ public class StrategyAwardCacheSupport {
     public void syncStrategyAwardStockFromQueue(Long strategyId, Integer awardId) {
         StrategyAwardStockKeyVO stockKey = peekQueueValue(strategyId, awardId);
         if (null == stockKey) {
-            // A process can die after the durable reservation and before the
-            // delayed-queue offer. Resume those reservations from MySQL so a
-            // Redis-only queue is not the sole recovery record.
+            // 进程可能在持久化预占后、延迟队列入队前宕机。
+            // 从 MySQL 恢复这些预占，避免 Redis 队列成为唯一的恢复记录。
             for (StrategyAwardStockDecrementLedger reserved :
                     strategyAwardStockDecrementLedgerDao.queryReservedByStrategyAward(strategyId, awardId)) {
                 resumeReservedStock(reserved);
@@ -427,14 +424,14 @@ public class StrategyAwardCacheSupport {
         }
 
         String dedupeKey = STOCK_MYSQL_DECREMENT_KEY_PREFIX + reservationId;
-        // Optional fast-path: if Redis says done, still verify MySQL ledger before skipping.
+        // 可选快速路径：即使 Redis 表示已完成，也要先核对 MySQL 账本再决定是否跳过。
         if (!Boolean.TRUE.equals(redisService.setNx(dedupeKey, 7, TimeUnit.DAYS))) {
             StrategyAwardStockDecrementLedger existing = strategyAwardStockDecrementLedgerDao.queryByReservationId(reservationId);
             if (existing != null && !"reserved".equals(existing.getStatus())) {
                 log.info("奖品库存 MySQL 扣减已落账，跳过重复 reservationId:{}", reservationId);
                 return;
             }
-            // Crash window: SETNX set but ledger missing — clear Redis and continue to durable path.
+            // 崩溃窗口：SETNX 已成功但账本不存在；清理 Redis 标记并继续走持久化路径。
             redisService.remove(dedupeKey);
         }
 
@@ -446,9 +443,8 @@ public class StrategyAwardCacheSupport {
                     return true;
                 }
                 if (existing != null && "reserved".equals(existing.getStatus())) {
-                    // The status transition is the authorization for the
-                    // physical decrement. A concurrent worker may have read
-                    // the same reserved row and won the CAS first.
+                    // 状态迁移成功才是执行实际扣减的授权；并发 Worker 可能读取了同一行，
+                    // 并先一步完成 CAS。
                     if (strategyAwardStockDecrementLedgerDao.updateStatusApplied(reservationId) == 1) {
                         updateStrategyAwardStock(stockKey.getStrategyId(), stockKey.getAwardId());
                     }
@@ -471,7 +467,7 @@ public class StrategyAwardCacheSupport {
             if (!Boolean.TRUE.equals(applied)) {
                 throw new IllegalStateException("strategy award stock ledger transaction returned false");
             }
-            // Best-effort Redis cache of durable success (ignore failures).
+            // 尽力缓存已经持久化的成功结果；缓存失败不影响数据库事实。
             redisService.setNx(dedupeKey, 7, TimeUnit.DAYS);
         } catch (RuntimeException e) {
             redisService.remove(dedupeKey);
@@ -480,7 +476,7 @@ public class StrategyAwardCacheSupport {
     }
 
     /**
-     * Open-activity awards plus any pending flush keys (survives activity offline).
+     * 返回已开放活动的奖品，以及仍有待刷盘 key 的奖品（活动下线时也可继续恢复）。
      */
     public List<StrategyAwardStockKeyVO> queryPendingStrategyAwardStockKeys() {
         List<StrategyAwardStockKeyVO> open = queryOpenActivityStrategyAwardList();

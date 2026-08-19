@@ -10,19 +10,18 @@ app:
     api-version: ${API_VERSION:v1}
     cross-origin: ${CROSS_ORIGIN:'*'}
   jwt:
-    # DEV-ONLY default — overridden via JWT_SECRET env var /production.
-    # The DefaultCredentialGuard will refuse to start in non-dev profiles if
-    # this default is still in place.
+    # 仅供开发环境使用的默认值；生产环境通过 JWT_SECRET 环境变量覆盖。
+    # 如果非开发 Profile 仍使用该默认值，DefaultCredentialGuard 将拒绝启动。
     secret: ${JWT_SECRET:change-me-in-dev-only}
   auth:
-    # DEV-ONLY credential seed for the demo frontend.
-    # Override APP_AUTH_DEV_USERS in real deployments.
-    # The DefaultCredentialGuard will refuse to start in non-dev profiles if
-    # "admin:admin" or "xiaofuge:demo" are still present.
+    # 演示前端专用的开发环境凭据种子。
+    # 实际部署时通过 APP_AUTH_DEV_USERS 覆盖。
+    # 如果非开发 Profile 仍包含 "admin:admin" 或 "xiaofuge:demo"，
+    # DefaultCredentialGuard 将拒绝启动。
     dev-users: ${APP_AUTH_DEV_USERS:xiaofuge:demo,admin:admin}
 
-# ── Default credential guard () ──
-# Set DEFAULT_CREDENTIAL_GUARD_ENABLED=false only in dev environments.
+# ── 默认凭据防护（DefaultCredentialGuard） ──
+# 仅允许在开发环境将 DEFAULT_CREDENTIAL_GUARD_ENABLED=false。
 default-credential-guard:
   enabled: ${DEFAULT_CREDENTIAL_GUARD_ENABLED:true}
 

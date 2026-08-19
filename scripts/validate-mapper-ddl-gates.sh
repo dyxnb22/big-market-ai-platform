@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mapper / DDL consistency gates (NR-003/005/011).
+# Mapper / DDL 一致性门禁（NR-003/005/011）。
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -189,8 +189,8 @@ for name, copies in sorted(by_file.items()):
 
 for key, entry in allowlist.items():
     if key not in allowlist_hits and entry["kind"] in ("DRIFT", "SERVICE_SPECIFIC"):
-        # SERVICE_SPECIFIC entries may belong to a mapper present in only one
-        # launcher, so verify them against all service files below instead.
+        # SERVICE_SPECIFIC 条目可能属于只存在于一个启动模块的 Mapper，
+        # 因此下面改为针对所有服务文件逐一校验。
         mapper, statement = key
         observed = set()
         for service, directory in dirs:

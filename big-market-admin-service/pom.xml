@@ -34,7 +34,7 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
-        <!-- JWT runtime impl (api comes transitively from big-market-domain) -->
+        <!-- JWT 运行时实现（API 由 big-market-domain 传递引入） -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
@@ -62,14 +62,14 @@
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
         </dependency>
-        <!-- JDBC confirmation for Nacos 3.x empty/public split (learning Docker). -->
+        <!-- 用于确认 Nacos 3.x 空租户/公共租户分离的 JDBC 依赖（学习环境 Docker）。 -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Project modules -->
+        <!-- 工程模块 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-management</artifactId>
@@ -78,7 +78,7 @@
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-api</artifactId>
         </dependency>
-        <!-- domain.auth needed for AdminAuthInterceptor's IAuthService -->
+        <!-- domain.auth 为 AdminAuthInterceptor 的 IAuthService 提供依赖。 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-domain</artifactId>

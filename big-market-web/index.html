@@ -14,7 +14,7 @@
 </head>
 <body data-page="user">
 
-<!-- ====== VERIFYING (token present, checking session) ====== -->
+<!-- ====== 验证中（存在 Token，正在检查会话）====== -->
 <div id="verifyingView" class="verifying-page" style="display:none">
   <div class="verifying-card">
     <div class="spinner"></div>
@@ -22,7 +22,7 @@
   </div>
 </div>
 
-<!-- ====== LANDING (not logged in) ====== -->
+<!-- ====== 落地页（未登录）====== -->
 <div id="landingView" class="landing-page" style="display:none">
   <header class="landing-header">
     <a class="logo" href="./index.html">
@@ -64,9 +64,9 @@
   </main>
 </div>
 
-<!-- ====== APP (logged in) ====== -->
+<!-- ====== 主应用（已登录）====== -->
 <div id="appView" class="app-shell" style="display:none">
-  <!-- Sidebar -->
+  <!-- 侧栏 -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <a class="logo" href="./index.html">
@@ -95,7 +95,7 @@
     </div>
   </aside>
 
-  <!-- Main Chat -->
+  <!-- 主聊天区 -->
   <main class="chat-main">
     <header class="chat-header">
       <div class="chat-header-left">
@@ -126,7 +126,7 @@
     </form>
   </main>
 
-  <!-- Lottery Drawer (right) -->
+  <!-- 抽奖抽屉（右侧） -->
   <aside id="lotteryDrawer" class="side-drawer right">
     <div class="drawer-header">
       <h3>轮盘抽奖</h3>
@@ -165,7 +165,7 @@
     </div>
   </aside>
 
-  <!-- User Center Drawer (right) -->
+  <!-- 用户中心抽屉（右侧） -->
   <aside id="userCenterDrawer" class="side-drawer right">
     <div class="drawer-header">
       <h3>用户中心</h3>
@@ -214,7 +214,7 @@
     </div>
   </aside>
 
-  <!-- Rename Dialog -->
+  <!-- 重命名对话框 -->
   <div id="renameDialog" class="dialog-overlay" style="display:none">
     <div class="dialog-card">
       <h4>重命名对话</h4>
@@ -227,11 +227,11 @@
   </div>
 </div>
 
-<!-- Drawer Overlay -->
+<!-- 抽屉遮罩层 -->
 <div id="drawerOverlay" class="drawer-overlay"></div>
 
 
-<!-- Context Menu -->
+<!-- 上下文菜单 -->
 <div id="contextMenu" class="context-menu" style="display:none">
   <button data-action="rename">重命名</button>
   <button data-action="delete" class="danger">删除</button>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Release tags must be descendants of the Java mainline and contain the fixed
-# seven-service Maven topology. This guard never moves or deletes an old tag.
+# 发布标签必须是 Java 主线的后代，并包含固定的七服务 Maven 拓扑。
+# 本门禁不会移动或删除旧标签。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

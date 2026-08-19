@@ -120,7 +120,7 @@ public class RaffleApplicationService {
                 }
             }
 
-            // Only compensate quota when award record was not persisted.
+            // 只有中奖记录尚未落库时才补偿参与额度；记录已落库则保留中奖事实，避免重复返还。
             if (!awardSaved) {
                 log.error("活动抽奖执行异常，补偿回退额度 userId:{} activityId:{} orderId:{}", userId, activityId, orderEntity.getOrderId(), e);
                 try {

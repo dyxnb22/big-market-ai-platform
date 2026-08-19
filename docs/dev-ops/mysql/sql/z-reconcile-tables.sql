@@ -1,6 +1,6 @@
--- Docker MySQL init: reconcile / DLQ / chat session tables (G-02, G-05, G-06, G-07).
--- Canonical reference: docs/sql/reconcile-tables.sql
--- Stock decrement ledgers live on shared big_market (same as strategy_award / raffle_activity_sku).
+-- Docker MySQL 初始化：对账 / DLQ / 聊天会话表（G-02、G-05、G-06、G-07）。
+-- 规范定义：docs/sql/reconcile-tables.sql
+-- 库存扣减账本位于共享 big_market 中（与 strategy_award / raffle_activity_sku 相同）。
 
 USE `big_market`;
 
@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS `activity_sku_stock_restore_ledger` (
     KEY `idx_restore_sku` (`sku`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- A central copy is the independent hand-off for cross-service compensation.
--- It is intentionally outside the user's market shard, so a market shard
--- outage cannot erase the only pending rollback/continuation record.
+-- 中央副本是跨服务补偿的独立交接记录。
+-- 它有意放在用户所属的市场分片之外，这样市场分片故障不会抹掉唯一的
+-- 待回滚/待继续记录。
 USE `big_market`;
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -132,8 +132,8 @@ CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` (
     KEY `idx_state_retry` (`state`, `retry_count`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Quota-decrement idempotency ledger. The account-service routes the physical
--- table by user id, so all four tables must exist in both account shards.
+-- 配额扣减幂等账本。account-service 按用户 ID 路由物理表，
+-- 因此两个账户分片中都必须存在全部 4 张表。
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,
     `user_id`         VARCHAR(128) NOT NULL,
@@ -164,4 +164,4 @@ CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_001` LIKE `big_market_
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_002` LIKE `big_market_01`.`raffle_quota_decrement_ledger_002`;
 CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_003` LIKE `big_market_01`.`raffle_quota_decrement_ledger_003`;
 
--- Older volumes: deduct_state is added by scripts/apply-reconcile-ddl.sh (idempotent).
+-- 旧卷：deduct_state 由 scripts/apply-reconcile-ddl.sh 幂等添加。

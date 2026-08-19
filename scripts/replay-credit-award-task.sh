@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Replay one failed credit-award outbox row after the account/RPC root cause is fixed.
+# 在账户服务/RPC 根因修复后，重放一条失败的积分发放 Outbox 记录。
 set -euo pipefail
 
 usage() { echo "Usage: $0 [--dry-run] <user-id> <award-order-id>" >&2; exit 2; }

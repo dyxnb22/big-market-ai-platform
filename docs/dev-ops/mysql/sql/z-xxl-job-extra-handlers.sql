@@ -1,5 +1,5 @@
--- Idempotent seed for reconcile / stock-confirm XXL handlers (jobs 7–14).
--- Older dev MySQL volumes may only have jobs 1–6 from an earlier xxl_job.sql dump.
+-- 对账 / 库存确认 XXL 处理器的幂等种子（任务 7–14）。
+-- 较旧的开发 MySQL 卷可能只有早期 xxl_job.sql 导入的任务 1–6。
 USE `xxl_job`;
 
 INSERT INTO `xxl_job_info` (`id`, `job_group`, `job_desc`, `add_time`, `update_time`, `author`, `alarm_email`, `schedule_type`, `schedule_conf`, `misfire_strategy`, `executor_route_strategy`, `executor_handler`, `executor_param`, `executor_block_strategy`, `executor_timeout`, `executor_fail_retry_count`, `glue_type`, `glue_source`, `glue_remark`, `glue_updatetime`, `child_jobid`, `trigger_status`, `trigger_last_time`, `trigger_next_time`)
@@ -18,8 +18,8 @@ ON DUPLICATE KEY UPDATE
   `schedule_conf` = VALUES(`schedule_conf`),
   `trigger_status` = VALUES(`trigger_status`);
 
--- The credit award Outbox is always enabled, so its two shard dispatchers must
--- run. The account service still deduplicates by award_order_id/out_business_no.
+-- credit award Outbox 始终启用，因此两个分片派发器必须运行。
+-- account-service 仍会按 award_order_id/out_business_no 去重。
 UPDATE `xxl_job_info`
 SET `trigger_status` = 1,
     `schedule_type` = 'CRON',

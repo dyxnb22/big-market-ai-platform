@@ -16,16 +16,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Fan-out for Nacos config changes.
+ * Nacos 配置变更的进程间广播器。
  *
- * <p>Nacos 3.x SDK maps the default {@code public} namespace to empty-tenant storage while
- * listeners subscribe under the {@code public} key, so long-polling often misses updates on
- * reused volumes. Redis pub/sub keeps admin → market/chatbot refresh reliable for the
- * learning stack without changing money-path contracts.</p>
+ * <p>Nacos 3.x SDK 将默认的 {@code public} 命名空间映射为空租户存储，而监听器仍以
+ * {@code public} 键订阅，因此复用已有数据卷时长轮询可能漏掉更新。Redis 发布/订阅
+ * 用于保证学习环境中 Admin 到 market/chatbot 的刷新及时到达，同时不改变资金类路径
+ * 的业务契约。</p>
  *
- * <p>Nacos persistence is the commit point. Redis fan-out is retried in the
- * background and is reported to Admin as {@code notificationPending}; Nacos
- * listeners and startup reads remain the durable delivery fallback.</p>
+ * <p>Nacos 持久化是提交点。Redis 广播在后台重试，并通过 {@code notificationPending}
+ * 告知 Admin；Nacos 监听器和启动读取仍是持久化投递兜底。</p>
  */
 @Component
 public class PlatformConfigChangeNotifier {
@@ -39,10 +38,14 @@ public class PlatformConfigChangeNotifier {
     private static final long NOTIFY_BACKOFF_MS = 100L;
 
     @Autowired(required = false)
+    /** Redis 客户端；未装配时保留 Nacos 监听器兜底。 */
     private RedissonClient redissonClient;
 
+    /** 按 topic 保存尚未成功广播的最新配置代。 */
     private final Map<String, PendingNotification> pending = new ConcurrentHashMap<>();
+    /** 全局发布代号，用于淘汰旧配置重试任务。 */
     private final AtomicLong publishGeneration = new AtomicLong();
+    /** 单线程重试调度器，保证同一进程内广播重试有序。 */
     private final ScheduledExecutorService retryExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "platform-config-fanout-retry");
         thread.setDaemon(true);
@@ -67,9 +70,8 @@ public class PlatformConfigChangeNotifier {
                 topicName, content, publishGeneration.incrementAndGet());
         boolean delivered = attemptPublish(topicName, content);
         if (delivered) {
-            // A newer successful publish supersedes any older retry. Keeping an
-            // older retry alive could deliver stale configuration after the
-            // current generation and roll a consumer back.
+            // 较新的成功发布会覆盖旧的重试；继续执行旧重试可能在当前代之后投递过期配置，
+            // 使消费者回滚到旧状态。
             pending.computeIfPresent(topicName, (key, current) ->
                     current.generation <= notification.generation ? null : current);
         } else {
@@ -115,8 +117,7 @@ public class PlatformConfigChangeNotifier {
     }
 
     private void scheduleRetry(PendingNotification notification) {
-        // Keep one pending generation per topic. A stale retry must never be
-        // allowed to arrive after a newer configuration generation.
+        // 每个 topic 只保留一个待重试代；不能让过期重试在新配置代之后到达。
         PendingNotification previous = pending.compute(notification.topicName, (key, current) ->
                 current == null || current.generation <= notification.generation ? notification : current);
         if (previous == notification) {
@@ -141,8 +142,11 @@ public class PlatformConfigChangeNotifier {
     }
 
     private static final class PendingNotification {
+        /** Redis topic 名称。 */
         private final String topicName;
+        /** 待广播的完整配置内容。 */
         private final String content;
+        /** 配置发布代号，用于比较新旧通知。 */
         private final long generation;
 
         private PendingNotification(String topicName, String content, long generation) {

@@ -1,10 +1,10 @@
-# Local development: infra on mapped host ports.
+# 本地开发：基础设施通过宿主机映射端口访问。
 #
-# NOTE: Redis is now required at startup (big-market-starter-web always creates
-# RedissonClient when redis.sdk.config.host is present). Ensure a Redis instance
-# is reachable at REDIS_HOST:REDIS_PORT before starting this service.
-# token-revocation.redis.enabled still controls whether revoked JTIs are stored
-# in Redis; set it to true to enable token blacklisting.
+# 注意：Redis 现在是启动必需项（存在 redis.sdk.config.host 时，
+# big-market-starter-web 始终创建 RedissonClient）。启动本服务前，
+# 请确保可以通过 REDIS_HOST:REDIS_PORT 访问 Redis 实例。
+# token-revocation.redis.enabled 仍控制是否将已撤销的 JTI 存入 Redis；
+# 设置为 true 可启用令牌黑名单。
 token-revocation:
   redis:
     enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:true}

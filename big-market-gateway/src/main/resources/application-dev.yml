@@ -1,4 +1,4 @@
-# Local development: downstream services on localhost.
+# 本地开发：下游服务位于 localhost。
 spring:
   cloud:
     gateway:

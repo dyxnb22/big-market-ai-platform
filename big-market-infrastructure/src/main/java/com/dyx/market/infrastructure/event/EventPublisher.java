@@ -53,9 +53,9 @@ public class EventPublisher {
     }
 
     /**
-     * The application uses the default exchange and queue names as routing keys.
-     * A task is only allowed to become completed after the broker confirms the
-     * publish and mandatory routing did not return the message.
+     * 使用 RabbitMQ 默认交换机，并将队列名作为路由键发送消息。
+     * 只有 Broker 返回 publisher confirm，且 mandatory 路由没有退回消息时，调用方
+     * 才能将对应任务标记为完成。
      */
     private void publishAndConfirm(String routingKey, String payload, String messageId) {
         CorrelationData correlationData = new CorrelationData(messageId);

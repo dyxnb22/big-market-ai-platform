@@ -1,5 +1,5 @@
-# Secure profile: enable with SPRING_PROFILES_ACTIVE=docker,secure
-# secure takes precedence over docker for DefaultCredentialGuard.
+# secure Profile：通过 SPRING_PROFILES_ACTIVE=docker,secure 启用。
+# 对 DefaultCredentialGuard 而言，secure 的配置优先于 docker。
 app:
   internal-rpc:
     enforce: true

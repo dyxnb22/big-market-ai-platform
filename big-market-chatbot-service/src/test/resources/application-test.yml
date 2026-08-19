@@ -31,7 +31,7 @@ redis:
 
 dubbo:
   registry:
-    # Context tests must not register host providers into shared Nacos used by Docker.
+    # Context 测试不能将本机 Provider 注册到 Docker 使用的共享 Nacos。
     register: false
     subscribe: false
     check: false

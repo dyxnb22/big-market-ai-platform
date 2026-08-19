@@ -17,16 +17,16 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class SignInResponseDTO implements Serializable {
 
-    /** Whether the user has already signed in today */
+    /** 用户今天是否已经签到。 */
     private Boolean signedToday;
 
-    /** Credit amount rewarded for this sign-in (0 if already signed) */
+    /** 本次签到奖励的积分；今日已签到时为 0。 */
     private BigDecimal rewardCredit;
 
-    /** Latest credit balance */
+    /** 签到完成后的最新积分余额。 */
     private BigDecimal creditBalance;
 
-    /** Human-readable message, e.g. "签到成功，+10 积分" or "今日已签到" */
+    /** 面向用户的提示文案，例如“签到成功，+10 积分”或“今日已签到”。 */
     private String message;
 
 }

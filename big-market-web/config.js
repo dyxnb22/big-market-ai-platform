@@ -1,11 +1,11 @@
 /**
- * Shared configuration for big-market-web frontend.
+ * big-market-web 前端共用配置。
  *
- * API_BASE resolution order:
- *   1. Port 80/443 (nginx/production)       → /api/v1  (same-origin reverse proxy)
- *   2. window.API_BASE_OVERRIDE set          → use override value  (test env injection)
- *   3. Non-localhost hostname (IP/domain)    → /api/v1  (avoid cross-origin to 127.0.0.1)
- *   4. localhost / 127.0.0.1 + custom port  → http://127.0.0.1:8080/api/v1  (python server.py dev)
+ * API_BASE 解析顺序：
+ *   1. 端口 80/443（nginx/生产环境）→ /api/v1（同源反向代理）
+ *   2. 设置 window.API_BASE_OVERRIDE → 使用覆盖值（测试环境注入）
+ *   3. 非 localhost 主机名（IP/域名）→ /api/v1（避免跨域访问 127.0.0.1）
+ *   4. localhost/127.0.0.1 加自定义端口 → http://127.0.0.1:8080/api/v1（python server.py 开发服务）
  */
 var CONFIG = {
   API_BASE: (function() {

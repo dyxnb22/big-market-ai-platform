@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Negative security smoke: logout JWT, forged internal chat token, admin without auth.
-# Fail-closed. Assumes default (or secure) stack is already healthy on localhost.
+# 负向安全冒烟：注销 JWT、伪造内部聊天令牌、未认证访问 admin。
+# 任一检查失败即终止；假设默认（或 secure）服务栈已在 localhost 健康运行。
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"
@@ -21,7 +21,7 @@ assert_json_code "login" "0000" "$LOGIN"
 TOKEN="$(printf '%s' "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])")"
 test -n "$TOKEN"
 
-# Logout then reuse JWT → expect HTTP 401 and business code 0009
+# 注销后复用 JWT → 预期 HTTP 401 和业务码 0009
 curl -fsS -X POST "$API/auth/logout" -H "Authorization: $TOKEN" >/dev/null || true
 VERIFY_BODY=$(mktemp)
 VERIFY_HTTP=$(curl -sS -o "$VERIFY_BODY" -w '%{http_code}' "$API/auth/verify" -H "Authorization: $TOKEN" || echo "000")
@@ -35,7 +35,7 @@ else
   fail "logout did not revoke JWT (http=$VERIFY_HTTP code=$VERIFY_CODE)"
 fi
 
-# Forged internal chat token on market internal refund route
+# 在 market 内部退款路径使用伪造的聊天令牌
 FORGE_BODY=$(mktemp)
 FORGE_HTTP=$(curl -sS -o "$FORGE_BODY" -w '%{http_code}' -X POST \
   "http://127.0.0.1:8083/api/v1/internal/raffle/activity/chat_credit_refund_by_token?originalRequestId=sec-smoke-1" \
@@ -54,7 +54,7 @@ else
   fail "forged internal chat token not rejected (http=$FORGE_HTTP code=$FORGE_CODE)"
 fi
 
-# Admin list without auth → HTTP 401 + code 0009
+# 未认证获取 admin 列表 → HTTP 401 + 业务码 0009
 ADMIN_BODY=$(mktemp)
 ADMIN_HTTP=$(curl -sS -o "$ADMIN_BODY" -w '%{http_code}' "$API/admin/config/list" || echo "000")
 ADMIN_CODE=$(python3 -c "import json; print(json.load(open('$ADMIN_BODY')).get('code',''))" 2>/dev/null || echo "")

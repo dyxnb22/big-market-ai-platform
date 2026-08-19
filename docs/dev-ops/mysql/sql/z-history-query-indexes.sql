@@ -1,9 +1,8 @@
--- V20260812__history_query_indexes: additive migration for reused MySQL volumes.
--- Replaces the single-column idx_user_id on user_award_record_00X / user_credit_order_00X
--- with composite indexes so the server-side draw-history / credit-ledger queries
--- (where user_id = ? order by award_time|create_time desc limit 50) avoid filesort.
--- Fresh Docker volumes already receive the composite indexes from the schema dumps;
--- this file is idempotent and safe to re-run.
+-- V20260812__history_query_indexes：针对复用 MySQL 卷的增量迁移。
+-- 将 user_award_record_00X / user_credit_order_00X 上的单列 idx_user_id
+-- 替换为联合索引，使服务端抽奖历史 / 积分账本查询
+-- （where user_id = ? order by award_time|create_time desc limit 50）避免 filesort。
+-- 新建 Docker 卷已从 schema dump 获得联合索引；本文件可幂等重复执行。
 
 USE `big_market`;
 

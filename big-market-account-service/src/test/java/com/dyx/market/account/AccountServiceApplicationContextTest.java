@@ -16,7 +16,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Account-service full Application Context load (upgrade gate before Boot 3).
+ * account-service 完整 Spring ApplicationContext 加载测试（Boot 3 升级门禁）。
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = AccountServiceApplication.class, properties = {

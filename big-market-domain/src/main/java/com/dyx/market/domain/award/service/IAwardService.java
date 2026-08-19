@@ -13,6 +13,13 @@ import java.util.List;
  */
 public interface IAwardService {
 
+    /**
+     * 保存用户中奖记录。
+     *
+     * <p>调用方应以抽奖订单 ID 作为幂等键；记录成功落库后才允许进入后续发奖确认流程。</p>
+     *
+     * @param userAwardRecordEntity 用户中奖记录
+     */
     void saveUserAwardRecord(UserAwardRecordEntity userAwardRecordEntity);
 
     /**

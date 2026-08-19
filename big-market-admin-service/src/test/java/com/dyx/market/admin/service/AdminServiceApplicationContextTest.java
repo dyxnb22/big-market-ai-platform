@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * GOV-B09: admin-service minimal Context load.
+ * GOV-B09：admin-service 最小 Spring 上下文加载测试。
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = AdminServiceApplication.class, properties = {

@@ -85,12 +85,12 @@
             <artifactId>converter-jackson</artifactId>
         </dependency>
 
-        <!-- Project modules -->
+        <!-- 工程模块 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-api</artifactId>
         </dependency>
-        <!-- Docker/secure profile account port; launcher scans only trigger.account. -->
+        <!-- Docker/secure Profile 的账户端口；启动模块只扫描 trigger.account。 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-trigger</artifactId>

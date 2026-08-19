@@ -20,7 +20,7 @@ public class CreditAccountEntity {
 
     /** 用户ID */
     private String userId;
-    /** 可用积分，每次扣减的值 */
+    /** 查询账户时表示当前可用积分；调整账户时表示本次积分变动额。 */
     private BigDecimal adjustAmount;
 
 }

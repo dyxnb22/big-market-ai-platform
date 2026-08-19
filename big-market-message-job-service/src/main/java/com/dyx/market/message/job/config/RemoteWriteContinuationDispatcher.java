@@ -15,7 +15,7 @@ import jakarta.annotation.Resource;
 
 /**
  * pending 远程写对账成功后的业务 continuation（NR-006）。
- * Failures must propagate so the job keeps {@code continuation_pending}.
+ * 失败必须继续向上抛出，使 Job 保留 {@code continuation_pending} 状态并在下一轮重试。
  */
 @Slf4j
 @Component

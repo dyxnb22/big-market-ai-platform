@@ -147,7 +147,7 @@ public class StrategyAwardCacheSupportTest {
         when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(true);
 
         support.updateStrategyAwardStockOnce(stockKey);
-        // Second call: SETNX fails but ledger exists → skip DB
+        // 第二次调用：SETNX 失败但账本已存在，因此跳过数据库扣减。
         when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(false);
         when(strategyAwardStockDecrementLedgerDao.queryByReservationId(ORDER_ID))
                 .thenReturn(StrategyAwardStockDecrementLedger.builder().reservationId(ORDER_ID).build());
@@ -160,7 +160,7 @@ public class StrategyAwardCacheSupportTest {
     @Test
     public void updateStrategyAwardStockOnce_crashWindow_setnxWithoutLedger_retriesDb() {
         StrategyAwardStockKeyVO stockKey = buildReservation();
-        // Simulate crash: Redis SETNX already set, but MySQL ledger missing
+        // 模拟崩溃窗口：Redis SETNX 已成功，但 MySQL 账本尚不存在。
         when(redisService.setNx(eq(MYSQL_DEDUPE_KEY), eq(7L), eq(TimeUnit.DAYS))).thenReturn(false, true);
         when(strategyAwardStockDecrementLedgerDao.queryByReservationId(ORDER_ID)).thenReturn(null);
 

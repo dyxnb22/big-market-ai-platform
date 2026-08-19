@@ -24,14 +24,12 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Platform configuration cache backed exclusively by Nacos.
+ * 仅由 Nacos 提供持久化的平台代理配置服务。
  *
- * <p>The in-process map is only an immutable read snapshot of the two Nacos
- * DataIds. It is never persisted to a local file and a failed publish never
- * reports a successful admin save. Nacos persistence is the commit point;
- * Redis fan-out is a retriable delivery hint and never rolls back a committed
- * Nacos write. Safe compiled defaults are used only when a key is deleted or
- * an empty/invalid Nacos payload must be interpreted.</p>
+ * <p>进程内 Map 只是两个 Nacos DataId 的不可变读快照，不写入本地文件。
+ * 配置发布失败时不会向 Admin 报告保存成功；Nacos 持久化成功才是提交点，
+ * Redis 广播只是可重试的投递提示，不能回滚已经提交的 Nacos 配置。只有删除配置，
+ * 或必须解释空/非法 Nacos 内容时，才使用代码内置的安全默认值。</p>
  */
 @Service
 public class PlatformConfigService implements InitializingBean {
@@ -42,17 +40,18 @@ public class PlatformConfigService implements InitializingBean {
             new AtomicReference<>(Collections.<String, AdminConfigResponseDTO>emptyMap());
 
     @Autowired(required = false)
+    /** Nacos 配置读写与持久化确认桥接器。 */
     private NacosConfigSyncService nacosConfigSyncService;
 
     @Autowired(required = false)
+    /** Redis 配置变更广播器；缺失或失败时由 Nacos 监听和启动读取兜底。 */
     private PlatformConfigChangeNotifier platformConfigChangeNotifier;
 
     @Override
     public void afterPropertiesSet() {
         configSnapshot.set(immutable(defaultConfigs()));
         if (nacosConfigSyncService == null) {
-            // Test contexts can omit Nacos. Runtime services enable the Nacos bridge
-            // and reject writes when it is unavailable.
+            // 测试上下文可以不装配 Nacos；运行服务会启用桥接器，未连接时拒绝写入。
             return;
         }
         refreshPlatformFromContent(nacosConfigSyncService.fetchCurrent(3000));
@@ -88,7 +87,7 @@ public class PlatformConfigService implements InitializingBean {
                 ? defaultValue : config.getConfigValue();
     }
 
-    /** Returns one immutable configuration generation for request-scoped reads. */
+    /** 返回一个不可变的配置代快照，供同一请求范围内保持一致地读取配置。 */
     public Map<String, String> snapshotValues(String namespace) {
         Map<String, String> values = new LinkedHashMap<>();
         for (AdminConfigResponseDTO config : configSnapshot.get().values()) {
@@ -135,7 +134,7 @@ public class PlatformConfigService implements InitializingBean {
         delete(request);
     }
 
-    /** Deletes a key with the same optimistic-concurrency contract as save. */
+    /** 按与保存相同的乐观并发约束删除配置键，并以 tombstone 记录删除事实。 */
     public synchronized void delete(AdminConfigRequestDTO request) throws IOException {
         AdminConfigResponseDTO tombstone = AdminConfigResponseDTO.builder()
                 .namespace(request.getNamespace())
@@ -157,17 +156,17 @@ public class PlatformConfigService implements InitializingBean {
         }
     }
 
-    /** Replaces the complete non-runtime snapshot from one Nacos payload. */
+    /** 根据一个 Nacos 配置内容整体替换非运行时配置快照。 */
     public void refreshPlatformFromContent(String content) {
         replaceScope(content, false);
     }
 
-    /** Replaces the complete runtime-switch snapshot from one Nacos payload. */
+    /** 根据一个 Nacos 配置内容整体替换运行时开关配置快照。 */
     public void refreshRuntimeFromContent(String content) {
         replaceScope(content, true);
     }
 
-    /** Compatibility entry point for callers that receive one DataId at a time. */
+    /** 兼容一次只接收一个 DataId 内容的调用方，并按键名识别其配置范围。 */
     public void refreshFromContent(String content) {
         Properties properties = parseProperties(content);
         boolean hasRuntime = containsRuntimeConfig(properties);
@@ -202,8 +201,7 @@ public class PlatformConfigService implements InitializingBean {
             }
             String description = properties.getProperty(namespace + "." + configKey + ".description", "");
             if ("__DELETED__".equals(description)) {
-                // A deletion restores the scope's safe default and must not leave
-                // an old in-memory value active.
+                // 删除会恢复该范围的安全默认值，不能继续保留旧的内存配置。
                 continue;
             }
             nextScope.put(storeKey(namespace, configKey), AdminConfigResponseDTO.builder()
@@ -310,8 +308,8 @@ public class PlatformConfigService implements InitializingBean {
             properties.setProperty(prefix + ".value", StringUtils.defaultString(config.getConfigValue()));
             properties.setProperty(prefix + ".description", StringUtils.defaultString(config.getDescription()));
         }
-        // Properties.store() writes a current-time comment, which would make
-        // contentHash change on every read and invalidate optimistic CAS.
+        // Properties.store() 会写入当前时间注释，导致每次读取都改变 contentHash，
+        // 从而使乐观 CAS 失效，因此这里按稳定顺序手工序列化。
         List<String> names = new ArrayList<>(properties.stringPropertyNames());
         names.sort(String::compareTo);
         StringWriter writer = new StringWriter();

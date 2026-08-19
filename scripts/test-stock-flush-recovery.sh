@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Fault-injection style checks for stock flush durable ledger.
-# Simulates the SETNX-before-DB crash window by asserting MySQL ledger is the
-# source of truth: a Redis dedupe key alone must not prevent a missing ledger
-# from being applied on retry (covered by unit tests). This script verifies
-# DDL presence and ledger uniqueness constraints on a running MySQL.
+# 库存刷新持久化账本的故障注入式检查。
+# 通过断言 MySQL 账本是事实来源，模拟 SETNX 先于数据库写入时的崩溃窗口：
+# 单独存在 Redis 去重键不能阻止缺失的账本在重试时写入（由单元测试覆盖）。
+# 本脚本验证运行中 MySQL 的 DDL 是否存在以及账本唯一约束是否生效。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,7 +17,7 @@ echo "=== Stock flush recovery / ledger gate ==="
 if ! docker ps --format '{{.Names}}' | grep -qx "$MYSQL_CONTAINER"; then
   echo "MySQL container not running — applying unit-test-only gate."
   echo "Run with Docker for full DDL check: docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql"
-  # Still require DDL files and unit tests to exist
+  # 仍要求 DDL 文件和单元测试存在。
   test -f "$ROOT/docs/sql/stock-decrement-ledger.sql" || fail "missing docs/sql/stock-decrement-ledger.sql"
   test -f "$ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql" || fail "missing z-reconcile-tables.sql"
   grep -q 'strategy_award_stock_decrement_ledger' "$ROOT/docs/dev-ops/mysql/sql/z-reconcile-tables.sql" \
@@ -39,7 +38,7 @@ for table in strategy_award_stock_decrement_ledger activity_sku_stock_decrement_
   pass "table big_market.$table exists"
 done
 
-# Unique constraint: duplicate reservation_id must fail
+# 唯一约束：重复 reservation_id 必须失败。
 docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e \
   "USE big_market;
    DELETE FROM strategy_award_stock_decrement_ledger WHERE reservation_id='fault-inject-res-1';
@@ -68,7 +67,7 @@ if docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e \
 fi
 pass "sku ledger rejects duplicate (sku, lock_surplus)"
 
-# Cleanup probe rows
+# 清理探测记录。
 docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e \
   "USE big_market;
    DELETE FROM strategy_award_stock_decrement_ledger WHERE reservation_id='fault-inject-res-1';

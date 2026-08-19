@@ -1,4 +1,4 @@
--- G-05: PendingRemoteWriteTask table (canonical: docs/sql/reconcile-tables.sql).
+-- G-05：PendingRemoteWriteTask 表（规范定义见 docs/sql/reconcile-tables.sql）。
 
 CREATE TABLE IF NOT EXISTS `pending_remote_write_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,

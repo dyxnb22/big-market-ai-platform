@@ -31,13 +31,13 @@ public interface IRaffleActivityAccountDao {
 
     RaffleActivityAccount queryAccountByUserId(RaffleActivityAccount raffleActivityAccount);
 
-    /** Restore total_count_surplus + 1 (rollback compensation). */
+    /** 恢复总额度剩余次数加 1，用于回滚补偿。 */
     void addAccountTotalSurplusQuota(RaffleActivityAccount raffleActivityAccount);
 
-    /** Restore month_count_surplus mirror + 1 in main account (rollback compensation). */
+    /** 恢复主账户中的月额度剩余次数镜像加 1，用于回滚补偿。 */
     void addAccountMonthSurplusQuota(RaffleActivityAccount raffleActivityAccount);
 
-    /** Restore day_count_surplus mirror + 1 in main account (rollback compensation). */
+    /** 恢复主账户中的日额度剩余次数镜像加 1，用于回滚补偿。 */
     void addAccountDaySurplusQuota(RaffleActivityAccount raffleActivityAccount);
 
 }

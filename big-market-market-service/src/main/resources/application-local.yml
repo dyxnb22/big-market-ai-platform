@@ -1,2 +1,1 @@
-# Embedded local mode (mvn spring-boot:run) uses the local account adapters selected by
-# the local/dev Spring Profile.
+# 内嵌本地模式（mvn spring-boot:run）使用 local/dev Spring Profile 选择的本地账户适配器。

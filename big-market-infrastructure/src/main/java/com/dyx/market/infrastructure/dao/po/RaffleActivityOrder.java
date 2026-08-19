@@ -24,7 +24,7 @@ public class RaffleActivityOrder {
     private String userId;
 
     /**
-     * sku
+     * 商品 SKU。
      */
     private Long sku;
 
@@ -79,7 +79,7 @@ public class RaffleActivityOrder {
     private String state;
 
     /**
-     * 业务仿重ID - 外部透传的，确保幂等
+     * 业务幂等 ID，由外部调用方透传，确保重复请求只创建一个订单。
      */
     private String outBusinessNo;
 

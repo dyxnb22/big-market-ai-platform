@@ -1,7 +1,7 @@
--- Reconcile / DLQ / chat session tables (G-02, G-05, G-06, G-07).
--- Apply the independent pending_remote_write_task copy to big_market, and the
--- DLQ/chat/stock tables to big_market_01 and big_market_02 (Docker:
--- docs/dev-ops/mysql/sql/z-reconcile-tables.sql).
+-- 对账 / DLQ / 聊天会话表（G-02、G-05、G-06、G-07）。
+-- 将独立的 pending_remote_write_task 副本执行到 big_market，
+-- 将 DLQ/聊天/库存表执行到 big_market_01 和 big_market_02（Docker 初始化脚本：
+-- docs/dev-ops/mysql/sql/z-reconcile-tables.sql）。
 
 USE `big_market`;
 

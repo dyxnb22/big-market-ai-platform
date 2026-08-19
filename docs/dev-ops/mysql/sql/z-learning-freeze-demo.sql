@@ -1,15 +1,13 @@
--- Idempotent learning-freeze demo alignment for both fresh and reused volumes.
+-- 同时适配新建卷与复用卷的学习冻结演示数据，且脚本可幂等执行。
 --
--- The staged activity (100401) must never pick an award whose external
--- fulfillment endpoint is absent from the local stack. Keep the richer legacy
--- strategies as reading fixtures, but make the default stage deterministic:
--- one SKU exchange costs 5 credits and one draw awards the same 5 credits.
+-- 已上架活动（100401）绝不能选择本地栈中不存在外部履约端点的奖品。
+-- 保留更丰富的历史策略作为阅读样例，但让默认阶段保持确定性：
+-- 一次 SKU 兑换消耗 5 积分，一次抽奖也奖励相同的 5 积分。
 
 USE `big_market`;
 
--- The legacy 100301 strategy references fulfillment handlers that are not
--- present in the seven-service stack. Close it in both the database gate and
--- the reused-volume Nacos display configuration.
+-- 历史 100301 策略引用了七服务栈中不存在的履约处理器。
+-- 在数据库门禁和复用卷的 Nacos 展示配置中都将其关闭。
 UPDATE `raffle_activity`
 SET `state` = 'close', `update_time` = NOW()
 WHERE `activity_id` = 100301;

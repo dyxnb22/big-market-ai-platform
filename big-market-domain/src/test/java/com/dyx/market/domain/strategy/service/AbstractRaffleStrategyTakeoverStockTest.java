@@ -22,8 +22,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * GOV-C02: weight/blacklist chain takeover must still enter the stock reservation tree
- * (see {@link AbstractRaffleStrategy#performRaffle}).
+ * GOV-C02：权重/黑名单规则链接管后仍必须进入库存预占树
+ *（见 {@link AbstractRaffleStrategy#performRaffle}）。
  */
 public class AbstractRaffleStrategyTakeoverStockTest {
 

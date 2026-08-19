@@ -91,14 +91,14 @@
       <div id="configList" class="config-list"></div>
     </section>
 
-    <!-- ===== Ops Monitoring ===== -->
+    <!-- ===== 运维监控 ===== -->
     <section id="ops" class="admin-panel">
       <div class="panel-title">
         <h2>🔍 运维监控</h2>
         <button id="refreshOpsBtn" class="solid-button" type="button">刷新状态</button>
       </div>
 
-      <!-- Metrics Cards -->
+      <!-- 指标卡片 -->
       <div class="ops-metrics" id="opsMetrics">
         <div class="ops-card"><span class="ops-label">Gateway</span><strong class="ops-value ops-unknown" id="opsGatewayStatus">检测中</strong></div>
         <div class="ops-card"><span class="ops-label">API 登录</span><strong class="ops-value ops-unknown" id="opsLoginStatus">检测中</strong></div>
@@ -107,13 +107,13 @@
         <div class="ops-card"><span class="ops-label">刷新时间</span><span class="ops-value small" id="opsRefreshTime">-</span></div>
       </div>
 
-      <!-- Service Health Table -->
+      <!-- 服务健康状态表 -->
       <h3 class="admin-section-title">服务健康状态</h3>
       <div class="data-table" id="opsHealthTable">
         <table><thead><tr><th>服务</th><th>状态</th><th>响应</th></tr></thead><tbody id="opsHealthBody"></tbody></table>
       </div>
 
-      <!-- Service Diagnostics -->
+      <!-- 服务诊断 -->
       <h3 class="admin-section-title">服务诊断</h3>
       <div id="opsDiagnostics" class="ops-diagnostics">
         <div class="diag-item" id="diagGateway"><span class="diag-label">Gateway /actuator/health</span><span class="diag-result">检测中...</span></div>

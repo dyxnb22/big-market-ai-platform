@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Static guard for the fixed service topology: market owns HTTP/business paths;
-# message-job owns MQ consumers and XXL jobs.
+# 固定服务拓扑的静态门禁：market 负责 HTTP/业务路径；
+# message-job 负责 MQ 消费者和 XXL 任务。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

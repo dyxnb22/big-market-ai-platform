@@ -144,7 +144,7 @@ job:
     min-stuck-minutes: ${JOB_CREDIT_PAY_DELIVERY_MIN_STUCK_MINUTES:1}
     restore-sku-stock: ${JOB_CREDIT_PAY_DELIVERY_RESTORE_SKU_STOCK:true}
   dlq-replay:
-    # Money-effect DLQ replay requires explicit idempotency review before enabling.
+    # DLQ 重放可能产生资金影响，启用前必须完成明确的幂等性审查。
     enabled: ${JOB_DLQ_REPLAY_ENABLED:false}
     max-retries: ${JOB_DLQ_REPLAY_MAX_RETRIES:5}
     max-consume-failures: ${JOB_DLQ_REPLAY_MAX_CONSUME_FAILURES:5}

@@ -1,17 +1,16 @@
-# Shared parameterized Dockerfile for all Spring Boot microservices.
-# Usage: docker build --build-arg MODULE_NAME=big-market-auth-service -t big-market-auth-service .
+# 所有 Spring Boot 微服务共用的参数化 Dockerfile。
+# 用法：docker build --build-arg MODULE_NAME=big-market-auth-service -t big-market-auth-service .
 FROM eclipse-temurin:17-jre-jammy@sha256:475d8e96b4b2bfe08999e5e854755c773af1581acdf959a4545d88f0696a2339
 
 ARG MODULE_NAME
 ENV PARAMS=""
-# Dubbo 3.3.6 Hessian2 on JDK 17: temporary opens retained for the learning stack.
+# Dubbo 3.3.6 Hessian2 在 JDK 17 上需要的临时开放项，学习环境暂时保留。
 ENV JAVA_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.math=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED"
 ENV TZ=Asia/Shanghai
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Compose healthchecks use curl. Keep the runtime image minimal while making
-# the healthcheck dependency explicit and reproducible.
+# Compose 健康检查使用 curl；保持运行时镜像精简，同时显式声明并固定健康检查依赖。
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*

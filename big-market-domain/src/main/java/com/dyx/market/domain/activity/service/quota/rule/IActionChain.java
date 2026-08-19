@@ -14,9 +14,10 @@ public interface IActionChain extends IActionChainArmory {
     boolean action(ActivitySkuEntity activitySkuEntity, ActivityEntity activityEntity, ActivityCountEntity activityCountEntity);
 
     /**
-     * Execute the chain with an optional durable reservation key. Existing
-     * callers keep the legacy behavior; credit-pay orders pass their business
-     * number so SKU compensation can cancel/restore the exact reservation.
+     * 使用可选的持久化预占键执行规则链。
+     *
+     * <p>旧调用方继续使用原有行为；积分兑换订单传入业务幂等号，使 SKU 补偿能够精确
+     * 取消或恢复对应的库存预占。</p>
      */
     default boolean action(ActivitySkuEntity activitySkuEntity, ActivityEntity activityEntity,
                            ActivityCountEntity activityCountEntity, String reservationId) {

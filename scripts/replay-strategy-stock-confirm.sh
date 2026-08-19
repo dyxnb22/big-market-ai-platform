@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Move one strategy stock confirmation task from manual_pending back to pending.
+# 将一条策略库存确认任务从 manual_pending 移回 pending。
 set -euo pipefail
 
 usage() { echo "Usage: $0 [--dry-run] <user-id> <order-id>" >&2; exit 2; }

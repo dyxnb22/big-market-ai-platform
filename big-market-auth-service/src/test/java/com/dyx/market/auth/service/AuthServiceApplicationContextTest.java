@@ -15,7 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * GOV-B09: auth-service Context load without lazy-init (eager bean wiring gate).
+ * GOV-B09：auth-service 不启用懒加载的上下文测试，用于校验 Bean 提前装配。
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = AuthServiceApplication.class, properties = {

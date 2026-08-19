@@ -90,9 +90,10 @@ public abstract class AbstractRaffleActivityPartake implements IRaffleActivityPa
     protected abstract UserRaffleOrderEntity buildUserRaffleOrder(String userId, Long activityId, Date currentDate);
 
     /**
-     * Persist the partake order aggregate. Default: local saveCreatePartakeOrderAggregate (quota
-     * decrement + order insert in one transaction). Override in subclasses to apply configurable
-     * remote quota decrement before the order insert (B14+).
+     * 持久化参与订单聚合。
+     *
+     * <p>默认调用本地 {@code saveCreatePartakeOrderAggregate}，在一个事务中完成额度扣减和
+     * 订单写入；子类可覆盖该方法，在写订单前按配置执行远程额度扣减（B14+）。</p>
      */
     protected void doSavePartakeOrder(CreatePartakeOrderAggregate aggregate) {
         activityRepository.saveCreatePartakeOrderAggregate(aggregate);

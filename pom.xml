@@ -19,7 +19,7 @@
         <module>big-market-starter-dubbo</module>
         <module>big-market-api</module>
         <module>big-market-management</module>
-        <!-- Microservice launchers (shared jars remain above) -->
+        <!-- 微服务启动模块（共享 JAR 模块仍位于上方） -->
         <module>big-market-gateway</module>
         <module>big-market-auth-service</module>
         <module>big-market-admin-service</module>
@@ -76,7 +76,7 @@
                 <artifactId>mybatis-spring-boot-starter</artifactId>
                 <version>${mybatis-spring-boot.version}</version>
             </dependency>
-            <!-- Align explicit MyBatis core usage (db-router plugins) with starter 3.0.5. -->
+            <!-- 让显式使用的 MyBatis 核心版本（db-router 插件）与 starter 3.0.5 保持一致。 -->
             <dependency>
                 <groupId>org.mybatis</groupId>
                 <artifactId>mybatis</artifactId>
@@ -152,13 +152,13 @@
                 <artifactId>nacos-client</artifactId>
                 <version>3.2.3</version>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/org.elasticsearch.plugin/x-pack-sql-jdbc -->
+            <!-- 依赖信息：https://mvnrepository.com/artifact/org.elasticsearch.plugin/x-pack-sql-jdbc -->
             <dependency>
                 <groupId>org.elasticsearch.plugin</groupId>
                 <artifactId>x-pack-sql-jdbc</artifactId>
                 <version>7.17.14</version>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/com.xuxueli/xxl-job-core -->
+            <!-- 依赖信息：https://mvnrepository.com/artifact/com.xuxueli/xxl-job-core -->
             <dependency>
                 <groupId>com.xuxueli</groupId>
                 <artifactId>xxl-job-core</artifactId>
@@ -265,7 +265,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.2.5</version>
                     <configuration>
-                        <!-- Temporary until Dubbo Hessian2 is upgraded for JDK 17. -->
+                        <!-- 临时配置：待 Dubbo Hessian2 完成 JDK 17 适配后再移除。 -->
                         <argLine>--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.math=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED</argLine>
                     </configuration>
                 </plugin>
@@ -344,7 +344,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <!-- JVM flags for containers/scripts only; MaxPermSize removed (invalid on Java 8+). -->
+                <!-- 仅供容器/脚本使用的 JVM 参数；MaxPermSize 在 Java 8+ 已无效，因此移除。 -->
                 <java_jvm>-Xms1G -Xmx1G -server -Xss256K -Dspring.profiles.active=test -XX:+DisableExplicitGC -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError</java_jvm>
                 <profileActive>dev</profileActive>
             </properties>

@@ -47,7 +47,7 @@ public class ActivityQuerySupport {
         String cacheKey = Constants.RedisKey.ACTIVITY_SKU_STOCK_COUNT_KEY + sku;
         Long cacheSkuStock = redisService.getAtomicLong(cacheKey);
         if (null == cacheSkuStock) {
-            // Redis key was evicted or not yet initialized — restore from DB surplus
+            // Redis 键可能已被淘汰或尚未初始化，此时用数据库中的剩余库存恢复缓存。
             redisService.setAtomicLong(cacheKey, raffleActivitySku.getStockCountSurplus());
             cacheSkuStock = raffleActivitySku.getStockCountSurplus().longValue();
         }

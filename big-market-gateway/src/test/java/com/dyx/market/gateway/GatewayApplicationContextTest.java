@@ -11,7 +11,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * GOV-B09: gateway minimal Context load.
+ * GOV-B09：gateway 最小 Spring 上下文加载测试。
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = GatewayApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {

@@ -22,16 +22,16 @@ services:
       - NACOS_AUTH_IDENTITY_KEY=${NACOS_AUTH_IDENTITY_KEY:-2222}
       - NACOS_AUTH_IDENTITY_VALUE=${NACOS_AUTH_IDENTITY_VALUE:-2xxx}
       - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN:-SecretKey012345678901234567890123456789012345678901234567890123456789}
-      # Nacos 3.x defaults Admin API auth on; learning compose keeps SDK publish working without tokens.
+      # Nacos 3.x 默认开启 Admin API 鉴权；学习环境 Compose 保持 SDK 发布链路可用，不要求令牌。
       - NACOS_AUTH_ADMIN_ENABLE=${NACOS_AUTH_ADMIN_ENABLE:-false}
       - NACOS_AUTH_CONSOLE_ENABLE=${NACOS_AUTH_CONSOLE_ENABLE:-true}
-      # Learning seed SoT is empty tenant_id; public twin is mirrored for getConfig.
-      # Do not enable namespace compatible mode: it dual-writes empty while getConfig
-      # still reads public, which breaks fail-closed publish confirmation.
+      # 学习环境种子的事实来源（SoT）使用空 tenant_id；同时镜像一份公共租户数据供 getConfig 读取。
+      # 不要启用 namespace 兼容模式：该模式会同时写入空租户，但 getConfig
+      # 仍读取公共租户，从而破坏“确认失败即关闭”的发布确认逻辑。
     networks:
       - my-network
     healthcheck:
-      # Nacos 3.x console readiness is on 8080 (not the legacy /nacos/v1 path on 8848).
+      # Nacos 3.x 控制台就绪端口为 8080（不是旧版 8848 上的 /nacos/v1 路径）。
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/v3/console/health/readiness || exit 1"]
       interval: 10s
       timeout: 5s
@@ -63,7 +63,7 @@ services:
     networks:
       - my-network
 
-  # phpmyadmin https://hub.docker.com/_/phpmyadmin
+  # phpmyadmin：https://hub.docker.com/_/phpmyadmin
   phpmyadmin:
     image: 116.198.201.187:5000/phpmyadmin:5.2.1
     container_name: phpmyadmin
@@ -80,7 +80,7 @@ services:
     networks:
       - my-network
 
-  # Redis
+  # Redis 服务
   redis:
     image: 116.198.201.187:5000/redis:7.4.9
     container_name: redis
@@ -100,7 +100,7 @@ services:
       timeout: 5s
       retries: 3
 
-  # RedisAdmin https://github.com/joeferner/redis-commander
+  # RedisAdmin：https://github.com/joeferner/redis-commander
   # 账密 admin/admin
   redis-admin:
     image: 116.198.201.187:5000/redis-commander:0.8.0
@@ -122,7 +122,7 @@ services:
       redis:
         condition: service_healthy
 
-  # rabbitmq
+  # RabbitMQ 服务
   # 账密 admin/admin
   # rabbitmq-plugins enable rabbitmq_management
   rabbitmq:
@@ -140,7 +140,7 @@ services:
       - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
 
   # canal-server 伪装成mysql的从库
-  # docker cp canal-server:/home/admin/canal-server/conf/example/instance.properties /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal
+  # 将 canal-server 中的 instance.properties 复制到本地：docker cp canal-server:/home/admin/canal-server/conf/example/instance.properties /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal
   canal-server:
     image: 116.198.201.187:5000/canal-server:v1.1.7
     container_name: canal-server
@@ -155,8 +155,8 @@ services:
       - my-network
 
   # canal-adapter 负责数据分发
-  # docker cp canal-adapter:/opt/canal-adapter/conf/application.yml /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal-adapter
-  # docker cp canal-adapter:/opt/canal-adapter/conf/rdb/mytest_user.yml /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal-adapter/rdb
+  # 将 canal-adapter 的 application.yml 复制到本地：docker cp canal-adapter:/opt/canal-adapter/conf/application.yml /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal-adapter
+  # 将 canal-adapter 的 mytest_user.yml 复制到本地：docker cp canal-adapter:/opt/canal-adapter/conf/rdb/mytest_user.yml /Users/xiaofuge/Documents/develop/github/xfg-studio/xfg-dev-tech-canal/docs/dev-ops/canal-adapter/rdb
   canal-adapter:
     image: 116.198.201.187:5000/canal-adapter:v1.1.6
     container_name: canal-adapter

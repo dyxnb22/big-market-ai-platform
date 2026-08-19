@@ -14,8 +14,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 
 /**
- * Subscribes the market request path to the Nacos runtime-switch DataId,
- * with a Redis pub/sub fallback for Nacos 3.x empty/public listener gaps.
+ * 将 market 请求链路订阅到 Nacos 运行时开关 DataId，并以 Redis 发布/订阅兜底
+ * Nacos 3.x 空租户/public 监听可能漏通知的问题。
  */
 @Slf4j
 @Configuration
@@ -23,15 +23,19 @@ import jakarta.annotation.Resource;
 public class NacosRuntimeConfigSubscriberConfig {
 
     @Resource
+    /** Nacos 配置监听与读取桥接器。 */
     private NacosConfigSyncService nacosConfigSyncService;
 
     @Resource
+    /** market 请求链路读取的不可变运行时开关快照。 */
     private RuntimeConfigHolder runtimeConfigHolder;
 
     @Autowired(required = false)
+    /** Redis 广播客户端；未配置时仅使用 Nacos 监听器。 */
     private RedissonClient redissonClient;
 
     @PostConstruct
+    /** 注册 Nacos/Redis 两路监听，并用当前 Nacos 内容初始化本地快照。 */
     public void initialize() {
         nacosConfigSyncService.addRuntimeSwitchesListener(new AbstractListener() {
             @Override
@@ -50,6 +54,7 @@ public class NacosRuntimeConfigSubscriberConfig {
         refresh(nacosConfigSyncService.fetchRuntimeSwitches(3000), "startup");
     }
 
+    /** 解析并刷新运行时开关；内容非法时恢复安全默认值。 */
     private void refresh(String content, String source) {
         try {
             runtimeConfigHolder.refreshFromContent(content);

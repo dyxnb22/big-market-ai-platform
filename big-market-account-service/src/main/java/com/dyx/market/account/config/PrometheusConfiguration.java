@@ -7,9 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-/**
- * Micrometer AOP aspects; Prometheus registry comes from Boot Actuator autoconfig.
- */
+/** Micrometer AOP 计时与计数切面；Prometheus 注册表由 Spring Boot Actuator 自动配置。 */
 @EnableAspectJAutoProxy
 @Configuration
 public class PrometheusConfiguration {

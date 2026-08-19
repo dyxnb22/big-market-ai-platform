@@ -1,5 +1,5 @@
--- Learning/reference DDL for MQ dead-letter persistence and replay.
--- Apply to big_market_01 (and big_market_02 if mirrored) before enabling DlqReplayJob.
+-- MQ 死信持久化与重放的学习/参考 DDL。
+-- 启用 DlqReplayJob 前，先在 big_market_01 执行（如果镜像部署，也在 big_market_02 执行）。
 
 CREATE TABLE IF NOT EXISTS `mq_dead_letter` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT                       COMMENT 'Auto-increment row id',

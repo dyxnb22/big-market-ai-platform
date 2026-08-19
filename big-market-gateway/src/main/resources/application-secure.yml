@@ -1,4 +1,4 @@
-# Secure profile overlay for gateway
+# 网关的 secure Profile 配置覆盖层。
 gateway:
   rate-limiter:
     enabled: true

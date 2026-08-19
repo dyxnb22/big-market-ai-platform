@@ -14,7 +14,7 @@ public class Task {
 
     /** 自增ID */
     private String id;
-    /** 活动ID */
+    /** 用户 ID；同时用于任务分库路由。 */
     private String userId;
     /** 消息主题 */
     private String topic;

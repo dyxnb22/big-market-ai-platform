@@ -1,5 +1,5 @@
--- Canonical DDL for the completed microservices architecture.
--- Run the first block in big_market_01 and the second block in big_market_02.
+-- 已完成微服务架构的规范 DDL。
+-- 第一段在 big_market_01 执行，第二段在 big_market_02 执行。
 
 USE `big_market_01`;
 
@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS `raffle_quota_decrement_ledger_000` (
     `update_time`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
                                              ON UPDATE CURRENT_TIMESTAMP        COMMENT 'Last update time',
     PRIMARY KEY (`id`),
-    -- Idempotency constraint: one ledger row per (user, activity, business-operation).
-    -- The INSERT inside the transaction fails with DuplicateKeyException on retry;
-    -- the caller treats this as an already-processed event and returns true immediately.
+    -- 幂等约束：每个（用户、活动、业务操作）组合只能有一条账本记录。
+    -- 事务内重试 INSERT 时会抛出 DuplicateKeyException；调用方将其视为已处理事件，
+    -- 并立即返回 true。
     UNIQUE KEY `uq_user_activity_biz` (`user_id`, `activity_id`, `out_business_no`),
     KEY `idx_status_create` (`status`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Quota-decrement idempotency ledger — learning DDL';

@@ -54,7 +54,7 @@
             <artifactId>big-market-api</artifactId>
         </dependency>
 
-        <!-- Test -->
+        <!-- 测试依赖 -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verifies the live Nacos -> admin -> market/chatbot configuration path.
-# It always restores the normal final values (degrade=close, chatbot.enabled=true).
+# 验证实时 Nacos -> admin -> market/chatbot 配置链路。
+# 无论结果如何，都会恢复正常最终值（degrade=close、chatbot.enabled=true）。
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"
@@ -68,7 +68,7 @@ wait_for_log() {
 
 mysql_config_content() {
   local data_id="$1"
-  # Prefer empty tenant (learning SoT / Nacos 3.x write target); fall back to public.
+  # 优先使用空租户（学习环境 SoT / Nacos 3.x 写入目标）；失败时回退到公共租户。
   docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -r -e \
     "SELECT content FROM nacos_config.config_info
        WHERE data_id='$data_id' AND group_id='DEFAULT_GROUP'

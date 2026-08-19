@@ -1,4 +1,4 @@
-# Local development.
+# 本地开发配置。
 chatbot:
   gateway-url: ${CHATBOT_GATEWAY_URL:http://127.0.0.1:8080}
 

@@ -8,7 +8,7 @@ import org.junit.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * BM-017: market-service launcher code must not wire MQ jobs/listeners (message-job owns them).
+ * BM-017：market-service 启动代码不得装配 MQ Job/监听器，这些组件归 message-job 所有。
  */
 public class MarketServiceArchitectureTest {
 

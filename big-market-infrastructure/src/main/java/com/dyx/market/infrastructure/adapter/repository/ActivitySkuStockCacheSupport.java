@@ -82,17 +82,15 @@ public class ActivitySkuStockCacheSupport {
                         .queryBySkuAndLockSurplus(ActivitySkuStockDecrementLedger.builder()
                                 .sku(sku).lockSurplus(expectedSurplus).build());
                 if (existing != null && "released".equals(existing.getStatus())) {
-                    // A restored Redis slot can legitimately reuse the same
-                    // surplus value. Released rows are historical facts, not
-                    // an idempotency claim for a future reservation.
+                    // Redis 恢复后的库存槽位可能再次使用相同的剩余值。
+                    // released 行只是历史事实，不能作为未来预占的幂等凭证。
                     activitySkuStockDecrementLedgerDao.deleteBySkuAndLockSurplus(existing);
                     activitySkuStockDecrementLedgerDao.insert(reservation);
                 } else if (existing == null || !"reserved".equals(existing.getStatus())) {
-                    // An applied reservation is already durable; do not debit again.
+                    // 已落账的预占已经持久化，不能再次扣减库存。
                     return existing != null;
                 }
-                // A process may have died after the durable insert. The Redis
-                // script below resumes the same reservation atomically.
+                // 进程可能在账本持久化后宕机；下面的 Redis 脚本会原子地恢复同一笔预占。
             }
             long lockTtlMillis = endDateTime == null
                     ? TimeUnit.DAYS.toMillis(30)
@@ -111,7 +109,7 @@ public class ActivitySkuStockCacheSupport {
                             + "redis.call('set', KEYS[1], surplus, 'EX', ARGV[3]); return surplus;",
                     RScript.ReturnType.INTEGER,
                     java.util.Arrays.asList("activity_reservation:" + sku + ":" + expectedSurplus, cacheKey),
-                    // Use StringCodec so ARGV are plain digits (JsonJacksonCodec wraps values).
+                    // 使用 StringCodec，确保 ARGV 是纯数字；JsonJacksonCodec 会对值再做包装。
                     String.valueOf(expectedSurplus),
                     String.valueOf(lockTtlMillis),
                     String.valueOf(TimeUnit.DAYS.toSeconds(30)));
@@ -128,9 +126,8 @@ public class ActivitySkuStockCacheSupport {
                 try {
                     eventPublisher.publish(activitySkuStockZeroMessageEvent.topic(), activitySkuStockZeroMessageEvent.buildEventMessage(sku));
                 } catch (Exception eventEx) {
-                    // The durable stock queue already owns the decrement; a
-                    // zero-notification outage must not turn a successful
-                    // reservation into a second caller-visible retry.
+                    // 持久化库存队列已经接管这次扣减；库存归零通知故障不能把
+                    // 已成功的预占变成调用方可见的第二次重试。
                     log.error("活动 SKU 库存归零通知失败，保留库存落账队列 sku:{}", sku, eventEx);
                 }
             }
@@ -149,9 +146,9 @@ public class ActivitySkuStockCacheSupport {
     }
 
     public ActivitySkuStockKeyVO takeQueueValue() {
-        // Nothing is ever enqueued to the bare key — all writes go to the per-SKU key
-        // (ACTIVITY_SKU_COUNT_QUERY_KEY + "_" + sku). This no-arg form always returns null.
-        // Migrate callers to takeQueueValue(Long sku).
+        // 当前不会向裸 key 入队，所有写入都使用按 SKU 区分的 key
+        //（ACTIVITY_SKU_COUNT_QUERY_KEY + "_" + sku）。无参方法始终返回 null，调用方应迁移到
+        // takeQueueValue(Long sku)。
         log.warn("takeQueueValue() called without sku — this queue key is never written to; always returns null. Use takeQueueValue(Long sku) instead.");
         String cacheKey = Constants.RedisKey.ACTIVITY_SKU_COUNT_QUERY_KEY;
         RBlockingQueue<ActivitySkuStockKeyVO> destinationQueue = redisService.getBlockingQueue(cacheKey);
@@ -176,8 +173,7 @@ public class ActivitySkuStockCacheSupport {
     public void syncActivitySkuStockFromQueue(Long sku) {
         ActivitySkuStockKeyVO stockKey = peekQueueValue(sku);
         if (null == stockKey) {
-            // A crash after the durable reservation (or after Redis) but before
-            // delayed-queue offer must still be recoverable from MySQL.
+            // 账本或 Redis 已成功、但延迟队列入队前发生宕机时，仍必须能够从 MySQL 恢复。
             for (ActivitySkuStockDecrementLedger reserved :
                     activitySkuStockDecrementLedgerDao.queryReservedBySku(sku)) {
                 resumeReservedStock(reserved);
@@ -221,8 +217,8 @@ public class ActivitySkuStockCacheSupport {
     }
 
     /**
-     * Durable exactly-once MySQL decrement keyed by (sku, lockSurplus).
-     * Redis SETNX is optional acceleration only.
+     * 按（sku，lockSurplus）执行 MySQL 持久化扣减，账本保证同一事件只落账一次。
+     * Redis SETNX 仅用于可选的快速路径，不能作为最终一致性依据。
      */
     public void updateActivitySkuStockOnce(ActivitySkuStockKeyVO stockKey) {
         if (null == stockKey || null == stockKey.getSku()) {
@@ -253,9 +249,8 @@ public class ActivitySkuStockCacheSupport {
                                 .sku(sku).lockSurplus(lockSurplus).build());
                 if (existing != null) {
                     if ("reserved".equals(existing.getStatus())) {
-                        // A concurrent restore may have released the row after
-                        // this read. Only the CAS transition may authorize the
-                        // physical decrement.
+                        // 并发恢复可能在本次读取后释放该行，只有 CAS 状态迁移成功时
+                        // 才允许执行实际库存扣减。
                         if (activitySkuStockDecrementLedgerDao.updateStatusApplied(existing) == 1) {
                             updateActivitySkuStock(sku);
                         }
@@ -320,8 +315,7 @@ public class ActivitySkuStockCacheSupport {
     }
 
     /**
-     * Restore one reservation at most once. The DB row is the durable gate and
-     * the Redis marker makes a retried job safe across process restarts.
+     * 最多恢复同一笔预占一次。数据库行是持久化闸门，Redis 标记保证 Job 重试或进程重启后不会重复恢复。
      */
     public void restoreActivitySkuStock(Long sku, String reservationId) {
         if (sku == null || reservationId == null || reservationId.trim().isEmpty()) {
@@ -344,9 +338,8 @@ public class ActivitySkuStockCacheSupport {
                 .queryByReservationId(reservationId);
         String reservationLockKey = decrement == null || decrement.getLockSurplus() == null
                 ? "" : stockKey + Constants.UNDERLINE + decrement.getLockSurplus();
-        // SETNX + INCR is one Redis-side state transition. If the process dies
-        // before the DB status update, a retry sees the marker and only closes
-        // the durable ledger instead of incrementing twice.
+        // SETNX + INCR 在 Redis 侧组成一次状态迁移。若进程在更新数据库状态前宕机，
+        // 重试会看到该标记，只关闭持久化账本，不会再次递增库存。
         redissonClient.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                 "local result = -1; "
                         + "if redis.call('setnx', KEYS[1], '1') == 1 then "
@@ -403,7 +396,7 @@ public class ActivitySkuStockCacheSupport {
         return raffleActivitySkuDao.querySkuList();
     }
 
-    /** All SKUs with pending flush work (DB list ∪ Redis pending registry). */
+    /** 返回所有仍有待刷盘任务的 SKU（数据库列表 ∪ Redis 待处理集合）。 */
     public List<Long> queryPendingSkuList() {
         Set<Long> seen = new HashSet<>();
         List<Long> merged = new ArrayList<>();

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Seed XXL-Job handlers 7–13 on existing MySQL volumes (idempotent).
+# 在现有 MySQL 卷中写入 XXL-Job 处理器 7–13 的种子（可幂等执行）。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

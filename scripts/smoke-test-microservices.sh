@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Microservices smoke test — validates the local microservices stack.
+# 微服务冒烟测试：验证本地微服务栈。
 #
-# Usage: ./scripts/smoke-test-microservices.sh [gateway-host]
-# Default host: localhost
+# 用法：./scripts/smoke-test-microservices.sh [gateway-host]
+# 默认主机：localhost
 #
-# Expected result: 20/20 PASS
-#   - 7 health checks  (gateway + 6 backend services)
-#   - 11 functional API checks (incl. HTTP+code for unauth paths)
-#   - 2 gateway fallback checks (HTTP 503 + body code 0007)
+# 预期结果：20/20 PASS
+#   - 7 项健康检查（网关 + 6 个后端服务）
+#   - 11 项功能 API 检查（包含未认证路径的 HTTP 状态码+业务码）
+#   - 2 项网关降级检查（HTTP 503 + 响应体业务码 0007）
 
 set -euo pipefail
 

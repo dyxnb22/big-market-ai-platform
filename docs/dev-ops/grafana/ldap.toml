@@ -1,53 +1,53 @@
-# To troubleshoot and get more log info enable ldap debug logging in grafana.ini
+# 排查问题并获取更多日志时，可在 grafana.ini 中启用 LDAP 调试日志。
 # [log]
 # filters = ldap:debug
 
 [[servers]]
-# Ldap server host (specify multiple hosts space separated)
+# LDAP 服务器主机（多个主机以空格分隔）
 host = "127.0.0.1"
-# Default port is 389 or 636 if use_ssl = true
+# 默认端口为 389；use_ssl = true 时为 636。
 port = 389
-# Set to true if LDAP server should use an encrypted TLS connection (either with STARTTLS or LDAPS)
+# 如果 LDAP 服务器应使用加密 TLS 连接（STARTTLS 或 LDAPS），设置为 true。
 use_ssl = false
-# If set to true, use LDAP with STARTTLS instead of LDAPS
+# 设置为 true 时，使用 STARTTLS 而不是 LDAPS 连接 LDAP。
 start_tls = false
-# The value of an accepted TLS cipher. By default, this value is empty. Example value: ["TLS_AES_256_GCM_SHA384"])
-# For a complete list of supported ciphers and TLS versions, refer to: https://go.dev/src/crypto/tls/cipher_suites.go
+# 可接受的 TLS 密码套件。默认为空；示例值：["TLS_AES_256_GCM_SHA384"]。
+# 支持的密码套件和 TLS 版本清单见：https://go.dev/src/crypto/tls/cipher_suites.go
 tls_ciphers = []
-# This is the minimum TLS version allowed. By default, this value is empty. Accepted values are: TLS1.1, TLS1.2, TLS1.3.
+# 允许的最低 TLS 版本。默认为空；可选值：TLS1.1、TLS1.2、TLS1.3。
 min_tls_version = ""
-# set to true if you want to skip ssl cert validation
+# 如果要跳过 SSL 证书校验，设置为 true。
 ssl_skip_verify = false
-# set to the path to your root CA certificate or leave unset to use system defaults
+# 设置为根 CA 证书路径；留空则使用系统默认值。
 # root_ca_cert = "/path/to/certificate.crt"
-# Authentication against LDAP servers requiring client certificates
+# 需要客户端证书的 LDAP 服务器认证配置。
 # client_cert = "/path/to/client.crt"
 # client_key = "/path/to/client.key"
 
-# Search user bind dn
+# 搜索用户绑定 DN。
 bind_dn = "cn=admin,dc=grafana,dc=org"
-# Search user bind password
-# If the password contains # or ; you have to wrap it with triple quotes. Ex """#password;"""
+# 搜索用户绑定密码。
+# 如果密码包含 # 或 ;，必须使用三重引号包裹，例如："""#password;"""。
 bind_password = 'grafana'
-# We recommend using variable expansion for the bind_password, for more info https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion
+# 建议对 bind_password 使用变量展开，详见：https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#variable-expansion
 # bind_password = '$__env{LDAP_BIND_PASSWORD}'
 
-# Timeout in seconds (applies to each host specified in the 'host' entry (space separated))
+# 超时时间（秒），作用于 host 条目中指定的每个主机（以空格分隔）。
 timeout = 10
 
-# User search filter, for example "(cn=%s)" or "(sAMAccountName=%s)" or "(uid=%s)"
+# 用户搜索过滤器，例如 "(cn=%s)"、"(sAMAccountName=%s)" 或 "(uid=%s)"。
 search_filter = "(cn=%s)"
 
-# An array of base dns to search through
+# 要搜索的基础 DN 数组。
 search_base_dns = ["dc=grafana,dc=org"]
 
-## For Posix or LDAP setups that does not support member_of attribute you can define the below settings
-## Please check grafana LDAP docs for examples
+## 对于不支持 member_of 属性的 Posix 或 LDAP 配置，可定义以下设置。
+## 示例请参考 Grafana LDAP 文档。
 # group_search_filter = "(&(objectClass=posixGroup)(memberUid=%s))"
 # group_search_base_dns = ["ou=groups,dc=grafana,dc=org"]
 # group_search_filter_user_attribute = "uid"
 
-# Specify names of the ldap attributes your ldap uses
+# 指定 LDAP 服务使用的 LDAP 属性名。
 [servers.attributes]
 name = "givenName"
 surname = "sn"
@@ -55,13 +55,13 @@ username = "cn"
 member_of = "memberOf"
 email =  "email"
 
-# Map ldap groups to grafana org roles
+# 将 LDAP 组映射到 Grafana 组织角色。
 [[servers.group_mappings]]
 group_dn = "cn=admins,ou=groups,dc=grafana,dc=org"
 org_role = "Admin"
-# To make user an instance admin  (Grafana Admin) uncomment line below
+# 要将用户设为实例管理员（Grafana Admin），取消下面一行的注释。
 # grafana_admin = true
-# The Grafana organization database id, optional, if left out the default org (id 1) will be used
+# Grafana 组织数据库 ID，可选；留空时使用默认组织（ID 1）。
 # org_id = 1
 
 [[servers.group_mappings]]
@@ -69,6 +69,6 @@ group_dn = "cn=editors,ou=groups,dc=grafana,dc=org"
 org_role = "Editor"
 
 [[servers.group_mappings]]
-# If you want to match all (or no ldap groups) then you can use wildcard
+# 如果要匹配全部（或不匹配任何）LDAP 组，可以使用通配符。
 group_dn = "*"
 org_role = "Viewer"

@@ -22,7 +22,7 @@ public class DeliveryOrderEntity {
      */
     private String userId;
     /**
-     * 业务仿重ID - 外部透传。返利、行为等唯一标识
+     * 业务幂等 ID，由外部调用方透传，用于保证发货状态推进幂等。
      */
     private String outBusinessNo;
 

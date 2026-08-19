@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
-# Repo-only runtime safety validator.
+# 仅检查仓库内容的运行时安全校验器。
 #
-# WARNING: This script can report PASS while Spring Context / mapper / XXL
-# alignment issues remain. Do not use it
-# as the sole gate for boot or closed-loop readiness.
-# occurred in default credentials, profile-selected account paths,
-# shared mapper copies, learning DDL isolation, or the presence of safety
-# hardening classes.
+# 警告：即使 Spring Context / Mapper / XXL 对齐仍有问题，本脚本也可能报告 PASS。
+# 不要将它作为启动或闭环就绪的唯一门禁。
+# 本脚本检查默认凭据、按 Profile 选择的账户路径、共享 Mapper 副本、学习 DDL 隔离，
+# 以及安全加固类是否存在。
 #
-# This validator complements (does not replace):
+# 本校验器用于补充（不能替代）：
 #   validate-microservices-stack.sh
 #   smoke-test-microservices.sh
 #   smoke-api.sh
 #
-# Deterministic, repo-only, no DB/MQ/Docker/network.
+# 结果确定、只检查仓库，不依赖 DB/MQ/Docker/网络。
 
 set -u
 
@@ -31,7 +29,7 @@ echo "  Runtime Safety Validator"
 echo "  Repo: $REPO_ROOT"
 echo "========================================================================"
 
-# ── Helper: check a file exists ────────────────────────────────────────────────
+# ── 辅助函数：检查文件是否存在 ────────────────────────────────────────────────
 assert_file() {
   local label="$1" path="$2"
   if [[ -f "$path" ]]; then
@@ -41,7 +39,7 @@ assert_file() {
   fi
 }
 
-# ── Helper: check pattern is absent across given files/dirs ────────────────────
+# ── 辅助函数：检查给定文件/目录中不存在指定模式 ────────────────────
 assert_pattern_absent() {
   local label="$1" pattern="$2"
   shift 2
@@ -55,7 +53,7 @@ assert_pattern_absent() {
   fi
 }
 
-# ── Helper: check pattern is present in a specific file ───────────────────────
+# ── 辅助函数：检查指定文件中存在指定模式 ───────────────────────
 assert_pattern_present() {
   local label="$1" file="$2" pattern="$3"
   if grep -qE "$pattern" "$file" 2>/dev/null; then
@@ -65,9 +63,9 @@ assert_pattern_present() {
   fi
 }
 
-# Read a scalar from the repository's simple, indentation-based application.yml
-# files and resolve a Spring placeholder default such as ${ENV_VAR:true}.
-# This deliberately avoids treating nested YAML as flattened dotted text.
+# 从仓库中使用简单缩进格式的 application.yml 文件读取标量，
+# 并解析 ${ENV_VAR:true} 这样的 Spring 占位符默认值。
+# 这里有意不把嵌套 YAML 当作扁平化的点号文本处理。
 yaml_default_value() {
   local file="$1" property_path="$2"
   python3 - "$file" "$property_path" <<'PY'
@@ -100,13 +98,13 @@ PY
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 1: Default credential surface audit
+# 第 1 节：默认凭据面审计
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 1. Default credentials — non-dev config files ──"
 
-# Files that could be used as production or staging config templates.
-# Dev/docker profiles are excluded — those may legitimately carry dev defaults.
+# 可能被用作生产或预发布配置模板的文件。
+# 排除 dev/docker Profile，因为这些 Profile 可以合法包含开发默认值。
 NON_DEV_CONFIGS=()
 while IFS= read -r f; do
   NON_DEV_CONFIGS+=("$f")
@@ -115,8 +113,8 @@ done < <(find "$REPO_ROOT" -path '*/src/main/resources/application-prod.yml' \
            | grep -v '/target/' \
            | sort)
 
-# Also audit every microservice application.yml (default profile) and
-# spring-config-token.xml for hardcoded secrets that would be dangerous in prod.
+# 同时审计每个微服务的 application.yml（默认 Profile）和 spring-config-token.xml，
+# 检查其中是否存在生产环境危险的硬编码密钥。
 ALL_SVC_YMLS=()
 ALL_TOKEN_XMLS=()
 while IFS= read -r f; do
@@ -128,31 +126,31 @@ while IFS= read -r f; do
 done < <(find "$REPO_ROOT" -path '*/src/main/resources/spring/spring-config-token.xml' \
            ! -path '*/target/*' 2>/dev/null | sort)
 
-# 1a. JWT secret defaults
+# 1a. JWT 密钥默认值
 assert_pattern_absent \
   "No 'change-me' JWT secret in non-dev configs" \
   'change-me' \
   "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
 
-# 1b. XXL-Job access token
+# 1b. XXL-Job 访问令牌
 assert_pattern_absent \
   "No 'default_token' XXL-Job token in non-dev configs" \
   'default_token' \
   "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
 
-# 1c. Gateway inter-service token
+# 1c. 网关服务间令牌
 assert_pattern_absent \
   "No '6ec604541f8b1ce4a' gateway token in non-dev configs" \
   '6ec604541f8b1ce4a' \
   "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
 
-# 1d. Dev auth users in non-dev configs
+# 1d. 非开发配置中的开发认证用户
 assert_pattern_absent \
   "No 'admin:admin' credential in non-dev configs" \
   'admin:admin' \
   "${NON_DEV_CONFIGS[@]:-${REPO_ROOT}/NONEXISTENT_FILE_SAFETY_GUARD}"
 
-# 1e. Infrastructure credentials must be injected in non-dev configs.
+# 1e. 非开发配置必须通过注入方式提供基础设施凭据。
 assert_pattern_absent \
   "No root/123456 MySQL credential in non-dev configs" \
   'username:[[:space:]]*root|password:[[:space:]]*123456' \
@@ -180,12 +178,11 @@ else
 fi
 
 
-# 1f. Microservice application.yml files must not carry bare change-me-in-dev-only
-#     as an uncommitted default; they should use ${ENV_VAR:change-me-in-dev-only}
-#     (env-var injection with dev fallback) which is acceptable, but a literal
-#     hardcoded 'change-me-in-dev-only' without an env-var wrapper is a red flag.
+# 1f. 微服务 application.yml 不得直接使用未通过环境变量注入的 change-me-in-dev-only
+#     作为默认值；应使用 ${ENV_VAR:change-me-in-dev-only}（带开发回退值的环境变量注入）。
+#     未使用环境变量包装的硬编码 'change-me-in-dev-only' 属于风险信号。
 if [[ ${#ALL_SVC_YMLS[@]} -gt 0 ]]; then
-  # Ensure each svc yml uses env-var substitution for the JWT secret, not a bare literal.
+  # 确保每个服务的 yml 使用环境变量替换 JWT 密钥，而不是直接写入字面量。
   for f in "${ALL_SVC_YMLS[@]}"; do
     short="${f##*/big-market-ai-platform/}"
     if grep -qE 'secret:[[:space:]]*change-me-in-dev-only' "$f" 2>/dev/null; then
@@ -196,8 +193,8 @@ if [[ ${#ALL_SVC_YMLS[@]} -gt 0 ]]; then
   done
 fi
 
-# 1g. spring-config-token.xml must not contain the literal hardcoded Dubbo token.
-#     The token should be injected with ${DUBBO_APP_TOKEN:...}.
+# 1g. spring-config-token.xml 不得包含硬编码的 Dubbo 令牌字面量。
+#     令牌应通过 ${DUBBO_APP_TOKEN:...} 注入。
 if [[ ${#ALL_TOKEN_XMLS[@]} -gt 0 ]]; then
   assert_pattern_absent \
     "No bare hardcoded Dubbo app token in spring-config-token.xml files" \
@@ -237,8 +234,8 @@ fi
 echo ""
 echo "── 1.3 DefaultCredentialGuard class presence ──"
 
-# Guard was moved to big-market-domain so it is auto-discovered by all services
-# that scan com.dyx.market.domain.auth (market-service, admin-service, auth-service).
+# 防护类已移动到 big-market-domain，以便扫描 com.dyx.market.domain.auth 的所有服务
+#（market-service、admin-service、auth-service）自动发现它。
 GUARD_JAVA="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/service/DefaultCredentialGuard.java"
 assert_file "DefaultCredentialGuard.java exists in domain" "$GUARD_JAVA"
 assert_pattern_present "DefaultCredentialGuard is an InitializingBean" "$GUARD_JAVA" "implements InitializingBean"
@@ -247,7 +244,7 @@ assert_pattern_present "DefaultCredentialGuard detects dev profiles" "$GUARD_JAV
 assert_pattern_present "DefaultCredentialGuard checks Dubbo app token" "$GUARD_JAVA" '89iu7o8732ijd9114'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 2: Profile-selected account paths and fixed award Outbox
+# 第 2 节：按 Profile 选择的账户路径与固定奖品 Outbox
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 2.1 Final topology: local strategy/rebate providers ──"
@@ -298,7 +295,7 @@ assert_pattern_present "Outbox schema guard remains" "$REPO_ROOT/big-market-mess
 assert_pattern_absent "Obsolete shared-task credit flags removed" 'ACCOUNT_AWARD_CREDIT_OUTBOX|JOB_SHARED_TASK_DISPATCH_CREDIT_AWARD|shared-task-dispatch|job-mutual-exclusion-guard|flag-mutual-exclusion-guard' "$REPO_ROOT/docker-compose.yml" "${PROJECT_DIRS[@]}"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 3: Token revocation service presence
+# 第 3 节：令牌撤销服务存在性
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 3. Token revocation infrastructure ──"
@@ -356,7 +353,7 @@ AUTH_SVC="$REPO_ROOT/big-market-domain/src/main/java/com/dyx/market/domain/auth/
 assert_pattern_present "AuthService.checkToken consults revocation service" "$AUTH_SVC" 'tokenRevocationService'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 4: Gateway rate limiter presence
+# 第 4 节：网关限流器存在性
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 4. Gateway rate limiter ──"
@@ -373,12 +370,12 @@ assert_pattern_present "Gateway base yml defines active profile" "$GATEWAY_YML" 
 assert_pattern_present "Gateway docker yml references IpPathRateLimit" "$GATEWAY_DOCKER_YML" 'IpPathRateLimit'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 5: Service mapper copy presence
+# 第 5 节：服务 Mapper 副本存在性
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 5. Service mapper copies still present ──"
 
-# Shared mapper copies used by local learning modes.
+# 本地学习模式使用的共享 Mapper 副本。
 check_mapper_copy() {
   local label="$1" relpath="$2"
   assert_file "$label present" "$REPO_ROOT/$relpath"
@@ -390,13 +387,12 @@ check_mapper_copy "big-market-account-service raffle_activity_account_mapper.xml
 check_mapper_copy "big-market-account-service task_mapper.xml" "big-market-account-service/src/main/resources/mybatis/mapper/mysql/task_mapper.xml"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 6: Learning DDL location
+# 第 6 节：学习 DDL 位置
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 6. Learning DDL stays under docs/sql/*.sql ──"
 
-# This section checks specifically for executable DDL-looking statements outside
-# docs/sql learning references.
+# 本节专门检查 docs/sql 学习参考文件之外是否存在看起来可执行的 DDL 语句。
 DDL_VIOLATIONS=$(grep -RInE '\b(CREATE|ALTER|DROP)[[:space:]]+(TABLE|INDEX|DATABASE)\b' \
   "$REPO_ROOT/docs" --include='*.sql' 2>/dev/null \
   | grep -v '/docs/sql/' \
@@ -410,7 +406,7 @@ else
   printf '%s\n' "$DDL_VIOLATIONS"
 fi
 
-# Also verify the 5 known learning DDL files exist.
+# 同时验证已知的 5 个学习 DDL 文件存在。
 LEARNING_DDL_FILES=(
   "docs/sql/award-dispatch-task-outbox.sql"
   "docs/sql/credit-award-task-outbox.sql"
@@ -424,7 +420,7 @@ for ddl in "${LEARNING_DDL_FILES[@]}"; do
 done
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 7: Cross-reference to sibling validators
+# 第 7 节：交叉验证同级校验器
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 7. Sibling validators ──"
@@ -443,13 +439,13 @@ for sib in "${SIBLING_VALIDATORS[@]}"; do
   fi
 done
 
-# Also verify MICROSERVICES.md is the authoritative entry point
+# 同时验证 MICROSERVICES.md 是权威入口文档。
 MICROSERVICES_MD="$REPO_ROOT/docs/MICROSERVICES.md"
 assert_file "MICROSERVICES.md is authoritative entry point" "$MICROSERVICES_MD"
 assert_pattern_present "MICROSERVICES.md declares itself authoritative" "$MICROSERVICES_MD" 'authoritative entry point'
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 8: XXL handler ↔ seed alignment + market scan exclusion (boot P0)
+# 第 8 节：XXL 处理器 ↔ 种子对齐 + market 扫描排除（启动 P0）
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 8. XXL @XxlJob handlers ⊆ xxl_job.sql seeds; market excludes job/listener ──"
@@ -514,7 +510,7 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Section 9: Final naming guardrail for current docs and scripts
+# 第 9 节：当前文档和脚本的最终命名护栏
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "── 9. Final naming guardrail for docs and scripts ──"
@@ -543,7 +539,7 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Summary
+# 汇总
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "========================================================================"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HTTP status + business code contract checks. Fail-closed. Requires running stack.
+# HTTP 状态码+业务码契约检查；任一检查失败即终止，需要已运行的服务栈。
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"
@@ -16,7 +16,7 @@ source "$ROOT/scripts/lib/health-poll.sh"
 echo "=== HTTP Contract Tests ==="
 echo
 
-# stage activity = 100401
+# 已上架活动 = 100401
 STAGE_BODY=$(mktemp)
 STAGE_HTTP=$(curl -sS -o "$STAGE_BODY" -w '%{http_code}' \
   "$API/raffle/activity/query_stage_activity_id?channel=${CHANNEL}&source=${SOURCE}" || echo "000")
@@ -29,13 +29,13 @@ if [ "$STAGE_ID" != "100401" ]; then
 fi
 echo "  PASS  stage activity data=100401"
 
-# admin without token
+# admin 未携带令牌
 ADMIN_BODY=$(mktemp)
 ADMIN_HTTP=$(curl -sS -o "$ADMIN_BODY" -w '%{http_code}' "$API/admin/config/list" || echo "000")
 assert_http_and_code "admin list no auth" "401" "0009" "$ADMIN_BODY" "$ADMIN_HTTP"
 rm -f "$ADMIN_BODY"
 
-# normal user token on admin
+# 使用普通用户令牌访问 admin
 LOGIN=$(curl -fsS "$API/auth/login" -H 'Content-Type: application/json' \
   -d "{\"userId\":\"$DEMO_USER_ID\",\"password\":\"$DEMO_USER_PASSWORD\"}")
 TOKEN=$(printf '%s' "$LOGIN" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['token'])")
@@ -45,7 +45,7 @@ USER_ADMIN_HTTP=$(curl -sS -o "$USER_ADMIN_BODY" -w '%{http_code}' \
 assert_http_and_code "admin list normal user" "403" "0008" "$USER_ADMIN_BODY" "$USER_ADMIN_HTTP"
 rm -f "$USER_ADMIN_BODY"
 
-# draw without token
+# 未携带令牌抽奖
 DRAW_BODY=$(mktemp)
 DRAW_HTTP=$(curl -sS -o "$DRAW_BODY" -w '%{http_code}' -X POST \
   "$API/raffle/activity/draw_by_token" \
@@ -54,7 +54,7 @@ DRAW_HTTP=$(curl -sS -o "$DRAW_BODY" -w '%{http_code}' -X POST \
 assert_http_and_code "draw no token" "401" "0009" "$DRAW_BODY" "$DRAW_HTTP"
 rm -f "$DRAW_BODY"
 
-# login empty password
+# 登录时密码为空
 LOGIN_BODY=$(mktemp)
 LOGIN_HTTP=$(curl -sS -o "$LOGIN_BODY" -w '%{http_code}' -X POST "$API/auth/login" \
   -H 'Content-Type: application/json' \

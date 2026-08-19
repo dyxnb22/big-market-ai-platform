@@ -9,7 +9,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import java.io.InputStream;
 
 /**
- * BM-002: ensure message-job MyBatis mapper XML loads without duplicate statement ids.
+ * BM-002：确保 message-job 的 MyBatis Mapper XML 加载时不存在重复 statement ID。
  */
 public class MessageJobMapperXmlLoadTest {
 

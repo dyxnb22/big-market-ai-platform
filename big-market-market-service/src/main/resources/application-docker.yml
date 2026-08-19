@@ -1,4 +1,4 @@
-# Docker Compose: infra containers on the dev-ops network.
+# Docker Compose：基础设施容器位于 dev-ops 网络。
 token-revocation:
   redis:
     enabled: ${TOKEN_REVOCATION_REDIS_ENABLED:true}

@@ -39,13 +39,13 @@ redis:
 
 dubbo:
   registry:
-    # Context tests must not register host providers into shared Nacos used by Docker.
+    # Context 测试不能将本机 Provider 注册到 Docker 使用的共享 Nacos。
     register: false
     subscribe: false
     check: false
     address: ${DUBBO_REGISTRY_ADDRESS:nacos://127.0.0.1:8848}
-    # Without these, Dubbo bootstraps the registry as config/metadata center and
-    # requires a live Nacos even for Context tests (fails offline).
+    # 不关闭以下能力时，Dubbo 会把注册中心同时初始化为配置/元数据中心，
+    # 导致 Context 测试离线运行时仍要求可访问 Nacos。
     use-as-config-center: false
     use-as-metadata-center: false
   consumer:

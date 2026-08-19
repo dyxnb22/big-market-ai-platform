@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Explicit operator replay for a remote-write task exhausted by RemoteWriteReconcileJob.
-# It preserves out_business_no and payload, resetting only failed -> pending after the
-# underlying RPC/Nacos/DB problem has been resolved.
+# 供操作员显式重放已被 RemoteWriteReconcileJob 重试耗尽的远程写入任务。
+# 它保留 out_business_no 和 payload；只有在底层 RPC/Nacos/DB 问题解决后，
+# 才将状态从 failed 重置为 pending。
 set -euo pipefail
 
 usage() {
@@ -24,8 +24,8 @@ case "$operation" in
   *) usage ;;
 esac
 
-# Business keys are generated identifiers. Reject anything that could change the
-# operator SQL rather than attempting shell or SQL escaping in an incident tool.
+# 业务键是系统生成的标识符。拒绝任何可能改变操作员 SQL 的输入，
+# 不在事故处理脚本中尝试 Shell 或 SQL 转义。
 case "$out_business_no" in
   *[!A-Za-z0-9._:-]*|'')
     echo "Invalid out-business-no; use the exact generated identifier." >&2

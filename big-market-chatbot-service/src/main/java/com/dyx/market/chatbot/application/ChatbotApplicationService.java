@@ -40,7 +40,7 @@ public class ChatbotApplicationService {
     private static final String DEFAULT_MODEL = "deepseek-chat";
     private static final int MAX_MESSAGE_LENGTH = 4000;
     private static final int MAX_REQUEST_ID_LENGTH = 128;
-    /** Local canned replies are a free learning fallback; only a configured remote provider may charge. */
+    /** 本地固定回复是免费的学习兜底；只有配置了远程提供商时才允许计费。 */
     private static final int DEFAULT_COST_PER_ASK = 0;
 
     @Resource
@@ -56,7 +56,7 @@ public class ChatbotApplicationService {
     @Resource
     private RestTemplate restTemplate;
 
-    /** Static deployment allowlist; Nacos may choose a provider but cannot add a new host. */
+    /** 部署时固定的远程主机白名单；Nacos 可以选择提供商，但不能动态增加主机。 */
     @org.springframework.beans.factory.annotation.Value("${chatbot.remote.allowed-hosts:api.deepseek.com}")
     private String allowedRemoteHosts;
 
@@ -352,7 +352,7 @@ public class ChatbotApplicationService {
         }
     }
 
-    /** Immutable per-request view; a Nacos refresh cannot mix provider fields mid-call. */
+    /** 每请求一份不可变配置视图；Nacos 刷新不会在一次调用中混用不同代的提供商字段。 */
     private static final class ChatbotRuntimeConfig {
         private final boolean enabled;
         private final String provider;

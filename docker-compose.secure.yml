@@ -1,11 +1,11 @@
-# Secure overlay for the application stack.
-# Usage:
+# 应用栈的安全配置覆盖层。
+# 用法：
 #   export JWT_SECRET=... APP_INTERNAL_RPC_TOKEN=... ADMIN_TOKEN=... \
 #          CHAT_INTERNAL_SERVICE_TOKEN=... XXL_JOB_TOKEN=... APP_AUTH_DEV_USERS=...
 #   docker compose -f docker-compose.yml -f docker-compose.secure.yml up --build -d
 #
-# Requires non-default secrets; DefaultCredentialGuard refuses known defaults when
-# SPRING_PROFILES_ACTIVE includes "secure".
+# 必须提供非默认密钥；当 SPRING_PROFILES_ACTIVE 包含 "secure" 时，
+# DefaultCredentialGuard 会拒绝已知的默认凭据。
 
 x-secure-env: &secure-env
   SPRING_PROFILES_ACTIVE: docker,secure
@@ -17,7 +17,7 @@ x-secure-env: &secure-env
   XXL_JOB_TOKEN: ${XXL_JOB_TOKEN:?XXL_JOB_TOKEN is required for secure compose}
   MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required for secure compose}
   MYSQL_PASS: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required for secure compose}
-  # Nacos and admin-side JDBC confirmation must use the same database credentials.
+  # Nacos 与 admin 侧 JDBC 确认必须使用同一组数据库凭据。
   NACOS_CONFIG_CONFIRM_JDBC_USER: ${MYSQL_USER:?MYSQL_USER is required for secure Nacos confirmation}
   NACOS_CONFIG_CONFIRM_JDBC_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required for secure Nacos confirmation}
   RABBITMQ_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required for secure compose}

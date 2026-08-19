@@ -16,8 +16,8 @@ import java.util.Set;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * GOV-D02: message-job owns MQ/XXL; it must not expose business HTTP Controllers
- * or depend on trigger.http controller layer.
+ * GOV-D02：message-job 负责 MQ/XXL-Job，不得暴露业务 HTTP Controller，
+ * 也不得依赖 trigger.http 控制器层。
  */
 public class MessageJobArchitectureTest {
 

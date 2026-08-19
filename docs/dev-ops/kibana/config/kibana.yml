@@ -1,8 +1,8 @@
 #
-# ** THIS IS AN AUTO-GENERATED FILE **
+# ** 此文件由工具自动生成，请勿手工编辑 **
 #
 
-# Default Kibana configuration for docker target
+# Docker 目标环境的默认 Kibana 配置
 server.host: "0"
 server.shutdownTimeout: "5s"
 elasticsearch.hosts: [ "http://elasticsearch:9200" ]

@@ -1,5 +1,5 @@
--- Strategy award stock confirm outbox (G-01 P0).
--- Apply to big_market_01 and big_market_02 before enabling StrategyAwardStockConfirmJob.
+-- 策略奖品库存确认 Outbox（G-01 P0）。
+-- 启用 StrategyAwardStockConfirmJob 前，先在 big_market_01 和 big_market_02 执行。
 
 CREATE TABLE IF NOT EXISTS `strategy_award_stock_confirm_task` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT,

@@ -19,7 +19,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 /**
- * BM-002: message-job-service full Application Context loads with ChatCredit reconcile beans.
+ * BM-002：message-job-service 完整 Spring 上下文必须加载 ChatCredit 对账 Bean。
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = MessageJobServiceApplication.class)

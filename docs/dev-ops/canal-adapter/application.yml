@@ -7,7 +7,7 @@ spring:
     default-property-inclusion: non_null
 
 canal.conf:
-  mode: tcp #tcp kafka rocketMQ rabbitMQ
+  mode: tcp # 可选传输模式：tcp、kafka、rocketMQ、rabbitMQ
   flatMessage: true
   syncBatchSize: 1000
   retries: -1
@@ -31,13 +31,13 @@ canal.conf:
       username: canal
       password: canal
   canalAdapters:
-  - instance: example # canal instance Name or mq topic name
+  - instance: example # Canal 实例名或 MQ Topic 名
     groups:
     - groupId: g1
       outerAdapters:
       - name: logger
       - name: es7
-        hosts: elasticsearch:9200 # 127.0.0.1:9200 for rest mode
+        hosts: elasticsearch:9200 # REST 模式下可使用 127.0.0.1:9200
         properties:
-          mode: rest # transport or rest
+          mode: rest # 可选模式：transport 或 rest
           cluster.name: docker-cluster

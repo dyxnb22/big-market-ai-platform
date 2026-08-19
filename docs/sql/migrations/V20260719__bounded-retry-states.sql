@@ -1,9 +1,8 @@
--- V20260719: bounded retry state for the legacy task outbox and chat credit compensation.
+-- V20260719：为旧版任务 Outbox 和聊天积分补偿增加有界重试状态。
 --
--- Docker init uses the equivalent z-bounded-retry-states.sql. This file is the
--- human-readable migration ledger entry for reused volumes.
--- The migration is intentionally additive: existing rows keep their state and
--- are classified by the new retry-aware queries.
+-- Docker 初始化使用等价的 z-bounded-retry-states.sql；本文件是复用卷使用的
+-- 可读迁移账本条目。
+-- 本迁移有意采用增量方式：已有记录保持原状态，并由支持重试状态的查询进行分类。
 
 USE `big_market`;
 

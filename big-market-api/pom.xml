@@ -59,8 +59,8 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-        <!-- Jakarta Validation API for DTO annotations; HTTP services get the
-             implementation via big-market-starter-web → spring-boot-starter-validation. -->
+        <!-- DTO 注解使用 Jakarta Validation API；HTTP 服务通过
+             big-market-starter-web → spring-boot-starter-validation 引入具体实现。 -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>

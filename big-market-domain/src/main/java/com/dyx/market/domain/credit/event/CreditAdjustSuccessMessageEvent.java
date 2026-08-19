@@ -56,7 +56,7 @@ public class CreditAdjustSuccessMessageEvent extends BaseEvent<CreditAdjustSucce
          */
         private BigDecimal amount;
         /**
-         * 业务仿重ID - 外部透传。返利、行为等唯一标识
+         * 业务幂等 ID，由外部调用方透传，用于保证积分交易幂等。
          */
         private String outBusinessNo;
     }

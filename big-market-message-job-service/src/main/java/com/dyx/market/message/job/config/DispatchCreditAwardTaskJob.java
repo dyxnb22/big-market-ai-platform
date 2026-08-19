@@ -59,6 +59,7 @@ public class DispatchCreditAwardTaskJob {
         scanDb(2, "big-market-DispatchCreditAwardTaskJob_DB2");
     }
 
+    /** 锁定一个数据库分片并扫描其四张积分发奖 Outbox 表。 */
     private void scanDb(int dbIdx, String lockName) {
         RLock lock = redissonClient.getLock(lockName);
         try {
@@ -83,9 +84,15 @@ public class DispatchCreditAwardTaskJob {
         }
     }
 
+    /**
+     * 投递单条积分发奖任务。
+     *
+     * <p>先调用账户服务，再将 Outbox 标记为已派发；进程在两步之间崩溃时会重复投递，
+     * 但 account-service 以 awardOrderId 幂等去重。远程失败只增加 Outbox 重试次数。</p>
+     */
     private void dispatchTask(CreditAwardTaskEntity task) {
-        // 先调用远程账户服务，再标记 Outbox 完成；如果进程在两步之间崩溃，
-        // 下一轮会再次投递，但 account-service 会按 awardOrderId 幂等去重。
+        // 先调用远程账户服务，再标记 Outbox 完成；如果进程在两步之间崩溃，下一轮会再次投递，
+        // 但 account-service 会按 awardOrderId 幂等去重。
         try {
             TradeEntity trade = TradeEntity.builder()
                     .userId(task.getUserId())
@@ -95,7 +102,7 @@ public class DispatchCreditAwardTaskJob {
                     .outBusinessNo(task.getAwardOrderId())
                     .build();
             accountCreditWriteAdapter.createOrder(trade);
-            // 标记已派发；account-service 侧以 outBusinessNo 保证幂等，防止重复入账
+            // 标记已派发；account-service 侧以 outBusinessNo 保证幂等，防止重复入账。
             dbRouter.doRouter(task.getUserId());
             creditAwardTaskDispatchPort.updateDispatched(task);
             log.info("[DispatchCreditAwardTaskJob] dispatched userId:{} awardOrderId:{}", task.getUserId(), task.getAwardOrderId());

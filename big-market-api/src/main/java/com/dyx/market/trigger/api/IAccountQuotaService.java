@@ -78,7 +78,7 @@ public interface IAccountQuotaService {
      */
     Response<Boolean> existsActivityOrder(String userId, String outBusinessNo);
 
-    /** Return the complete idempotent order payload, including payAmount. */
+    /** 按幂等键返回完整的额度订单载荷，包括扣积分所需的 payAmount。 */
     Response<UnpaidActivityOrderResponseDTO> queryActivityOrder(String userId, String outBusinessNo);
 
     /**

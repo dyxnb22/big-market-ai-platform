@@ -69,13 +69,13 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- Nacos client — required by Dubbo registry when remote write adapters are enabled () -->
+        <!-- Nacos 客户端：启用远程写入适配器时，Dubbo 注册中心需要该依赖。 -->
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
         </dependency>
 
-        <!-- Project modules -->
+        <!-- 工程模块 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-api</artifactId>

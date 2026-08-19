@@ -14,7 +14,7 @@ public enum TradeNameVO {
 
     REBATE("行为返利"),
     CONVERT_SKU("兑换抽奖"),
-    /** credit issued via award-credit outbox poller */
+    /** 由奖品积分 Outbox 轮询任务发放的积分。 */
     AWARD_CREDIT("奖品积分发放"),
     OPENAI_PAY("AI对话消耗"),
 

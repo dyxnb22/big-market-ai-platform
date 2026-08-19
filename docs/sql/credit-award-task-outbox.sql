@@ -1,5 +1,5 @@
--- Learning/reference DDL for the completed local microservices architecture.
--- Apply locally to enable the full feature set in development.
+-- 已完成本地微服务架构的学习/参考 DDL。
+-- 在开发环境本地执行后，才能启用完整功能集。
 
 CREATE TABLE IF NOT EXISTS `credit_award_task_000` (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT                       COMMENT 'Auto-increment row id',
@@ -12,14 +12,14 @@ CREATE TABLE IF NOT EXISTS `credit_award_task_000` (
     `update_time`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                             ON UPDATE CURRENT_TIMESTAMP         COMMENT 'Last update time',
     PRIMARY KEY (`id`),
-    -- Idempotency constraint: a given award order can only produce one outbox row.
-    -- The INSERT inside the transaction will fail with DuplicateKeyException on retry,
-    -- which the caller treats as an already-processed event and rolls back cleanly.
+    -- 幂等约束：同一个奖品订单最多只能生成一条 Outbox 记录。
+    -- 事务内重试 INSERT 时会抛出 DuplicateKeyException，调用方将其视为已处理事件，
+    -- 并安全地回滚当前事务。
     UNIQUE KEY `uq_award_order_id` (`user_id`, `award_order_id`),
     KEY `idx_state_retry` (`state`, `retry_count`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Award credit outbox — learning DDL';
 
--- Repeat for shards _001, _002, _003 (router creates 4 tables per DB).
+-- 对 _001、_002、_003 分片重复执行（路由器在每个数据库中创建 4 张表）。
 CREATE TABLE IF NOT EXISTS `credit_award_task_001` LIKE `credit_award_task_000`;
 CREATE TABLE IF NOT EXISTS `credit_award_task_002` LIKE `credit_award_task_000`;
 CREATE TABLE IF NOT EXISTS `credit_award_task_003` LIKE `credit_award_task_000`;

@@ -39,7 +39,7 @@
             <artifactId>nacos-client</artifactId>
         </dependency>
 
-        <!-- Project modules -->
+        <!-- 工程模块 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-management</artifactId>

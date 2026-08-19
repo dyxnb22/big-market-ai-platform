@@ -78,9 +78,8 @@ public class RateLimiterConfig {
             if (buckets.size() <= MAX_BUCKETS) {
                 return;
             }
-            // Prefer evicting fully-exhausted buckets (tokens==0) so that active
-            // legitimate users are not reset. Fall back to arbitrary removal only if
-            // exhausted entries alone are not enough to bring the map under the cap.
+            // 优先淘汰已完全耗尽的令牌桶（tokens==0），避免重置仍在使用的正常用户；只有耗尽
+            // 桶不足以将 Map 降到上限以下时，才进行任意淘汰。
             buckets.entrySet().removeIf(e -> e.getValue().getTokenCount() <= 0);
             if (buckets.size() <= MAX_BUCKETS) {
                 return;

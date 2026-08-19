@@ -1,5 +1,5 @@
--- Learning/reference DDL for the completed local microservices architecture.
--- Apply locally to enable the full feature set in development.
+-- 已完成本地微服务架构的学习/参考 DDL。
+-- 在开发环境本地执行后，才能启用完整功能集。
 
 CREATE TABLE IF NOT EXISTS `award_dispatch_task_outbox_000` (
     `id`            BIGINT       NOT NULL AUTO_INCREMENT                COMMENT 'Auto-increment row id',

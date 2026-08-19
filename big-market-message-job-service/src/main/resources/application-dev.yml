@@ -1,4 +1,4 @@
-# Local development: infra on mapped host ports.
+# 本地开发：基础设施通过宿主机映射端口访问。
 spring:
   rabbitmq:
     addresses: ${RABBITMQ_HOST:127.0.0.1}

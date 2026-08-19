@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * NR-001 + deduct intent-before-RPC.
+ * NR-001：校验扣费意图必须先于远程 RPC 持久化。
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ChatCreditApplicationServiceTest {

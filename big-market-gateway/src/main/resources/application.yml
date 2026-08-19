@@ -13,8 +13,8 @@ spring:
 logging:
   config: classpath:logback-spring.xml
 
-# ── Rate limiter defaults (in-memory token bucket) ──
-# Dev: effectively open. Prod/docker: tighten via env or profile override.
+# ── 限流器默认配置（内存令牌桶） ──
+# 开发环境基本不限制；生产/Docker 环境通过环境变量或 Profile 覆盖为更严格的配置。
 gateway:
   rate-limiter:
     enabled: ${GATEWAY_RATE_LIMITER_ENABLED:false}

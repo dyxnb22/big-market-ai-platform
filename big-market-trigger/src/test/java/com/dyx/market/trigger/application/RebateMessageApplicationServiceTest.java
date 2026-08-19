@@ -8,7 +8,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * GOV-C03: send_rebate replay / INDEX_DUP (and SKU stock) are benign for the consumer.
+ * GOV-C03：send_rebate 重放、INDEX_DUP（以及 SKU 库存重复处理）对消费者都应是无害的。
  */
 public class RebateMessageApplicationServiceTest {
 

@@ -132,8 +132,8 @@ public class RabbitMQDlqConfig {
             persistDeadLetterOnCurrentShard(originalQueue, payload, businessMessageId);
             channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
         } catch (Exception e) {
-            // The database is the audit/replay hand-off. Until it accepts the row,
-            // retain the only durable copy in RabbitMQ instead of rejecting it.
+            // 数据库是审计与重放的交接点；在数据库接受记录前，RabbitMQ 中仍是唯一持久副本，
+            // 因此应重新入队，而不是拒绝并丢弃消息。
             sleepBeforeRequeue();
             try {
                 channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
@@ -221,7 +221,7 @@ public class RabbitMQDlqConfig {
                 }
             }
         } catch (Exception ignored) {
-            // fall through to hash
+            // 无法从业务字段解析时，继续使用内容哈希。
         }
         return DigestUtils.md5DigestAsHex((queue + ":" + payload).getBytes(StandardCharsets.UTF_8));
     }
@@ -242,7 +242,7 @@ public class RabbitMQDlqConfig {
                 }
             }
         } catch (Exception ignored) {
-            // fall through
+            // 无法从载荷中解析用户时，继续返回空值。
         }
         return null;
     }

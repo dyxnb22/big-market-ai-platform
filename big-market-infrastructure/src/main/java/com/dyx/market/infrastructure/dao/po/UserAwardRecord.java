@@ -34,7 +34,7 @@ public class UserAwardRecord {
     private String awardTitle;
     /** 中奖时间 */
     private Date awardTime;
-    /** 奖品状态；create-创建、completed-发奖完成 */
+    /** 发奖状态；库内常见值为 create-待发奖、complete/历史 completed-发奖完成、fail-发奖失败。 */
     private String awardState;
     /** 创建时间 */
     private Date createTime;

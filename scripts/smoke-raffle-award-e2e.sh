@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Real default-stage raffle closure:
-# credit exchange -> quota -> draw -> award record -> award-credit outbox -> account credit.
+# 真实默认阶段抽奖闭环：
+# 积分兑换 -> 配额 -> 抽奖 -> 奖品记录 -> 奖品积分 Outbox -> 账户积分。
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"

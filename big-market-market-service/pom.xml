@@ -91,7 +91,7 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- Project modules -->
+        <!-- 工程模块 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-trigger</artifactId>

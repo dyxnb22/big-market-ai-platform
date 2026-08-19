@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# API smoke with exact business-code assertions. Fail-closed.
+# API 冒烟测试：精确断言业务码，任一断言失败即终止。
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"

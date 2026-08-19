@@ -35,8 +35,8 @@ public class ChatbotController {
     public Response<ChatbotAskResponseDTO> ask(@Valid @RequestBody ChatbotAskRequestDTO request,
                                                @RequestHeader(value = "Authorization", required = false) String token,
                                                HttpServletRequest httpRequest) {
-        // Mark this request so the exception handler knows to include ChatbotAskResponseDTO
-        // in the error body regardless of URI rewriting by a reverse proxy.
+        // 标记当前请求，使异常处理器即使在反向代理改写 URI 后，也能在错误响应体中使用
+        // ChatbotAskResponseDTO 结构。
         httpRequest.setAttribute(ChatbotExceptionHandler.ATTR_ASK_ENDPOINT, Boolean.TRUE);
         ChatbotAskResponseDTO data = chatbotApplicationService.ask(request, token);
         return Response.<ChatbotAskResponseDTO>builder()

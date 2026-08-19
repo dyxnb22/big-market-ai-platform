@@ -56,9 +56,8 @@ public class UpdateAwardStockJob {
                 submitted.add(executor.submit(() -> raffleStock.syncStrategyAwardStockFromQueue(
                         strategyAwardStockKeyVO.getStrategyId(), strategyAwardStockKeyVO.getAwardId())));
             }
-            // Keep the distributed lock until every worker has finished. The
-            // previous fire-and-forget submission allowed the next scheduler
-            // round to process the same reservation concurrently.
+            // 直到所有工作线程完成前都保持分布式锁。此前提交任务后立即释放锁，下一轮调度可能
+            // 与当前轮并发处理同一库存预占。
             for (Future<?> future : submitted) {
                 try {
                     future.get();

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Ensure the staged demo activity display state is online (Playwright / local demo).
-# Resolves stage activity via channel/source (default c01/s01 → 100401). Fail-closed.
+# 确保已上架演示活动的展示状态为 online（供 Playwright/本地演示使用）。
+# 通过 channel/source 解析活动（默认 c01/s01 → 100401），解析失败即终止。
 set -euo pipefail
 
 GW="${1:-http://127.0.0.1:8080}"
@@ -31,7 +31,7 @@ curl -sf -X POST "$GW/api/v1/admin/config/save" \
   -H "Content-Type: application/json" \
   -d "{\"namespace\":\"activity.${STAGE_ID}\",\"configKey\":\"state\",\"configValue\":\"online\",\"description\":\"demo online\"}" >/dev/null
 
-# Undo chat-refund E2E leftovers so smoke chatbot/ask succeeds (local provider, no API key).
+  # 清理聊天退款 E2E 遗留状态，确保 chatbot/ask 冒烟测试成功（本地 Provider，不需要 API Key）。
 for payload in \
   '{"namespace":"chatbot","configKey":"provider","configValue":"local","description":"demo reset"}' \
   '{"namespace":"chatbot","configKey":"apiKey","configValue":"","description":"demo reset"}'; do

@@ -34,7 +34,7 @@ var auth = readAuth();
 var redirectingToLogin = false;
 var currentStageId = null;
 
-// ===== Auth helpers =====
+// ===== 鉴权辅助函数 =====
 function requireLogin() {
   if (auth.token) return true;
   location.href = adminLoginUrl();
@@ -62,15 +62,15 @@ function redirectUnauthorized(message) {
   if (redirectingToLogin) return;
   redirectingToLogin = true;
   if (message) toast(message);
-  // Keep the normal user's session intact and return to the user app.
+  // 保留普通用户会话，并返回用户端页面。
   setTimeout(function() {
     location.replace("./index.html");
   }, 800);
 }
 
-// adminRequest: wraps apiRequest and redirects on auth/permission errors.
-// Use ONLY for /admin/* endpoints (admin-service). For raffle/ERP endpoints
-// use safeRequest() which shows a toast instead of redirecting.
+// adminRequest：封装 apiRequest，遇到鉴权/权限错误时跳转登录页。
+// 仅用于 /admin/*（admin-service）接口；raffle/ERP 接口使用 safeRequest()，
+// 失败只显示提示，不跳转页面。
 function adminRequest(path, opts) {
   return apiRequest(path, opts, {
     onAuthExpired: function() {
@@ -86,13 +86,12 @@ function adminRequest(path, opts) {
   });
 }
 
-// safeRequest: for non-admin-service endpoints (raffle, ERP) where errors
-// should show a toast but never trigger a redirect.
+// safeRequest：用于非 admin-service 的 raffle/ERP 接口，失败显示提示但不触发跳转。
 function safeRequest(path, opts) {
   return apiRequest(path, opts);
 }
 
-// ===== Platform config / activity / awards =====
+// ===== 平台配置 / 活动 / 奖品 =====
 async function saveConfig(namespace, configKey, configValue, description) {
   await adminRequest("/admin/config/save", {
     method: "POST",
@@ -154,7 +153,7 @@ async function loadActivity() {
     if (displayState?.data?.configValue) {
       dom.activityStateInput.value = displayState.data.configValue;
     }
-  } catch (e) { /* use default */ }
+  } catch (e) { /* 使用默认值。 */ }
   if (dom.activityStateInput.tagName === "SELECT") {
     var opt = dom.activityStateInput.querySelector('option[value="' + dom.activityStateInput.value + '"]');
     if (!opt) dom.activityStateInput.value = "online";
@@ -283,7 +282,7 @@ function bind(button, action) {
   });
 }
 
-// ===== Sidebar / button bindings =====
+// ===== 侧栏 / 按钮绑定 =====
 if (dom.adminUserBadge) dom.adminUserBadge.textContent = auth.token ? "已登录: " + (auth.userId || "") : "未登录";
 if (dom.adminLoginLink) dom.adminLoginLink.textContent = auth.token ? "🔑 切换账号" : "🔑 登录";
 
@@ -321,7 +320,7 @@ dom.chatbotSwitch.addEventListener("click", function(event) {
   saveChatbotEnabled(button.dataset.value === "true").catch(function(error) { toast(error.message); });
 });
 
-// ===== Ops Monitoring =====
+// ===== 运维监控 =====
 var opsDom = {
   gatewayStatus: document.getElementById("opsGatewayStatus"),
   loginStatus: document.getElementById("opsLoginStatus"),
@@ -350,7 +349,7 @@ async function refreshOps() {
   opsDom.apiBase.textContent = CONFIG.API_BASE;
   opsDom.opsUser.textContent = auth.userId || "-";
 
-  // 1. Gateway health
+  // 1. Gateway 健康状态。
   var gwOk = false;
   try {
     var res = await fetch(gatewayBase + "/actuator/health");
@@ -365,7 +364,7 @@ async function refreshOps() {
     setDiag(opsDom.diagGateway, false, "请求失败: " + e.message);
   }
 
-  // 2. Login API availability (OPTIONS preflight)
+  // 2. 登录 API 可达性（OPTIONS 预检）。
   var loginOk = false;
   try {
     var optRes = await fetch(CONFIG.API_BASE + "/auth/login", {method: "OPTIONS"});
@@ -379,7 +378,7 @@ async function refreshOps() {
     setDiag(opsDom.diagLogin, false, "请求失败: " + e.message);
   }
 
-  // 3. Admin config/list — use safeRequest so a 0008 here doesn't trigger a redirect
+  // 3. 管理端配置列表——使用 safeRequest，避免这里的 0008 触发跳转。
   try {
     var adminRes = await safeRequest("/admin/config/list", {method: "GET"});
     setDiag(opsDom.diagAdmin, true, "OK (" + (adminRes.data?.length || 0) + " items)");
@@ -387,7 +386,7 @@ async function refreshOps() {
     setDiag(opsDom.diagAdmin, false, e.message || "请求失败");
   }
 
-  // 4. Chatbot API availability
+  // 4. Chatbot API 可达性。
   try {
     var cbRes = await fetch(CONFIG.API_BASE + "/chatbot/ask", {method: "OPTIONS"});
     setDiag(opsDom.diagChatbot, cbRes.ok, "OPTIONS " + cbRes.status + (cbRes.ok ? " OK" : ""));
@@ -395,9 +394,8 @@ async function refreshOps() {
     setDiag(opsDom.diagChatbot, false, "不可达: " + e.message);
   }
 
-  // 5. Health table (gateway-routed API checks — no side effects).
-  // Auth-required endpoints send the stored token; public endpoints
-  // (actuator, OPTIONS) check gateway-level reachability.
+  // 5. 健康状态表（经 gateway 的 API 检查，不产生业务副作用）。
+  // 需要鉴权的接口携带已保存的 Token；公开接口（actuator、OPTIONS）只检查 gateway 可达性。
   var services = [
     {name: "gateway", url: gatewayBase + "/actuator/health"},
     {name: "auth-service", path: "/auth/login", method: "OPTIONS"},
@@ -417,7 +415,7 @@ async function refreshOps() {
       var status = sr.ok ? "UP" : "DOWN";
       var detail = sr.status;
       if (sr.headers.get("content-type") && sr.headers.get("content-type").includes("json")) {
-        try { var sj = await sr.clone().json(); status = sj.status === "UP" ? "UP" : (sj.code === "0000" ? "UP" : "ERR"); detail = sj.status || sj.code || sr.status; } catch(e2) { /* ignore */ }
+        try { var sj = await sr.clone().json(); status = sj.status === "UP" ? "UP" : (sj.code === "0000" ? "UP" : "ERR"); detail = sj.status || sj.code || sr.status; } catch(e2) { /* 忽略解析失败。 */ }
       }
       rows += "<tr><td>" + esc(svc.name) + "</td><td class='" + (status === "UP" ? "ops-ok" : "ops-fail") + "'>" + status + "</td><td>" + esc(detail) + "</td></tr>";
     } catch (e) {

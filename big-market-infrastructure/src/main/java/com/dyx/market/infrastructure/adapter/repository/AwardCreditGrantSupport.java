@@ -51,8 +51,7 @@ public class AwardCreditGrantSupport {
                 .build();
 
         RLock lock = redisService.getLock(Constants.RedisKey.ACTIVITY_ACCOUNT_LOCK + userId);
-        // Use watchdog (no lease time) so the lock auto-renews while the transaction
-        // is in progress and cannot expire before the credit write completes.
+        // 不指定租约时间，使用 watchdog 在事务执行期间自动续期，避免积分写入完成前锁过期。
         lock.lock();
         try {
             dbRouter.doRouter(giveOutPrizesAggregate.getUserId());

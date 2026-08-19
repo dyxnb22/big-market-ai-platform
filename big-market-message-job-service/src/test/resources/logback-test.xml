@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Test profile: console only — never write ./data/log (git-tracked side effect). -->
+<!-- 测试 Profile：仅输出到控制台，不写入 ./data/log（避免产生 Git 跟踪的副作用）。 -->
 <configuration>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -14,4 +14,3 @@
     <logger name="org.apache.dubbo" level="ERROR"/>
     <logger name="com.alibaba.nacos" level="ERROR"/>
 </configuration>
-

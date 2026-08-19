@@ -17,33 +17,54 @@ import jakarta.annotation.PostConstruct;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * BM-016: expose pending remote-write and DLQ backlog as Prometheus gauges.
+ * BM-016：将远程写待处理量、死信积压和补偿任务积压暴露为 Prometheus 仪表盘指标。
  */
 @Slf4j
 @Component
 public class BusinessMetricsPublisher {
 
+    /** 中央远程写补偿任务 DAO。 */
     private final IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao;
+    /** MQ 死信记录 DAO。 */
     private final IMqDeadLetterDao mqDeadLetterDao;
+    /** Chat 积分会话 DAO。 */
     private final IChatCreditSessionDao chatCreditSessionDao;
+    /** 兼容旧任务表的 DAO。 */
     private final ITaskDao taskDao;
+    /** 奖品库存确认补偿任务 DAO。 */
     private final IStrategyAwardStockConfirmTaskDao strategyAwardStockConfirmTaskDao;
+    /** 积分发奖 Outbox DAO。 */
     private final ICreditAwardTaskDao creditAwardTaskDao;
+    /** 分库路由器。 */
     private final IDBRouterStrategy dbRouter;
+    /** Prometheus 指标注册表。 */
     private final MeterRegistry meterRegistry;
 
+    /** 状态为 pending 的远程写任务数量。 */
     private final AtomicInteger pendingRemoteWrites = new AtomicInteger(0);
+    /** 状态为 continuation_pending 的远程写任务数量。 */
     private final AtomicInteger continuationRemoteWrites = new AtomicInteger(0);
+    /** 待处理死信数量。 */
     private final AtomicInteger pendingDlq = new AtomicInteger(0);
+    /** 待退款 Chat 会话数量。 */
     private final AtomicInteger pendingChatRefunds = new AtomicInteger(0);
+    /** 待确认奖品库存任务数量。 */
     private final AtomicInteger pendingStockConfirm = new AtomicInteger(0);
+    /** 已耗尽重试次数的远程写任务数量。 */
     private final AtomicInteger failedRemoteWrites = new AtomicInteger(0);
+    /** 已耗尽重试次数的积分发奖任务数量。 */
     private final AtomicInteger failedCreditAwards = new AtomicInteger(0);
+    /** 等待人工处理的库存确认任务数量。 */
     private final AtomicInteger manualPendingStockConfirm = new AtomicInteger(0);
+    /** 等待账户扣费对账的 Chat 会话数量。 */
     private final AtomicInteger deductingChatSessions = new AtomicInteger(0);
+    /** 兼容旧任务表中仍可重试的任务数量。 */
     private final AtomicInteger legacyTaskBacklog = new AtomicInteger(0);
+    /** 兼容旧任务表中因重试耗尽而暂停的任务数量。 */
     private final AtomicInteger legacyTaskPoisonRows = new AtomicInteger(0);
+    /** 兼容旧任务表中最早可重试任务的年龄（秒）。 */
     private final AtomicInteger legacyTaskOldestAgeSeconds = new AtomicInteger(0);
+    /** 需要人工补偿的 Chat 会话数量。 */
     private final AtomicInteger manualPendingChatSessions = new AtomicInteger(0);
 
     public BusinessMetricsPublisher(IPendingRemoteWriteTaskDao pendingRemoteWriteTaskDao,
@@ -65,6 +86,7 @@ public class BusinessMetricsPublisher {
     }
 
     @PostConstruct
+    /** 注册所有业务积压仪表盘指标，并立即执行一次刷新。 */
     public void registerGauges() {
         Gauge.builder("big_market_pending_remote_write_tasks", pendingRemoteWrites, AtomicInteger::get)
                 .tag("state", "pending")
@@ -112,6 +134,7 @@ public class BusinessMetricsPublisher {
     }
 
     @Scheduled(fixedDelayString = "${big-market.metrics.refresh-ms:30000}")
+    /** 按数据库/表分片统计补偿任务数量，并更新 Prometheus 指标。 */
     public void refresh() {
         try {
             int pendingRemoteWriteCount = 0;
@@ -127,9 +150,8 @@ public class BusinessMetricsPublisher {
             int legacyTaskPoisonCount = 0;
             int legacyTaskOldestAge = 0;
             int manualPendingChatCount = 0;
-            // The central compensation store exists on db00. The historical
-            // per-shard copies are only compatibility data. MQ/DLQ, chat and
-            // strategy tables, however, exist on the business shards only.
+            // 中央补偿表位于 db00；历史分片副本只用于兼容。MQ/DLQ、Chat 和策略表则只存在于
+            // 业务分片，因此下面分别按对应的库表范围统计。
             for (int dbIdx = 0; dbIdx <= 2; dbIdx++) {
                 dbRouter.setDBKey(dbIdx);
                 pendingRemoteWriteCount += pendingRemoteWriteTaskDao.countByState("pending");

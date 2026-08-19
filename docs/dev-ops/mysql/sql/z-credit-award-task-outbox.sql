@@ -1,5 +1,5 @@
--- Docker MySQL init: credit_award_task outbox shards for microservices stack (G-03).
--- Canonical reference: docs/sql/credit-award-task-outbox.sql
+-- Docker MySQL 初始化：微服务栈的 credit_award_task Outbox 分片（G-03）。
+-- 规范定义：docs/sql/credit-award-task-outbox.sql
 
 USE `big_market_01`;
 

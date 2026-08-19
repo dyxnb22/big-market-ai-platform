@@ -1,21 +1,20 @@
-# microservices docker-compose.
+# 微服务 Docker Compose 配置。
 #
-# PREREQUISITES: The shared infrastructure stack must already be running on
-# the dev-ops_my-network Docker network. Start it with:
+# 前置条件：共享基础设施栈必须已经运行在 dev-ops_my-network Docker 网络上。
+# 使用以下命令启动基础设施：
 #   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d
 #
-# This compose file attaches all application services to that existing
-# network so they can reach mysql, redis, rabbitmq, nacos, elasticsearch, and
-# xxl-job-admin by container name without duplicating the infrastructure.
-# All services intentionally use restart: "no": Docker Desktop/daemon startup
-# must not automatically start this project or its infrastructure stack.
+# 本文件将所有应用服务接入该现有网络，使它们可以通过容器名访问 mysql、redis、
+# rabbitmq、nacos、elasticsearch 和 xxl-job-admin，避免重复创建基础设施。
+# 所有服务都明确使用 restart: "no"，这样 Docker Desktop/daemon 启动时不会
+# 自动启动本项目或其基础设施栈。
 #
-# BUILD FIRST: mvn clean package -DskipTests
-# THEN:        docker compose up --build -d
+# 先构建：mvn clean package -DskipTests
+# 再启动：docker compose up --build -d
 
 services:
 
-  # ─────────────────── Lightweight services (no DB/Redis) ──────────────────
+  # ─────────────────── 轻量服务（不依赖数据库/Redis） ──────────────────
 
   big-market-auth-service:
     build:
@@ -132,7 +131,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # ─────────────── Core market service (full infra deps) ───────────────────
+  # ─────────────── 核心抽奖服务（依赖完整基础设施） ───────────────────
 
   big-market-market-service:
     build:
@@ -152,7 +151,7 @@ services:
       - ADMIN_TOKEN=${ADMIN_TOKEN:-admin-dev-token}
       - API_VERSION=v1
       - CROSS_ORIGIN=*
-      # Connect to existing infra containers by name (same Docker network)
+      # 通过容器名连接现有基础设施（位于同一个 Docker 网络）
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
       - MYSQL_USER=${MYSQL_USER:-root}
@@ -192,7 +191,7 @@ services:
       big-market-account-service:
         condition: service_healthy
 
-  # ──────────── Message-job service (MQ consumers + XXL-Job handlers) ─────────
+  # ──────────── 消息任务服务（MQ 消费者 + XXL-Job 处理器） ─────────
 
   big-market-message-job-service:
     build:
@@ -237,7 +236,7 @@ services:
       big-market-account-service:
         condition: service_healthy
 
-  # ─── Account service ──
+  # ─── 账户服务 ──
 
   big-market-account-service:
     build:
@@ -276,7 +275,7 @@ services:
       retries: 10
       start_period: 90s
 
-  # ─────────────────────────── API Gateway ─────────────────────────────────
+  # ─────────────────────────── API 网关 ─────────────────────────────────
 
   big-market-gateway:
     build:
@@ -318,7 +317,7 @@ services:
       retries: 5
       start_period: 30s
 
-  # ─────────────────────────── Web Frontend ────────────────────────────────
+  # ─────────────────────────── Web 前端 ────────────────────────────────
 
   big-market-web:
     build:
@@ -337,10 +336,9 @@ services:
     networks:
       - dev-ops_my-network
 
-# ─────────────────────────── Networks ────────────────────────────────────────
-# Attach to the existing infrastructure network instead of creating a new one.
-# The infra stack (mysql, redis, rabbitmq, nacos, elasticsearch) must already
-# be running on this network.
+# ─────────────────────────── 网络 ────────────────────────────────────────
+# 接入现有基础设施网络，不再创建新的网络。
+# 基础设施栈（mysql、redis、rabbitmq、nacos、elasticsearch）必须已经运行在该网络上。
 networks:
   dev-ops_my-network:
     external: true

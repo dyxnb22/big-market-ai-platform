@@ -16,16 +16,16 @@ public interface IChatCreditSessionRepository {
     String DEDUCT_DEDUCTED = "deducted";
     String DEDUCT_FAILED = "failed";
 
-    /** Insert durable deduct intent before remote debit (deduct_state=deducting). */
+    /** 在远程扣款前持久化扣费意图（deduct_state=deducting），为 UNKNOWN 结果保留退款/对账依据。 */
     void recordDeductingIntent(String userId, String requestId, int amount);
 
-    /** CAS / mark session as remotely deducted (refundable). */
+    /** 通过 CAS 将会话标记为远程扣款成功（deduct_state=deducted），使其具备退款依据。 */
     void markDeducted(String userId, String requestId);
 
-    /** Mark intent failed only when remote debit is known not to have happened. */
+    /** 仅在能够确认远程扣款没有发生时，才将扣费意图标记为 failed。 */
     void markDeductFailed(String userId, String requestId);
 
-    /** Legacy/compat: insert as already deducted (chatbot INDEX_DUP recovery). */
+    /** 兼容旧路径：直接插入已扣款会话，用于 chatbot 收到 INDEX_DUP 后恢复状态。 */
     void recordDeduction(String userId, String requestId, int amount);
 
     ChatCreditSessionSnapshot findSession(String userId, String requestId);

@@ -14,7 +14,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * GOV-B09: account-service launcher scan + Dubbo enablement gate (no full Context).
+ * GOV-B09：校验 account-service 启动类扫描范围与 Dubbo 启用配置（不加载完整上下文）。
  */
 public class AccountServiceApplicationScanTest {
 

@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# Validate the full microservices stack from a clean build through smoke test.
+# 从干净构建到冒烟测试，验证完整微服务栈。
 #
-# Usage:
+# 用法：
 #   ./scripts/validate-microservices-stack.sh [--start-stack] [--skip-build]
-#   ./scripts/validate-microservices-stack.sh [--skip-docker] [--skip-build]  # legacy alias
+#   ./scripts/validate-microservices-stack.sh [--skip-docker] [--skip-build]  # 旧版别名
 #
-# Options:
-#   --start-stack   Start infra + app via docker compose (opt-in; default does NOT start)
-#   --skip-docker   Legacy alias: do not start docker (same as default)
-#   --skip-build    Skip mvn verify (useful when JARs are already built)
+# 选项：
+#   --start-stack   通过 docker compose 启动基础设施+应用（显式选择；默认不启动）
+#   --skip-docker   旧版别名：不启动 Docker（与默认行为相同）
+#   --skip-build    跳过 mvn verify（JAR 已构建时有用）
 #
-# By default this script does NOT auto-start Docker. Start the stack yourself:
+# 默认情况下本脚本不会自动启动 Docker。请自行启动服务栈：
 #   docker compose -f docs/dev-ops/docker-compose-environment.yml up -d mysql redis rabbitmq nacos xxl-job-admin elasticsearch
 #   ./scripts/apply-stack-migrations.sh
 #   docker compose up --build -d
-# Then run this script (health poll + smoke only).
+# 然后运行本脚本（仅执行健康轮询和冒烟测试）。
 #
-# Prerequisites:
+# 前置条件：
 #   - JDK 17+, Maven 3.x
-#   - Docker + Docker Compose v2 (when using --start-stack or for smoke against local stack)
-#   - python3 (used by smoke test for JSON parsing)
+#   - Docker + Docker Compose v2（使用 --start-stack 或针对本地栈执行冒烟测试时需要）
+#   - python3（冒烟测试用于解析 JSON）
 #
-# IMPORTANT: This script does NOT destroy data. It does NOT purge queues.
-# If you see RabbitMQ "inequivalent arg" errors on startup, see the note below.
+# 重要：本脚本不会销毁数据，也不会清空队列。
+# 如果启动时看到 RabbitMQ 的 "inequivalent arg" 错误，请查看下方说明。
 
 set -euo pipefail
 
@@ -56,7 +56,7 @@ echo "  start_stack=${START_STACK}  $(date)"
 echo "================================================================="
 echo ""
 
-# ── Step 1: Build ──────────────────────────────────────────────────────────────
+# ── 步骤 1：构建 ──────────────────────────────────────────────────────────────
 
 if [ "$SKIP_BUILD" = false ]; then
   echo "Step 1/4: Building all modules (mvn verify)"
@@ -78,7 +78,7 @@ else
   echo ""
 fi
 
-# ── Step 2: Infrastructure stack ──────────────────────────────────────────────
+# ── 步骤 2：基础设施栈 ──────────────────────────────────────────────────────────────
 
 if [ "$START_STACK" = true ]; then
   echo "Step 2/4: Starting infrastructure stack"
@@ -126,7 +126,7 @@ else
   echo ""
 fi
 
-# ── Step 3: Application stack ──────────────────────────────────────────────────
+# ── 步骤 3：应用栈 ──────────────────────────────────────────────────
 
 if [ "$START_STACK" = true ]; then
   echo "Step 3/4: Building and starting application services"
@@ -174,7 +174,7 @@ else
   echo ""
 fi
 
-# ── Step 4: Smoke test ─────────────────────────────────────────────────────────
+# ── 步骤 4：冒烟测试 ─────────────────────────────────────────────────────────
 
 echo "Step 4/4: Running smoke test"
 echo "-----------------------------------------------------------------"

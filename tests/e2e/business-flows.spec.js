@@ -66,7 +66,7 @@ async function getCreditMetric(page) {
   return parseFloat(text) || 0;
 }
 
-// ========== Stage activity ==========
+// ========== 阶段活动 ==========
 
 test("stage activity resolves to 100401 (not 100301 fallback)", async ({ page, request }) => {
   const errors = collectClientErrors(page);
@@ -84,7 +84,7 @@ test("stage activity resolves to 100401 (not 100301 fallback)", async ({ page, r
   await expectNoClientErrors(errors);
 });
 
-// ========== Sign-in Flow Tests ==========
+// ========== 签到流程测试 ==========
 
 test("sign-in success displays reward, credit balance increases", async ({ page }) => {
   const errors = collectClientErrors(page);
@@ -95,7 +95,7 @@ test("sign-in success displays reward, credit balance increases", async ({ page 
   const alreadySigned = await page.locator("#signInBtn").textContent();
 
   if (/已签到/.test(alreadySigned || "")) {
-    // Idempotent day: credit must remain a finite number; no duplicate reward path.
+    // 幂等签到日：积分必须保持为有限数值，不能重复发放奖励。
     expect(Number.isFinite(creditBefore)).toBe(true);
     await page.locator("#signInBtn").click();
     await expect(page.locator("#toast")).toContainText(/今日已签到/);
@@ -169,7 +169,7 @@ test("sign-in status persists after page refresh", async ({ page }) => {
   await expectNoClientErrors(errors);
 });
 
-// ========== AI Chat Credit Flow Tests ==========
+// ========== AI 聊天积分流程测试 ==========
 
 test("AI chat send updates credit display", async ({ page }) => {
   const errors = collectClientErrors(page);
@@ -221,7 +221,7 @@ test("credit display updates after chatbot response", async ({ page }) => {
   await expectNoClientErrors(errors);
 });
 
-// ========== Wheel UI Tests ==========
+// ========== 转盘界面测试 ==========
 
 test("wheel labels are readable without horizontal overflow", async ({ page }) => {
   const errors = collectClientErrors(page);
@@ -263,7 +263,7 @@ test("wheel is responsive on mobile viewport", async ({ page }) => {
   await expectNoClientErrors(errors);
 });
 
-// ========== User Center Tests ==========
+// ========== 用户中心测试 ==========
 
 test("user center shows credit, surplus, and sign-in status", async ({ page }) => {
   const errors = collectClientErrors(page);
@@ -305,7 +305,7 @@ test("user center loads server-backed draw history and credit ledger", async ({ 
   const creditBody = await (await creditResPromise).json();
   expect(creditBody.code).toBe("0000");
 
-  // Panels must render server entries or the explicit empty state — never the error state.
+  // 面板必须渲染服务端记录或明确的空状态，不能显示错误状态。
   await expect.poll(async () => {
     const txt = await page.locator("#drawHistoryList").textContent();
     return txt && !/加载失败/.test(txt);
@@ -324,7 +324,7 @@ test("user center loads server-backed draw history and credit ledger", async ({ 
   await expectNoClientErrors(errors);
 });
 
-// ========== Exchange Flow Tests ==========
+// ========== 兑换流程测试 ==========
 
 test("exchange section is visible in lottery drawer", async ({ page }) => {
   const errors = collectClientErrors(page);
@@ -348,7 +348,7 @@ test("composer shows credit cost hint", async ({ page }) => {
   await expectNoClientErrors(errors);
 });
 
-// ========== Admin Isolation Tests ==========
+// ========== 管理员隔离测试 ==========
 
 test("normal user cannot access admin page", async ({ page }) => {
   const errors = collectClientErrors(page);

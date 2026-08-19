@@ -1,5 +1,5 @@
--- Stock MySQL decrement idempotency ledgers (durable exactly-once flush).
--- Applied to shared big_market DB (same as strategy_award / raffle_activity_sku).
+-- 库存 MySQL 扣减幂等账本（保证持久化刷新语义上的恰好一次）。
+-- 执行在共享 big_market 数据库中（与 strategy_award / raffle_activity_sku 相同）。
 
 USE `big_market`;
 

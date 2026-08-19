@@ -24,15 +24,31 @@ import java.math.BigDecimal;
 public class ChatCreditApplicationService {
 
     @Resource
+    /** 账户服务积分扣减与退款写操作适配器。 */
     private IAccountCreditWriteAdapter accountCreditWriteAdapter;
     @Resource
+    /** 账户服务积分余额查询适配器；查询失败时仅影响返回值，不回滚已完成的扣费。 */
     private IAccountReadAdapter accountRemoteReadAdapter;
     @Resource
+    /** Chat 扣费会话仓储，用于记录扣费意图、幂等状态和退款状态。 */
     private IChatCreditSessionRepository chatCreditSessionRepository;
 
+    /**
+     * 扣减 Chat 请求所需积分。
+     *
+     * <p>先以 {@code userId + requestId} 持久化扣费意图，再调用账户服务扣费，
+     * 使远程调用超时或本地进程崩溃时仍可由对账/退款流程接管。账户交易号使用
+     * {@code chat_{userId}_{requestId}}，重复请求直接复用已完成交易；明确的业务拒绝会
+     * 将意图置为失败，未知结果则保留 {@code deducting} 状态等待后续确认。</p>
+     *
+     * @param userId 用户 ID
+     * @param amount 扣减积分数量，必须大于 0
+     * @param requestId Chat 请求幂等 ID
+     * @return 扣减完成后的账户余额；余额查询失败时返回 0，不代表扣费失败
+     */
     public BigDecimal deduct(String userId, int amount, String requestId) {
         validate(userId, requestId, amount);
-        // Durable intent first — enables refund/reconcile even if session write after RPC would fail.
+        // 先持久化扣费意图；即使远程扣费后本地写状态失败，也能依靠会话记录退款或对账。
         chatCreditSessionRepository.recordDeductingIntent(userId, requestId, amount);
         try {
             String orderId = accountCreditWriteAdapter.createOrder(TradeEntity.builder()
@@ -51,7 +67,7 @@ public class ChatCreditApplicationService {
                 chatCreditSessionRepository.markDeducted(userId, requestId);
                 return queryCreditBalanceSafe(userId);
             }
-            // Explicit business rejection: clear intent. UNKNOWN/pending paths keep deducting.
+            // 明确的业务拒绝清理扣费意图；UNKNOWN/处理中路径保留 deducting，等待后续确认。
             if (isExplicitReject(e)) {
                 chatCreditSessionRepository.markDeductFailed(userId, requestId);
             }
@@ -117,6 +133,16 @@ public class ChatCreditApplicationService {
         }
     }
 
+    /**
+     * 将退款标记为待补偿。
+     *
+     * <p>由消息任务在下游异常或未知结果时调用。金额以已落库会话为准，只有确认远程扣费
+     * 成功的会话才允许进入待退款状态，避免伪造请求或未知扣费结果产生错误入账。</p>
+     *
+     * @param userId 用户 ID
+     * @param requestId 原始 Chat 请求幂等 ID
+     * @param amount 调用方携带的退款金额兜底值；会话已有金额时忽略该值
+     */
     public void markRefundPending(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId)) {
             return;
@@ -132,20 +158,24 @@ public class ChatCreditApplicationService {
         chatCreditSessionRepository.markRefundPending(userId, requestId, effectiveAmount);
     }
 
+    /** 构造 Chat 扣费交易的业务幂等号。 */
     static String chatOutBusinessNo(String userId, String requestId) {
         return "chat_" + userId + "_" + requestId;
     }
 
+    /** 构造 Chat 退款交易的业务幂等号。 */
     static String chatRefundOutBusinessNo(String userId, String requestId) {
         return "chat_refund_" + userId + "_" + requestId;
     }
 
+    /** 校验扣费请求的用户、请求幂等号和积分数量。 */
     private static void validate(String userId, String requestId, int amount) {
         if (StringUtils.isBlank(userId) || StringUtils.isBlank(requestId) || amount <= 0) {
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
     }
 
+    /** 查询余额；远程查询失败时返回安全兜底值，避免覆盖已经完成的写操作结果。 */
     private BigDecimal queryCreditBalanceSafe(String userId) {
         try {
             return accountRemoteReadAdapter.queryUserCreditAccount(userId);

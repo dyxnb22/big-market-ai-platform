@@ -103,6 +103,12 @@ public interface IRaffleActivityService {
      */
     Response<List<SkuProductResponseDTO>> querySkuProductListByActivityId(Long activityId);
 
+    /**
+     * 根据登录 Token 查询当前用户积分余额。
+     *
+     * @param token 登录 Token
+     * @return 可用积分
+     */
     Response<BigDecimal> queryUserCreditAccountByToken(String token);
 
     /**
@@ -145,6 +151,13 @@ public interface IRaffleActivityService {
      */
     Response<List<CreditOrderResponseDTO>> queryUserCreditOrders(String userId);
 
+    /**
+     * 根据登录 Token 发起积分兑换商品。
+     *
+     * @param token 登录 Token
+     * @param request 请求对象，包含 SKU 和请求幂等 ID
+     * @return 兑换受理结果
+     */
     Response<Boolean> creditPayExchangeSku(String token, SkuProductShopCartRequestDTO request);
 
     /**

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Chat credit refund E2E: AI failure immediate refund + pending reconcile via XXL job.
+# 聊天积分退款 E2E：AI 失败后立即退款，并通过 XXL Job 对 pending 状态进行对账。
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:8080/api/v1}"

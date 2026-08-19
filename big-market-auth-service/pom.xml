@@ -25,7 +25,7 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- JWT runtime impl (api comes transitively from big-market-domain) -->
+        <!-- JWT 运行时实现（API 由 big-market-domain 传递引入） -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
@@ -61,7 +61,7 @@
             <artifactId>redisson-spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Project modules -->
+        <!-- 工程模块 -->
         <dependency>
             <groupId>com.dyx.market</groupId>
             <artifactId>big-market-api</artifactId>

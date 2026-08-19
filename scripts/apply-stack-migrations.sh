@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Unified stack migrations: reconcile DDL + XXL seeds + post-checks.
+# 统一执行栈迁移：对账 DDL + XXL 种子 + 迁移后检查。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -38,9 +38,9 @@ fi
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$NACOS_PLATFORM_SQL"
 echo "Nacos platform DataIds ensured without overwriting existing configuration."
 
-# Nacos 3.x default-namespace dual-writes empty + public. Prefer empty as canonical
-# seed, keep public when identical, fail closed on content conflicts, and copy
-# empty → public only when public is missing (so getConfig has a twin to read).
+# Nacos 3.x 默认命名空间会同时写入空租户和公共租户。优先以空租户作为规范种子，
+# 内容相同时保留公共租户；内容冲突时关闭流程；仅当公共租户缺失时才将空租户复制到公共租户，
+# 以便 getConfig 始终有镜像可读。
 conflict_count="$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "
 USE nacos_config;
 SELECT COUNT(*) FROM config_info p
@@ -79,10 +79,9 @@ DELETE FROM config_info
 echo "Nacos platform configs normalized (empty SoT + matching public twin; conflicts fail closed)."
 
 
-# The upstream XXL init SQL has a learning-only admin/123456 row. When the
-# operator supplies both environment values, rotate it idempotently before any
-# acceptance smoke logs in. Values are quoted for a MySQL string literal and
-# are never printed.
+# 上游 XXL 初始化 SQL 中包含仅供学习环境使用的 admin/123456 记录。
+# 当操作员同时提供两个环境变量时，在验收冒烟登录前幂等地轮换该记录。
+# 值会按 MySQL 字符串字面量进行转义，且绝不会打印出来。
 if [ -n "${XXL_JOB_ADMIN_USER:-}" ] || [ -n "${XXL_JOB_ADMIN_PASSWORD:-}" ]; then
   : "${XXL_JOB_ADMIN_USER:?XXL_JOB_ADMIN_USER is required when rotating XXL credentials}"
   : "${XXL_JOB_ADMIN_PASSWORD:?XXL_JOB_ADMIN_PASSWORD is required when rotating XXL credentials}"
@@ -101,9 +100,9 @@ fi
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < "$FREEZE_SQL"
 echo "Learning-freeze demo seed alignment applied."
 
-# Reused volumes may still hold the old 10007 award list/probability map.
-# Delete only derived strategy caches; armory rebuilds them from the aligned DB
-# seed before smoke/Playwright. Stock counters are intentionally preserved.
+# 复用卷中可能仍保留旧的 10007 奖品列表/概率映射。
+# 这里只删除派生的策略缓存；冒烟测试/Playwright 前，armory 会根据已对齐的数据库种子重建缓存。
+# 库存计数器有意保留。
 REDIS_CONTAINER="${REDIS_CONTAINER:-redis}"
 if ! docker exec "$REDIS_CONTAINER" redis-cli DEL \
   big_market_strategy_award_list_key_10007 \

@@ -10,7 +10,7 @@
     <artifactId>big-market-types</artifactId>
 
     <dependencies>
-        <!-- Lightweight Spring surface for shared types (no Tomcat/MVC). -->
+        <!-- 共享类型使用的轻量 Spring 能力（不引入 Tomcat/MVC）。 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>

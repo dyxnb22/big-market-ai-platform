@@ -54,28 +54,28 @@ public interface IRaffleActivityAccountQuotaService {
     ActivityAccountEntity queryActivityAccountEntity(Long activityId, String userId);
 
     /**
-     * Synchronously decrement total/month/day quota, guarded by idempotency ledger.
+     * 在幂等账本保护下同步扣减总/月/日三类活动额度。
      *
-     * called by AccountQuotaServiceRPC.decrementQuota on the
-     * account-service side. The ledger table prevents double-decrement on RPC retry.
+     * <p>由 account-service 的 {@code AccountQuotaServiceRPC.decrementQuota} 调用；
+     * 账本表使 RPC 重试不会重复扣减。</p>
      *
-     * @param userId        user identifier (shard key)
-     * @param activityId    activity identifier
-     * @param outBusinessNo idempotency key — raffle order's outBusinessNo
-     * @return true if quota decremented (or already decremented); false if exhausted
+     * @param userId 用户 ID，也是分库键
+     * @param activityId 活动 ID
+     * @param outBusinessNo 幂等键，通常为抽奖订单的业务幂等号
+     * @return 本次扣减成功或已扣减返回 true；额度不足返回 false
      */
     boolean decrementQuota(String userId, Long activityId, String outBusinessNo);
 
     /**
-     * Roll back a previously decremented quota slot (saga compensation).
+     * 回滚先前扣减的一次活动额度（Saga 补偿）。
      *
-     * ledger-guarded. Safe to call if decrement was never applied.
-     * Idempotent: repeated calls with the same key return true without double-restore.
+     * <p>由幂等账本保护；即使原扣减从未真正执行也可以安全调用。相同幂等键重复回滚时
+     * 返回 true，不会重复恢复额度。</p>
      *
-     * @param userId        user identifier (shard key)
-     * @param activityId    activity identifier
-     * @param outBusinessNo idempotency key — same value used in decrementQuota
-     * @return true if rolled back (or already rolled back / no ledger row); false on infra failure
+     * @param userId 用户 ID，也是分库键
+     * @param activityId 活动 ID
+     * @param outBusinessNo 幂等键，必须与 decrementQuota 使用相同的值
+     * @return 已回滚、已回滚过或没有账本记录返回 true；基础设施失败返回 false
      */
     boolean rollbackQuota(String userId, Long activityId, String outBusinessNo);
 

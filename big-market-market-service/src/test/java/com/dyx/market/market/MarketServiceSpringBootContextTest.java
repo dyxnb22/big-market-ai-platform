@@ -15,7 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * BM-001: market-service full Application Context loads with trigger.application beans.
+ * BM-001：market-service 完整 Spring 上下文必须加载 trigger.application Bean。
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = MarketServiceApplication.class, properties = {
@@ -27,12 +27,12 @@ import static org.junit.Assert.assertNotNull;
 public class MarketServiceSpringBootContextTest {
 
     static {
-        // Avoid HostInfoEnvironmentPostProcessor calling InetAddress.getLocalHost() in restricted CI sandboxes.
+        // 避免 HostInfoEnvironmentPostProcessor 在受限 CI 沙箱中调用 InetAddress.getLocalHost()。
         System.setProperty("spring.cloud.inetutils.preferred-networks", "127.0.0.1");
         System.setProperty("spring.cloud.client.hostname", "localhost");
         System.setProperty("spring.cloud.client.ip-address", "127.0.0.1");
-        // Redirect Dubbo local file cache away from ~/.dubbo without changing user.home globally
-        // (changing user.home breaks Dubbo ApplicationConfig instantiation in some environments).
+        // 将 Dubbo 本地文件缓存重定向到 ~/.dubbo 之外，不全局修改 user.home
+        //（部分环境中修改 user.home 会破坏 Dubbo ApplicationConfig 实例化）。
         java.io.File dubboCache = new java.io.File("target/dubbo-cache");
         dubboCache.mkdirs();
         System.setProperty("dubbo.registry.file", new java.io.File(dubboCache, "registry.properties").getAbsolutePath());

@@ -12,8 +12,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 import java.lang.reflect.Method;
 
 /**
- * Sets HTTP status from unified JSON {@code code} on {@code Response} bodies.
- * Interceptors that write JSON directly should call {@link ResponseHttpStatusMapper} themselves.
+ * 根据统一 JSON {@code code} 为 {@code Response} 响应体设置 HTTP 状态。
+ * 直接写 JSON 的拦截器应自行调用 {@link ResponseHttpStatusMapper} 完成映射。
  */
 @ControllerAdvice
 public class ResponseHttpStatusAdvice implements ResponseBodyAdvice<Object> {

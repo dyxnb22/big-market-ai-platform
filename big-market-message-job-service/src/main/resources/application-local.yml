@@ -1,3 +1,2 @@
-# Embedded local mode (mvn spring-boot:run) uses the local account adapters selected by
-# the local/dev Spring Profile. The credit award Outbox is always enabled; apply its DDL
-# before starting message-job.
+# 内嵌本地模式（mvn spring-boot:run）使用 local/dev Spring Profile 选择的本地账户适配器。
+# credit award Outbox 始终启用；启动 message-job 前必须先执行对应 DDL。
